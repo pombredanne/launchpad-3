@@ -493,8 +493,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
                          'who were implicitly subscribed to their branches.')
         email = emails[0]
         self.assertEqual('[Merge] '
-            'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
-            'lp://dev/~mary/super-product/bar', email['subject'])
+            'lp://dev/~bob/super-product/fix-foo-for-bar into\n'
+            ' lp://dev/~mary/super-product/bar',
+            email['subject'].replace('\n\t', '\n '))
         bmp = job.branch_merge_proposal
         expected = dedent("""\
             The proposal to merge %(source)s into %(target)s has been updated.

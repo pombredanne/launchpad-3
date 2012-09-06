@@ -62,11 +62,11 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
@@ -166,24 +166,24 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertEqual([owner], subscriptions)
 
     def test_closed_reviewer_with_private_branch(self):
-        """If the reviewer is a closed team, they are subscribed."""
+        """If the reviewer is a exclusive team, they are subscribed."""
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         trunk = self.factory.makeBranch(product=product, owner=owner)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA, owner=owner,
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertContentEqual([owner, team], subscriptions)
@@ -429,6 +429,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIsNot(None, proposal.date_reviewed)
         self.assertIsNot(None, proposal.reviewed_revision_id)
         proposal.setAsWorkInProgress()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
+
+    def test_transitions_from_rejected_to_merged_resets_reviewer(self):
+        # When a rejected proposal ends up being merged anyway, reset the
+        # reviewer details as they did not approve as is otherwise assumed.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.REJECTED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.markAsMerged()
         self.assertIs(None, proposal.reviewer)
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
@@ -967,13 +981,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
         for branch in (bmp.source_branch, bmp.target_branch):
-            removeSecurityProxy(branch).information_type = (
-                InformationType.USERDATA)
+            removeSecurityProxy(branch).transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertFalse(bob in recipients)
-        self.assertFalse(eric in recipients)
-        self.assertTrue(charlie in recipients)
+        self.assertNotIn(bob, recipients)
+        self.assertNotIn(eric, recipients)
+        self.assertIn(charlie, recipients)
 
 
 class TestGetAddress(TestCaseWithFactory):
@@ -1197,7 +1211,9 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).explicitly_private = True
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1235,10 +1251,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private by making it's stacked on branch
-        # private.
-        removeSecurityProxy(
-            proposal.source_branch.stacked_on).explicitly_private = True
+        # Mark the source branch private.
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.
@@ -1568,7 +1584,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 
     def test_nominate_team_grants_visibility(self):
         reviewer = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):

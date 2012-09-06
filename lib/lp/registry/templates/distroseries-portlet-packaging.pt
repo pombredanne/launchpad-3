@@ -3,8 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="series-packaging" class="portlet"
-  tal:define="overview_menu context/menu:overview"
-  tal:content="cache:public, 3 hour">
+  tal:define="overview_menu context/menu:overview">
   <h2>Upstream packaging</h2>
 
   <p id="packaging-summary"

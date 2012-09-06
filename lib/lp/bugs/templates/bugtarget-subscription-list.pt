@@ -32,7 +32,7 @@
   <div metal:fill-slot="main">
 
     <div id="maincontent">
-      <div id="nonportlets" class="readable">
+      <div id="nonportlets">
         <div>
           <a class="sprite add" id="create-new-subscription"
              href="#">Add a subscription</a>

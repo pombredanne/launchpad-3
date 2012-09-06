@@ -21,8 +21,10 @@ from lp.code.interfaces.branchlookup import (
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
     branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.enums import InformationType
@@ -76,106 +78,79 @@ class TestGetByUniqueName(TestCaseWithFactory):
         self.assertEqual(branch, found_branch)
 
 
-class TestGetIdAndTrailingPath(TestCaseWithFactory):
+class TestGetByHostingPath(TestCaseWithFactory):
     """Tests for `IBranchLookup.getIdAndTrailingPath`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.branch_set = getUtility(IBranchLookup)
+        self.lookup = getUtility(IBranchLookup)
 
     def test_not_found(self):
         unused_name = self.factory.getUniqueString()
-        result = self.branch_set.getIdAndTrailingPath('/' + unused_name)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath('' + unused_name)
+        self.assertEqual((None, ''), result)
 
     def test_junk(self):
         branch = self.factory.makePersonalBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, ''), result)
 
     def test_product(self):
         branch = self.factory.makeProductBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, ''), result)
 
     def test_source_package(self):
         branch = self.factory.makePackageBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, ''), result)
 
     def test_trailing_slash(self):
         branch = self.factory.makeAnyBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name + '/')
-        self.assertEqual((branch.id, '/'), result)
+        result = self.lookup.getByHostingPath(branch.unique_name + '/')
+        self.assertEqual((branch, '/'), result)
 
     def test_trailing_path(self):
         branch = self.factory.makeAnyBranch()
         path = self.factory.getUniqueString()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name + '/' + path)
-        self.assertEqual((branch.id, '/' + path), result)
+        result = self.lookup.getByHostingPath(
+            branch.unique_name + '/' + path)
+        self.assertEqual((branch, '/' + path), result)
 
     def test_branch_id_alias(self):
         # The prefix by itself returns no branch, and no path.
         path = BRANCH_ID_ALIAS_PREFIX
-        result = self.branch_set.getIdAndTrailingPath('/' + path)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath(path)
+        self.assertEqual((None, ''), result)
 
     def test_branch_id_alias_not_int(self):
         # The prefix followed by a non-integer returns no branch and no path.
         path = BRANCH_ID_ALIAS_PREFIX + '/foo'
-        result = self.branch_set.getIdAndTrailingPath('/' + path)
-        self.assertEqual((None, None), result)
-
-    def test_branch_id_alias_private(self):
-        # Private branches are not found at all (this is for anonymous access)
-        owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((None, None), result)
-
-    def test_branch_id_alias_transitive_private(self):
-        # Transitively private branches are not found at all
-        # (this is for anonymous access)
-        owner = self.factory.makePerson()
-        private_branch = self.factory.makeAnyBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        branch = self.factory.makeAnyBranch(
-            stacked_on=private_branch, owner=owner)
-        with person_logged_in(owner):
-            path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath(path)
+        self.assertEqual((None, ''), result)
 
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
         path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, ''), result)
 
     def test_branch_id_alias_public_slash(self):
         # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
         path = '%s/' % branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, '/'), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, '/'), result)
 
     def test_branch_id_alias_public_with_path(self):
         # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
         path = '%s/foo' % branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, '/foo'), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, '/foo'), result)
 
 
 class TestGetByPath(TestCaseWithFactory):
@@ -200,7 +175,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makePersonalBranch()
@@ -228,7 +203,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeProductBranch()
@@ -258,7 +233,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
@@ -379,6 +354,22 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
         self.assertEqual(branch, branch2)
 
+    def test_getByUrl_with_alias(self):
+        """getByUrl works with +branch aliases."""
+        product = make_product_with_branch(self.factory)
+        branch = product.development_focus.branch
+        path = BRANCH_ALIAS_PREFIX + '/' + product.name
+        url = compose_public_url('bzr+ssh', path)
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch, branch_lookup.getByUrl(url))
+
+    def test_getByUrl_with_id_alias(self):
+        """getByUrl works with +branch-id aliases."""
+        branch = self.factory.makeAnyBranch()
+        url = compose_public_url('bzr+ssh', branch_id_alias(branch))
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch, branch_lookup.getByUrl(url))
+
     def test_getByUrls(self):
         # getByUrls returns a dictionary mapping branches to URLs.
         branch1 = self.factory.makeAnyBranch()
@@ -392,30 +383,30 @@ class TestGetByUrl(TestCaseWithFactory):
              branch2.bzr_identity: branch2,
              url3: None}, branches)
 
-    def test_uriToUniqueName(self):
-        """Ensure uriToUniqueName works.
+    def test_uriToHostingPath(self):
+        """Ensure uriToHostingPath works.
 
         Only codehosting-based using http, sftp or bzr+ssh URLs will
-        be handled. If any other URL gets passed the returned will be
-        None.
+        be handled. If any other URL gets passed (including lp), the return
+        value will be None.
         """
         branch_set = getUtility(IBranchLookup)
         uri = URI(config.codehosting.supermirror_root)
         uri.path = '/~foo/bar/baz'
         # Test valid schemes
         uri.scheme = 'http'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         uri.scheme = 'sftp'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         uri.scheme = 'bzr+ssh'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         # Test invalid scheme
         uri.scheme = 'ftp'
-        self.assertIs(None, branch_set.uriToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
         # Test valid scheme, invalid domain
         uri.scheme = 'sftp'
         uri.host = 'example.com'
-        self.assertIs(None, branch_set.uriToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
 
 
 class TestLinkedBranchTraverser(TestCaseWithFactory):
@@ -523,6 +514,12 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
             NoSuchSourcePackageName, self.traverser.traverse, path)
 
 
+def make_product_with_branch(factory):
+    branch = factory.makeProductBranch()
+    removeSecurityProxy(branch.product).development_focus.branch = branch
+    return branch.product
+
+
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
 
@@ -570,7 +567,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing product branch.
         branch = self.factory.makeProductBranch()
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_product_branch_unique_name_with_trailing(self):
@@ -596,7 +593,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing junk branch.
         branch = self.factory.makePersonalBranch()
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_personal_branch_unique_name_with_trailing(self):
@@ -619,7 +616,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(
                 '%s/%s' % (
                     distro_package.distribution.name,
@@ -713,18 +710,33 @@ class TestGetByLPPath(TestCaseWithFactory):
         # NoSuchProductSeries error, since we can't tell the difference
         # between a trailing path and an attempt to load a non-existent series
         # branch.
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
-        self.assertRaises(
-            NoSuchProductSeries,
-            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+        product = make_product_with_branch(self.factory)
+        self.assertEqual(
+            (product.development_focus.branch, 'other/bits'),
+            self.branch_lookup.getByLPPath('%s/other/bits' % product.name))
+
+    def test_product_with_bzr_suffix(self):
+        # A '.bzr' suffix is returned correctly.
+        product = make_product_with_branch(self.factory)
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr' % product.name)
+        self.assertEqual('.bzr', suffix)
+
+    def test_product_with_bzr_slash_suffix(self):
+        # A '.bzr/' suffix is returned correctly.
+        product = make_product_with_branch(self.factory)
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr/' % product.name)
+        self.assertEqual('.bzr/', suffix)
+
+    def test_product_with_bzr_extra_suffix(self):
+        # A '.bzr/extra' suffix is returned correctly.
+        product = make_product_with_branch(self.factory)
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr/extra' % product.name)
+        self.assertEqual('.bzr/extra', suffix)
 
     def test_too_long_product_series(self):
-        # If the provided path points to an existing product series with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
         branch = self.factory.makeBranch()
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
@@ -732,10 +744,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual((branch, u'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
-        # If the provided path points to an existing source package with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
         with person_logged_in(package.distribution.owner):

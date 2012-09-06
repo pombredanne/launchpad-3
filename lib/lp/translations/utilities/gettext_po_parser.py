@@ -228,7 +228,7 @@ class POHeader:
         """Attempt to parse `date_string`, or return None if invalid."""
         try:
             return zope_datetime.parseDatetimetz(date_string)
-        except (ValueError, zope_datetime.DateTimeError), exception:
+        except (ValueError, zope_datetime.DateTimeError) as exception:
             return None
 
     def _parseHeaderFields(self):
@@ -478,7 +478,7 @@ class POParser(object):
         # decode as many characters as we can:
         try:
             newchars, length = decode(self._pending_chars, 'strict')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             # XXX: James Henstridge 2006-03-16:
             # If the number of unconvertable chars is longer than a
             # multibyte sequence to be, the UnicodeDecodeError indicates
@@ -619,7 +619,7 @@ class POParser(object):
             header = POHeader(header_text, header_comment)
             self._translation_file.header = header
             self._translation_file.syntax_warnings += header.syntax_warnings
-        except TranslationFormatInvalidInputError, error:
+        except TranslationFormatInvalidInputError as error:
             if error.line_number is None:
                 error.line_number = self._message_lineno
             raise

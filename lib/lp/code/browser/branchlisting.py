@@ -99,6 +99,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -749,17 +750,29 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         self.form_fields = form.Fields(*fields)
         super(BranchListingView, self).setUpWidgets(context)
 
-    @property
-    def new_branches_are_private(self):
-        """Are new branches by the user private."""
+    @cachedproperty
+    def default_information_type(self):
+        """The default information type for new branches."""
         if self.user is None:
-            return False
+            return None
         target = IBranchTarget(self.context)
         if target is None:
             return False
         namespace = target.getNamespace(self.user)
-        policy = IBranchNamespacePolicy(namespace)
-        return policy.areNewBranchesPrivate()
+        return IBranchNamespacePolicy(namespace).getDefaultInformationType()
+
+    @property
+    def default_information_type_title(self):
+        """The title of the default information type for new branches."""
+        information_type = self.default_information_type
+        if information_type is None:
+            return None
+        return information_type.title
+
+    @property
+    def default_information_type_is_private(self):
+        """The title of the default information type for new branches."""
+        return self.default_information_type in PRIVATE_INFORMATION_TYPES
 
 
 class NoContextBranchListingView(BranchListingView):

@@ -12,7 +12,6 @@ __all__ = [
     'ProductReleaseEditView',
     'ProductReleaseNavigation',
     'ProductReleaseRdfView',
-    'ProductReleaseView',
     ]
 
 import mimetypes
@@ -46,7 +45,6 @@ from lp.registry.browser import (
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
     )
-from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFileAddForm,
@@ -55,7 +53,6 @@ from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
-    LaunchpadView,
     Link,
     Navigation,
     stepthrough,
@@ -194,12 +191,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
         'changelog',
         ]
 
-    def initialize(self):
-        # The dynamically loaded milestone form needs this javascript
-        # enabled in the base-layout.
-        self.request.needs_datepicker_iframe = True
-        super(ProductReleaseFromSeriesAddView, self).initialize()
-
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
         self._prependKeepMilestoneActiveField()
@@ -329,18 +320,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
-    """View for ProductRelease overview."""
-
-    def initialize(self):
-        self.form = self.request.form
-        self.processDeleteFiles()
-
-    def getReleases(self):
-        """See `ProductDownloadFileMixin`."""
-        return set([self.context])
 
 
 class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):

@@ -114,18 +114,6 @@
     <tal:widget replace="structure view/description_html"/>
   </div>
 
-  <div class="yui-g" tal:condition="view/has_bug_or_spec">
-      <div id="related-bugs-and-blueprints" class="related-bugs-list"
-        tal:define="branch context/source_branch">
-        <div class="actions">
-          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
-        </div>
-        <div class="actions">
-          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
-        </div>
-      </div>
-  </div>
-
   <div class="yui-g">
     <tal:not-logged-in condition="not: view/user">
       <div align="center" id="add-comment-login-first">

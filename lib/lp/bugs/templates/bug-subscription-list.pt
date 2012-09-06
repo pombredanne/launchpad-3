@@ -49,7 +49,7 @@
   <div metal:fill-slot="main">
 
     <div id="maincontent">
-      <div id="nonportlets" class="readable">
+      <div id="nonportlets">
         <div id="subscription-description-box"></div>
         <div id="subscription-listing"></div>
 

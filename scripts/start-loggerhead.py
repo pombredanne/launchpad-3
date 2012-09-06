@@ -1,11 +1,12 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import _pythonpath
 
 import logging
+from optparse import OptionParser
 import os
 import sys
 import time
@@ -90,16 +91,16 @@ def setup_logging(home, foreground):
         sys.stderr = S()
 
 
-
-foreground = False
-if len(sys.argv) > 1:
-    if sys.argv[1] == '-f':
-        foreground = True
+parser = OptionParser(description="Start loggerhead.")
+parser.add_option(
+    "-f", "--foreground", default=False, action="store_true",
+    help="Run loggerhead in the foreground.")
+options, _ = parser.parse_args()
 
 home = os.path.realpath(os.path.dirname(__file__))
 pidfile = os.path.join(home, 'loggerhead.pid')
 
-if not foreground:
+if not options.foreground:
     sys.stderr.write('\n')
     sys.stderr.write('Launching loggerhead into the background.\n')
     sys.stderr.write('PID file: %s\n' % (pidfile,))
@@ -108,7 +109,7 @@ if not foreground:
     from loggerhead.daemon import daemonize
     daemonize(pidfile, home)
 
-setup_logging(home, foreground=foreground)
+setup_logging(home, foreground=options.foreground)
 
 log = logging.getLogger('loggerhead')
 log.info('Starting up...')

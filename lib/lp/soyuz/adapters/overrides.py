@@ -38,6 +38,11 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.section import Section
 
 
@@ -190,8 +195,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
                                  source_component=None):
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
@@ -224,10 +227,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        # Avoid circular imports.
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
@@ -381,8 +380,6 @@ def calculate_target_das(distroseries, binaries):
 
 
 def make_package_condition(archive, das, bpn):
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     return And(
         BinaryPackagePublishingHistory.archiveID == archive.id,
         BinaryPackagePublishingHistory.distroarchseriesID == das.id,
@@ -390,9 +387,6 @@ def make_package_condition(archive, das, bpn):
 
 
 def id_resolver(lookups):
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
     def _resolve(row):
         store = IStore(SourcePackagePublishingHistory)
         return tuple(

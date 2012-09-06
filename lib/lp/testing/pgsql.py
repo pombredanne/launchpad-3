@@ -338,7 +338,7 @@ rw_main_slave:  dbname=%s host=localhost
                                     "create db in %0.2fs\n" % (
                                         time.time() - _start))
                             break
-                        except psycopg2.DatabaseError, x:
+                        except psycopg2.DatabaseError as x:
                             if counter == attempts - 1:
                                 raise
                             x = str(x)
@@ -403,7 +403,7 @@ rw_main_slave:  dbname=%s host=localhost
         for i in range(0, attempts):
             try:
                 con = self.superuser_connection(self.template)
-            except psycopg2.OperationalError, x:
+            except psycopg2.OperationalError as x:
                 if 'does not exist' in str(x):
                     return
                 raise
@@ -428,7 +428,7 @@ rw_main_slave:  dbname=%s host=localhost
                 try:
                     cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
-                except psycopg2.DatabaseError, x:
+                except psycopg2.DatabaseError as x:
                     if i == attempts - 1:
                         # Too many failures - raise an exception
                         raise

@@ -174,9 +174,9 @@ expect to retrieve the following publications:
 
 Note that, also the publications targeted to post-release pockets are
 returned, but they won't be dispatched until they can be accepted (see
-IDistroSeries.canUploadToPocket). This nuance will be more explored
-when fixing #67790 when we will start publishing and building
-post-release pocket in FROZEN state.
+IArchive.canModifySuite). This nuance will be more explored when fixing
+#67790 when we will start publishing and building post-release pocket in
+FROZEN state.
 
 Summing up, all the 8 test publications will be returned from the lookup:
 

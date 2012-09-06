@@ -301,12 +301,7 @@ bug that aren't already subscribed.
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 
-Let's make Foo Bar a bug supervisor for upstream firefox:
-
-    >>> mozilla_firefox.setBugSupervisor(foobar, foobar)
-
-Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
-Bar gets subscribed to the bug in the process:
+Then we'll reassign bug #2 in Ubuntu to be in Firefox:
 
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
     >>> print bug_two_in_ubuntu.bug.id
@@ -329,46 +324,6 @@ Bar gets subscribed to the bug in the process:
 
     >>> notify(product_changed)
     >>> transaction.commit()
-
-With the product changed, we can see that Foo Bar is now subscribed:
-
-    >>> print '\n'.join(subscriber_names(bug_two_in_ubuntu.bug))
-    Foo Bar
-    Sample Person
-    Steve Alexander
-    Ubuntu Team
-
-And Foo Bar gets an email containing complete information about the bug
-report. It states that he received the email because he is the bug
-supervisor for Mozilla Firefox.
-
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-
-    >>> len(test_emails)
-    1
-
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-
-    >>> print to_addr
-    ['foo.bar@canonical.com']
-
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg['Subject']
-    '[Bug 2] [NEW] Blackhole Trash folder'
-
-    >>> print msg.get_payload(decode=True)
-    You have been subscribed to a public bug:
-    ...
-    ** Affects: firefox
-    ...
-    --
-    Blackhole Trash folder
-    http://bugs.launchpad.dev/bugs/2
-    You received this bug notification because you
-    are subscribed to Mozilla Firefox.
 
 
 Teams as bug supervisors

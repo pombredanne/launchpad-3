@@ -715,7 +715,7 @@ class TestWrappedParameterConverter(testtools.TestCase):
         converter = module.get_converter('int')
         try:
             converter(42)
-        except ValueError, e:
+        except ValueError as e:
             self.assertTrue(IUnloggedException.providedBy(e))
 
     def test_other_errors_not_marked(self):
@@ -734,7 +734,7 @@ class TestWrappedParameterConverter(testtools.TestCase):
         converter = module.get_converter('int')
         try:
             converter(42)
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertFalse(IUnloggedException.providedBy(e))
 
     def test_none_is_not_wrapped(self):

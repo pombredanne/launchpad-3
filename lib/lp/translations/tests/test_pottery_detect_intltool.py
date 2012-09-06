@@ -56,7 +56,7 @@ class SetupTestPackageMixin(object):
             if directory != '':
                 try:
                     os.makedirs(directory)
-                except OSError, e:
+                except OSError as e:
                     # Doesn't matter if it already exists.
                     if e.errno != 17:
                         raise

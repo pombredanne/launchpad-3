@@ -102,3 +102,9 @@ class ICommercialSubscription(Interface):
             title=_('Active'),
             readonly=True,
             description=_("Whether this subscription is active.")))
+
+    def delete():
+        """Delete the expired Commercial Subscription.
+
+        :raises: CannotDeleteCommercialSubscription when is_active is True.
+        """

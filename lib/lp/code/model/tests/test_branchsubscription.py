@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
+
+from zope.component import getUtility
+
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -94,6 +98,98 @@ class TestBranchSubscriptions(TestCaseWithFactory):
                 subscribee, BranchSubscriptionNotificationLevel.NOEMAIL,
                 None, CodeReviewNotificationLevel.NOEMAIL, owner)
             self.assertTrue(branch.visibleByUser(subscribee))
+
+    def test_unsubscribe_removes_access(self):
+        """Unsubscibing a user to a branch removes their access."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA, owner=owner)
+        subscribee = self.factory.makePerson()
+        with person_logged_in(owner):
+            branch.subscribe(
+                subscribee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            self.assertTrue(branch.visibleByUser(subscribee))
+            branch.unsubscribe(subscribee, owner)
+            self.assertFalse(branch.visibleByUser(subscribee))
+
+    def test_subscribe_with_editable_stacked_branch(self):
+        # Subscribing to a branch also subscribes access to any private
+        # stacked on branches which the subscribed_by person can edit.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        private_stacked_on_branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.PRIVATESECURITY)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, stacked_on=private_stacked_on_branch,
+            information_type=InformationType.USERDATA)
+
+        with person_logged_in(owner):
+            # Subscribe to the top level branch.
+            grantee = self.factory.makePerson()
+            branch.subscribe(
+                grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            # The stacked on branch should be visible.
+            service = getUtility(IService, 'sharing')
+            ignored, visible_branches = service.getVisibleArtifacts(
+                grantee, branches=[private_stacked_on_branch])
+            self.assertContentEqual(
+                [private_stacked_on_branch], visible_branches)
+            self.assertIn(
+                grantee, private_stacked_on_branch.subscribers)
+
+    def test_subscribe_with_non_editable_stacked_branch(self):
+        # Subscribing to a branch ignores any stacked on private branches
+        # which the subscribed_by person can not edit.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        private_stacked_on_branch = self.factory.makeBranch(
+            product=product,
+            information_type=InformationType.PRIVATESECURITY)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            stacked_on=private_stacked_on_branch,
+            information_type=InformationType.USERDATA)
+
+        service = getUtility(IService, 'sharing')
+        with person_logged_in(owner):
+            # Subscribe to the top level branch.
+            grantee = self.factory.makePerson()
+            branch.subscribe(
+                grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            # The stacked on branch should not be visible.
+            ignored, visible_branches = service.getVisibleArtifacts(
+                grantee, branches=[private_stacked_on_branch])
+            self.assertContentEqual([], visible_branches)
+            self.assertIn(
+                grantee, branch.subscribers)
+            self.assertNotIn(
+                grantee, private_stacked_on_branch.subscribers)
+
+    def test_subscribe_with_public_stacked_branch(self):
+        # Subscribing to branches does not create subscriptions for
+        # public stacked on branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        public_stacked_on_branch = self.factory.makeBranch(product=product)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            stacked_on=public_stacked_on_branch,
+            information_type=InformationType.USERDATA)
+
+        with person_logged_in(owner):
+            # Subscribe to the top level branch.
+            grantee = self.factory.makePerson()
+            branch.subscribe(
+                grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            self.assertIn(
+                grantee, branch.subscribers)
+            self.assertNotIn(
+                grantee, public_stacked_on_branch.subscribers)
 
 
 class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):

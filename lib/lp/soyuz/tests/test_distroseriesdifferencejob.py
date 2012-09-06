@@ -945,7 +945,7 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
             switch_dbuser(user)
             try:
                 create_job(derived, packages[user], parent)
-            except ProgrammingError, e:
+            except ProgrammingError as e:
                 self.assertTrue(
                     False,
                     "Database role %s was unable to create a job.  "

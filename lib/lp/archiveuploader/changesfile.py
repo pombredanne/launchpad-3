@@ -145,12 +145,12 @@ class ChangesFile(SignableTagFile):
             # doing ensurePerson() for buildds and sync owners.
             try:
                 self.maintainer = self.parseAddress(self._dict['Maintainer'])
-            except UploadError, error:
+            except UploadError as error:
                 yield error
 
         try:
             self.changed_by = self.parseAddress(self._dict['Changed-By'])
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
     def isCustom(self, component_and_section):
@@ -204,7 +204,7 @@ class ChangesFile(SignableTagFile):
 
                     if cls == DSCFile:
                         self.dsc = file_instance
-            except UploadError, error:
+            except UploadError as error:
                 yield error
             else:
                 files.append(file_instance)

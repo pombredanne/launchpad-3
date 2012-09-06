@@ -15,11 +15,11 @@ from zope.schema.interfaces import TooShort
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import SpecificationWorkItemStatus
-from lp.registry.interfaces.nameblacklist import INameBlacklistSet
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.services.database.lpstorm import IStore
 from lp.services.fields import (
     BaseImageUpload,
@@ -126,9 +126,9 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
         specification = self.factory.makeSpecification(
             product=milestone.product)
         field = self.field.bind(specification)
-        work_items_text = ("Work items for %s:\n"
-                           "[%s]%s: %s" % (milestone.name, assignee.name, title,
-                                           status.name))
+        work_items_text = (
+            "Work items for %s:\n"
+           "[%s]%s: %s" % (milestone.name, assignee.name, title, status.name))
         work_item = field.parseAndValidate(work_items_text)[0]
         self.assertEqual({'assignee': assignee,
                           'milestone': milestone,
@@ -280,6 +280,12 @@ class TestWorkItemsText(TestCase):
                       'milestone': None,
                       'sequence': 0}])
 
+    def test_parse_none(self):
+        # When empty text box is submitted, None is being passed in instead.
+        work_items_text = None
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual([], parsed)
+
     def test_multi_line_parsing(self):
         title_1 = 'Work item 1'
         title_2 = 'Work item 2'
@@ -301,12 +307,13 @@ class TestWorkItemsText(TestCase):
                            "%s: POSTPONED" % (title_1, title_2))
         parsed = self.field.parse(work_items_text)
         self.assertEqual(
-            parsed, [{'title': title_1,
-                      'status': 'TODO',
-                      'assignee': None, 'milestone': None, 'sequence': 0},
-                     {'title': title_2,
-                      'status': 'POSTPONED',
-                      'assignee': None, 'milestone': 'test-ms', 'sequence': 1}])
+            parsed,
+            [{'title': title_1,
+              'status': 'TODO',
+              'assignee': None, 'milestone': None, 'sequence': 0},
+             {'title': title_2,
+              'status': 'POSTPONED',
+              'assignee': None, 'milestone': 'test-ms', 'sequence': 1}])
 
     def test_multi_line_parsing_different_milestones_reversed(self):
         title_1 = 'Work item 1'
@@ -355,10 +362,11 @@ class TestWorkItemsText(TestCase):
         title = "Work item for a milestone"
         work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
         parsed = self.field.parse(work_items_text)
-        self.assertEqual(parsed, [{'title': title,
-                      'status': 'TODO',
-                      'assignee': None, 'milestone': milestone, 'sequence': 0}])
-        
+        self.assertEqual(parsed,
+            [{'title': title,
+              'status': 'TODO',
+              'assignee': None, 'milestone': milestone, 'sequence': 0}])
+
     def test_parse_multi_milestones(self):
         milestone_1 = '2012.02'
         milestone_2 = '2012.03'
@@ -379,7 +387,7 @@ class TestWorkItemsText(TestCase):
                            'sequence': 1}])
 
     def test_parse_orphaned_work_items(self):
-        # Work items not in a milestone block belong to the latest specified 
+        # Work items not in a milestone block belong to the latest specified
         # milestone.
         milestone_1 = '2012.02'
         milestone_2 = '2012.03'
@@ -391,7 +399,7 @@ class TestWorkItemsText(TestCase):
             "TODO\n\n%s: TODO" % (milestone_1, title_1, milestone_2, title_2,
                                   title_3))
         parsed = self.field.parse(work_items_text)
-        self.assertEqual(parsed, 
+        self.assertEqual(parsed,
                          [{'title': title_1,
                            'status': 'POSTPONED',
                            'assignee': None, 'milestone': milestone_1,
@@ -415,10 +423,9 @@ class TestWorkItemsText(TestCase):
                              "\n"
                              "Work items for 2012.02:\n"
                              "Work item for a milestone: TODO\n")
-        self.assertEqual([(wi['title'], wi['sequence']) for wi in parsed], 
+        self.assertEqual([(wi['title'], wi['sequence']) for wi in parsed],
                          [("A single work item", 0), ("A second work item", 1),
                           ("Work item for a milestone", 2)])
-
 
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):
@@ -515,15 +522,15 @@ class Test_is_person_or_closed_team(TestCaseWithFactory):
         self.assertTrue(is_public_person_or_closed_team(person))
 
     def test_open_team(self):
-        for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertFalse(
                 is_public_person_or_closed_team(open_team),
                 "%s is not open" % policy)
 
     def test_closed_team(self):
-        for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.assertTrue(
                 is_public_person_or_closed_team(closed_team),
                 "%s is not closed" % policy)

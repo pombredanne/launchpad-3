@@ -472,7 +472,7 @@ class FileImporter(object):
             validate_translation(
                 potmsgset.singular_text, potmsgset.plural_text,
                 translations, potmsgset.flags)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             self._addUpdateError(message_data, potmsgset, unicode(e))
             message.validation_status = (
                 TranslationValidationStatus.UNKNOWNERROR)

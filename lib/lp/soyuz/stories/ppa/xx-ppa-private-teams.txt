@@ -11,14 +11,14 @@ as for individuals and public teams.
     >>> # Create a private team.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import (
-    ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
+    ...     IPersonSet, PersonVisibility, TeamMembershipPolicy)
     >>> login('foo.bar@canonical.com')
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=cprov, displayname="Private Team",
     ...     visibility=PersonVisibility.PRIVATE,
-    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> logout()
 
 A section named 'Personal Package Archives' is presented in the

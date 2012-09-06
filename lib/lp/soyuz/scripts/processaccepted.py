@@ -21,6 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -301,8 +302,6 @@ class ProcessAccepted(LaunchpadCronScript):
     @property
     def lockfilename(self):
         """See `LaunchpadScript`."""
-        # Avoid circular imports.
-        from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
         return GLOBAL_PUBLISHER_LOCK
 
     def add_my_options(self):

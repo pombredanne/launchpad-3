@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Canonical Ltd. All rights reserved. */
+/* Copyright (c) 2012 Canonical Ltd. All rights reserved. */
 
 YUI.add('lp.${LIBRARY}.test', function (Y) {
 
@@ -18,4 +18,6 @@ YUI.add('lp.${LIBRARY}.test', function (Y) {
 
     }));
 
-}, '0.1', {'requires': ['test', 'console', 'lp.${LIBRARY}']});
+}, '0.1', {
+    requires: ['test', 'lp.testing.helpers', 'console', 'lp.${LIBRARY}']
+});

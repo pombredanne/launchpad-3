@@ -273,7 +273,7 @@ class TestDeletePackaging(TestCaseWithFactory):
                 productseries=firefox_trunk,
                 sourcepackagename=firefox_name,
                 distroseries=ubuntu_hoary)
-        except AssertionError, exception:
+        except AssertionError as exception:
             self.assertEqual(
                 str(exception),
                 "Tried to delete non-existent Packaging: "

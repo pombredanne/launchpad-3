@@ -38,7 +38,7 @@ It's view provided latest_faqs to get the FAQs to display.
 
 Each FAQ is linked.
 
-    >>> print content.find('a', {'class': 'sprite question'})
+    >>> print content.find('a', {'class': 'sprite faq'})
     <a class="..." href="http://answers.../firefox/+faq/...">A FAQ</a>
 
 The portlet has a form to search FAQs. The view provides the action URL so

@@ -387,7 +387,7 @@ class StormRangeFactory:
             expression = plain_expression(expression)
             try:
                 expression.variable_factory(value=value)
-            except TypeError, error:
+            except TypeError as error:
                 # A TypeError is raised when the type of value cannot
                 # be used for expression. All expected types are
                 # properly created by simplejson.loads() above, except

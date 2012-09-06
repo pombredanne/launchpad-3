@@ -53,10 +53,10 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
+    InformationType,
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -221,7 +221,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         public_person1 = self.factory.makePerson()
         private_team1 = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 
@@ -1296,8 +1296,9 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).information_type = (
-            InformationType.USERDATA)
+        removeSecurityProxy(bmp2.source_branch).transitionToInformationType(
+            InformationType.USERDATA, bmp2.source_branch.owner,
+            verify_policy=False)
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 

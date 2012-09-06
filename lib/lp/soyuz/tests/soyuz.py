@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes for Soyuz tests."""
@@ -154,6 +154,7 @@ class TestPackageDiffsBase(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
+        super(TestPackageDiffsBase, self).setUp()
         with dbuser(LAUNCHPAD_DBUSER_NAME):
             fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
             ubuntu = getUtility(IDistributionSet).getByName(

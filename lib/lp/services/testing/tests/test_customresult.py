@@ -7,8 +7,9 @@ __metaclass__ = type
 
 import string
 import tempfile
-from testtools import TestCase
 import unittest
+
+from testtools import TestCase
 
 from lp.services.testing.customresult import filter_tests
 from lp.testing.layers import BaseLayer

@@ -86,7 +86,7 @@ Using an invalid command results in an error.
     >>> manage_chroot = getScriptObject("bogus")
     >>> try:
     ...      manage_chroot.mainTask()
-    ... except SoyuzScriptError, info:
+    ... except SoyuzScriptError as info:
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
@@ -99,7 +99,7 @@ Specifying a bad architecture results in an error.
     >>> manage_chroot = getScriptObject("add", arch="bogus")
     >>> try:
     ...      manage_chroot.mainTask()
-    ... except SoyuzScriptError, info:
+    ... except SoyuzScriptError as info:
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
@@ -125,7 +125,7 @@ Adding a chroot using a non-existent path will result in an error.
     >>> manage_chroot = getScriptObject("add", filepath=filepath)
     >>> try:
     ...      manage_chroot.mainTask()
-    ... except SoyuzScriptError, info:
+    ... except SoyuzScriptError as info:
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
@@ -171,7 +171,7 @@ Trying to retrieve a removed chroot will fail.
     >>> manage_chroot = getScriptObject("get", filepath=filepath)
     >>> try:
     ...      manage_chroot.mainTask()
-    ... except SoyuzScriptError, info:
+    ... except SoyuzScriptError as info:
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
@@ -190,7 +190,7 @@ results in an appropriate error.
     >>> manage_chroot = getScriptObject("add", filepath=filepath)
     >>> try:
     ...      manage_chroot.mainTask()
-    ... except SoyuzScriptError, info:
+    ... except SoyuzScriptError as info:
     ...     print info
     ... else:
     ...     print "Did not get expected exception"

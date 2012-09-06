@@ -45,7 +45,7 @@ def parse_config_file(file_handle):
         '[key, value, optional]'.
     """
     for line in file_handle:
-        if line.startswith('#'):
+        if line == '\n' or line.startswith('#'):
             continue
         yield line.split()
 

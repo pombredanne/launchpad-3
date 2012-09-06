@@ -17,12 +17,10 @@
   </script>
   <a href="" id="show-more-tags-link" class="js-action hidden">Show more tags&hellip;</a>
   <a href="" id="show-fewer-tags-link" class="js-action hidden">Show fewer tags&hellip;</a>
-  <ul class="edit-official-tags">
-    <li tal:condition="view/show_manage_tags_link">
-      <a class="sprite edit"
-         tal:attributes="href context/fmt:url/+manage-official-tags">
-        Edit official tags
-      </a>
-    </li>
-  </ul>
+  <div class="breaker"></div>
+  <a class="sprite edit"
+     tal:condition="view/show_manage_tags_link"
+     tal:attributes="href context/fmt:url/+manage-official-tags">
+    Edit official tags
+  </a>
 </div>

@@ -1,3 +1,8 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
 from datetime import datetime
 
 from zope.app.form.interfaces import ConversionError
@@ -33,7 +38,7 @@ class TestDateTimeWidget(TestCase):
         fmt = "%Y-%m-%d"
         try:
             datetime.strptime(test_str, fmt)
-        except (ValueError,), e:
+        except ValueError as e:
             self.assertTrue('unconverted data' in str(e))
 
     def test_whitespace_does_not_trick_validation(self):

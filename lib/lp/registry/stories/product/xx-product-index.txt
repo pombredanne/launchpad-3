@@ -157,10 +157,6 @@ direct the owner to purchase a subscription.
     ...     'portlet-requires-subscription')
     <div...Purchasing a subscription is required...</div>
 
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...     'portlet-missing-license')
-    None
-
     >>> owner_browser.getLink('Purchase a subscription.').click()
     >>> owner_browser.url
     'http://launchpad.dev/firefox/+purchase-subscription'
@@ -203,10 +199,6 @@ and the +purchase-subscription page will display an error.
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
-    None
-
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-missing-license')
     None
 
     >>> owner_browser.open(

@@ -83,15 +83,12 @@ review account page to be able to suspend spam accounts.
     Review person's account...
 
 The +reviewaccount page does not display account information for registry
-experts. It also has no form elements to change the display name or the
-password.
+experts. It also has no form elements to change the display name.
 
     >>> content = find_main_content(expert_browser.contents)
     >>> print content.find(id='summary')
     None
     >>> print content.find(name='field.displayname')
-    None
-    >>> print content.find(name='field.password')
     None
 
 The only option for registry experts is to change an account's status and to
@@ -109,25 +106,3 @@ about the suspension.
     http://launchpad.dev/people
     >>> print get_feedback_messages(expert_browser.contents)[0]
     The account "No Privileges Person" has been suspended.
-
-
-Restricted to admins
---------------------
-
-Non admins cannot access the +review and +reviewaccount pages.
-
-    >>> user_browser.open('http://launchpad.dev/~salgado')
-    >>> user_browser.getLink('Administer')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> user_browser.open('http://launchpad.dev/~salgado/+review')
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-
-    >>> user_browser.open('http://launchpad.dev/~salgado/+reviewaccount')
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...

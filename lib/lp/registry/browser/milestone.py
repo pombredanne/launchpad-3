@@ -199,14 +199,6 @@ class MilestoneViewMixin(object):
     """Common methods shared between MilestoneView and MilestoneTagView."""
 
     @property
-    def expire_cache_minutes(self):
-        """Active milestone caches expires sooner than non-active ones."""
-        if self.milestone.active:
-            return 10
-        else:
-            return 360
-
-    @property
     def should_show_bugs_and_blueprints(self):
         """Display the summary of bugs/blueprints for this milestone?"""
         return self.milestone.active

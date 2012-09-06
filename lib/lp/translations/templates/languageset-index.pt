@@ -75,7 +75,7 @@
             <a tal:attributes="href context/fmt:url/+add"
                  class="add sprite">Add new language</a>
           </p>
-          <p id="no_filter_matches" class="unseen">
+          <p id="no_filter_matches" class="hidden">
             No languages are matching your filter.
           </p>
           <ul id="all-languages" class="three-column-list">

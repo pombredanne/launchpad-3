@@ -334,13 +334,6 @@ class SpecificationFilter(DBEnumeratedType):
         to which the person has subscribed.
         """)
 
-    FEEDBACK = DBItem(110, """
-        Feedback
-
-        This indicates that the list should include all the specifications
-        which the person has been asked to provide specific feedback on.
-        """)
-
 
 class SpecificationSort(EnumeratedType):
     """The scheme to sort the results of a specifications query.

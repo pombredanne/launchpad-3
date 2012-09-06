@@ -215,7 +215,7 @@ class LaunchpadConfig:
         self._config = schema.load(config_file)
         try:
             self._config.validate()
-        except ConfigErrors, error:
+        except ConfigErrors as error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
         self._setZConfig()
@@ -420,36 +420,23 @@ class DatabaseConfig:
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser',
-        'rw_main_master', 'rw_main_slave', 'ro_main_master', 'ro_main_slave',
+        'rw_main_master', 'rw_main_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'soft_request_timeout',
         'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
-        'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
-        'ro_main_slave'])
+        'dbuser', 'rw_main_master', 'rw_main_slave'])
 
     def __init__(self):
         self.reset()
 
     @property
     def main_master(self):
-        # Its a bit silly having ro_main_master and rw_main_master.
-        # rw_main_master will never be used, as read-only-mode will
-        # fail attempts to access the master database with a
-        # ReadOnlyModeDisallowedStore exception.
-        from lp.services.database.readonly import is_read_only
-        if is_read_only():
-            return self.ro_main_master
-        else:
-            return self.rw_main_master
+        return self.rw_main_master
 
     @property
     def main_slave(self):
-        from lp.services.database.readonly import is_read_only
-        if is_read_only():
-            return self.ro_main_slave
-        else:
-            return self.rw_main_slave
+        return self.rw_main_slave
 
     def override(self, **kwargs):
         """Override one or more config attributes.

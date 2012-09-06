@@ -97,10 +97,6 @@
     background-image: url(/@@/package-sync.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
 }
-.milestone {
-    background-image: url(/@@/milestone.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .language {
     background-image: url(/@@/language.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

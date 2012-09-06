@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -15,6 +15,7 @@ __all__ = [
     'remove_tree',
     'two_stage_kill',
     'until_no_eintr',
+    'write_file',
     ]
 
 from contextlib import contextmanager
@@ -79,11 +80,11 @@ def until_no_eintr(retries, function, *args, **kwargs):
     for i in range(retries):
         try:
             return function(*args, **kwargs)
-        except (IOError, OSError), e:
+        except (IOError, OSError) as e:
             if e.errno == errno.EINTR:
                 continue
             raise
-        except socket.error, e:
+        except socket.error as e:
             # In Python 2.6 we can use IOError instead.  It also has
             # reason.errno but we might be using 2.5 here so use the
             # index hack.
@@ -101,7 +102,7 @@ def ensure_directory_exists(directory, mode=0777):
     """
     try:
         os.makedirs(directory, mode=mode)
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EEXIST:
             return False
         raise
@@ -121,7 +122,7 @@ def open_for_writing(filename, mode, dirmode=0777):
     """
     try:
         return open(filename, mode)
-    except IOError, e:
+    except IOError as e:
         if e.errno == errno.ENOENT:
             os.makedirs(os.path.dirname(filename), mode=dirmode)
             return open(filename, mode)
@@ -131,7 +132,7 @@ def _kill_may_race(pid, signal_number):
     """Kill a pid accepting that it may not exist."""
     try:
         os.kill(pid, signal_number)
-    except OSError, e:
+    except OSError as e:
         if e.errno in (errno.ESRCH, errno.ECHILD):
             # Process has already been killed.
             return
@@ -159,7 +160,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
             if new_pid:
                 return result
             time.sleep(poll_interval)
-        except OSError, e:
+        except OSError as e:
             if e.errno in (errno.ESRCH, errno.ECHILD):
                 # Raised if the process is gone by the time we try to get the
                 # return value.
@@ -201,12 +202,11 @@ def remove_if_exists(path):
     """Remove the given file if it exists."""
     try:
         os.remove(path)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.ENOENT:
             raise
 
 
 def write_file(path, content):
-    f = open(path, 'w')
-    f.write(content)
-    f.close()
+    with open_for_writing(path, 'w') as f:
+        f.write(content)

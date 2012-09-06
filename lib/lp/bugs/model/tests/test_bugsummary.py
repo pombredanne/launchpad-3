@@ -8,18 +8,25 @@ __metaclass__ = type
 from datetime import datetime
 
 from pytz import utc
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.model.bug import BugTag
-from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugsummary import (
+    BugSummary,
+    get_bugsummary_filter_for_user,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.enums import InformationType
-from lp.registry.model.teammembership import TeamParticipation
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -41,21 +48,14 @@ class TestBugSummary(TestCaseWithFactory):
 
     def getCount(self, person, **kw_find_expr):
         self._maybe_rollup()
-
-        public_summaries = self.store.find(
-            BugSummary,
-            BugSummary.viewed_by == None,
-            **kw_find_expr)
-        private_summaries = self.store.find(
-            BugSummary,
-            BugSummary.viewed_by_id == TeamParticipation.teamID,
-            TeamParticipation.person == person,
-            **kw_find_expr)
-        all_summaries = public_summaries.union(private_summaries, all=True)
-
+        store = self.store
+        user_with, user_where = get_bugsummary_filter_for_user(person)
+        if user_with:
+            store = store.with_(user_with)
+        summaries = store.find(BugSummary, *user_where, **kw_find_expr)
         # Note that if there a 0 records found, sum() returns None, but
         # we prefer to return 0 here.
-        return all_summaries.sum(BugSummary.count) or 0
+        return summaries.sum(BugSummary.count) or 0
 
     def assertCount(self, count, user=None, **kw_find_expr):
         self.assertEqual(count, self.getCount(user, **kw_find_expr))
@@ -79,7 +79,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
@@ -100,7 +100,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=old_tag)
             self.store.add(bug_tag)
 
@@ -127,7 +127,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
@@ -149,7 +149,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task._status = org_status
             self.assertCount(count + 1, product=product, status=org_status)
@@ -168,7 +168,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task.importance = org_importance
             self.assertCount(
@@ -184,29 +184,36 @@ class TestBugSummary(TestCaseWithFactory):
                 3 - count, product=product, importance=new_importance)
 
     def test_makePrivate(self):
+        # The bug owner and two other people are subscribed directly to
+        # the bug, and another has a grant for the whole project. All of
+        # them see the bug once.
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
+        person_c = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, owner=person_b)
+        getUtility(IService, 'sharing').sharePillarInformation(
+            product, person_c, product.owner,
+            {InformationType.USERDATA: SharingPermission.ALL})
+        bug = self.factory.makeBug(target=product, owner=person_b)
 
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         # Make the bug private. We have to use the Python API to ensure
         # BugSubscription records get created for implicit
         # subscriptions.
-        bug.setPrivate(True, bug.owner)
+        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
 
-        # Confirm counts.
+        # Confirm counts; the two other people shouldn't have access.
         self.assertCount(0, product=product)
-        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(0, user=person_a, product=product)
         self.assertCount(1, user=person_b, product=product)
-        # Confirm implicit subscriptions work too.
+        self.assertCount(1, user=person_c, product=product)
         self.assertCount(1, user=bug.owner, product=product)
 
     def test_makePublic(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -224,7 +231,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_subscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -237,7 +244,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_unsubscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -251,7 +258,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_subscribePublic(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -263,7 +270,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_unsubscribePublic(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -278,7 +285,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_addProduct(self):
         distribution = self.factory.makeDistribution()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(distribution=distribution)
+        bug = self.factory.makeBug(target=distribution)
 
         self.assertCount(1, distribution=distribution)
         self.assertCount(0, product=product)
@@ -602,7 +609,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_addPatch(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         self.assertCount(0, product=product, has_patch=True)
 
@@ -612,7 +619,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_removePatch(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
 
         self.assertCount(1, product=product, has_patch=True)
@@ -622,6 +629,16 @@ class TestBugSummary(TestCaseWithFactory):
 
         self.assertCount(0, product=product, has_patch=True)
         self.assertCount(1, product=product, has_patch=False)
+
+    def test_duplicate(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(target=product)
+
+        self.assertCount(1, product=product)
+
+        bug.markAsDuplicate(self.factory.makeBug())
+
+        self.assertCount(0, product=product)
 
 
 class TestBugSummaryRolledUp(TestBugSummary):

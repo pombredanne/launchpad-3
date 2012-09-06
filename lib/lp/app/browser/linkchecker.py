@@ -12,10 +12,8 @@ import simplejson
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,

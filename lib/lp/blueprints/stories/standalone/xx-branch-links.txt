@@ -47,6 +47,8 @@ product's blueprints.
     >>> browser.getControl('Continue').click()
     >>> printSpecBranchLinks(browser)
     Support &lt;canvas&gt; Objects
+    (Medium)
+    Edit
 
 
 From the blueprint page

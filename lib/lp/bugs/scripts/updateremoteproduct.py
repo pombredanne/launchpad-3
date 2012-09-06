@@ -85,7 +85,7 @@ class RemoteProductUpdater:
             #     bug 334449 is fixed this part of the except should be
             #     removed.
             except (AssertionError, BugWatchUpdateError,
-                    BugWatchUpdateWarning), error:
+                    BugWatchUpdateWarning) as error:
                 self.logger.error(
                     "Unable to set remote_product for '%s': %s" %
                     (product.name, error))

@@ -18,7 +18,10 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -588,7 +591,11 @@ class PublishFTPMaster(LaunchpadCronScript):
                 # This is a fresh series.
                 have_fresh_series = True
                 if series.previous_series is not None:
-                    CustomUploadsCopier(series).copy(series.previous_series)
+                    copier = CustomUploadsCopier(
+                        series, PackagePublishingPocket.RELEASE)
+                    copier.copy(
+                        series.previous_series,
+                        PackagePublishingPocket.RELEASE)
                 self.createIndexes(distribution, suites_needing_indexes)
 
         return have_fresh_series

@@ -115,9 +115,11 @@ class with_timeout:
     def __call__(self, f):
         """Wraps the method."""
         def call_with_timeout(*args, **kwargs):
+            # Ensure that we have a timeout before we start the thread
+            timeout = self.timeout
             t = ThreadCapturingResult(f, args, kwargs)
             t.start()
-            t.join(self.timeout)
+            t.join(timeout)
             if t.isAlive():
                 if self.cleanup is not None:
                     if isinstance(self.cleanup, basestring):
@@ -197,13 +199,17 @@ class TransportWithTimeout(Transport):
 
     def cleanup(self):
         """In the event of a timeout cleanup by closing the connection."""
+        # py2.6 compatibility
+        # In Python 2.6, xmlrpclib.Transport wraps its HTTPConnection in an
+        # HTTP compatibility class. In 2.7 it just uses the conn directly.
+        http_conn = getattr(self.conn, '_conn', self.conn)
         try:
-            self.conn._conn.sock.shutdown(socket.SHUT_RDWR)
+            http_conn.sock.shutdown(socket.SHUT_RDWR)
         except AttributeError:
             # It's possible that the other thread closed the socket
             # beforehand.
             pass
-        self.conn._conn.close()
+        http_conn.close()
 
 
 class SafeTransportWithTimeout(SafeTransport):

@@ -153,14 +153,14 @@ class BaseMailer:
             try:
                 ctrl = self.generateEmail(email, recipient)
                 ctrl.send()
-            except SMTPException, e:
+            except SMTPException as e:
                 # If the initial sending failed, try again without
                 # attachments.
                 try:
                     ctrl = self.generateEmail(
                         email, recipient, force_no_attachments=True)
                     ctrl.send()
-                except SMTPException, e:
+                except SMTPException as e:
                     # Don't want an entire stack trace, just some details.
                     self.logger.warning(
                         'send failed for %s, %s' % (email, e))

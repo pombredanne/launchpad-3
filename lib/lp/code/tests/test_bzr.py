@@ -5,11 +5,18 @@
 
 __metaclass__ = type
 
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.errors import NoSuchRevision
+from bzrlib.revision import NULL_REVISION
+from bzrlib.tests import (
+    TestCaseInTempDir,
+    TestCaseWithTransport,
+    )
 
 from lp.code.bzr import (
+    branch_revision_history,
     BranchFormat,
     ControlFormat,
+    get_ancestry,
     get_branch_formats,
     RepositoryFormat,
     )
@@ -69,3 +76,62 @@ class TestGetBranchFormats(TestCaseInTempDir):
         self.assertEqual(ControlFormat.BZR_METADIR_1, formats[0])
         self.assertEqual(BranchFormat.BZR_BRANCH_5, formats[1])
         self.assertEqual(RepositoryFormat.BZR_KNIT_1, formats[2])
+
+
+class TestBranchRevisionHistory(TestCaseWithTransport):
+    """Tests for lp.code.bzr.branch_revision_history."""
+
+    def test_empty(self):
+        branch = self.make_branch('test')
+        self.assertEquals([], branch_revision_history(branch))
+
+    def test_some_commits(self):
+        branch = self.make_branch('test')
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('acommit', rev_id='A')
+        tree.commit('bcommit', rev_id='B')
+        tree.commit('ccommit', rev_id='C')
+        self.assertEquals(
+            ['A', 'B', 'C'], branch_revision_history(tree.branch))
+
+
+class TestGetAncestry(TestCaseWithTransport):
+    """Tests for lp.code.bzr.get_ancestry."""
+
+    def test_missing_revision(self):
+        # If the revision does not exist, NoSuchRevision should be raised.
+        branch = self.make_branch('test')
+        self.assertRaises(
+            NoSuchRevision, get_ancestry, branch.repository, 'orphan')
+
+    def test_some(self):
+        # Verify ancestors are included.
+        branch = self.make_branch('test')
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('msg a', rev_id='A')
+        tree.commit('msg b', rev_id='B')
+        tree.commit('msg c', rev_id='C')
+        self.assertEqual(
+            set(['A']), get_ancestry(branch.repository, 'A'))
+        self.assertEqual(
+            set(['A', 'B']), get_ancestry(branch.repository, 'B'))
+        self.assertEqual(
+            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
+
+    def test_children(self):
+        # Verify non-mainline children are included.
+        branch = self.make_branch('test')
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('msg a', rev_id='A')
+        branch.generate_revision_history(NULL_REVISION)
+        tree.set_parent_ids([])
+        tree.commit('msg b', rev_id='B')
+        branch.generate_revision_history('A')
+        tree.set_parent_ids(['A', 'B'])
+        tree.commit('msg c', rev_id='C')
+        self.assertEqual(
+            set(['A']), get_ancestry(branch.repository, 'A'))
+        self.assertEqual(
+            set(['B']), get_ancestry(branch.repository, 'B'))
+        self.assertEqual(
+            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))

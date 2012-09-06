@@ -9,10 +9,12 @@ from datetime import datetime
 
 import pytz
 from storm.store import EmptyResultSet
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -30,8 +32,11 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.enums import (
+    InformationType,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -41,9 +46,11 @@ from lp.services.webapp.interfaces import (
 from lp.testing import (
     person_logged_in,
     run_with_login,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):
@@ -131,6 +138,32 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = GenericBranchCollection(
             self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_getBranches_caches_viewers(self):
+        # getBranches() caches the user as a known viewer so that
+        # branch.visibleByUser() does not have to hit the database.
+        collection = GenericBranchCollection(self.store)
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            owner=owner,
+            product=product,
+            information_type=InformationType.USERDATA)
+        someone = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [someone], owner, branches=[branch], ignore_permissions=True)
+        [branch] = list(collection.visibleByUser(someone).getBranches())
+        with StormStatementRecorder() as recorder:
+            self.assertTrue(branch.visibleByUser(someone))
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_getBranchIds(self):
+        branch = self.factory.makeProductBranch()
+        self.factory.makeAnyBranch()
+        collection = GenericBranchCollection(
+            self.store, [Branch.product == branch.product])
+        self.assertEqual([branch.id], list(collection.getBranchIds()))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
@@ -281,9 +314,23 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(person)
-        self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_ownedBy_and_isPrivate(self):
+        # 'ownedBy' and 'isPrivate' can combine to form a collection that is
+        # restricted to private branches owned by a particular person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            product=product, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=product)
+        collection = self.all_branches.isPrivate().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isPrivate()
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_ownedByTeamMember_and_inProduct(self):
@@ -636,20 +683,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
-    def test_owner_member_sees_own_branches(self):
-        # Members of teams that own branches can see branches owned by those
-        # teams, as well as public branches.
-        team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(
-            owner=team, stacked_on=self.private_stacked_on_branch,
-            name='team')
-        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
-        branches = self.all_branches.visibleByUser(team_owner)
-        self.assertEqual(
-            sorted([self.public_branch, private_branch]),
-            sorted(branches.getBranches()))
-
     def test_launchpad_services_sees_all(self):
         # The LAUNCHPAD_SERVICES special user sees *everything*.
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
@@ -686,7 +719,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             owner=team_owner)
         private_branch = self.factory.makeAnyBranch(
             information_type=InformationType.USERDATA)
@@ -701,6 +734,30 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),
+            sorted(branches.getBranches()))
+
+    def test_private_teams_see_own_private_junk_branches(self):
+        # Private teams are given an acess grant to see their private +junk
+        # branches.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        with person_logged_in(team_owner):
+            personal_branch = self.factory.makePersonalBranch(
+                owner=team,
+                information_type=InformationType.USERDATA)
+            # The team is automatically subscribed to the branch since they are
+            # the owner. We want to unsubscribe them so that they lose access
+            # conferred via subscription and rely instead on the APG.
+            personal_branch.unsubscribe(team, team_owner, True)
+            # Make another junk branch the team can't see.
+            self.factory.makePersonalBranch(
+                information_type=InformationType.USERDATA)
+            branches = self.all_branches.visibleByUser(team)
+        self.assertEqual(
+            sorted([self.public_branch, personal_branch]),
             sorted(branches.getBranches()))
 
 
@@ -893,8 +950,10 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
         # source branch.
-        mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).explicitly_private = True
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposal(registrant=registrant)
+        removeSecurityProxy(mp1.target_branch).transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))

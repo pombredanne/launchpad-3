@@ -35,15 +35,19 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    InformationType,
+    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -65,7 +69,10 @@ from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):
@@ -351,7 +358,8 @@ class TestBranchView(BrowserTestCase):
     def test_linked_bugs_series_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
         # constant.
-        product = self.factory.makeProduct()
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC)
         branch = self.factory.makeProductBranch(product=product)
         browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
         with person_logged_in(product.owner):
@@ -627,7 +635,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         with person_logged_in(branch.owner):
             self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=target_branch,
-                reviewer=private_reviewer)
+                reviewer=removeSecurityProxy(private_reviewer))
         return branch
 
     def test_view_branch_with_private_reviewer(self):
@@ -652,6 +660,52 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         soup = BeautifulSoup(browser.contents)
         reviews_list = soup.find('dl', attrs={'class': 'reviews'})
         self.assertIsNone(reviews_list.find('a', text='Privateteam'))
+
+    def test_unsubscribe_private_branch(self):
+        # Unsubscribing from a branch with a policy grant still allows the
+        # branch to be seen.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.factory.makeAccessPolicyGrant(
+            policy=ap, grantee=subscriber, grantor=product.owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeBranchSubscription(branch, subscriber, owner)
+            base_url = canonical_url(branch, rootsite='code')
+            expected_title = '%s : Code : %s' % (
+                branch.name, product.displayname)
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(base_url, browser.url)
+        self.assertEqual(expected_title, browser.title)
+
+    def test_unsubscribe_private_branch_no_access(self):
+        # Unsubscribing from a branch with no access will redirect to the
+        # context of the branch.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeBranchSubscription(branch, subscriber, owner)
+            base_url = canonical_url(branch, rootsite='code')
+            product_url = canonical_url(product, rootsite='code')
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(product_url, browser.url)
+        expected_title = "Code : %s" % product.displayname
+        self.assertEqual(expected_title, browser.title)
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
@@ -863,7 +917,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_forbidden_owner_is_error(self):
         # An error is displayed if a branch's owner is changed to
         # a value forbidden by the visibility policy.
-        product = self.factory.makeProduct(displayname='Some Product')
+        product = self.factory.makeLegacyProduct(displayname='Some Product')
         person = self.factory.makePerson()
         branch = self.factory.makeBranch(product=product, owner=person)
         self.factory.makeTeam(
@@ -888,7 +942,8 @@ class TestBranchEditView(TestCaseWithFactory):
         # A branch's owner can be changed to a private team permitted by the
         # visibility policy.
         person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
         team = self.factory.makeTeam(
             owner=person, displayname="Private team",
             visibility=PersonVisibility.PRIVATE)
@@ -904,37 +959,19 @@ class TestBranchEditView(TestCaseWithFactory):
             self.assertEquals(team, branch.owner)
 
     def test_information_type_in_ui(self):
-        # The information_type of a branch can be changed via the UI when
-        # the feature flag is enabled.
+        # The information_type of a branch can be changed via the UI by an
+        # authorised user.
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
         admins = getUtility(ILaunchpadCelebrities).admin
         admin = admins.teamowner
-        with FeatureFixture(feature_flag):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
-            browser.getControl("Embargoed Security").click()
-            browser.getControl("Change Branch").click()
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=admin)
+        browser.getControl("Private", index=1).click()
+        browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
-                InformationType.EMBARGOEDSECURITY, branch.information_type)
-
-    def test_information_type_in_ui_vocabulary(self):
-        # The vocabulary that Branch:+edit uses for the information_type
-        # has been correctly created.
-        person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
-        feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
-            'disclosure.proprietary_information_type.disabled': 'on'}
-        admins = getUtility(ILaunchpadCelebrities).admin
-        admin = admins.teamowner
-        with FeatureFixture(feature_flags):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
-            self.assertRaises(LookupError, browser.getControl, "Proprietary")
+                InformationType.USERDATA, branch.information_type)
 
     def test_can_not_change_privacy_of_stacked_on_private(self):
         # The privacy field is not shown if the branch is stacked on a
@@ -950,7 +987,131 @@ class TestBranchEditView(TestCaseWithFactory):
             browser = self.getUserBrowser(
                 canonical_url(branch) + '/+edit', user=owner)
         self.assertRaises(
-            LookupError, browser.getControl, "Keep branch confidential")
+            LookupError, browser.getControl, "Information Type")
+
+    def test_edit_view_ajax_render(self):
+        # An information type change request is processed as expected when an
+        # XHR request is made to the view.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', form={
+                'field.actions.change': 'Change Branch',
+                'field.information_type': 'PUBLICSECURITY'},
+            **extra)
+        with person_logged_in(person):
+            view = create_view(
+                branch, name='+edit-information-type',
+                request=request, principal=person)
+            request.traversed_objects = [person, branch.product, branch, view]
+            view.initialize()
+            result = view.render()
+            self.assertEqual('', result)
+            self.assertEqual(
+                branch.information_type, InformationType.PUBLICSECURITY)
+
+
+class TestBranchEditViewInformationTypes(TestCaseWithFactory):
+    """Tests for BranchEditView.getInformationTypesToShow."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertShownTypes(self, types, branch, user=None):
+        if user is None:
+            user = removeSecurityProxy(branch).owner
+        with person_logged_in(user):
+            view = create_initialized_view(branch, '+edit', user=user)
+            self.assertContentEqual(types, view.getInformationTypesToShow())
+
+    def test_public_branch(self):
+        # A normal public branch on a public project can be any information
+        # type except embargoed and proprietary.
+        # The model doesn't enforce this, so it's just a UI thing.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        self.assertShownTypes(
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA],
+            branch)
+
+    def test_branch_with_disallowed_type(self):
+        # We don't force branches with a disallowed type (eg. Proprietary on a
+        # non-commercial project) to change, so the current type is
+        # shown.
+        product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=product)
+        branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            branch)
+
+    def test_stacked_on_private(self):
+        # A branch stacked on a private branch has its choices limited
+        # to the current type and the stacked-on type.
+        product = self.factory.makeProduct()
+        stacked_on_branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            product=product, stacked_on=stacked_on_branch,
+            owner=product.owner,
+            information_type=InformationType.PRIVATESECURITY)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            branch)
+
+    def test_private_branch(self):
+        # Branches on projects with a private policy can be made private.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA],
+            branch)
+
+    def test_branch_for_project_with_embargoed_and_proprietary(self):
+        # Branches for commercial projects which have a policy of embargoed or
+        # proprietary allow only embargoed and proprietary types.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.EMBARGOED, InformationType.PROPRIETARY], branch)
+
+    def test_branch_for_project_with_proprietary(self):
+        # Branches for commercial projects which have a policy of proprietary
+        # allow only the proprietary type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(owner):
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes([InformationType.PROPRIETARY], branch)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
@@ -978,43 +1139,19 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_information_type_in_ui(self):
-        # With the show_information_type_in_branch_ui feature flag on, the
-        # privacy portlet shows the information_type.
+        # The privacy portlet shows the information_type.
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
+        with person_logged_in(owner):
+            view = create_initialized_view(branch, '+portlet-privacy')
+            edit_url = '/' + branch.unique_name + '/+edit-information-type'
+            soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
-        self.assertEqual('User Data', information_type.renderContents())
+        self.assertEqual(
+            InformationType.USERDATA.title, information_type.renderContents())
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            'Visible only to users with whom the project has shared '
-            'information containing user data.',
-            description.renderContents())
-
-    def test_information_type_in_ui_with_display_as_private(self):
-        # With both show_information_type_in_branch_ui and
-        # display_userdata_as_private, the information_type is shown with
-        # User Data masked as Private.
-        owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flags):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
-        information_type = soup.find('strong')
-        description = soup.find('div', id='information-type-description')
-        self.assertEqual('Private', information_type.renderContents())
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            'Visible only to users with whom the project has shared '
-            'private information.',
-            description.renderContents())
+            InformationType.USERDATA.description, description.renderContents())
+        self.assertIsNotNone(
+            soup.find('a', id='privacy-link', attrs={'href': edit_url}))

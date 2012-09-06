@@ -12,7 +12,10 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['process_ddtp_tarball']
+__all__ = [
+    'DdtpTarballUpload',
+    'process_ddtp_tarball',
+    ]
 
 import os
 
@@ -22,7 +25,7 @@ from lp.archivepublisher.customupload import CustomUpload
 class DdtpTarballUpload(CustomUpload):
     """DDTP (Debian Description Translation Project) tarball upload
 
-    The tarball should be name as:
+    The tarball filename must be of the form:
 
      <NAME>_<COMPONENT>_<VERSION>.tar.gz
 
@@ -44,13 +47,26 @@ class DdtpTarballUpload(CustomUpload):
     """
     custom_type = "ddtp-tarball"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    @staticmethod
+    def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
-        name, component, self.version = tarfile_base.split('_')
-        self.arch = None
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_COMPONENT_VERSION" % tarfile_base)
+        return tuple(bits)
 
-        self.targetdir = os.path.join(archive_root, 'dists',
-                                      distroseries, component)
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        _, component, self.version = self.parsePath(tarfile_path)
+        self.arch = None
+        self.targetdir = os.path.join(
+            pubconf.archiveroot, 'dists', distroseries, component)
+
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        try:
+            return cls.parsePath(tarfile_path)[1]
+        except ValueError:
+            return None
 
     def checkForConflicts(self):
         # We just overwrite older files, so no conflicts are possible.
@@ -65,7 +81,7 @@ class DdtpTarballUpload(CustomUpload):
         pass
 
 
-def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
+def process_ddtp_tarball(pubconf, tarfile_path, distroseries):
     """Process a raw-ddtp-tarball tarfile.
 
     Unpacking it into the given archive for the given distroseries.
@@ -73,4 +89,4 @@ def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     anything goes wrong.
     """
     upload = DdtpTarballUpload()
-    upload.process(archive_root, tarfile_path, distroseries)
+    upload.process(pubconf, tarfile_path, distroseries)

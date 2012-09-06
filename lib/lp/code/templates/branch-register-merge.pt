@@ -32,7 +32,7 @@
               <fieldset id="mergeproposal-extra-options"
                         class="collapsible">
                 <legend>Extra options</legend>
-                <div class="unseen"><!-- hidden by default -->
+                <div class="hidden"><!-- hidden by default -->
                 <table class="extra-options">
 
                   <tal:widget define="widget nocall:view/widgets/commit_message">

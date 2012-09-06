@@ -57,12 +57,6 @@
                   <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
                 </tal:product_widget>
 
-                <tal:bugtarget
-                    tal:define="widget nocall:view/widgets/bugtarget|nothing"
-                    tal:condition="widget">
-                  <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-                </tal:bugtarget>
-
                 <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
 
                 <tr>
@@ -107,7 +101,7 @@
                           tal:condition="widget">
                                     <input tal:replace="structure view/actions/field.actions.projectgroupsearch/render" />
                       </tal:project_group>
-                      <span id="spinner" style="text-align: center" class="unseen">
+                      <span id="spinner" style="text-align: center" class="hidden">
                         <img src="/@@/spinner" />
                       </span>
                     </td>
@@ -137,7 +131,7 @@
             </tal:filebug-form>
           </div>
         </tal:not_project_group>
-        <p class="hidden">
+        <p class="hidden" tal:condition="view/inline_filebug_base_url|nothing">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"

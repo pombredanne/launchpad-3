@@ -198,7 +198,7 @@ class SubmitKey(Resource):
         try:
             key = gpghandler.importPublicKey(keytext)
         except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
-                MoreThanOneGPGKeyFound), err:
+                MoreThanOneGPGKeyFound) as err:
             return SUBMIT_KEY_PAGE % {'banner': str(err)}
 
         filename = '0x%s.get' % key.fingerprint

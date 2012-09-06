@@ -9,9 +9,10 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
+    'ISpecificationDelta',
     'ISpecificationPublic',
     'ISpecificationSet',
-    'ISpecificationDelta',
+    'ISpecificationView',
     ]
 
 
@@ -47,6 +48,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -70,6 +72,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -147,10 +150,27 @@ class SpecURLField(TextLine):
                         specification.title))
 
 
-class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+class ISpecificationPublic(IPrivacy):
     """Specification's public attributes and methods."""
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this specification.')))
+
+    def userCanView(user):
+        """Return True if `user` can see this ISpecification, false otherwise.
+        """
+
+
+class ISpecificationView(IHasOwner, IHasLinkedBranches):
+    """Specification's attributes and methods that require
+    the permission launchpad.LimitedView.
+    """
 
     name = exported(
         SpecNameField(
@@ -379,7 +399,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
-    feedbackrequests = Attribute('The set of feedback requests queued.')
     dependencies = exported(
         CollectionField(
             title=_('Specs on which this one depends.'),
@@ -441,11 +460,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
 
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
-
-    def getFeedbackRequests(person):
-        """Return the requests for feedback for a given person on this
-        specification.
-        """
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
@@ -523,16 +537,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         If person is None, the return value is always False.
         """
 
-    # queue-related methods
-    def queue(provider, requester, queuemsg=None):
-        """Put this specification into the feedback queue of the given person,
-        with an optional message."""
-
-    def unqueue(provider, requester):
-        """Remove the feedback request by the requester for this spec, from
-        the provider's feedback queue.
-        """
-
     # sprints
     def linkSprint(sprint, user):
         """Put this spec on the agenda of the sprint."""
@@ -561,26 +565,32 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         :param user: The user doing the search.
         """
 
+    def getAllowedInformationTypes(who):
+        """Get a list of acceptable `InformationType`s for this spec.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
     """
 
-    @mutator_for(ISpecificationPublic['definition_status'])
+    @mutator_for(ISpecificationView['definition_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         definition_status=copy_field(
-            ISpecificationPublic['definition_status']))
+            ISpecificationView['definition_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setDefinitionStatus(definition_status, user):
         """Mutator for definition_status that calls updateLifeCycle."""
 
-    @mutator_for(ISpecificationPublic['implementation_status'])
+    @mutator_for(ISpecificationView['implementation_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         implementation_status=copy_field(
-            ISpecificationPublic['implementation_status']))
+            ISpecificationView['implementation_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setImplementationStatus(implementation_status, user):
@@ -617,14 +627,17 @@ class ISpecificationEditRestricted(Interface):
         The new target must be an IProduct or IDistribution.
         """
 
+    def transitionToInformationType(information_type, who):
+        """Change the information type of the Specification."""
 
-class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
-                     IBugLinkTarget):
+
+class ISpecification(ISpecificationPublic, ISpecificationView,
+                     ISpecificationEditRestricted, IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
 
-    @mutator_for(ISpecificationPublic['workitems_text'])
+    @mutator_for(ISpecificationView['workitems_text'])
     @operation_parameters(new_work_items=WorkItemsText())
     @export_write_operation()
     @operation_for_version('devel')

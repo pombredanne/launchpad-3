@@ -681,7 +681,7 @@ milestone.
     ...     'test', 'test', 'text/plain', owner, description="test file")
     >>> specification = factory.makeSpecification(product=firefox)
     >>> specification.milestone = milestone
-    >>> bug = factory.makeBug(product=firefox)
+    >>> bug = factory.makeBug(target=firefox)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
@@ -739,7 +739,7 @@ to a private bug that was targeted to a milestone by a driver.
     >>> milestone = firefox_1_0.newMilestone('1.0.13')
     >>> from lp.registry.enums import InformationType
     >>> private_bug = factory.makeBug(
-    ...     product=firefox, information_type=InformationType.USERDATA)
+    ...     target=firefox, information_type=InformationType.USERDATA)
     >>> private_bugtask = bug.bugtasks[0]
     >>> private_bugtask.milestone = milestone
     >>> view = create_initialized_view(milestone, '+delete')

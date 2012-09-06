@@ -431,7 +431,7 @@ if __name__ == "__main__":
                             pkg_support_time[pkgname] = support_time
             except:
                 logging.exception("can not parse line '%s'" % line)
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         if e.code != 404:
             raise
         sys.stderr.write("hints-file: %s gave 404 error\n" % hints_file)

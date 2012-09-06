@@ -8,7 +8,6 @@
      tal:condition="context/translatable_series">
   <h3>All translatable series</h3>
 
-  <div class="portletBody portletContent">
     <ul>
       <li class="translations"
           tal:repeat="series context/translatable_series">
@@ -17,7 +16,6 @@
           series title</a>
       </li>
     </ul>
-  </div>
 </div>
 
 <div tal:condition="context/required:launchpad.Edit">
@@ -25,7 +23,6 @@
        tal:condition="view/untranslatable_series">
     <h3>Set up translations for a series</h3>
 
-    <div class="portletBody portletContent">
       <ul>
         <li class="translations"
             tal:repeat="series view/untranslatable_series">
@@ -40,7 +37,6 @@
             automatic import</a>.
         </li>
       </ul>
-    </div>
   </div>
 </div>
 
@@ -48,8 +44,6 @@
      tal:condition="context/translatable_packages">
 
   <h3>All translatable distribution packages</h3>
-
-  <div class="portletBody portletContent ">
 
     <ul>
       <li class="translations"
@@ -59,8 +53,6 @@
           package title</a>
       </li>
     </ul>
-
-  </div>
 
 </div>
 

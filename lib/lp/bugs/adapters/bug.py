@@ -36,9 +36,9 @@ def bugtask_to_privacy(bugtask):
 
 def convert_to_information_type(private, security_related):
     if private and security_related:
-        return InformationType.EMBARGOEDSECURITY
+        return InformationType.PRIVATESECURITY
     elif security_related:
-        return InformationType.UNEMBARGOEDSECURITY
+        return InformationType.PUBLICSECURITY
     elif private:
         return InformationType.USERDATA
     else:

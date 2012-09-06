@@ -17,7 +17,7 @@ this behavior and set some other response code.
     ...     """
     ...     try:
     ...         raise error
-    ...     except Exception, error:
+    ...     except Exception as error:
     ...         request = LaunchpadTestRequest(
     ...             environ={'PATH_INFO' : ''})
     ...         set_request_started()

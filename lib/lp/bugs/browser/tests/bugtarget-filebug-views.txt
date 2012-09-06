@@ -79,20 +79,6 @@ possible duplicates for a bug asynchronously.
     >>> print filebug_view.duplicate_search_url
     http://launchpad.dev/firefox/+filebug-show-similar
 
-For project groups, the URLs returned will refer to the default product
-for those project groups.
-
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
-    >>> gnome_filebug_view = create_initialized_view(
-    ...     gnome_project, '+filebug')
-
-    >>> print gnome_filebug_view.inline_filebug_form_url
-    http://launchpad.dev/evolution/+filebug-inline-form
-
-    >>> print gnome_filebug_view.duplicate_search_url
-    http://launchpad.dev/evolution/+filebug-show-similar
-
 
 Adding extra info to filed bugs
 -------------------------------
@@ -384,22 +370,8 @@ the message.
     <BLANKLINE>
     This bug should be private.
 
-    >>> filebug_view.added_bug.private
-    True
-
-    >>> filebug_view.added_bug.security_related
-    False
-
-Since the bug was marked private before it was filed, only the bug
-reporter has been subscribed to the bug and there should be no indirect
-subscribers.
-
-    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
-    ...     print subscriber.displayname
-    No Privileges Person
-
-    >>> filebug_view.added_bug.getIndirectSubscribers()
-    []
+    >>> filebug_view.added_bug.information_type
+    <DBItem InformationType.USERDATA, (4) Private>
 
 The user will be notified that the bug has been marked as private.
 
@@ -461,7 +433,6 @@ been subscribed.
     >>> for subscriber in filebug_view.added_bug.getIndirectSubscribers():
     ...     print subscriber.displayname
     Foo Bar
-    Ubuntu Team
 
 
 Subscriptions
@@ -598,11 +569,6 @@ to the bug.
     Mark Shuttleworth
     No Privileges Person
 
-Since the bug is private, there should be no indirect subscribers.
-
-    >>> filebug_view.added_bug.getIndirectSubscribers()
-    []
-
 The user will be notified that Mark Shuttleworth has been subscribed to
 this bug and that the bug has been marked as private.
 
@@ -690,7 +656,7 @@ The base class allows security bugs to be filed.
 
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
-    ...     security_related=True)
+    ...     security_related=u'on')
 
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
@@ -719,11 +685,14 @@ Privileged users are offered several extra options when filing bugs.
     >>> ignored = login_person(owner)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> owner_fields = set(filebug_view.field_names)
-    >>> product.setBugSupervisor(owner, owner)
+    >>> product.bug_supervisor = owner
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Privileged users get all the same fields as normal users, plus a few extra.
+Privileged users get most of the same fields as normal users, plus a few
+extra.  The security_related checkbox is replaced by an information_type
+radio group.
 
+    >>> normal_fields.remove('security_related')
     >>> owner_fields == supervisor_fields
     True
     >>> supervisor_fields.issuperset(normal_fields)
@@ -733,6 +702,7 @@ Privileged users get all the same fields as normal users, plus a few extra.
     ...     print field
     assignee
     importance
+    information_type
     milestone
     status
 

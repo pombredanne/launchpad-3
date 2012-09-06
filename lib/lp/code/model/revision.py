@@ -56,6 +56,7 @@ from lp.code.interfaces.revision import (
     IRevisionProperty,
     IRevisionSet,
     )
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -159,7 +160,8 @@ class Revision(SQLBase):
             self.id == BranchRevision.revision_id,
             BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.transitively_private))
+            query = And(
+                query, Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
         if not allow_junk:
             query = And(
                 query,
@@ -504,7 +506,7 @@ class RevisionSet:
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.transitively_private)))
+                Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
@@ -522,8 +524,9 @@ class RevisionSet:
             Join(Branch, BranchRevision.branch == Branch.id),
             ]
 
-        conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.transitively_private))
+        conditions = And(
+            revision_time_limit(day_limit),
+            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)

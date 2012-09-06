@@ -27,10 +27,6 @@ from lp.archiveuploader.tests import (
     getPolicy,
     )
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.scripts.queue import (
-    CommandRunner,
-    name_queue_map,
-    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing.gpgkeys import import_public_test_keys
 
@@ -67,30 +63,6 @@ class TestDistroSeriesQueueDdtpTarball(TestNativePublishingBase):
 
     def test_accepts_correct_upload(self):
         self.uploadTestData("20060728")
-
-    def runQueueCommand(self, queue_name, args):
-        def null_display(text):
-            pass
-
-        queue = name_queue_map[queue_name]
-        runner = CommandRunner(
-            queue, "ubuntutest", "breezy-autotest", True, None, None, None,
-            display=null_display)
-        runner.execute(args)
-
-    def test_queue_tool_behaviour(self):
-        # The queue tool can fetch ddtp-tarball uploads.
-        self.uploadTestData("20060728")
-        # Make sure that we can use the librarian files.
-        transaction.commit()
-        # Fetch upload into a temporary directory.
-        self.useTempDir()
-        self.runQueueCommand("accepted", ["fetch", "trans"])
-        expected_entries = [
-            "translations-main_20060728_all.changes",
-            "translations_main_20060728.tar.gz",
-            ]
-        self.assertContentEqual(expected_entries, os.listdir("."))
 
     def test_publish(self):
         upload = self.uploadTestData("20060728")

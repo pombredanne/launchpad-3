@@ -66,8 +66,8 @@ relevant' option is selected.
     ...         print radio, label, link
     >>> printFAQOptions(user_browser.contents)
     (*) No existing FAQs are relevant
-    ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 8: How do I install Extensions?
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
 
     >>> print user_browser.getLink('How do I troubleshoot problems').url
     http://answers.launchpad.dev/firefox/+faq/9
@@ -157,8 +157,8 @@ question's title are displayed:
     >>> printFAQOptions(user_browser.contents)
     ( ) No existing FAQs are relevant
     (*) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
-    ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 8: How do I install Extensions?
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
 
 He changes the message and click 'Link to FAQ'.
 

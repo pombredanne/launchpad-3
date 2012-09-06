@@ -15,9 +15,7 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.services.job.tests import (
-    block_on_job
-    )
+from lp.services.job.tests import block_on_job
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser

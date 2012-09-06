@@ -146,7 +146,8 @@ all the comments. Since Joe didn't have a Launchpad account, it was
 created automatically for him, with the e-mail address marked as
 invalid.
 
-    >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
+    >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com',
+    ...                                         filter_status=False)
     >>> bug.messages[-1].owner == joe
     True
 

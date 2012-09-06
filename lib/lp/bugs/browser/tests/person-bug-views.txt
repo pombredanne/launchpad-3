@@ -527,7 +527,7 @@ relevant milestones remains empty.
 Even if the user files a bug against a product with a milestone, the
 list of relevant milestones remains empty.
 
-    >>> bug = factory.makeBug(product=product, owner=user)
+    >>> bug = factory.makeBug(target=product, owner=user)
     >>> transaction.commit()
 
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
@@ -567,7 +567,7 @@ Filing a new bug and assigning a new milestone will make the new
 milestone appear amongst the possible options.
 
     >>> milestone10 = factory.makeMilestone(product=product, name="1.0")
-    >>> bug = factory.makeBug(product=product, owner=user)
+    >>> bug = factory.makeBug(target=product, owner=user)
     >>> bug.bugtasks[0].milestone = milestone10
 
     >>> print pretty(reported_bugs_view.getMilestoneWidgetValues())

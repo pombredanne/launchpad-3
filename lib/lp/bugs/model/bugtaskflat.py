@@ -1,18 +1,24 @@
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
 from storm.locals import (
     Bool,
     DateTime,
     Int,
+    List,
     Reference,
     Storm,
     )
 
-from lp.registry.enums import InformationType
-from lp.services.database.enumcol import EnumCol
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.registry.enums import InformationType
+from lp.services.database.enumcol import EnumCol
 
 
 class BugTaskFlat(Storm):
@@ -53,3 +59,5 @@ class BugTaskFlat(Storm):
     owner_id = Int(name='owner')
     owner = Reference(owner_id, 'Person.id')
     active = Bool()
+    access_grants = List(type=Int())
+    access_policies = List(type=Int())

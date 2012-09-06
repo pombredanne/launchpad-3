@@ -22,7 +22,7 @@ confirm it doesn't show up.
     >>> bugs = []
     >>> for bug_x in range(1, 11):
     ...     summary = 'Summary for new bug %d' % bug_x
-    ...     bug = factory.makeBug(title=summary, product=bigfixer)
+    ...     bug = factory.makeBug(title=summary, target=bigfixer)
     ...     bug.default_bugtask.transitionToStatus(
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     ...     bug.default_bugtask.transitionToImportance(

@@ -24,19 +24,19 @@ class TestTransactionFreeOperation(TestCase):
         transaction.begin()
         with ExpectedException(
             AssertionError, 'Transaction open before operation'):
-            with TransactionFreeOperation:
+            with TransactionFreeOperation():
                 pass
 
     def test_transaction_during_operation(self):
         """When the operation creates a transaction, raise."""
         with ExpectedException(
             AssertionError, 'Operation opened transaction!'):
-            with TransactionFreeOperation:
+            with TransactionFreeOperation():
                 transaction.begin()
 
     def test_transaction_free(self):
         """When there are no transactions, do not raise."""
-        with TransactionFreeOperation:
+        with TransactionFreeOperation():
             pass
 
     def test_require_no_TransactionFreeOperation(self):
@@ -49,5 +49,5 @@ class TestTransactionFreeOperation(TestCase):
     def test_require_with_TransactionFreeOperation(self):
         """If TransactionFreeOperation is used, do not raise."""
         with TransactionFreeOperation.require():
-            with TransactionFreeOperation:
+            with TransactionFreeOperation():
                 pass

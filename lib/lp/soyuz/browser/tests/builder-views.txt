@@ -283,7 +283,7 @@ contains the following attributes:
 
  * title: the title that will be presented for this category in the UI;
 
- * virtualized: wheter the category represents the virtualized or
+ * virtualized: whether the category represents the virtualized or
    non-virtualized build-farm;
 
  * groups: a property that return all `BuilderGroup` instanced

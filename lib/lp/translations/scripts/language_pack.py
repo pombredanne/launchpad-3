@@ -281,7 +281,7 @@ def export_language_pack(distribution_name, series_name, logger,
                 size=size,
                 file=filehandle,
                 contentType='application/x-gtar')
-        except UploadFailed, e:
+        except UploadFailed as e:
             logger.error('Uploading to the Librarian failed: %s', e)
             return None
         except:

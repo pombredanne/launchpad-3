@@ -138,7 +138,22 @@ The following examples show the text version of the query using
     ...         compiled = compiled.decode('UTF-8')
     ...         compiled = compiled.encode('US-ASCII', 'backslashreplace')
     ...     print '%s <=> %s' % (uncompiled, compiled)
-
+    >>>
+    >>> def search(text_to_search, search_phrase):
+    ...     cur = cursor()
+    ...     cur.execute("SELECT to_tsvector(%s)", (text_to_search, ))
+    ...     ts_vector = cur.fetchall()[0][0]
+    ...     cur.execute("SELECT ftq(%s)", (search_phrase, ))
+    ...     ts_query = cur.fetchall()[0][0]
+    ...     cur.execute(
+    ...         "SELECT to_tsvector(%s) @@ ftq(%s)",
+    ...         (text_to_search, search_phrase))
+    ...     match = cur.fetchall()[0][0]
+    ...     return "FTI data: %s query: %s match: %s" % (
+    ...         ts_vector, ts_query, str(match))
+    >>>
+    >>> def search_same(text):
+    ...     return search(text, text)
 
 Queries are lowercased
 
@@ -157,23 +172,16 @@ Boolean operations are allowed
     >>> ftq('hi AND mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('hi & mom')
-    hi&mom <=> 'hi' & 'mom'
-
     >>> ftq('hi OR mom')
     hi|mom <=> 'hi' | 'mom'
 
-    >>> ftq('hi | mom')
-    hi|mom <=> 'hi' | 'mom'
-
-    >>> ftq('hi & -dad')
+    >>> ftq('hi AND NOT dad')
     hi&!dad <=> 'hi' & !'dad'
-
 
 
 Brackets are allowed to specify precidence
 
-    >>> ftq('(HI OR HELLO) & mom')
+    >>> ftq('(HI OR HELLO) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('Hi(Mom)')
@@ -188,19 +196,16 @@ Brackets are allowed to specify precidence
     >>> ftq('foo(bar OR baz)') # Bug #32071
     foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
 
-    >>> ftq('foo (bar OR baz)')
-    foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
-
 
 We also support negation
 
-    >>> ftq('!Hi')
+    >>> ftq('NOT Hi')
     !hi <=> !'hi'
 
-    >>> ftq('-(Hi & Mom)')
+    >>> ftq('NOT(Hi AND Mom)')
     !(hi&mom) <=> !( 'hi' & 'mom' )
 
-    >>> ftq('Foo & ! Bar')
+    >>> ftq('Foo AND NOT Bar')
     foo&!bar <=> 'foo' & !'bar'
 
 
@@ -209,7 +214,7 @@ The implicit boolean operation is AND
     >>> ftq('Hi Mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('Hi -mom')
+    >>> ftq('Hi NOT mom')
     hi&!mom <=> 'hi' & !'mom'
 
     >>> ftq('hi (mom OR mum)')
@@ -218,133 +223,231 @@ The implicit boolean operation is AND
     >>> ftq('(hi OR hello) mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('(hi OR hello) -mom')
+    >>> ftq('(hi OR hello) NOT mom')
     (hi|hello)&!mom <=> ( 'hi' | 'hello' ) & !'mom'
 
     >>> ftq('(hi ho OR hoe) work go')
     (hi&ho|hoe)&work&go <=> ( 'hi' & 'ho' | 'hoe' ) & 'work' & 'go'
 
 
-Hypenation is handled specially. Note that the & operator has precidence
-over the | operator and that tsearch2 removes the unnecessary branckets.
+'-' symbols are treated by the Postgres FTI parser context sensitive.
+If they precede a word, they are removed.
 
-    >>> ftq('foo-bar')
-    ((foo&bar)|foobar) <=> 'foo' & 'bar' | 'foobar'
+    >>> print search_same('foo -bar')
+    FTI data: 'bar':2 'foo':1
+    query: 'foo' & 'bar'
+    match: True
 
-    >>> ftq('foo-bar-baz')
-    ((foo&bar&baz)|foobarbaz) <=> 'foo' & 'bar' & 'baz' | 'foobarbaz'
+If a '-' precedes a number, it is retained.
 
-    >>> ftq('foo & bar-baz')
-    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+    >>> print search_same('123 -456')
+    FTI data: '-456':2 '123':1
+    query: '123' & '-456'
+    match: True
 
-    >>> ftq('-foo bar-')
-    !foo&bar <=> !'foo' & 'bar'
+Trailing '-' are always ignored.
+
+    >>> print search_same('bar- 123-')
+    FTI data: '123':2 'bar':1
+    query: 'bar' & '123'
+    match: True
+
+Repeated '-' are simply ignored by to_tsquery().
 
     >>> ftq('---foo--- ---bar---')
-    foo&bar <=> 'foo' & 'bar'
+    ---foo---&---bar--- <=> 'foo' & 'bar'
 
-    >>> ftq('foo-bar test')
-    ((foo&bar)|foobar)&test <=> ( 'foo' & 'bar' | 'foobar' ) & 'test'
+Hyphens surrounded by two words are retained. This reflects the way
+how to_tsquery() and to_tsvector() handle such strings.
 
-    >>> ftq('foo-bar OR test')
-    ((foo&bar)|foobar)|test <=> ( 'foo' & 'bar' | 'foobar' ) | 'test'
+    >>> print search_same('foo-bar')
+    FTI data: 'bar':3 'foo':2 'foo-bar':1
+    query: 'foo-bar' & 'foo' & 'bar'
+    match: True
 
+A '-' surrounded by numbers is treated as the sign of the right-hand number.
 
-Most punctuation characters are converted to whitespace outside of
-words, or treated as a hypen inside words. The exceptions are the
-operators ()!&|!.
+    >>> print search_same('123-456')
+    FTI data: '-456':2 '123':1
+    query: '123' & '-456'
+    match: True
 
-    >>> ftq(':100%')
-    100 <=> '100'
+Punctuation is handled consistently. If a string containing punctuation
+appears in an FTI, it can also be passed to ftq(),and a search for this
+string finds the indexed text.
 
-    >>> ftq(r'foo\bar')
-    ((foo&bar)|foobar) <=> 'foo' & 'bar' | 'foobar'
+    >>> punctuation = '\'"#$%*+,./:;<=>?@[\]^`{}~'
+    >>> for symbol in punctuation:
+    ...     print repr(symbol), search_same('foo%sbar' % symbol)
+    "'" FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '"' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '#' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '$' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '%' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '*' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '+' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    ',' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '.' FTI data: 'foo.bar':1 query: 'foo.bar' match: True
+    '/' FTI data: 'foo/bar':1 query: 'foo/bar' match: True
+    ':' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    ';' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '<' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '=' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '>' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '?' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '@' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '[' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '\\' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    ']' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '^' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '`' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '{' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '}' FTI data: 'bar':2 'foo':1 query: 'foo' & 'bar' match: True
+    '~' FTI data: 'foo':1 '~bar':2 query: 'foo' & '~bar' match: True
 
-    >>> ftq('/dev/pmu')
-    ((dev&pmu)|devpmu) <=> 'dev' & 'pmu' | 'devpmu'
+    >>> for symbol in punctuation:
+    ...     print repr(symbol), search_same('aa %sbb%s cc' % (symbol, symbol))
+    "'" FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '"' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '#' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '$' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '%' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '*' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '+' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    ',' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '.' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '/' FTI data: '/bb':2 'aa':1 'cc':3 query: 'aa' & '/bb' & 'cc' match: True
+    ':' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    ';' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '<' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '=' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '>' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '?' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '@' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '[' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '\\' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    ']' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '^' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '`' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '{' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '}' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
+    '~' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & '~bb' & 'cc' match: False
+
+XXX Abel Deuring 2012-06-20 bug=1015511: Note that the last line above
+shows a bug: The FTI data for the string "aa ~bb~ cc" contains the words
+'aa', 'bb', 'cc', while the ts_query object for the same text contains
+'aa', '~bb', 'cc', hence the query does not match the string. More details_
+
+XXX Abel Deuring 2012-06-20 bug=1015519: XML tags cannot be searched.
+
+    >>> print search_same('foo <bar> baz')
+    FTI data: 'baz':2 'foo':1 query: 'foo' & 'baz' match: True
+
+More specifically, tags are simply dropped from the FTI data and from
+search queries.
+
+    >>> print search('some text <div>whatever</div>', '<div>')
+    FTI data: 'text':2 'whatev':3 query: None match: None
+
+Of course, omitting '<' and '>'from the query does not help.
+
+    >>> print search('some text <div>whatever</div>', 'div')
+    FTI data: 'text':2 'whatev':3 query: 'div' match: False
+
+The symbols '&', '|' and '!' are treated as operators by to_tsquery();
+to_tsvector() treats them as whitespace. ftq() converts the words 'AND',
+'OR', 'NOT' are into these operators expected by to_tsquery(), and it
+replaces the symbols '&', '|' and '!' with spaces. This avoids
+surprising search results when the operator symbols appear accidentally
+in search terms, e.g., by using a plain copy of a source code line as
+the search term.
 
     >>> ftq('cool!')
     cool <=> 'cool'
 
-    >>> ftq('foo@bar.com')
-    ((foo&bar&com)|foobarcom) <=> 'foo' & 'bar' & 'com' | 'foobarcom'
+    >>> print search_same('Shell scripts usually start with #!/bin/sh.')
+    FTI data: '/bin/sh':6 'script':2 'shell':1 'start':4 'usual':3
+    query: 'shell' & 'script' & 'usual' & 'start' & '/bin/sh'
+    match: True
 
+    >>> print search_same('int foo = (bar & ! baz) | bla;')
+    FTI data: 'bar':3 'baz':4 'bla':5 'foo':2 'int':1
+    query: 'int' & 'foo' & 'bar' & 'baz' & 'bla'
+    match: True
+
+Queries containing only punctuation symbols yield an empty ts_query
+object. Note that _ftq() first replaces the '!' with a ' '; later on,
+_ftq() joins the two remaining terms '?' and '.' with the "AND"
+operator '&'. Finally, to_tsquery() detects the AND combination of
+two symbols that are not tokenized and returns null.
+
+    >>> ftq('?!.') # Bug 1020443
+    ?&. <=> None
+
+Email addresses are retained as a whole, both by to_tsvector() and by
+ftq().
+
+    >>> print search_same('foo@bar.com')
+    FTI data: 'foo@bar.com':1 query: 'foo@bar.com' match: True
+
+File names are retained as a whole.
+
+    >>> print search_same('foo-bar.txt')
+    FTI data: 'foo-bar.txt':1 query: 'foo-bar.txt' match: True
 
 Some punctuation we pass through to tsearch2 for it to handle.
+NB. This gets stemmed, see below.
 
-    >>> ftq("shouldn't") # NB. This gets stemmed, see below
-    shouldn't <=> 'shouldn'
+    >>> print search_same("shouldn't")
+    FTI data: 'shouldn':1 query: 'shouldn' match: True
 
-It was noticed though in Bug #33920 that tsearch2 couldn't cope if the
-apostrophe was not inside a word. So we strip it in these cases.
+Bug #44913 - Unicode characters in the wrong place.
 
-    >>> ftq("'cool")
-    cool <=> 'cool'
-    >>> ftq("'shouldn't")
-    shouldn't <=> 'shouldn'
-    >>> ftq("' cool")
-    cool <=> 'cool'
-    >>> ftq("cool '")
-    cool <=> 'cool'
-    >>> ftq("' cool '")
-    cool <=> 'cool'
-    >>> ftq("'cool'")
-    cool <=> 'cool'
-    >>> ftq("('cool' AND bananas)")
-    (cool&bananas) <=> 'cool' & 'banana'
+    >>> search_same(u'abc-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
+    "FTI data: 'abc':2 'abc-a\xc3\xa7':1 'a\xc3\xa7':3
+    query: 'abc-a\xc3\xa7' & 'abc' & 'a\xc3\xa7'
+    match: True"
 
-It was also noticed through Bug #39828 that tsearch2 will not cope if the
-! character is embedded inside or found at the end of a word.
+Cut & Paste of 'Smart' quotes. Note that the quotation mark is retained
+in the FTI.
 
-    >>> ftq('cool!')
-    cool <=> 'cool'
-    >>> ftq('hi!mom')
-    hi&mom <=> 'hi' & 'mom'
-    >>> ftq('hi!!!!!mom')
-    hi&mom <=> 'hi' & 'mom'
-    >>> ftq('hi !mom')
-    hi&!mom <=> 'hi' & !'mom'
+    >>> print search_same(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
+    FTI data: 'a-a”':1 'a”':3 query: 'a-a”' & 'a”' match: True
 
-
-Bug #44913 - Unicode characters in the wrong place
-
-    >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
-    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
-
-    Cut & Paste of 'Smart' quotes
-
-    >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
-    ((a&a)|aa) <=> 'aa'
-
-    >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
-    ((a&a)|aa) <=> 'aa'
+    >>> print search_same(
+    ...     u'\N{LEFT SINGLE QUOTATION MARK}a.a'
+    ...     u'\N{RIGHT SINGLE QUOTATION MARK}')
+    FTI data: 'a’':2 '‘a':1 query: '‘a' & 'a’' match: True
 
 
 Bug #44913 - Nothing but stopwords in a query needing repair
 
-    >>> ftq('a)a')
-    a&a <=> None
+    >>> print search_same('a)a')
+    FTI data:  query: None match: None
 
 
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2.
 
-    >>> ftq("Don't do it harder!")
-    don't&do&it&harder <=> 'harder'
+    >>> print search_same("Don't do it harder!")
+    FTI data: 'harder':5 query: 'harder' match: True
 
 
 Note that some queries will return None after compilation, because they
 contained nothing but stop words or punctuation.
 
-    >>> ftq("don't do it!")
-    don't&do&it <=> None
+    >>> print search_same("don't do it!")
+    FTI data:  query: None match: None
 
-    >>> ftq(",,,")
-    None <=> None
+    >>> print search_same(",,,")
+    FTI data:  query: None match: None
 
 
 Queries containing nothing except whitespace, boolean operators and
 punctuation will just return None.
+
+Note in the fourth example below that the '-' left in the query by _ftq()
+is ignored by to_tsquery().
 
     >>> ftq(" ")
     None <=> None
@@ -353,7 +456,7 @@ punctuation will just return None.
     >>> ftq(" AND (!)")
     None <=> None
     >>> ftq("-")
-    None <=> None
+    - <=> None
 
 
 Words are also stemmed by tsearch2 (using the English stemmer).
@@ -364,11 +467,17 @@ Words are also stemmed by tsearch2 (using the English stemmer).
     >>> ftq("administrate")
     administrate <=> 'administr'
 
+Note that stemming is not always idempotent:
+
+    >>> ftq('extension')
+    extension <=> 'extens'
+    >>> ftq('extens')
+    extens <=> 'exten'
 
 Dud queries are 'repaired', such as doubled operators, trailing operators
 or invalid leading operators
 
-    >>> ftq('hi & OR mom')
+    >>> ftq('hi AND OR mom')
     hi&mom <=> 'hi' & 'mom'
 
     >>> ftq('(hi OR OR hello) AND mom')
@@ -377,23 +486,23 @@ or invalid leading operators
     >>> ftq('(hi OR AND hello) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('(hi OR -AND hello) AND mom')
+    >>> ftq('(hi OR NOT AND hello) AND mom')
     (hi|!hello)&mom <=> ( 'hi' | !'hello' ) & 'mom'
 
     >>> ftq('(hi OR - AND hello) AND mom')
-    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+    (hi|-&hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('hi AND mom AND')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('& hi & mom')
+    >>> ftq('AND hi AND mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('(& hi | hello) AND mom')
+    >>> ftq('(AND hi OR hello) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('() hi mom ( ) ((! |((&)))) :-)')
-    (hi&mom) <=> 'hi' & 'mom'
+    >>> ftq('() hi mom ( ) ((NOT OR((AND)))) :-)')
+    (hi&mom&-) <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
     hi&mom <=> 'hi' & 'mom'
@@ -414,15 +523,15 @@ or invalid leading operators
     hi&mom <=> 'hi' & 'mom'
 
     >>> ftq("(foo .") # Bug 43245
-    foo <=> 'foo'
+    foo&. <=> 'foo'
 
     >>> ftq("(foo.")
-    foo <=> 'foo'
+    foo. <=> 'foo'
 
     Bug #54972
 
     >>> ftq("a[a\n[a")
-    ((a&a)|aa)&a <=> 'aa'
+    a[a&[a <=> None
 
     Bug #96698
 
@@ -436,11 +545,11 @@ or invalid leading operators
 
     Bug #160236
 
-    >>> ftq("foo&&bar-baz")
-    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+    >>> ftq("foo AND AND bar-baz")
+    foo&bar-baz <=> 'foo' & 'bar-baz' & 'bar' & 'baz'
 
-    >>> ftq("foo||bar.baz")
-    foo|((bar&baz)|barbaz) <=> 'foo' | ( 'bar' & 'baz' | 'barbaz' )
+    >>> ftq("foo OR OR bar.baz")
+    foo|bar.baz <=> 'foo' | 'bar.baz'
 
 
 Phrase Searching
@@ -482,7 +591,8 @@ an arbitrary constant that seemed appropriate).
 
     >>> runsql(r"""
     ...   SELECT title, max(ranking) FROM (
-    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox')) AS ranking
+    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox'))
+    ...    AS ranking
     ...    FROM Bug, BugMessage, Message
     ...    WHERE Bug.id = BugMessage.bug AND Message.id = BugMessage.message
     ...       AND (Bug.fti @@ ftq('firefox') OR Message.fti @@ ftq('firefox'))
@@ -499,7 +609,8 @@ an arbitrary constant that seemed appropriate).
     ...       AND BugTask.product = Product.id
     ...       AND Product.name LIKE lower('%firefox%')
     ...    UNION
-    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3 AS ranking
+    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3
+    ...    AS ranking
     ...    FROM Bug, BugTask, Product
     ...    WHERE Bug.id = BugTask.bug
     ...       AND BugTask.product = Product.id
@@ -518,7 +629,8 @@ an arbitrary constant that seemed appropriate).
     Printing doesn't work     0.70
 
 
-== Natural Language Phrase Query ==
+Natural Language Phrase Query
+-----------------------------
 
 The standard boolean searches of tsearch2 are fine, but sometime you
 want more fuzzy searches.
@@ -557,7 +669,8 @@ and so is processing every single returned item (> 200000 for common queries
 on Ubuntu) - so we are disabling this and reworking from the ground up.
 
 
-=== nl_term_candidates() ===
+nl_term_candidates()
+~~~~~~~~~~~~~~~~~~~~
 
 To find the terms in a search phrase that are canditates for the search,
 we can use the nl_term_candidates() function. This function uses ftq()
@@ -574,19 +687,16 @@ It returns an empty list when there is only stop-words in the query:
     >>> nl_term_candidates('how do I do this?')
     []
 
-We also handle expansion of hypenated words (like ftq does):
-
-    >>> nl_term_candidates('firefox foo-bar give me trouble')
-    [u'firefox', u'foo', u'bar', u'foobar', u'give', u'troubl']
-
 Except for the hyphenation character, all non-word caracters are ignored:
 
     >>> nl_term_candidates(
-    ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) work???")
+    ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) "
+    ...     "work???")
     [u'charact', u'insid', u'quot', u'string', u'work']
 
 
-=== nl_phrase_search() ===
+nl_phrase_search()
+~~~~~~~~~~~~~~~~~~
 
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
@@ -637,7 +747,8 @@ Short queries are expanded more simply:
     u'slow|system'
 
 
-==== Using other constraints ====
+Using other constraints
+.......................
 
 You can pass a third parameter to the function that will be use as
 an additional constraint to determine the total number of rows that
@@ -659,7 +770,8 @@ forth parameter:
 
     >>> nl_phrase_search(
     ...     'firefox gets very slow on flickr', Question,
-    ...     "Question.product = %s AND Product.active = 't'" % firefox_product.id,
+    ...     "Question.product = %s AND Product.active = 't'"
+    ...     % firefox_product.id,
     ...     ['Product'], fast_enabled=False)
     u'slow|flickr'
 
@@ -679,7 +791,8 @@ is done.
     u'(firefox&flickr&slow)|(flickr&slow)|(firefox&slow)|(firefox&flickr)'
 
 
-==== No keywords filtering with few rows ====
+No keywords filtering with few rows
+...................................
 
 The 50% rule is really useful only when there are many rows. When there
 only very few rows, that keyword elimination becomes a problem since

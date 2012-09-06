@@ -6,6 +6,9 @@
     >>> import email
     >>> from lp.testing.keyserver import KeyServerTac
     >>> from lp.services.mail import stub
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
 
 Set up the stub KeyServer:
 
@@ -19,7 +22,10 @@ This test verifies the basic claim a GPG key workflow.
 
 Start out with a clean page containing no imported keys:
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> browser = setupBrowserFreshLogin(name12)
     >>> browser.open("http://launchpad.dev/~name12")
     >>> browser.getLink(url='+editpgpkeys').click()
     >>> print browser.title
@@ -86,7 +92,6 @@ the clear text instructions contain the expected URLs pointing to more help.
 
 Import the secret keys needed for this test:
 
-    >>> from zope.component import getUtility
     >>> from lp.services.gpg.interfaces import IGPGHandler
 
     >>> from lp.testing.gpgkeys import (
@@ -382,12 +387,8 @@ Sample person has never signed a code of conduct.
     >>> import os
     >>> def read_file(filename):
     ...     path = os.path.join(os.path.dirname(__file__), filename)
-    ...     file_object = open(path)
-    ...     # Change this to a with-statement when we switch to Python 2.5.
-    ...     try:
+    ...     with open(path) as file_object:
     ...         return file_object.read()
-    ...     finally:
-    ...         file_object.close()
 
 
 Code of Conduct registration problems
@@ -459,6 +460,7 @@ And now Sample Person's Codes of Conduct page shows that he's signed it.
 
 Now Sample Person will deactivate his key...
 
+    >>> browser = setupBrowserFreshLogin(name12)
     >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> browser.url
     'http://launchpad.dev/~name12/+editpgpkeys'

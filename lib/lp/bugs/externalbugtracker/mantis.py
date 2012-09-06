@@ -159,7 +159,7 @@ class MantisBugBatchParser:
                 if bug is not None:
                     bugs[bug['id']] = bug
             return bugs
-        except csv.Error, error:
+        except csv.Error as error:
             raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
 
@@ -254,7 +254,7 @@ class Mantis(ExternalBugTracker):
         # what's being viewed.
         try:
             csv_data = self._getPage("csv_export.php")
-        except BugTrackerConnectError, value:
+        except BugTrackerConnectError as value:
             # Some Mantis installations simply return a 500 error
             # when the csv_export.php page is accessed. Since the
             # bug data may be nevertheless available from ordinary

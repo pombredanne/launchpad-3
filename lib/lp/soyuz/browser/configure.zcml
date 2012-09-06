@@ -802,6 +802,10 @@
         path_expression="string:+upload/${id}"
         attribute_to_parent="distroseries"
         />
+    <browser:navigation
+        module="lp.soyuz.browser.queue"
+        classes="PackageUploadNavigation"
+        />
     <browser:url
         for="lp.soyuz.interfaces.archivedependency.IArchiveDependency"
         path_expression="string:+dependency/${dependency/id}"

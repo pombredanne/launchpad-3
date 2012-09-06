@@ -46,7 +46,7 @@ Now we are redirected to the Overview page of the product series we just added
     >>> print extract_text(find_tag_by_id(browser.contents, 'description'))
     Product series add testing
 
-    >>> browser.getLink('lp://dev/firefox/stable')
+    >>> browser.getLink('lp://dev/~mark/firefox/release-0.9.2')
     <Link ... url='http://code.launchpad.dev/~mark/firefox/release-0.9.2'>
 
 

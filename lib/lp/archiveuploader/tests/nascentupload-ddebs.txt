@@ -89,7 +89,8 @@ We override the binary to main/devel, and accept it into the archive.
 
     >>> switch_dbuser('launchpad')
 
-    >>> bin.queue_root.overrideBinaries(main, devel, None, [main, universe])
+    >>> bin.queue_root.overrideBinaries(
+    ...     [{"component": main, "section": devel}], [main, universe])
     True
     >>> bin.queue_root.acceptFromQueue()
 

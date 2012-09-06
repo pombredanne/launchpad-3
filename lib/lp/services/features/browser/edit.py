@@ -114,5 +114,6 @@ class FeatureControlView(LaunchpadFormView):
             # Unfortunately if the field is '', zope leaves it out of data.
             self.request.features.rule_source.parseRules(
                 data.get('feature_rules') or '')
-        except (IndexError, TypeError, ValueError, DuplicatePriorityError), e:
+        except (IndexError, TypeError, ValueError,
+                DuplicatePriorityError) as e:
             self.setFieldError('feature_rules', 'Invalid rule syntax: %s' % e)

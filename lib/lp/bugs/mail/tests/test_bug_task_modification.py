@@ -29,7 +29,7 @@ class TestModificationNotification(TestCaseWithFactory):
             user='test@canonical.com')
         self.user = getUtility(ILaunchBag).user
         self.product = self.factory.makeProduct(owner=self.user)
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         self.bug_task = self.bug.getBugTask(self.product)
         self.bug_task_before_modification = Snapshot(self.bug_task,
             providing=providedBy(self.bug_task))

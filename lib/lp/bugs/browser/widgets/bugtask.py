@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -333,14 +333,14 @@ class BugTaskBugWatchWidget(RadioWidget):
                 bugtask = self.context.context
                 return bugtask.bug.addWatch(
                     bugtracker, remote_bug, getUtility(ILaunchBag).user)
-            except WidgetInputError, error:
+            except WidgetInputError as error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
                 # next to the widget.
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL) as error:
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Invalid bug tracker URL.')
@@ -586,7 +586,7 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.displayname)))
         else:
-            if bugtask.target_uses_malone:
+            if bugtask.pillar.official_malone:
                 return renderElement('i', contents='not assigned')
             else:
                 return renderElement('i', contents='unknown')

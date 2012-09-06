@@ -75,7 +75,7 @@ def link(source, destination):
         if islink(destination):
             unlink(destination)
         symlink(source, destination)
-    except OSError, error:
+    except OSError as error:
         stderr.write(
             '  Error linking %s: %s\n' % (basename(destination), error))
     else:

@@ -432,7 +432,7 @@ class BugWatchSet(BugSetBase):
         for url in matches:
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
-            except NoBugTrackerFound, error:
+            except NoBugTrackerFound as error:
                 # We don't want to auto-create EMAILADDRESS bug trackers
                 # based on mailto: URIs in comments.
                 if error.bugtracker_type == BugTrackerType.EMAILADDRESS:

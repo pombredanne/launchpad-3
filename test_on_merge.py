@@ -81,7 +81,7 @@ def setup_test_database():
     cur = con.cursor()
     try:
         cur.execute('drop database launchpad_ftest_template')
-    except psycopg2.ProgrammingError, x:
+    except psycopg2.ProgrammingError as x:
         if 'does not exist' not in str(x):
             raise
 
@@ -196,7 +196,7 @@ def run_test_process():
             try:
                 rlist, wlist, xlist = select.select(open_readers, [], [], TIMEOUT)
                 break
-            except select.error, e:
+            except select.error as e:
                 # nb: select.error doesn't expose a named 'errno' attribute,
                 # at least in python 2.6.5; see
                 # <http://mail.python.org/pipermail/python-dev/2000-October/009671.html>
@@ -273,7 +273,7 @@ def nice_killpg(pgid):
             # Give the processes some time to shut down.
             time.sleep(3)
 
-    except OSError, exc:
+    except OSError as exc:
         if exc.errno == errno.ESRCH:
             # We tried to call os.killpg() and found the group to be empty.
             pass

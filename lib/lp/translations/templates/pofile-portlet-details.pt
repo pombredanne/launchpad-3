@@ -8,9 +8,6 @@
 
   <h2>Translation file details</h2>
 
-  <div class="portletBody">
-  <div class="portletContent">
-
     <ul>
       <li>
         <span tal:content="context/language/englishname" class="sprite language">Language</span>
@@ -92,10 +89,6 @@
       <b>Template description:</b><br />
       <span tal:replace="context/potemplate/description" /><br />
     </tal:block>
-
-  </div>
-
-  </div>
 
 </div>
 </tal:root>

@@ -65,7 +65,7 @@
             'lp.app.confirmationoverlay',function(Y) {
             Y.on('domready', function() {
               var dsd_details = Y.lp.registry.distroseriesdifferences_details;
-              Y.all('input[name=field.actions.sync]').each(function(button) {
+              Y.all('input[name="field.actions.sync"]').each(function(button) {
                 // Cleanup the button's title which says the button is disabled if
                 // Javascript is disabled.
                 button.set('title', '');

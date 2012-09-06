@@ -217,7 +217,7 @@ itself.
     ... """
     >>> try:
     ...     gpghandler.getVerifiedSignature(content)
-    ... except GPGVerificationError, e:
+    ... except GPGVerificationError as e:
     ...     print e.args
     ...     print e.code
     ...     print e.signatures

@@ -57,18 +57,21 @@ from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
-from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -145,7 +148,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    private = BoolCol(notNull=True, default=False)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
     productseries = ForeignKey(dbName='productseries',
@@ -191,8 +193,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription',
         orderBy=['displayname', 'name'])
-    feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
-        joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
@@ -215,6 +215,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+    information_type = EnumCol(
+        enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     @cachedproperty
     def subscriptions(self):
@@ -292,9 +294,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         Also set the sequence of those deleted work items to -1.
         """
+        title_counts = self._list_to_dict_of_frequency(titles)
+
         for work_item in self.work_items:
-            if work_item.title not in titles:
+            if (work_item.title not in title_counts or
+                title_counts[work_item.title] == 0):
                 work_item.deleted = True
+
+            elif title_counts[work_item.title] > 0:
+                title_counts[work_item.title] -= 1
+
+    def _list_to_dict_of_frequency(self, list):
+        dictionary = {}
+        for item in list:
+            if not item in dictionary:
+                dictionary[item] = 1
+            else:
+                dictionary[item] += 1
+        return dictionary
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
@@ -311,18 +328,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # ones.
         to_insert = []
         existing_titles = [wi.title for wi in work_items]
-        for i in range(len(new_work_items)):
-            new_wi = new_work_items[i]
-            if new_wi['title'] not in existing_titles:
-                # This is a new work item, so we insert it with 'i' as its
-                # sequence because that's the position it is on the list
-                # entered by the user.
+        existing_title_count = self._list_to_dict_of_frequency(existing_titles)
+
+        for i, new_wi in enumerate(new_work_items):
+            if (new_wi['title'] not in existing_titles or
+                existing_title_count[new_wi['title']] == 0):
                 to_insert.append((i, new_wi))
             else:
-                # Get the existing work item with the same title and update
+                existing_title_count[new_wi['title']] -= 1
+                # Get an existing work item with the same title and update
                 # it to match what we have now.
-                existing_wi = work_items[
-                    existing_titles.index(new_wi['title'])]
+                existing_wi_index = existing_titles.index(new_wi['title'])
+                existing_wi = work_items[existing_wi_index]
+                # Mark a work item as dirty - don't use it again this update.
+                existing_titles[existing_wi_index] = None
                 # Update the sequence to match its current position on the
                 # list entered by the user.
                 existing_wi.sequence = i
@@ -434,12 +453,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if sprintspecification.sprint.name == sprintname:
                 return sprintspecification
         return None
-
-    def getFeedbackRequests(self, person):
-        """See ISpecification."""
-        fb = SpecificationFeedback.selectBy(
-            specification=self, reviewer=person)
-        return fb.prejoin(['requester'])
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""
@@ -699,32 +712,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         return bool(self.subscription(person))
 
-    # queueing
-    def queue(self, reviewer, requester, queuemsg=None):
-        """See ISpecification."""
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester == requester.id):
-                # we have a relevant request already, update it
-                fbreq.queuemsg = queuemsg
-                return fbreq
-        # since no previous feedback request existed for this person,
-        # create a new one
-        return SpecificationFeedback(
-            specification=self,
-            reviewer=reviewer,
-            requester=requester,
-            queuemsg=queuemsg)
-
-    def unqueue(self, reviewer, requester):
-        """See ISpecification."""
-        # see if a relevant queue entry exists, and if so, delete it
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester.id == requester.id):
-                SpecificationFeedback.delete(fbreq.id)
-                return
-
     # Template methods for BugLinkTargetMixin
     buglinkClass = SpecificationBug
 
@@ -828,6 +815,38 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
+
+    def getAllowedInformationTypes(self, who):
+        return set(InformationType.items)
+
+    def transitionToInformationType(self, information_type, who):
+        """See `IBug`."""
+        if self.information_type == information_type:
+            return False
+        if information_type not in self.getAllowedInformationTypes(who):
+            raise CannotChangeInformationType("Forbidden by project policy.")
+        self.information_type = information_type
+        return True
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    def userCanView(self, user):
+        """See `ISpecification`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        # Temporary: we should access the grant tables instead of
+        # checking if a given user has special roles.
+        # The following is basically copied from
+        # EditSpecificationByRelatedPeople.checkAuthenticated()
+        return (user.in_admin or
+                user.isOwner(self.target) or
+                user.isOneOfDrivers(self.target) or
+                user.isOneOf(
+                    self, ['owner', 'drafter', 'assignee', 'approver']))
 
 
 class HasSpecificationsMixin:
@@ -1074,10 +1093,12 @@ class SpecificationSet(HasSpecificationsMixin):
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None, workitems_text=None,
-        priority=SpecificationPriority.UNDEFINED):
+        priority=SpecificationPriority.UNDEFINED, information_type=None):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
         # SpecificationDefinitionStatus item.
+        if information_type is None:
+            information_type = InformationType.PUBLIC
         status_name = definition_status.name
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status_name not in status_names:
@@ -1089,7 +1110,8 @@ class SpecificationSet(HasSpecificationsMixin):
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
+            information_type=information_type)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

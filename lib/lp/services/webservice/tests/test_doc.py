@@ -39,8 +39,9 @@ special = {
         '../doc/launchpadlib.txt',
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,),
-    'launchpadlib2.txt': LayeredDocFileSuite(
+    'launchpadlib.txt-2': LayeredDocFileSuite(
         '../doc/launchpadlib.txt',
+        id_extensions=['launchpadlib.txt-2'],
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,),
     }

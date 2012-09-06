@@ -292,11 +292,8 @@ not appear.
 
 If the distribution officially uses the application, its portlet does appear.
 
-    >>> from lp.testing.layers import MemcachedLayer
     >>> from lp.app.enums import ServiceUsage
 
-    # When the cache regenerated, all users will see the change.
-    >>> MemcachedLayer.purge()
     >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True

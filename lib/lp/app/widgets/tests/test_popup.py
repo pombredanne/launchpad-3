@@ -168,6 +168,16 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # But not the remove button.
         self.assertFalse(person_picker_widget.config['show_remove_button'])
 
+    def test_create_team_link(self):
+        # The person picker widget shows a create team link.
+        field = ITest['test_valid.item']
+        bound_field = field.bind(self.context)
+
+        picker_widget = PersonPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        picker_widget.show_create_team_link = True
+        self.assertTrue(picker_widget.config['show_create_team'])
+
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.
         person = self.factory.makePerson()

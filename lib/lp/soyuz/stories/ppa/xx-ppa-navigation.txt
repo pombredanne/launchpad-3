@@ -77,7 +77,7 @@ The PPA breadcrumb follows the PPA displayname.
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
     * Answers - http://answers.launchpad.dev/~cprov
-    Main heading: Default PPA
+    Main heading: Default PPA Edit
 
 The user can view all the package details using the 'View package details'
 link. This link is the first link displayed within

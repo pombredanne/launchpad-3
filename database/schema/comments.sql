@@ -93,7 +93,6 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.next_mirror_time IS 'The time when we will next mirror this branch (NULL means never). This will be set automatically by pushing to a hosted branch, which, once mirrored, will be set back to NULL.';
-COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
@@ -106,7 +105,6 @@ COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a bran
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
-COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
 COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BranchMergeQueue
@@ -717,6 +715,14 @@ COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_
 COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
 
 
+-- ProcessAcceptedBugsJob
+COMMENT ON TABLE ProcessAcceptedBugsJob IS 'Contains references to jobs for modifying bugs in response to accepting package uploads.';
+COMMENT ON COLUMN ProcessAcceptedBugsJob.job IS 'The Job related to this ProcessAcceptedBugsJob.';
+COMMENT ON COLUMN ProcessAcceptedBugsJob.distroseries IS 'The DistroSeries of the accepted upload.';
+COMMENT ON COLUMN ProcessAcceptedBugsJob.sourcepackagerelease IS 'The SourcePackageRelease of the accepted upload.';
+COMMENT ON COLUMN ProcessAcceptedBugsJob.json_data IS 'A JSON struct containing data for the job.';
+
+
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a ''website'' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who created this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
@@ -738,7 +744,6 @@ COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstr
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
-COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
 COMMENT ON COLUMN Product.translation_focus IS 'The ProductSeries that should get the translation effort focus.';
 --COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it''s different from the project bug tracker.';
@@ -1124,7 +1129,6 @@ COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for app
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution''s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bug_supervisor IS 'Person who is responsible for managing bugs on this distribution.';
-COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
@@ -1153,6 +1157,7 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+COMMENT ON COLUMN DistroSeries.proposed_not_automatic IS 'Whether the -proposed pocket is set NotAutomatic and ButAutomaticUpgrades so that apt does not offer users upgrades into -proposed, but does offer upgrades within it.';
 
 
 -- PackageCopyJob
@@ -1532,6 +1537,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The
 -- Specification
 
 COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
+COMMENT ON COLUMN Specification.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 COMMENT ON COLUMN Specification.assignee IS 'The person who has been assigned to implement this specification.';
 COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to draft this specification. They are responsible for getting the spec to "approved" state.';
 COMMENT ON COLUMN Specification.approver IS 'The person who is responsible for approving the specification in due course, and who will probably be required to review the code itself when it is being implemented.';
@@ -1556,12 +1562,6 @@ COMMENT ON COLUMN Specification.date_completed IS 'The date this specification w
 -- COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 COMMENT ON COLUMN Specification.private IS 'Specification is private.';
-
--- SpecificationFeedback
-COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
-COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
-COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
-COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
 
 -- SpecificationBranch
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
@@ -2059,7 +2059,7 @@ COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days b
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
-COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.suppress_subscription_notifications IS 'Whether to suppress notifications about subscriptions.';
 COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
@@ -2088,6 +2088,7 @@ COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this up
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
 COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
+COMMENT ON COLUMN ArchivePermission.distroseries IS 'An optional distroseries to which this permission applies.';
 
 -- ArchiveSubscriber
 

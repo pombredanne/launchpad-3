@@ -18,7 +18,6 @@ import datetime
 import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
-
 import pytz
 from sqlobject import (
     IntCol,

@@ -168,7 +168,7 @@ def rebuild(database, template):
             cur.execute(create_db_cmd)
             con.close()
             return 0
-        except psycopg2.Error, exception:
+        except psycopg2.Error as exception:
             error_msg = str(exception)
         time.sleep(0.6)  # Stats only updated every 500ms.
         now = time.time()

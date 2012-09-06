@@ -57,8 +57,7 @@
                 sendExpirationWarningEmail
                 canBeRenewedByMember
                 sendSelfRenewalNotification
-                canChangeExpirationDate
-                sendAutoRenewalNotification"/>
+                canChangeExpirationDate"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -108,6 +107,37 @@
 
     <class class=".model.persontransferjob.PersonMergeJob">
       <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
+    </class>
+
+    <!-- IProductNotificationJob -->
+    <securedutility
+        component=".model.productjob.CommercialExpiredJob"
+        provides=".interfaces.productjob.ICommercialExpiredJobSource">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.CommercialExpiredJob">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.SevenDayCommercialExpirationJob"
+        provides=".interfaces.productjob.ISevenDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.SevenDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.ThirtyDayCommercialExpirationJob"
+        provides=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.ThirtyDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJob"/>
     </class>
 
     <!-- INameBlacklist -->
@@ -473,7 +503,6 @@
                 findRelatedArchives
                 getMergeProposals
                 getReleasesAndPublishingHistory
-                getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages
@@ -1241,7 +1270,6 @@
                 redeemSubscriptionVoucher
                 releaseroot
                 screenshotsurl
-                security_contact
                 sourceforgeproject
                 summary
                 title
@@ -1338,8 +1366,7 @@
                 bug_supervisor"/>
         <require
             permission="launchpad.Edit"
-            attributes="
-                setBugSupervisor"/>
+            set_attributes="bug_supervisor"/>
     </class>
 
     <!-- ProductWithLicenses
@@ -1553,7 +1580,6 @@
                 official_malone
                 owner
                 package_derivatives_email
-                security_contact
                 summary
                 title"/>
         <require
@@ -1613,8 +1639,7 @@
                 bug_supervisor"/>
         <require
             permission="launchpad.Edit"
-            attributes="
-                setBugSupervisor"/>
+            set_attributes="bug_supervisor"/>
     </class>
     <adapter
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -1985,30 +2010,17 @@
     </securedutility>
 
     <!-- Sharing jobs -->
-    <class class=".model.sharingjob.RemoveGranteeSubscriptionsJob">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJob"/>
+    <class class=".model.sharingjob.RemoveArtifactSubscriptionsJob">
+      <allow interface=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJob"/>
       <allow attributes="
          context
          log_name"/>
     </class>
 
     <securedutility
-        component=".model.sharingjob.RemoveGranteeSubscriptionsJob"
-        provides=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource"/>
-    </securedutility>
-
-    <class class=".model.sharingjob.RemoveBugSubscriptionsJob">
-      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJob"/>
-      <allow attributes="
-         context
-         log_name"/>
-    </class>
-
-    <securedutility
-        component=".model.sharingjob.RemoveBugSubscriptionsJob"
-        provides=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource">
-      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource"/>
+        component=".model.sharingjob.RemoveArtifactSubscriptionsJob"
+        provides=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJobSource">
+      <allow interface=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJobSource"/>
     </securedutility>
 
 </configure>

@@ -373,7 +373,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         try:
             urlopen(url)
             self.fail('404 not raised')
-        except HTTPError, e:
+        except HTTPError as e:
             self.failUnlessEqual(e.code, 404)
 
 
@@ -479,5 +479,5 @@ class DeletedContentTestCase(unittest.TestCase):
         try:
             urlopen(url)
             self.fail('404 not raised')
-        except HTTPError, x:
+        except HTTPError as x:
             self.failUnlessEqual(x.code, 404)

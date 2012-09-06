@@ -10,8 +10,6 @@
 
     <h2><span tal:replace="context/title" />'s teams</h2>
 
-    <div class="portletBody">
-
       <table>
         <tal:teams repeat="team context/teams_participated_in">
           <tr tal:condition="team/@@+restricted-membership/userCanViewMembership">
@@ -24,7 +22,6 @@
           </tr>
         </tal:teams>
       </table>
-    </div>
   </div>
 </metal:block>
 </tal:root>

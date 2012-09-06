@@ -238,7 +238,7 @@ the time elapsed since it was published.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Warty Warthog Release (current stable release)      Set upstream link
-      1.0  release  (main)  ... weeks ago
+      1.0  release  (main)  2006-04-11
 
 Each 'version' line contains an expandable row that shows more information
 about that version.  To show it, click the expander icon.  If the user has
@@ -247,7 +247,9 @@ javascript enabled, the information is shown in-place.
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
-    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander"></a>
+    <a class="expander"
+    href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra"
+    id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
     >>> print extract_text(browser.contents)
@@ -274,7 +276,8 @@ There's also a section on the page that gives some package information:
     Component:* main
     Architectures:* any
     Latest upload: 1.0
-    *actual publishing details may vary in this distribution, these are just the package defaults.
+    *actual publishing details may vary in this distribution, these are just
+    the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
 is used in another section:
@@ -377,8 +380,7 @@ are displayed.
 A link to further PPA searches is also included.
 
     >>> link = browser.getLink(
-    ...     url='http://launchpad.dev/ubuntutest/+ppas?'
-    ...         'name_filter=netapplet')
+    ...     url='http://launchpad.dev/ubuntutest/+ppas?name_filter=netapplet')
     >>> link.text
     "...other untrusted versions of..."
 
@@ -386,10 +388,10 @@ A link to further PPA searches is also included.
 Source package change logs
 --------------------------
 
-/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
-each published version of a package with its changelog entry for that version.
-To navigate to this page, click on the "View full change log" link from
-the index page.
+/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that
+lists each published version of a package with its changelog entry for that
+version.  To navigate to this page, click on the "View full change log" link
+from the index page.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()
@@ -494,8 +496,7 @@ Packages that are not published
 If the package being viewed has no publishing history, a blank table is
 displayed:
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/a52dec/")
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec/")
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
 
@@ -535,10 +536,7 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
 
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
 
     >>> login("foo.bar@canonical.com")
 

@@ -192,7 +192,7 @@ class RootApp:
             try:
                 transport_type, info, trail = self.branchfs.translatePath(
                     user, urlutils.escape(path))
-            except xmlrpclib.Fault, f:
+            except xmlrpclib.Fault as f:
                 if check_fault(f, faults.PathTranslationError):
                     raise HTTPNotFound()
                 elif check_fault(f, faults.PermissionDenied):
@@ -275,7 +275,7 @@ class RootApp:
             try:
                 bzr_branch = safe_open(
                     lp_server.get_url().strip(':/'), branch_url)
-            except errors.NotBranchError, err:
+            except errors.NotBranchError as err:
                 self.log.warning('Not a branch: %s', err)
                 raise HTTPNotFound()
             bzr_branch.lock_read()
@@ -286,6 +286,12 @@ class RootApp:
                     served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
+                bzr_branch.repository.revisions.clear_cache()
+                bzr_branch.repository.signatures.clear_cache()
+                bzr_branch.repository.inventories.clear_cache()
+                if bzr_branch.repository.chk_bytes is not None:
+                    bzr_branch.repository.chk_bytes.clear_cache()
+                bzr_branch.repository.texts.clear_cache()
                 bzr_branch.unlock()
         finally:
             lp_server.stop_server()

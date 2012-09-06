@@ -632,7 +632,7 @@ class LPForkingService(object):
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
                 pass  # Run shutdown and children checks.
-            except self._socket_error, e:
+            except self._socket_error as e:
                 if e.args[0] == errno.EINTR:
                     pass  # Run shutdown and children checks.
                 elif e.args[0] != errno.EBADF:
@@ -709,7 +709,7 @@ class LPForkingService(object):
         while self._child_processes:
             try:
                 c_id, exit_code, rusage = os.wait3(os.WNOHANG)
-            except OSError, e:
+            except OSError as e:
                 if e.errno == errno.ECHILD:
                     # TODO: We handle this right now because the test suite
                     #       fakes a child, since we wanted to test some code
@@ -735,7 +735,7 @@ class LPForkingService(object):
             # See [Decision #4]
             try:
                 sock.sendall('exited\n%s\n' % (exit_code,))
-            except (self._socket_timeout, self._socket_error), e:
+            except (self._socket_timeout, self._socket_error) as e:
                 # The client disconnected before we wanted them to,
                 # no big deal
                 trace.mutter('%s\'s socket already closed: %s' % (c_id, e))
@@ -791,7 +791,7 @@ class LPForkingService(object):
         try:
             command_argv = self.command_to_argv(command)
             env = self.parse_env(env)
-        except Exception, e:
+        except Exception as e:
             # TODO: Log the traceback?
             self.log(client_addr, 'command or env parsing failed: %r'
                                   % (str(e),))
@@ -820,7 +820,7 @@ class LPForkingService(object):
         elif request.startswith('child_connect_timeout '):
             try:
                 value = int(request.split(' ', 1)[1])
-            except ValueError, e:
+            except ValueError as e:
                 conn.sendall('FAILURE: %r\n' % (e,))
             else:
                 self._child_connect_timeout = value
@@ -877,7 +877,7 @@ class cmd_launchpad_forking_service(Command):
         for pyname in libraries_to_preload:
             try:
                 __import__(pyname)
-            except ImportError, e:
+            except ImportError as e:
                 trace.mutter('failed to preload %s: %s' % (pyname, e))
 
     def _daemonize(self, pid_filename):
@@ -935,7 +935,7 @@ class cmd_launchpad_forking_service(Command):
         if pid_file is not None:
             try:
                 os.remove(pid_file)
-            except (OSError, IOError), e:
+            except (OSError, IOError) as e:
                 trace.mutter('Failed to cleanup pid_file: %s\n%s'
                              % (pid_file, e))
 

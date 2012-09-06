@@ -15,7 +15,7 @@ First of all, create some teams:
     >>> from datetime import datetime, timedelta
     >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipRenewalPolicy,
-    ...     TeamSubscriptionPolicy,
+    ...     TeamMembershipPolicy,
     ...     )
     >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
@@ -31,22 +31,22 @@ XXX: This doctest needs a lot of cleanups!
     >>> reviewer = nopriv
     >>> t1 = personset.newTeam(
     ...     jblack, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t2 = personset.newTeam(
     ...     nopriv, 't2', 't2',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t3 = personset.newTeam(
     ...     jdub, 't3', 't3',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> t4 = personset.newTeam(
     ...     nopriv, 't4', 't4',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t5 = personset.newTeam(
     ...     nopriv, 't5', 't5',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t6 = personset.newTeam(
     ...     jdub, 't6', 't6',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
 
     # Make sure the teams have predictable (and different) creation dates as
     # some of our tests depend on that.
@@ -85,12 +85,12 @@ member of that team --somebody has to approve his membership first:
     >>> [m.displayname for m in t3.allmembers]
     [u'Guilherme Salgado', u'Jeff Waugh']
 
-The join() method is not allowed for teams whose subscription policy is
+The join() method is not allowed for teams whose membership policy is
 RESTRICTED. And it'll be a no-op in case the user has already joined the
 given team.
 
     >>> launchpad = personset.getByName('launchpad')
-    >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
+    >>> launchpad.membership_policy == TeamMembershipPolicy.RESTRICTED
     True
     >>> ignored = login_person(salgado)
     >>> salgado.join(launchpad)
@@ -114,13 +114,13 @@ requester to the join() method.
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ignored = login_person(ubuntu_team.teamowner)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
-    >>> t3.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.MODERATED...
+    >>> t3.membership_policy
+    <DBItem TeamMembershipPolicy.MODERATED...
     >>> ubuntu_team in t3.proposedmembers
     True
 
-    >>> t2.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.OPEN...
+    >>> t2.membership_policy
+    <DBItem TeamMembershipPolicy.OPEN...
     >>> ubuntu_team.join(t2, ubuntu_team.teamowner)
     >>> ubuntu_team in t2.activemembers
     True
@@ -635,96 +635,6 @@ expire on that date or before.
     [(u'mark', u'ubuntu-team'), (u'name16', u'admins'),
      (u'ubuntu-team', u'guadamen'), (u'name16', u'launchpad-buildd-admins'),
      (u'name12', u'landscape-developers')]
-
-
-The getMembershipsToExpire() method also accepts an optional
-'exclude_autorewals' argument.  When that argument is provided,
-memberships in teams that are configured to renew the membership
-automatically will be excluded. In that case, there is no reason to send
-a warning email several days before the expiration. The user will just
-be notified that the membership has already been automatically renewed
-on the expiration day.
-
-    >>> autorenewal_team = factory.makeTeam(name="autorenewal-team")
-    >>> autorenewal_team.renewal_policy = (
-    ...     TeamMembershipRenewalPolicy.AUTOMATIC)
-    >>> autorenewal_team.defaultrenewalperiod = 73
-    >>> otto = factory.makePerson(name='otto')
-    >>> ignore = autorenewal_team.addMember(otto, salgado)
-    >>> otto_membership = otto.team_memberships[0]
-    >>> otto_membership.setExpirationDate(utc_now, salgado)
-    >>> original_otto_date_expires = otto_membership.dateexpires
-
-    >>> do_not_warn = factory.makePerson(name='do-not-warn')
-    >>> ignore = autorenewal_team.addMember(do_not_warn, salgado)
-    >>> do_not_warn.team_memberships[0].setExpirationDate(
-    ...     tomorrow, salgado)
-
-    # Not excluding teams with automatic renewals.
-    >>> [(membership.person.name, membership.team.name)
-    ...     for membership in membershipset.getMembershipsToExpire()
-    ...     if membership.team.name == 'autorenewal-team']
-    [(u'otto', u'autorenewal-team')]
-
-    # Excluding teams with automatic renewals.
-    >>> [(membership.person.name, membership.team.name)
-    ...     for membership in membershipset.getMembershipsToExpire(
-    ...         exclude_autorenewals=True)
-    ...     if membership.team.name == 'autorenewal-team']
-    []
-
-Now we commit the changes and run the cronscript.
-XXX: flush_database_updates() shouldn't be needed. This seems to be
-Bug 3989 -- StuartBishop 20060713
-
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/flag-expired-memberships.py -v', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> print out
-
-A warning email should not have been sent to otto because it was renewed
-inside the cronscript, and it should not be sent to do_not_warn, because
-teams with automatic renewal don't need warnings.
-
-    >>> print '\n'.join(
-    ...     line for line in err.split('\n') if 'INFO' not in line)
-    DEBUG   ...
-    DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
-    DEBUG   Sent warning email to name12 in landscape-developers team.
-    DEBUG   flag-expired-memberships ran in ...s (excl. load & lock)
-    DEBUG   Removing lock file: ...launchpad-flag-expired-memberships.lock
-    >>> process.returncode
-    0
-    >>> transaction.abort()
-
-Here we can see that the membership that was active is now flagged as expired
-while the one that was inactive hasn't changed.
-
-    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
-    ...     personset.getByName('name16'), personset.getByName('admins'))
-    >>> foobar_on_admins.status.title
-    'Expired'
-    >>> foobar_on_admins.last_changed_by.name
-    u'janitor'
-
-    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
-    ...     personset.getByName('name12'),
-    ...     personset.getByName('ubuntu-translators'))
-    >>> sp_on_ubuntu_translators.status.title
-    'Deactivated'
-
-    >>> otto_on_autorenewal_team = membershipset.getByPersonAndTeam(
-    ...     otto, autorenewal_team)
-    >>> otto_on_autorenewal_team.status.title
-    'Approved'
-    >>> otto_on_autorenewal_team.dateexpires - original_otto_date_expires
-    datetime.timedelta(73)
 
 
 Renewing team memberships

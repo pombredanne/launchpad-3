@@ -80,7 +80,7 @@ by getBugSummaryAndDescription().
 The bug reporter, as returned by getBugReporter(), got automatically created.
 
     >>> getUtility(IPersonSet).getByEmail(
-    ...     'joe.bloggs@example.com') is not None
+    ...     'joe.bloggs@example.com', filter_status=False) is not None
     True
     >>> print bug.owner.displayname
     Joe Bloggs

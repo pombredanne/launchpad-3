@@ -22,11 +22,11 @@ Tests for the team '+join' page's raw view objects.
     # policy.
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     new_list_for_team)
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
-    >>> def make_team(teamname, subscription_policy):
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
+    >>> def make_team(teamname, membership_policy):
     ...     creator = personset.getByName('no-priv')
     ...     team = personset.newTeam(creator, teamname, teamname,
-    ...         subscriptionpolicy=subscription_policy)
+    ...         membership_policy=membership_policy)
     ...     return team
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -39,7 +39,7 @@ Therefore no error message is seen.
     >>> sample_person = personset.getByName('name12')
     >>> ignored = login_person(sample_person)
     >>> no_list_team = make_team(
-    ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
+    ...     'open-team-no-list', TeamMembershipPolicy.OPEN)
 
     >>> join_team(no_list_team)
     You have successfully joined open-team-no-list.
@@ -49,7 +49,7 @@ informative message regarding the delayed subscription.
 
     >>> moderated_team = make_team(
     ...     'moderated-team-with-list',
-    ...     TeamSubscriptionPolicy.MODERATED)
+    ...     TeamMembershipPolicy.MODERATED)
     >>> moderated_list = new_list_for_team(moderated_team)
 
     >>> join_team(moderated_team)
@@ -68,7 +68,7 @@ Users joining an open team will be immediately subscribed to the
 team's list.
 
     >>> open_team = make_team(
-    ...     'open-team-with-list', TeamSubscriptionPolicy.OPEN)
+    ...     'open-team-with-list', TeamMembershipPolicy.OPEN)
     >>> open_list = new_list_for_team(open_team)
 
     >>> join_team(open_team)

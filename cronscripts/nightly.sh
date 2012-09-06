@@ -41,13 +41,6 @@ python -S update-stats.py -q --log-file=DEBUG:$LOGDIR/update-stats.log
 echo $(date): Expiring questions >> $LOGFILE
 python -S expire-questions.py -q --log-file=DEBUG:$LOGDIR/expire-questions.log
 
-### echo == Expiring bugs $(date) ==
-### python -S expire-bugtasks.py
-
-# checkwatches.py is scheduled in lp-production-crontabs.
-### echo == Updating bug watches $(date) ==
-### python -S checkwatches.py
-
 echo $(date): Updating bugtask target name caches >> $LOGFILE
 python -S update-bugtask-targetnamecaches.py -q --log-file=DEBUG:$LOGDIR/update-bugtask-targetnamecaches.log
 
@@ -56,14 +49,6 @@ python -S update-standing.py -q --log-file=DEBUG:$LOGDIR/update-standing.log
 
 echo $(date): Updating CVE database >> $LOGFILE
 python -S update-cve.py -q --log-file=DEBUG:$LOGDIR/update-cve.log
-
-# update-pkgcache.py is scheduled in lp-production-crontabs.
-#echo == Updating package cache $(date) ==
-#python -S update-pkgcache.py -q
-
-# Release finder is scheduled in lp-production-crontabs.
-#echo == Product Release Finder $(date) ==
-#python -S product-release-finder.py -q
 
 echo $(date): Removing lock >> $LOGFILE
 rm -f $LOCK

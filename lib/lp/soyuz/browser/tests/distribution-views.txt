@@ -87,7 +87,7 @@ instead:
 
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={
-    ...         'text': 'a',
+    ...         'text': u'a',
     ...         'search_type': 'source'
     ...     })
     >>> distro_pkg_search_view.search_by_binary_name

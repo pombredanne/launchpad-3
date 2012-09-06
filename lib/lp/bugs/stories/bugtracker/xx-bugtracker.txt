@@ -606,10 +606,9 @@ If the user is not permitted to view one of the watches only very basic
 details are displayed. For example, when a bug watch is associated with
 a private bug:
 
-    >>> admin_browser.open('http://launchpad.dev/bugs/3')
-    >>> admin_browser.getLink('This report is public').click()
-    >>> admin_browser.getControl(
-    ...     'This bug report should be private').selected = True
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+secrecy')
+    >>> admin_browser.getControl('Private', index=1).selected = True
     >>> admin_browser.getControl('Change').click()
 
     >>> anon_browser.open(

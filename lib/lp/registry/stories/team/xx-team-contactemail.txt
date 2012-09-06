@@ -21,6 +21,14 @@ send notifications to that team.  The possible contact methods are:
     >>> browser.title
     'Landscape Developers contact address...
 
+A warning is rendered about the privacy implications of using a mailing list or
+external contact address.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.find(id='email-warning')
+    <p ... E-mail sent to a mailing list or external contact address may ...
+
 As we can see, the landscape-developers team has no contact address.
 
     >>> from lp.testing.pages import strip_label

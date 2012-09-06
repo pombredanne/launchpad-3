@@ -19,7 +19,6 @@ import datetime
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
     BugTaskAssigneeChange,
-    BugTaskTargetChange,
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
@@ -29,7 +28,6 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.features import getFeatureFlag
@@ -156,12 +154,11 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
+        bug = bug_delta.bug
         if isinstance(change, BugDuplicateChange):
-            no_dupe_master_recipients = (
-                bug_delta.bug.getBugNotificationRecipients(
-                    old_bug=bug_delta.bug_before_modification,
-                    level=change.change_level,
-                    include_master_dupe_subscribers=False))
+            no_dupe_master_recipients = bug.getBugNotificationRecipients(
+                old_bug=bug_delta.bug_before_modification,
+                level=change.change_level)
             bug_delta.bug.addChange(
                 change, recipients=no_dupe_master_recipients)
         elif (isinstance(change, BugTaskAssigneeChange) and
@@ -173,34 +170,10 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             bug_delta.bug.addChange(change, recipients=recipients)
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
-                change_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=change.change_level,
-                        include_master_dupe_subscribers=False))
+                change_recipients = bug.getBugNotificationRecipients(
+                    old_bug=bug_delta.bug_before_modification,
+                    level=change.change_level)
                 recipients.update(change_recipients)
-            # Additionally, if we are re-targetting a bugtask for a private
-            # bug, we need to ensure the new bug supervisor and maintainer are
-            # notified (if they can view the bug).
-            # If they are the same person, only send one notification.
-            if (isinstance(change, BugTaskTargetChange) and
-                  old_bugtask is not None and bug_delta.bug.private):
-                bugtask_deltas = bug_delta.bugtask_deltas
-                if not isinstance(bugtask_deltas, (list, tuple)):
-                    bugtask_deltas = [bugtask_deltas]
-                for bugtask_delta in bugtask_deltas:
-                    if not bugtask_delta.target:
-                        continue
-                    new_target = bugtask_delta.bugtask.target
-                    if not new_target or not IProduct.providedBy(new_target):
-                        continue
-                    if bug_delta.bug.userCanView(new_target.owner):
-                        recipients.addMaintainer(new_target.owner)
-                    if (new_target.bug_supervisor and not
-                        new_target.bug_supervisor.inTeam(new_target.owner) and
-                        bug_delta.bug.userCanView(new_target.bug_supervisor)):
-                            recipients.addBugSupervisor(
-                                new_target.bug_supervisor)
             bug_delta.bug.addChange(change, recipients=recipients)
 
 

@@ -97,10 +97,8 @@ Create a private PPA for Celso with some binaries.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.enums import (
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_private_ppa_db = factory.makeArchive(
@@ -249,3 +247,57 @@ getDailyDownloadTotals returns a dict mapping dates to total counts.
     ...     firefox['self_link'], 'getDailyDownloadTotals').jsonBody()
     {u'2010-02-21': 10, u'2010-02-23': 8}
 
+
+Overrides
+=========
+
+    >>> from lp.services.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> login("foo.bar@canonical.com")
+    >>> override_source = test_publisher.getPubSource(
+    ...     archive=cprov_db.archive, sourcename="testoverrides")
+    >>> override_binaries = test_publisher.getPubBinaries(
+    ...     binaryname="testoverrides", pub_source=override_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> logout()
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov_db, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> cprov_archive_devel = webservice.get(
+    ...     "/~cprov/+archive/ppa", api_version="devel").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive_devel["self_link"], "getPublishedBinaries",
+    ...     api_version="devel", binary_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    base
+    >>> print pubs["entries"][0]["priority_name"]
+    STANDARD
+    >>> package = pubs["entries"][0]["self_link"]
+
+Anonymous users can't change overrides.
+
+    >>> response = webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin", new_priority="optional")
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can change overrides.
+
+    >>> response = cprov_webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin", new_priority="optional")
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+The override change takes effect:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive["self_link"], "getPublishedBinaries",
+    ...     binary_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    admin
+    >>> print pubs["entries"][0]["priority_name"]
+    OPTIONAL

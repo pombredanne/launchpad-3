@@ -14,15 +14,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from lp.code.enums import (
-    CodeReviewVote,
-    )
-from lp.code.errors import (
-    UserNotBranchReviewer,
-    )
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter,
-    )
+from lp.code.enums import CodeReviewVote
+from lp.code.errors import UserNotBranchReviewer
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
 from lp.services.config import config
 from lp.services.mail.commands import (
     EmailCommand,
@@ -215,7 +209,7 @@ class CodeEmailCommands(EmailCommandCollection):
             return []
         commands = [klass.get(name=name, string_args=args) for
                     name, args in parse_commands(message_body,
-                                                 klass._commands.keys())]
+                                                 klass.parsingParameters())]
         return sorted(commands, key=operator.attrgetter('sort_order'))
 
     @classmethod
@@ -272,7 +266,7 @@ class CodeHandler:
         for command in commands:
             try:
                 command.execute(context)
-            except EmailProcessingError, error:
+            except EmailProcessingError as error:
                 processing_errors.append((error, command))
 
         if len(processing_errors) > 0:
@@ -321,7 +315,7 @@ class CodeHandler:
             merge_proposal.createCommentFromMessage(
                 message, context.vote, context.vote_tags, mail)
 
-        except IncomingEmailError, error:
+        except IncomingEmailError as error:
             send_process_error_notification(
                 str(user.preferredemail.email),
                 'Submit Request Failure',

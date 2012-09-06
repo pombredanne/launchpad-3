@@ -102,8 +102,7 @@ developers team has two branches which are both private.
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.model.branch import Branch
-    >>> from lp.code.interfaces.branchcollection import (
-    ...     IAllBranches)
+    >>> from lp.code.interfaces.branchcollection import IAllBranches
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> person_set = getUtility(IPersonSet)

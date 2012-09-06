@@ -62,16 +62,6 @@ class TestProductWithLicenses(TestCaseWithFactory):
         expected = sorted(licenses, key=attrgetter('value'))
         self.assertEqual(tuple(expected), product_with_licenses.licenses)
 
-    def test_compose_column_without_licenses_produces_empty(self):
-        # The licenses column that ProductWithLicenses produces for a
-        # product without licenses contains an empty list.
-        product = self.factory.makeProduct(licenses=[])
-        column = ProductWithLicenses.composeLicensesColumn()
-        store = Store.of(product)
-        result = list(store.find((Product, column), Product.id == product.id))
-
-        self.assertEqual([(product, [])], result)
-
     def test_licenses_column_contains_licensing_info(self):
         # Feeding the licenses column into the ProductWithLicenses
         # constructor seeds it with the appropriate licenses.

@@ -11,7 +11,8 @@ __all__ = [
     'EmailAddressStatus',
     'IEmailAddress',
     'IEmailAddressSet',
-    'InvalidEmailAddress']
+    'InvalidEmailAddress',
+    'VALID_EMAIL_STATUSES']
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -85,6 +86,10 @@ class EmailAddressStatus(DBEnumeratedType):
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
         """)
+
+VALID_EMAIL_STATUSES = (
+    EmailAddressStatus.VALIDATED,
+    EmailAddressStatus.PREFERRED)
 
 
 class IEmailAddress(IHasOwner):

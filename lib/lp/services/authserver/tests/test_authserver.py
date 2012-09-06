@@ -10,8 +10,8 @@ from zope.publisher.xmlrpc import TestRequest
 
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.testing import (
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.xmlrpc import faults

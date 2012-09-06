@@ -339,10 +339,10 @@ class LaunchpadScript:
                 profiler.runcall(self.main)
             else:
                 self.main()
-        except LaunchpadScriptFailure, e:
+        except LaunchpadScriptFailure as e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
-        except SilentLaunchpadScriptFailure, e:
+        except SilentLaunchpadScriptFailure as e:
             sys.exit(e.exit_status)
         else:
             date_completed = datetime.datetime.now(UTC)
@@ -457,13 +457,13 @@ def cronscript_enabled(control_url, name, log):
         # seconds.
         control_fp = urlopen(control_url, timeout=5)
     # Yuck. API makes it hard to catch 'does not exist'.
-    except HTTPError, error:
+    except HTTPError as error:
         if error.code == 404:
             log.debug("Cronscript control file not found at %s", control_url)
             return True
         log.exception("Error loading %s" % control_url)
         return True
-    except URLError, error:
+    except URLError as error:
         if getattr(error.reason, 'errno', None) == 2:
             log.debug("Cronscript control file not found at %s", control_url)
             return True

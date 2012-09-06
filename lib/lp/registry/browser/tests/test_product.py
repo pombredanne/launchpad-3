@@ -5,9 +5,21 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IJSONRequestCache
+import transaction
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary
 
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import ServiceUsage
+from lp.registry.browser.product import (
+    ProjectAddStepOne,
+    ProjectAddStepTwo,
+    )
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -17,6 +29,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_celebrity,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -69,9 +82,43 @@ class TestProductAddView(TestCaseWithFactory):
     def setUp(self):
         super(TestProductAddView, self).setUp()
         self.product_set = getUtility(IProductSet)
-        # Marker allowing us to reset the config.
-        config.push(self.id(), '')
-        self.addCleanup(config.pop, self.id())
+
+    def makeForm(self, action):
+        if action == 1:
+            return {
+                'field.actions.continue': 'Continue',
+                'field.__visited_steps__': ProjectAddStepOne.step_name,
+                'field.displayname': 'Fnord',
+                'field.name': 'fnord',
+                'field.title': 'fnord',
+                'field.summary': 'fnord summary',
+                }
+        else:
+            return {
+                'field.actions.continue': 'Continue',
+                'field.__visited_steps__': '%s|%s' % (
+                    ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+                'field.displayname': 'Fnord',
+                'field.name': 'fnord',
+                'field.title': 'fnord',
+                'field.summary': 'fnord summary',
+                'field.owner': '',
+                'field.licenses': ['MIT'],
+                'field.license_info': '',
+                'field.disclaim_maintainer': 'off',
+                }
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.product_set, '+new')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])
 
     def test_staging_message_is_not_demo(self):
         view = create_initialized_view(self.product_set, '+new')
@@ -79,10 +126,89 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertTrue(message is not None)
 
     def test_staging_message_is_demo(self):
+        config.push(self.id(), '')
+        self.addCleanup(config.pop, self.id())
         self.useFixture(DemoMode())
         view = create_initialized_view(self.product_set, '+new')
         message = find_tag_by_id(view.render(), 'staging-message')
         self.assertEqual(None, message)
+
+    def test_step_two_initialize(self):
+        # Step two collects additional license, owner, and packaging info.
+        registrant = self.factory.makePerson(name='pting')
+        transaction.commit()
+        login_person(registrant)
+        form = self.makeForm(action=1)
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        owner_widget = view.view.widgets['owner']
+        self.assertEqual('pting', view.view.initial_values['owner'])
+        self.assertEqual('Select the maintainer', owner_widget.header)
+        self.assertIs(True, owner_widget.show_create_team_link)
+        disclaim_widget = view.view.widgets['disclaim_maintainer']
+        self.assertEqual('subordinate', disclaim_widget.cssClass)
+        self.assertEqual(
+            ['displayname', 'name', 'title', 'summary', 'description',
+             'homepageurl', 'licenses', 'license_info', 'owner',
+             '__visited_steps__'],
+            view.view.field_names)
+        self.assertEqual(
+            ['displayname', 'name', 'title', 'summary', 'description',
+             'homepageurl', 'licenses', 'owner', 'disclaim_maintainer',
+             'source_package_name', 'distroseries', '__visited_steps__',
+             'license_info'],
+            [f.__name__ for f in view.view.form_fields])
+
+    def test_owner_can_be_team(self):
+        # An owner can be any valid user or team selected.
+        registrant = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        transaction.commit()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.owner'] = team.name
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = self.product_set.getByName('fnord')
+        self.assertEqual(team, product.owner)
+
+    def test_disclaim_maitainer_supersedes_owner(self):
+        # When the disclaim_maintainer is selected, the owner field is ignored
+        # and the registry team is made the maintainer.
+        registrant = self.factory.makePerson()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.owner'] = registrant.name
+        form['field.disclaim_maintainer'] = 'on'
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = self.product_set.getByName('fnord')
+        self.assertEqual('registry', product.owner.name)
+
+    def test_owner_is_requried_without_disclaim_maitainer(self):
+        # A valid owner name is required if disclaim_maintainer is
+        # not selected.
+        registrant = self.factory.makePerson()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.owner'] = ''
+        del form['field.disclaim_maintainer']
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(1, len(view.view.errors))
+        self.assertEqual('owner', view.view.errors[0][0])
+
+    def test_disclaim_maitainer_empty_supersedes_owner(self):
+        # Errors for the owner field are ignored when disclaim_maintainer is
+        # selected.
+        registrant = self.factory.makePerson()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.owner'] = ''
+        form['field.disclaim_maintainer'] = 'on'
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = self.product_set.getByName('fnord')
+        self.assertEqual('registry', product.owner.name)
 
 
 class TestProductView(TestCaseWithFactory):
@@ -207,6 +333,18 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual(
             'fnord-dom-edit-license-approved',
             view.license_approved_widget.content_box_id)
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.product, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):

@@ -89,7 +89,7 @@ class StdoutHandler(Handler):
             record.levelname, record.name, self.format(record))
 
 
-def LayeredDocFileSuite(*paths, **kw):
+def LayeredDocFileSuite(paths, id_extensions=None, **kw):
     """Create a DocFileSuite, optionally applying a layer to it.
 
     In addition to the standard DocFileSuite arguments, the following
@@ -101,6 +101,10 @@ def LayeredDocFileSuite(*paths, **kw):
     :param layer: A Zope test runner layer to apply to the tests (by
       default no layer is applied).
     """
+    if not isinstance(paths, (tuple, list)):
+        paths = [paths]
+    if id_extensions is None:
+        id_extensions = []
     kw.setdefault('optionflags', default_optionflags)
     kw.setdefault('parser', default_parser)
 
@@ -142,14 +146,21 @@ def LayeredDocFileSuite(*paths, **kw):
     if layer is not None:
         suite.layer = layer
 
-    for test in suite:
+    for i, test in enumerate(suite):
         # doctest._module_relative_path() does not normalize paths. To make
         # test selection simpler and reporting easier to read, normalize here.
         test._dt_test.filename = os.path.normpath(test._dt_test.filename)
         # doctest.DocFileTest insists on using the basename of the file as the
         # test ID. This causes conflicts when two doctests have the same
         # filename, so we patch the id() method on the test cases.
-        test.id = partial(lambda test: test._dt_test.filename, test)
+        try:
+            ext = id_extensions[i]
+            newid = os.path.join(
+                os.path.dirname(test._dt_test.filename),
+                ext)
+            test.id = partial(lambda x: x, newid)
+        except IndexError:
+            test.id = partial(lambda test: test._dt_test.filename, test)
 
     return suite
 
@@ -162,14 +173,6 @@ def ordered_dict_as_string(dict):
 
     We do this because dict ordering is not guaranteed.
     """
-    # XXX 2008-06-25 gmb:
-    #     Once we move to Python 2.5 we won't need this, since dict
-    #     ordering is guaranteed when __str__() is called.
-    item_string = '%r: %r'
-    item_strings = []
-    for key, value in sorted(dict.items()):
-        item_strings.append(item_string % (key, value))
-
     return '{%s}' % ', '.join(
         "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 

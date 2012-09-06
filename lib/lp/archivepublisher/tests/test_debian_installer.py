@@ -21,11 +21,18 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
 
+class FakeConfig:
+    """A fake publisher configuration."""
+    def __init__(self, archiveroot):
+        self.archiveroot = archiveroot
+
+
 class TestDebianInstaller(TestCase):
 
     def setUp(self):
         super(TestDebianInstaller, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 022.
         old_umask = os.umask(022)
@@ -51,7 +58,7 @@ class TestDebianInstaller(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_debian_installer(self.temp_dir, self.path, self.suite)
+        process_debian_installer(self.pubconf, self.path, self.suite)
 
     def getInstallerPath(self, versioned_filename=None):
         installer_path = os.path.join(

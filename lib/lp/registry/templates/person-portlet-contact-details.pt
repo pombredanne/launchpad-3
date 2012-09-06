@@ -73,7 +73,7 @@
         <img src="/@@/private" alt="" />
         <tal:openid-login content="view/openid_identity_url" />
         <a target="help" href="/+help-registry/openid.html"
-           class="sprite maybe actionicon"><span class="invisible-link">OpenID help</span></a>
+           class="sprite maybe action-icon">OpenID help</a>
       </dd>
     </dl>
 
@@ -184,7 +184,7 @@
              tal:attributes="href overview_menu/karma/url"
              tal:content="context/karma">342</a>
           <a target="help" href="/+help-registry/karma.html"
-             class="sprite maybe actionicon"><span class="invisible-link">Karma help</span></a>
+             class="sprite maybe action-icon">Karma help</a>
       </dd>
     </dl>
   </div>

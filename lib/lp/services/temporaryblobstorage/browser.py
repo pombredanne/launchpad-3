@@ -64,7 +64,7 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
         except BlobTooLarge:
             self.addError('Uploaded file was too large.')
             return None
-        except UploadFailed, e:
+        except UploadFailed as e:
             self.addError('File storage unavailable - try again later.')
             return None
         else:

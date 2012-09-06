@@ -1,16 +1,17 @@
-= Bugtask importance =
+Bugtask importance
+==================
 
 It is possible to set the bug importance using the bugtask edit form.
 
-   >>> admin_browser.open('http://bugs.launchpad.dev/bugs/10')
-   >>> importance_control = admin_browser.getControl('Importance')
-   >>> print '\n'.join(importance_control.displayOptions)
-   Critical
-   High
-   Medium
-   Low
-   Wishlist
-   Undecided
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/10')
+    >>> importance_control = admin_browser.getControl('Importance')
+    >>> print '\n'.join(importance_control.displayOptions)
+    Undecided
+    Critical
+    High
+    Medium
+    Low
+    Wishlist
 
 Note that the `UNKNOWN` option, which is a valid value for
 `BugTask.importance` isn't showing here. This value can't be set by
@@ -37,7 +38,6 @@ product or distro, can edit Importance.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def user_sees_importance_widget(user, url):
-    ...     naked_user = removeSecurityProxy(user)
     ...     naked_email = removeSecurityProxy(user.preferredemail)
     ...     transaction.commit()
     ...     logout()
@@ -54,7 +54,7 @@ product or distro, can edit Importance.
 For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugSupervisor(no_priv, no_priv)
+    >>> firefox.bug_supervisor = no_priv
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
@@ -77,7 +77,7 @@ For someone else. We'll unset no_priv as the bug supervisor, and note that
 he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugSupervisor(None, None)
+    >>> firefox.bug_supervisor = None
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
@@ -86,7 +86,7 @@ he can no longer see the widget.
 For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
+    >>> ubuntu.bug_supervisor = no_priv
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url='http://bugs.launchpad.dev/'
@@ -108,7 +108,7 @@ For a distribution owner.
 For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugSupervisor(None, None)
+    >>> ubuntu.bug_supervisor = None
     >>> user_sees_importance_widget(
     ...     user=no_priv,
     ...     url='http://bugs.launchpad.dev/'

@@ -45,8 +45,7 @@ class BasicCopyPolicy:
         # If the pocket is RELEASE or PROPOSED and we're not frozen then you
         # can upload to it.  Any other states mean the upload is unapproved.
         #
-        # This check is orthogonal to the
-        # IDistroSeries.canUploadToPocket check.
+        # This check is orthogonal to the IArchive.canModifySuite check.
         auto_approve_pockets = (
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.PROPOSED,

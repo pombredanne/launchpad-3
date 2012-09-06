@@ -1,9 +1,10 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import argparse
 from datetime import timedelta
 import sys
+
+import argparse
 
 from lp.services.config import config
 
@@ -34,6 +35,7 @@ def configure(argv):
     Doing this in a function is convenient for testing.
     """
     result = {}
+    CELERY_BEAT_QUEUE = 'celerybeat'
     celery_queues = {}
     queue_names = config.job_runner_queues.queues
     queue_names = queue_names.split(' ')
@@ -84,7 +86,10 @@ def configure(argv):
     result['CELERYBEAT_SCHEDULE'] = {
         'schedule-missing': {
             'task': 'lp.services.job.celeryjob.run_missing_ready',
-            'schedule': timedelta(seconds=600)
+            'schedule': timedelta(seconds=600),
+            'options': {
+                'routing_key': CELERY_BEAT_QUEUE,
+                },
         }
     }
     # See http://ask.github.com/celery/userguide/optimizing.html:
@@ -99,6 +104,6 @@ def configure(argv):
 
 try:
     globals().update(configure(getattr(sys, 'argv', [''])))
-except ConfigurationError, error:
+except ConfigurationError as error:
     print >>sys.stderr, error
     sys.exit(1)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Disable pylint 'should have "self" as first argument' warnings.
@@ -127,7 +127,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         try:
             unicode_branch_url = branch_url.decode('utf-8')
             IBranch['url'].validate(unicode_branch_url)
-        except LaunchpadValidationError, exc:
+        except LaunchpadValidationError as exc:
             return faults.InvalidBranchUrl(branch_url, exc)
 
         # We want it to be None in the database, not ''.
@@ -154,9 +154,9 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch.requestMirror()
         except BranchCreationForbidden:
             return faults.BranchCreationForbidden(product.displayname)
-        except BranchCreationException, err:
+        except BranchCreationException as err:
             return faults.BranchNameInUse(err)
-        except LaunchpadValidationError, err:
+        except LaunchpadValidationError as err:
             return faults.InvalidBranchName(err)
 
         return canonical_url(branch)
@@ -303,32 +303,32 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # and thus error prone. Alternatives are directly raising faults from
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
-        except InvalidProductName, e:
+        except InvalidProductName as e:
             raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
-        except NoSuchProductSeries, e:
+        except NoSuchProductSeries as e:
             raise faults.NoSuchProductSeries(
                 urlutils.escape(e.name), e.product)
-        except NoSuchPerson, e:
+        except NoSuchPerson as e:
             raise faults.NoSuchPersonWithName(urlutils.escape(e.name))
-        except NoSuchProduct, e:
+        except NoSuchProduct as e:
             raise faults.NoSuchProduct(urlutils.escape(e.name))
-        except NoSuchDistroSeries, e:
+        except NoSuchDistroSeries as e:
             raise faults.NoSuchDistroSeries(urlutils.escape(e.name))
-        except NoSuchSourcePackageName, e:
+        except NoSuchSourcePackageName as e:
             raise faults.NoSuchSourcePackageName(urlutils.escape(e.name))
-        except NoLinkedBranch, e:
+        except NoLinkedBranch as e:
             raise faults.NoLinkedBranch(e.component)
-        except CannotHaveLinkedBranch, e:
+        except CannotHaveLinkedBranch as e:
             raise faults.CannotHaveLinkedBranch(e.component)
-        except InvalidNamespace, e:
+        except InvalidNamespace as e:
             raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
         # Reverse engineer the actual lp_path that is used, so we need to
         # remove any suffix that may be there from the strip_path.
         lp_path = strip_path
-        if suffix is not None:
+        if suffix != '':
             # E.g. 'project/trunk/filename.txt' the suffix is 'filename.txt'
             # we want lp_path to be 'project/trunk'.
-            lp_path = lp_path[:-(len(suffix)+1)]
+            lp_path = lp_path[:-(len(suffix) + 1)]
         return self._getUrlsForBranch(
             branch, lp_path, suffix, supported_schemes)
 

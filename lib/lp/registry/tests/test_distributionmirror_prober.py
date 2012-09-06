@@ -751,17 +751,17 @@ class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
         try:
             callbacks.deleteMirrorSeries(
                 Failure(ProberTimeout('http://localhost/', 5)))
-        except Exception, e:
+        except Exception as e:
             self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
             callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
-        except Exception, e:
+        except Exception as e:
             self.fail(
                 "A bad response code shouldn't be propagated. Got %s" % e)
         try:
             callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
-        except Exception, e:
+        except Exception as e:
             self.fail("A ConnectionSkipped exception shouldn't be "
                       "propagated. Got %s" % e)
 

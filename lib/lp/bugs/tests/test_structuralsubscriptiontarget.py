@@ -32,7 +32,6 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -526,10 +525,8 @@ def milestoneSetUp(test):
 
 def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     params = CreateBugParams(
-        getUtility(ILaunchBag).user, summary, comment=summary, status=status)
-    alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
-    params.setBugTarget(distribution=distroseries.distribution,
-                        sourcepackagename=alsa_utils)
+        getUtility(ILaunchBag).user, summary, comment=summary, status=status,
+        target=distroseries.distribution.getSourcePackage('alsa-utils'))
     bug = distroseries.distribution.createBug(params)
     nomination = bug.addNomination(
         distroseries.distribution.owner, distroseries)
@@ -557,8 +554,12 @@ def test_suite():
         distroSeriesSourcePackageSetUp,
         ]
 
+    testname = 'structural-subscription-target.txt'
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('structural-subscription-target.txt',
+        id_ext = "%s-%s" % (testname, setUpMethod.func_name)
+        test = LayeredDocFileSuite(
+            testname,
+            id_extensions=[id_ext],
             setUp=setUpMethod, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)

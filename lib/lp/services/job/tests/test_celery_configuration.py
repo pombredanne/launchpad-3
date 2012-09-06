@@ -25,7 +25,8 @@ class TestCeleryConfiguration(TestCase):
         # Four queues are defined; the binding key for each queue is
         # just the queue name.
         queue_names = [
-            'branch_write_job', 'branch_write_job_slow', 'job', 'job_slow']
+            'branch_write_job', 'branch_write_job_slow', 'celerybeat', 'job',
+            'job_slow']
         queues = config['CELERY_QUEUES']
         self.assertEqual(queue_names, sorted(queues))
         for name in queue_names:

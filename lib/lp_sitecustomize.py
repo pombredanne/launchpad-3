@@ -10,7 +10,6 @@ import logging
 import os
 import warnings
 
-from bzrlib.branch import Branch
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
@@ -19,12 +18,6 @@ from zope.interface import alsoProvides
 import zope.publisher.browser
 from zope.security import checker
 
-# Load bzr plugins
-import lp.codehosting
-lp.codehosting
-# Force LoomBranch classes to be listed as subclasses of Branch
-import bzrlib.plugins.loom.branch
-bzrlib.plugins.loom.branch
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
@@ -121,6 +114,17 @@ def dont_wrap_class_and_subclasses(cls):
         dont_wrap_class_and_subclasses(subcls)
 
 
+def dont_wrap_bzr_branch_classes():
+    from bzrlib.branch import Branch
+    # Load bzr plugins
+    import lp.codehosting
+    lp.codehosting
+    # Force LoomBranch classes to be listed as subclasses of Branch
+    import bzrlib.plugins.loom.branch
+    bzrlib.plugins.loom.branch
+    dont_wrap_class_and_subclasses(Branch)
+
+
 def silence_warnings():
     """Silence warnings across the entire Launchpad project."""
     # pycrypto-2.0.1 on Python2.6:
@@ -165,7 +169,7 @@ def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
         def wrapped_converter(v):
             try:
                 return converter(v)
-            except ValueError, e:
+            except ValueError as e:
                 # Mark the exception as not being OOPS-worthy.
                 alsoProvides(e, IUnloggedException)
                 raise
@@ -194,7 +198,9 @@ def main(instance_name):
     os.environ['STORM_CEXTENSIONS'] = '1'
     add_custom_loglevels()
     customizeMimetypes()
-    dont_wrap_class_and_subclasses(Branch)
+    silence_warnings()
+    customize_logger()
+    dont_wrap_bzr_branch_classes()
     checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
@@ -203,6 +209,4 @@ def main(instance_name):
     # through actually using itertools.groupby.
     grouper = type(list(itertools.groupby([0]))[0][1])
     checker.BasicTypes[grouper] = checker._iteratorChecker
-    silence_warnings()
-    customize_logger()
     customize_get_converter()

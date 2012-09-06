@@ -141,24 +141,28 @@ special = {
         ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-queued'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt-branchscanner': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-branchscanner'],
         setUp=branchscannerBugsSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt'],
         setUp=lobotomizeSteveASetUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer
         ),
@@ -184,12 +188,14 @@ special = {
         ),
     'bug-set-status.txt': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bug-set-status.txt-uploader': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
@@ -202,23 +208,27 @@ special = {
         ),
     'bugmessage.txt': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt'],
         setUp=noPrivSetUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer
         ),
     'bugmessage.txt-queued': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-queued'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-uploader': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-uploader'],
         setUp=uploaderSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-checkwatches': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-checkwatches'],
         setUp=checkwatchesSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
@@ -429,11 +439,13 @@ special = {
         ),
     'bug-set-status.txt-processmail': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt-processmail'],
         setUp=bugSetStatusSetUp, tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),
     'bugmessage.txt-processmail': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-processmail'],
         setUp=bugmessageSetUp, tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),
@@ -463,8 +475,7 @@ def test_suite():
         )
 
     # Add special needs tests
-    for key in sorted(special):
-        special_suite = special[key]
+    for key, special_suite in sorted(special.items()):
         suite.addTest(special_suite)
 
     # Add tests using default setup/teardown

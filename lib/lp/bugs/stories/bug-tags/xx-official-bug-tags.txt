@@ -94,7 +94,7 @@ They are grouped together at the beginning of the list.
     >>> login('foo.bar@canonical.com')
     >>> gfoobar = factory.makeProduct(name='gfoobar')
     >>> gfoobar.official_bug_tags = [u'alpha', u'charlie']
-    >>> gfoobar_bug = factory.makeBug(product=gfoobar)
+    >>> gfoobar_bug = factory.makeBug(target=gfoobar)
     >>> gfoobar_bug.tags = [u'alpha', u'bravo', u'charlie', u'delta']
     >>> gfoobar_bug_url = canonical_url(gfoobar_bug)
     >>> transaction.commit()
@@ -124,7 +124,7 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> product2 = factory.makeProduct()
     >>> product1.official_bug_tags = [u'eenie', u'meenie']
     >>> product2.official_bug_tags = [u'miney', u'moe']
-    >>> bug = factory.makeBug(product=product1)
+    >>> bug = factory.makeBug(target=product1)
     >>> bug.addTask(target=product2, owner=factory.makePerson())
     <BugTask ...>
     >>> bug_url = canonical_url(bug)

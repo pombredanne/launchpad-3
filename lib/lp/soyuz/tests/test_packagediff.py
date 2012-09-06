@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test source package diffs."""
@@ -19,11 +19,12 @@ from lp.services.webapp.interfaces import (
     )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
+from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestPackageDiffs(TestPackageDiffsBase):
+class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
     """Test package diffs."""
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
@@ -100,3 +101,30 @@ class TestPackageDiffs(TestPackageDiffsBase):
         diff.performDiff()
         # The diff fails due to the presence of expired files.
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)
+
+    def test_packagediff_private_with_copied_spr(self):
+        # If an SPR has been copied from a private archive to a public
+        # archive, diffs against it are public.
+        p3a = self.factory.makeArchive(private=True)
+        orig_spr = self.factory.makeSourcePackageRelease(archive=p3a)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=p3a, sourcepackagerelease=orig_spr)
+        private_spr = self.factory.makeSourcePackageRelease(archive=p3a)
+        private_diff = private_spr.requestDiffTo(p3a.owner, orig_spr)
+        self.assertEqual(1, len(orig_spr.published_archives))
+        self.assertTrue(private_diff.private)
+        ppa = self.factory.makeArchive(owner=p3a.owner)
+        spph.copyTo(spph.distroseries, spph.pocket, ppa)
+        self.assertEqual(2, len(orig_spr.published_archives))
+        public_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        public_diff = public_spr.requestDiffTo(p3a.owner, orig_spr)
+        self.assertFalse(public_diff.private)
+
+    def test_packagediff_public_unpublished(self):
+        # If an SPR has been uploaded to a public archive but not yet
+        # published, diffs to it are public.
+        ppa = self.factory.makeArchive()
+        from_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        diff = from_spr.requestDiffTo(ppa.owner, to_spr)
+        self.assertFalse(diff.private)

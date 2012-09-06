@@ -62,11 +62,11 @@ def check_content_classes():
             try:
                 classes_checked += 1
                 result = verifyClass(interface, klass)
-            except BrokenImplementation, e:
+            except BrokenImplementation as e:
                 classes_with_failures += 1
                 print "%s fails to implement %s: missing attribute %s" % (
                     class_name, interface_name, e.name)
-            except BrokenMethodImplementation, e:
+            except BrokenMethodImplementation as e:
                 classes_with_failures += 1
                 print "%s fails to implement %s: invalid method %s: %s" % (
                     class_name, interface_name, e.method, e.mess)

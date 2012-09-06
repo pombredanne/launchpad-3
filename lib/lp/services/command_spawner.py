@@ -171,7 +171,7 @@ class CommandSpawner:
         """Read output from `pipe_file`."""
         try:
             output = pipe_file.read()
-        except IOError, e:
+        except IOError as e:
             # "Resource temporarily unavailable"--not an error really,
             # just means there's nothing to read.
             if e.errno != errno.EAGAIN:

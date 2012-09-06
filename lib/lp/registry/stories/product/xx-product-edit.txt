@@ -39,56 +39,8 @@ Now we test if we edited it successfully.
     Part of: GNOME
 
 
-Setting Development Focus
-=========================
-
-The Firefox product's trunk series is set as the development focus:
-
-    >>> browser.open('http://launchpad.dev/firefox/+series')
-    >>> print browser.contents
-    <!...
-    ...
-    ...trunk...Focus of Development...
-    ...
-    ...1.0...
-    ...
-
-We can change this to the 1.0 series through the edit form:
-
-    >>> browser.open('http://launchpad.dev/firefox/+edit')
-    >>> development_control = browser.getControl('Development focus')
-    >>> development_control.getControl('firefox 1.0').click()
-    >>> browser.getControl(name='field.actions.change').click()
-    >>> print browser.url
-    http://launchpad.dev/firefox
-
-    >>> browser.getLink('View full history').click()
-    >>> print browser.contents
-    <!...
-    ...
-    ...1.0...Focus of Development...
-    ...
-    ...trunk...
-    ...
-
-
 Administering Products
 ======================
-
-Regular users can't access the 'Administer' link.
-
-    >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('Administer')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-And they can't go directly to the +admin page.
-
-    >>> browser.open('http://launchpad.dev/firefox/+admin')
-    Traceback (most recent call last):
-    ...
-    Unauthorized...
 
 But administrators can access the page:
 
@@ -227,26 +179,11 @@ teams as registrants.
 Registry Experts
 ================
 
-Regular Joes can't edit any old project:
-
-    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> browser.open('http://launchpad.dev/firefox/+edit')
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
 If we add them to the Registry Experts team:
 
     >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
     >>> admin_browser.getControl('New member').value = 'no-priv'
     >>> admin_browser.getControl('Add Member').click()
-
-They still cannot edit projects.
-
-    >>> browser.open('http://launchpad.dev/firefox/+edit')
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
 
 But they can access +admin, though it is more restricted than that for admins.
 
@@ -258,6 +195,7 @@ But they can access +admin, though it is more restricted than that for admins.
 The registry experts do not have access to the maintainer or
 registrant fields.
 
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open('http://launchpad.dev/trebuche/+admin')
     >>> browser.getControl('Maintainer')
     Traceback (most recent call last):
@@ -281,19 +219,15 @@ But registry experts can change a product name and set an alias.
     trebucket
 
 
-Launchpad developers can use the reviewer whiteboard
-====================================================
+Deactivate a product
+====================
 
-A member of the Registry Experts team can use the reviewer whiteboard on
-the +review-license page for storing random notes about a project. At
-first the whiteboard is empty, then we store some insightful notes in
-it.
+The Admins and Registry Experts can deactivate a project.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-
     >>> registry_member = factory.makePerson(
     ...     name='reggie', email='reggie@example.com')
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -303,40 +237,6 @@ it.
 
     >>> registry_browser = setupBrowser(
     ...     auth='Basic reggie@example.com:test')
-    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
-    >>> registry_browser.getControl(name='field.reviewer_whiteboard').value
-    ''
-
-    >>> registry_browser.getControl(
-    ...     name='field.reviewer_whiteboard').value = (
-    ...         "Registered by https://launchpad.net/kurt but orphaned.")
-    >>> registry_browser.getControl(name='field.actions.change').click()
-    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
-    >>> registry_browser.getControl(name='field.reviewer_whiteboard').value
-    'Registered by https://launchpad.net/kurt but orphaned.'
-
-A Registry Expert can also see the project whiteboard on the index page.
-
-    >>> registry_browser.open('http://launchpad.dev/firefox')
-    >>> contents = find_main_content(registry_browser.contents)
-    >>> print extract_text(contents.find(id='project-admin-whiteboard'))
-    Whiteboard ...
-    Registered by https://launchpad.net/kurt but orphaned.
-
-Name1 is the registrant for the Firefox product, but is not a Launchpad
-Admin, and so cannot see the reviewer whiteboard.
-
-    >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> user_browser.open('http://launchpad.dev/firefox/')
-    >>> contents = find_main_content(user_browser.contents)
-    >>> print contents.find(id='project-admin-whiteboard')
-    None
-
-
-Deactivate a product
-====================
-
-The Admins and Registry Experts can deactivate a project.
 
     >>> registry_browser.open('http://launchpad.dev/bzr/+review-license')
     >>> registry_browser.getControl(name='field.active').value = False
@@ -357,11 +257,6 @@ Admins can still see the product, but regular users can't.
     >>> contents = find_main_content(admin_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
     This project is currently inactive ...
-
-    >>> user_browser.open('http://launchpad.dev/bzr')
-    Traceback (most recent call last):
-    ...
-    NotFound...
 
 The product can then be reactivated.
 

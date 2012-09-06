@@ -29,3 +29,19 @@
     background-image: url(/@@/zoom-out.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.aging {
+    background-image: url(/@@/aging.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.milestone {
+    background-image: url(/@@/milestone.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.milestone-inactive {
+    background-image: url(/@@/milestone-inactive.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.milestone-released, .release {
+    background-image: url(/@@/milestone-released.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }

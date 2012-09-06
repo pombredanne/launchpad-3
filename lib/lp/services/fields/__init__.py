@@ -105,6 +105,10 @@ from lp.app.validators.name import (
     )
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.errors import InvalidDuplicateValue
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.webapp.interfaces import ILaunchBag
 
@@ -625,7 +629,7 @@ class URIField(TextLine):
         input = input.strip()
         try:
             uri = URI(input)
-        except InvalidURIError, exc:
+        except InvalidURIError as exc:
             raise LaunchpadValidationError(str(exc))
         # If there is a policy for whether trailing slashes are
         # allowed at the end of the path segment, ensure that the
@@ -814,7 +818,7 @@ class ProductNameField(PillarNameField):
 
 def is_public_person(person):
     """Return True if the person is public."""
-    from lp.registry.interfaces.person import IPerson, PersonVisibility
+    from lp.registry.interfaces.person import IPerson
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
@@ -822,16 +826,12 @@ def is_public_person(person):
 
 def is_public_person_or_closed_team(person):
     """Return True if person is a Person or not an open or delegated team."""
-    from lp.registry.interfaces.person import (
-        IPerson,
-        PersonVisibility,
-        CLOSED_TEAM_POLICY,
-    )
+    from lp.registry.interfaces.person import IPerson
     if not IPerson.providedBy(person):
         return False
     if not person.is_team:
         return person.visibility == PersonVisibility.PUBLIC
-    return person.subscriptionpolicy in CLOSED_TEAM_POLICY
+    return person.membership_policy in EXCLUSIVE_TEAM_POLICY
 
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):
@@ -892,22 +892,23 @@ class WorkItemsText(Text):
         sequence = 0
         milestone = None
         work_items = []
-        for line in text.splitlines():
-            if line.strip() == '':
-                continue
-            milestone_match = MILESTONE_RE.search(line)
-            if milestone_match:
-                milestone_part = milestone_match.group(1).strip()
-                if milestone_part == '':
-                    milestone = None
+        if text is not None:
+            for line in text.splitlines():
+                if line.strip() == '':
+                    continue
+                milestone_match = MILESTONE_RE.search(line)
+                if milestone_match:
+                    milestone_part = milestone_match.group(1).strip()
+                    if milestone_part == '':
+                        milestone = None
+                    else:
+                        milestone = milestone_part.split()[-1]
                 else:
-                    milestone = milestone_part.split()[-1]
-            else:
-                new_work_item = self.parseLine(line)
-                new_work_item['milestone'] = milestone
-                new_work_item['sequence'] = sequence
-                sequence += 1
-                work_items.append(new_work_item)
+                    new_work_item = self.parseLine(line)
+                    new_work_item['milestone'] = milestone
+                    new_work_item['sequence'] = sequence
+                    sequence += 1
+                    work_items.append(new_work_item)
         return work_items
 
     def validate(self, value):
@@ -933,7 +934,8 @@ class WorkItemsText(Text):
         from lp.registry.interfaces.person import IPersonSet
         assignee = getUtility(IPersonSet).getByName(assignee_name)
         if assignee is None:
-            raise LaunchpadValidationError("Unknown person name: %s" % assignee_name)
+            raise LaunchpadValidationError(
+                "Unknown person name: %s" % assignee_name)
         return assignee
 
     def getMilestone(self, milestone_name):

@@ -38,6 +38,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -61,10 +62,7 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.enums import (
-    PackageDiffStatus,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
@@ -72,10 +70,6 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
@@ -220,9 +214,9 @@ class SourcePackageRelease(SQLBase):
     @property
     def builds(self):
         """See `ISourcePackageRelease`."""
-        # Excluding PPA builds may seem like a strange thing to do but
-        # when copy-package works for copying packages across archives,
-        # a build may well have a different archive to the corresponding
+        # Excluding PPA builds may seem like a strange thing to do, but,
+        # since Archive.copyPackage can copy packages across archives, a
+        # build may well have a different archive to the corresponding
         # sourcepackagerelease.
         return BinaryPackageBuild.select("""
             source_package_release = %s AND
@@ -295,54 +289,6 @@ class SourcePackageRelease(SQLBase):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
     @property
-    def productrelease(self):
-        """See ISourcePackageRelease."""
-        series = None
-
-        # Use any published source package to find the product series.
-        # We can do this because if we ever find out that a source package
-        # release in two product series, we've almost certainly got a data
-        # problem there.
-        publishings = SourcePackagePublishingHistory.select(
-            """
-            sourcepackagerelease = %s AND
-            status = %s
-            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED))
-
-        for publishing in publishings:
-            # imports us, so avoid circular import
-            from lp.registry.model.sourcepackage import \
-                 SourcePackage
-            # Only process main archives and skip PPA/copy archives.
-            if publishing.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-                continue
-            sp = SourcePackage(self.sourcepackagename,
-                               publishing.distroseries)
-            sp_series = sp.productseries
-            if sp_series is not None:
-                if series is None:
-                    series = sp_series
-                elif series != sp_series:
-                    # XXX: keybuk 2005-06-22: We could warn about this.
-                    pass
-
-        # No series -- no release
-        if series is None:
-            return None
-
-        # XXX: keybuk 2005-06-22:
-        # Find any release with the exact same version, or which
-        # we begin with and after a dash.  We could be more intelligent
-        # about this, but for now this will work for most.
-        for release in series.releases:
-            if release.version == self.version:
-                return release
-            elif self.version.startswith("%s-" % release.version):
-                return release
-        else:
-            return None
-
-    @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
         from lp.soyuz.model.distroseriessourcepackagerelease \
@@ -363,6 +309,18 @@ class SourcePackageRelease(SQLBase):
             sourcepackagerelease=self,
             filetype=determine_source_file_type(file.filename),
             libraryfile=file)
+
+    def getFileByName(self, filename):
+        """See `ISourcePackageRelease`."""
+        sprf = Store.of(self).find(
+            SourcePackageReleaseFile,
+            SourcePackageReleaseFile.sourcepackagerelease == self.id,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
+        if sprf:
+            return sprf.libraryfile
+        else:
+            raise NotFoundError(filename)
 
     def getPackageSize(self):
         """See ISourcePackageRelease."""
@@ -433,6 +391,7 @@ class SourcePackageRelease(SQLBase):
         # Avoid circular imports.
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
         PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
@@ -698,6 +657,7 @@ class SourcePackageRelease(SQLBase):
         from lp.soyuz.interfaces.publishing import active_publishing_status
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         return Store.of(self).find(
             BinaryPackagePublishingHistory,

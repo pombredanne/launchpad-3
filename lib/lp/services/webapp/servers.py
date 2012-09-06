@@ -574,8 +574,6 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
-        self.needs_datepicker_iframe = False
-        self.needs_datetimepicker_iframe = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -874,14 +872,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
-
-    It also provides the  hooks for popup calendar iframes:
-
-    >>> request.needs_datetimepicker_iframe
-    False
-    >>> request.needs_datepicker_iframe
-    False
-
     """
     implements(
         INotificationRequest, IBasicLaunchpadRequest, IParticipation,
@@ -897,8 +887,6 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
         self.traversed_objects = []
-        self.needs_datepicker_iframe = False
-        self.needs_datetimepicker_iframe = False
         # Use an existing feature controller if one exists, otherwise use the
         # null controller.
         self.features = get_relevant_feature_controller()

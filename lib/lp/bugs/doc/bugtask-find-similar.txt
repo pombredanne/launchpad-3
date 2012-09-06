@@ -35,7 +35,7 @@ Now, let's enter a real bug summary, which doesn't match any other
 exactly. We can see that it still manages to find a bug.
 
     >>> test_bug = factory.makeBug(
-    ...     product=test_product, title="SVG doesn't work")
+    ...     target=test_product, title="SVG doesn't work")
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     test_person, "Can't display SVG", product=test_product)
@@ -61,19 +61,16 @@ We can also search for distribution bugs:
     >>> test_package = factory.makeSourcePackage(
     ...     distroseries=test_distroseries)
     >>> distro_bug_1 = factory.makeBug(
-    ...     distribution=test_distro,
+    ...     target=test_package.distribution_sourcepackage,
     ...     series=test_distroseries,
-    ...     sourcepackagename=test_package.sourcepackagename,
     ...     title="Nothing to do with cheese or sandwiches")
     >>> distro_bug_2 = factory.makeBug(
-    ...     distribution=test_distro,
+    ...     target=test_package.distribution_sourcepackage,
     ...     series=test_distroseries,
-    ...     sourcepackagename=test_package.sourcepackagename,
     ...     title="A bug about sandwiches")
     >>> distro_bug_2 = factory.makeBug(
-    ...     distribution=test_distro,
+    ...     target=test_package.distribution_sourcepackage,
     ...     series=test_distroseries,
-    ...     sourcepackagename=test_package.sourcepackagename,
     ...     title="This cheese sandwich should show up")
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
@@ -142,6 +139,7 @@ has been narrowed - see bug 612384.
     ...     distribution=test_distro)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
+    Nothing to do with cheese or sandwiches
     This cheese sandwich should show up
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
@@ -162,11 +160,11 @@ it is invoked.
 
     >>> orig_bug = factory.makeBug(
     ...     title="So you walk into this restaurant",
-    ...     owner=test_product.owner, product=test_product)
+    ...     owner=test_product.owner, target=test_product)
 
     >>> dupe_bug = factory.makeBug(
     ...     title="So you walk into this restaurant",
-    ...     owner=test_product.owner, product=test_product)
+    ...     owner=test_product.owner, target=test_product)
     >>> dupe_bug.markAsDuplicate(orig_bug)
 
     >>> similar_bugs = orig_bug.default_bugtask.findSimilarBugs(

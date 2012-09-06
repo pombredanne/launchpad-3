@@ -48,7 +48,7 @@ class ExpireMemberships(LaunchpadCronScript):
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         self.txn.begin()
         for membership in membershipset.getMembershipsToExpire(
-            min_date_for_warning, exclude_autorenewals=True):
+            min_date_for_warning):
             membership.sendExpirationWarningEmail()
             self.logger.debug("Sent warning email to %s in %s team."
                           % (membership.person.name, membership.team.name))

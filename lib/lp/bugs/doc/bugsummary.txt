@@ -19,9 +19,9 @@ or more rows row for every unique public BugTask targetting:
 First we should setup some helpers to use in the examples. These will
 let us dump the BugSummary table in a readable format.
 
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ---------------------------------------------------------------
+    ----------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    ----------------------------------------------------------
 
 The columns are product, productseries, distribution, distroseries,
 sourcepackagename, tag, milestone, status, importance, has_patch,
@@ -40,7 +40,18 @@ query private bug counts.
     ...         return 'x'
     ...     return object_or_none.name
 
-    >>> def print_result(bugsummary_resultset):
+    >>> def ap_desc(policy_or_none):
+    ...    if policy_or_none is None:
+    ...        return 'x'
+    ...    type_names = {
+    ...        InformationType.PRIVATESECURITY: 'se',
+    ...        InformationType.USERDATA: 'pr',
+    ...        InformationType.PROPRIETARY: 'pp',
+    ...        }
+    ...    return '%-4s/%-2s' % (
+    ...        policy_or_none.pillar.name, type_names[policy_or_none.type])
+
+    >>> def print_result(bugsummary_resultset, include_privacy=False):
     ...     # First, flush and invalidate the cache so we see the effects
     ...     # of the underlying database triggers. Normally you don't want
     ...     # to bother with this as you are only interested in counts of
@@ -59,18 +70,28 @@ query private bug counts.
     ...         BugSummary.sourcepackagename_id, BugSummary.tag,
     ...         BugSummary.milestone_id, BugSummary.status,
     ...         BugSummary.importance, BugSummary.has_patch,
-    ...         BugSummary.viewed_by_id, BugSummary.id)
+    ...         BugSummary.viewed_by_id, BugSummary.access_policy_id,
+    ...         BugSummary.id)
     ...     fmt = (
     ...         "%-4s %-4s %-4s %-4s %-5s %-3s %-4s "
-    ...         "%-6s %-6s %-2s %-4s %3s")
-    ...     header = fmt % (
+    ...         "%-6s %-6s %-2s")
+    ...     titles = (
     ...         'prod', 'ps', 'dist', 'ds', 'spn', 'tag', 'mile',
-    ...         'status', 'import', 'pa', 'vis', '#')
+    ...         'status', 'import', 'pa')
+    ...     if include_privacy:
+    ...         fmt += ' %-4s %-7s'
+    ...         titles += ('gra', 'pol')
+    ...     fmt += ' %3s'
+    ...     titles += ('#',)
+    ...     header = fmt % titles
     ...     print "-" * len(header)
     ...     print header
     ...     print "-" * len(header)
     ...     for bugsummary in ordered_results:
-    ...         print fmt % (
+    ...         if not include_privacy:
+    ...             assert bugsummary.viewed_by is None
+    ...             assert bugsummary.access_policy is None
+    ...         data = (
     ...             name(bugsummary.product),
     ...             name(bugsummary.productseries),
     ...             name(bugsummary.distribution),
@@ -80,9 +101,13 @@ query private bug counts.
     ...             name(bugsummary.milestone),
     ...             str(bugsummary.status)[:6],
     ...             str(bugsummary.importance)[:6],
-    ...             str(bugsummary.has_patch)[:1],
-    ...             name(bugsummary.viewed_by),
-    ...             bugsummary.count)
+    ...             str(bugsummary.has_patch)[:1])
+    ...         if include_privacy:
+    ...             data += (
+    ...                 name(bugsummary.viewed_by),
+    ...                 ap_desc(bugsummary.access_policy),
+    ...                 )
+    ...         print fmt % (data + (bugsummary.count,))
     ...     print " " * (len(header) - 4),
     ...     print "==="
     ...     sum = bugsummary_resultset.sum(BugSummary.count)
@@ -90,8 +115,9 @@ query private bug counts.
     ...     print "%3s" % sum
 
     >>> def print_find(*bs_query_args, **bs_query_kw):
+    ...     include_privacy = bs_query_kw.pop('include_privacy', False)
     ...     resultset = store.find(BugSummary, *bs_query_args, **bs_query_kw)
-    ...     print_result(resultset)
+    ...     print_result(resultset, include_privacy=include_privacy)
 
 
 /!\ A Note About Privacy in These Examples
@@ -119,12 +145,12 @@ We can query for how many bugs are targeted to a product.
     ...     BugSummary.tag == None)
 
     >>> print_result(bug_summaries)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    pr-a x    x    x    x     x   x    New    Undeci F  x      1
-                                                             ===
-                                                               1
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    pr-a x    x    x    x     x   x    New    Undeci F    1
+                                                        ===
+                                                          1
 
 There is one row per tag per combination of product, status and milestone.
 If we are interested in all bugs targeted to a product regardless of how
@@ -132,10 +158,10 @@ they are tagged, we must specify BugSummary.tag == None. If we are
 interested in all bugs targeted to a product regardless of their status
 or milestone, we need to aggregate them.
 
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.NEW)
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.CONFIRMED)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.NEW)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.CONFIRMED)
     >>> bug = factory.makeBug(
-    ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
+    ...     target=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
 
 
 Here are the untagged rows. This will show us there are 2 New and 2
@@ -145,13 +171,13 @@ Confirmed bug tasks targetted to the pr-a product.:
     ...     BugSummary.product == prod_a,
     ...     BugSummary.tag == None,
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    pr-a x    x    x    x     x   x    New    Undeci F  x      2
-    pr-a x    x    x    x     x   x    Confir Undeci F  x      2
-                                                             ===
-                                                               4
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    pr-a x    x    x    x     x   x    New    Undeci F    2
+    pr-a x    x    x    x     x   x    Confir Undeci F    2
+                                                        ===
+                                                          4
 
 Here are the rows associated with the 't-a' tag. There is 1 Confirmed
 bug task targetted to the pr-a product who's bug is tagged 't-a'.:
@@ -160,12 +186,12 @@ bug task targetted to the pr-a product who's bug is tagged 't-a'.:
     ...     BugSummary.product == prod_a,
     ...     BugSummary.tag == u't-a',
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    pr-a x    x    x    x     t-a x    Confir Undeci F  x      1
-                                                             ===
-                                                               1
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    pr-a x    x    x    x     t-a x    Confir Undeci F    1
+                                                        ===
+                                                          1
 
 You will normally want to get the total count counted in the database
 rather than waste transmission time to calculate the rows client side.
@@ -205,17 +231,17 @@ been assigned to a milestone:
     >>> print_find(
     ...     BugSummary.product == prod_a,
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    pr-a x    x    x    x     t-a x    Confir Undeci F  x      1
-    pr-a x    x    x    x     t-b ms-a New    Undeci F  x      1
-    pr-a x    x    x    x     t-c ms-a New    Undeci F  x      1
-    pr-a x    x    x    x     x   ms-a New    Undeci F  x      1
-    pr-a x    x    x    x     x   x    New    Undeci F  x      2
-    pr-a x    x    x    x     x   x    Confir Undeci F  x      2
-                                                             ===
-                                                               8
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    pr-a x    x    x    x     t-a x    Confir Undeci F    1
+    pr-a x    x    x    x     t-b ms-a New    Undeci F    1
+    pr-a x    x    x    x     t-c ms-a New    Undeci F    1
+    pr-a x    x    x    x     x   ms-a New    Undeci F    1
+    pr-a x    x    x    x     x   x    New    Undeci F    2
+    pr-a x    x    x    x     x   x    Confir Undeci F    2
+                                                        ===
+                                                          8
 
 Number of New bugs not targeted to a milestone. Note the difference
 between selecting records where tag is None, and where milestone is None:
@@ -269,13 +295,13 @@ ProductSeries' Product:
     ...         BugSummary.productseries == productseries_b,
     ...         BugSummary.product == prod_b),
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    pr-b x    x    x    x     x   x    New    Undeci F  x      1
-    x    ps-b x    x    x     x   x    New    Undeci F  x      1
-                                                             ===
-                                                               2
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    pr-b x    x    x    x     x   x    New    Undeci F    1
+    x    ps-b x    x    x     x   x    New    Undeci F    1
+                                                        ===
+                                                          2
 
 Distribution Bug Counts
 -----------------------
@@ -291,20 +317,20 @@ the same as tag.
     ...     distribution=distribution, sourcepackagename='sp-a')
 
     >>> bug = factory.makeBug(
-    ...     distribution=distribution, status=BugTaskStatus.CONFIRMED)
+    ...     target=distribution, status=BugTaskStatus.CONFIRMED)
     >>> bug_task = factory.makeBugTask(target=package) # status is NEW
 
     >>> print_find(
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    x    x    di-a x    sp-a  x   x    New    Undeci F  x      1
-    x    x    di-a x    x     x   x    New    Undeci F  x      1
-    x    x    di-a x    x     x   x    Confir Undeci F  x      1
-                                                             ===
-                                                               3
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    x    x    di-a x    sp-a  x   x    New    Undeci F    1
+    x    x    di-a x    x     x   x    New    Undeci F    1
+    x    x    di-a x    x     x   x    Confir Undeci F    1
+                                                        ===
+                                                          3
 
 How many bugs targeted to a distribution?
 
@@ -369,12 +395,12 @@ column.
     >>> print_find(
     ...     BugSummary.distroseries == series_c,
     ...     BugSummary.viewed_by == None)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    x    x    x    ds-c x     x   x    New    Undeci F  x      1
-                                                             ===
-                                                               1
+    -------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa   #
+    -------------------------------------------------------
+    x    x    x    ds-c x     x   x    New    Undeci F    1
+                                                        ===
+                                                          1
 
 
 Privacy
@@ -399,15 +425,15 @@ Create some teams too. team_a just has person_a as a member. team_c
 has both person_a and person_b as members. These teams will be subscribed
 to private bugs.
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> team_a = factory.makeTeam(
     ...     name='t-a',
     ...     members=[person_a],
-    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> team_c = factory.makeTeam(
     ...     name='t-c',
     ...     members=[person_a, person_b],
-    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
 
 Create some bugs.
     - bug_a is a private distribution bug, subscribed by team_a
@@ -421,15 +447,15 @@ Create some bugs.
     >>> series_p = factory.makeDistroSeries(
     ...     distribution=distro_p, name='ds-p')
     >>> bug_a = factory.makeBug(
-    ...     owner=owner, distribution=distro_p,
+    ...     owner=owner, target=distro_p,
     ...     information_type=InformationType.USERDATA)
     >>> bug_b = factory.makeBug(
-    ...     owner=owner, distribution=distro_p,
+    ...     owner=owner, target=distro_p,
     ...     information_type=InformationType.USERDATA)
     >>> bug_c = factory.makeBug(
     ...     owner=owner, series=series_p,
     ...     information_type=InformationType.USERDATA)
-    >>> bug_z = factory.makeBug(owner=owner, distribution=distro_p)
+    >>> bug_z = factory.makeBug(owner=owner, target=distro_p)
 
     >>> sub = bug_a.subscribe(team_a, person_a)
     >>> sub = bug_b.subscribe(person_b, person_b)
@@ -440,19 +466,21 @@ Whew! Check out what the BugSummary records now look like:
     >>> distro_or_series = Or(
     ...     BugSummary.distribution == distro_p,
     ...     BugSummary.distroseries == series_p)
-    >>> print_find(distro_or_series)
-    ------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa vis    #
-    ------------------------------------------------------------
-    x    x    di-p x    x     x   x    New    Undeci F  p-b    1
-    x    x    di-p x    x     x   x    New    Undeci F  own    3
-    x    x    di-p x    x     x   x    New    Undeci F  t-a    1
-    x    x    di-p x    x     x   x    New    Undeci F  t-c    1
-    x    x    di-p x    x     x   x    New    Undeci F  x      1
-    x    x    x    ds-p x     x   x    New    Undeci F  own    1
-    x    x    x    ds-p x     x   x    New    Undeci F  t-c    1
-                                                             ===
-                                                               9
+    >>> print_find(distro_or_series, include_privacy=True)
+    --------------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa gra  pol       #
+    --------------------------------------------------------------------
+    x    x    di-p x    x     x   x    New    Undeci F  p-b  x         1
+    x    x    di-p x    x     x   x    New    Undeci F  own  x         3
+    x    x    di-p x    x     x   x    New    Undeci F  t-a  x         1
+    x    x    di-p x    x     x   x    New    Undeci F  t-c  x         1
+    x    x    di-p x    x     x   x    New    Undeci F  x    di-p/pr   3
+    x    x    di-p x    x     x   x    New    Undeci F  x    x         1
+    x    x    x    ds-p x     x   x    New    Undeci F  own  x         1
+    x    x    x    ds-p x     x   x    New    Undeci F  t-c  x         1
+    x    x    x    ds-p x     x   x    New    Undeci F  x    di-p/pr   1
+                                                                     ===
+                                                                      13
 
 So how many public bugs are there on the distro?
 
@@ -460,12 +488,14 @@ So how many public bugs are there on the distro?
     ...     BugSummary,
     ...     BugSummary.distribution == distro_p,
     ...     BugSummary.viewed_by == None, # Public bugs only
+    ...     BugSummary.access_policy == None, # Public bugs only
     ...     BugSummary.sourcepackagename == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
 But how many can the owner see?
 
+    >>> from storm.expr import And
     >>> join = LeftJoin(
     ...     BugSummary, TeamParticipation,
     ...     BugSummary.viewed_by_id == TeamParticipation.teamID)
@@ -473,35 +503,9 @@ But how many can the owner see?
     ...     BugSummary,
     ...     BugSummary.distribution == distro_p,
     ...     Or(
-    ...         BugSummary.viewed_by == None,
+    ...         And(BugSummary.viewed_by == None,
+    ...             BugSummary.access_policy == None),
     ...         TeamParticipation.person == owner),
     ...     BugSummary.sourcepackagename == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     4
-
-Note that private bug counts can be inaccurate if a user is subscribed
-through multiple paths, such as being directly subscribed and also
-subscribed through a team. We demonstrate this using the distroseries
-query - there is only a single private bug targeted to series_p.
-
-    >>> store.using(join).find(
-    ...     BugSummary,
-    ...     BugSummary.distroseries == series_p,
-    ...     Or(
-    ...         BugSummary.viewed_by == None,
-    ...         TeamParticipation.person == person_a),
-    ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
-    1
-
-    >>> direct_sub = bug_c.subscribe(person_a, person_a)
-
-    >>> store.using(join).find(
-    ...     BugSummary,
-    ...     BugSummary.distroseries == series_p,
-    ...     Or(
-    ...         BugSummary.viewed_by == None,
-    ...         TeamParticipation.person == person_a),
-    ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
-    2

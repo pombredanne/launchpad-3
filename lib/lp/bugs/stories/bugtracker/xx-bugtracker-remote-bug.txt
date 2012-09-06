@@ -55,11 +55,8 @@ particular remote bug, we do not expose the title of the remote bug.
 Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('This report is public').click()
-  >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('This bug report should be private').selected = True
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
+  >>> browser.getControl('Private', index=1).selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -103,11 +100,8 @@ user logs in):
 
 Set the bug back to public:
 
-  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('This report is private').click()
-  >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('This bug report should be private').selected = False
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
+  >>> browser.getControl('Public', index=1).selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'

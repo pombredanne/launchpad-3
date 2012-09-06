@@ -6,21 +6,29 @@
   tal:attributes="
     class python: path('context/private') and 'portlet private' or 'portlet public'
   "
+  tal:define="link context/menu:context/visibility"
 >
-  <tal:information_type tal:condition="view/show_information_type_in_ui">
     <span id="information-type-summary"
       tal:attributes="class view/information_type_css;">This branch
-      contains <strong id="information-type" tal:content="view/information_type"></strong> information</span>
-    <div id="information-type-description" style="padding-top: 5px" tal:content="view/information_type_description"></div>
-  </tal:information_type>
-  <tal:privacy tal:condition="not:view/show_information_type_in_ui">
-  <div tal:condition="not:context/private"
-  >This branch is public</div>
-  <div tal:condition="context/private">
-      This branch is <strong>private</strong>
-      <tal:msg condition="not:context/explicitly_private">
-          because it is stacked on a private branch.
-      </tal:msg>
-  </div>
-  </tal:privacy>
+      contains
+      <strong id="information-type" tal:content="view/information_type"></strong>
+      information</span>&nbsp;<a class="sprite edit action-icon" id="privacy-link"
+           tal:attributes="href link/path" tal:condition="link/enabled"
+           >Edit</a>
+    <div id="information-type-description" style="padding-top: 5px"
+         tal:content="view/information_type_description"></div>
 </div>
+
+<tal:script>
+  <script type="text/javascript">
+    LPJS.use('lp.code.branch.information_type_choice', function(Y) {
+        Y.on('domready',
+            function(e) {
+              var widget = new Y.lp.code.branch.information_type_choice.BranchInformationTypeWidget();
+              widget.render();
+            },
+            window);
+    });
+  </script>
+</tal:script>
+

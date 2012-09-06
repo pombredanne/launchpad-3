@@ -941,7 +941,7 @@ class POTemplate(SQLBase, RosettaStats):
             errors, warnings = translation_importer.importFile(
                 entry_to_import, logger)
         except (MixedNewlineMarkersError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                TranslationFormatInvalidInputError, UnicodeDecodeError) as (
                 exception):
             if logger:
                 logger.info(
@@ -1005,7 +1005,7 @@ class POTemplate(SQLBase, RosettaStats):
                     if txn is not None:
                         txn.commit()
                         txn.begin()
-                except TransactionRollbackError, error:
+                except TransactionRollbackError as error:
                     if txn is not None:
                         txn.abort()
                         txn.begin()

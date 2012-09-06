@@ -68,7 +68,7 @@ class FatLocalTransport(LocalTransport):
         osutils.check_legal_path(abspath)
         try:
             chunk_file = os.open(abspath, os.O_CREAT | os.O_WRONLY)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EISDIR:
                 raise
             raise FileIsADirectory(name)

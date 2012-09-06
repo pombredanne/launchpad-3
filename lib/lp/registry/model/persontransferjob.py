@@ -27,12 +27,14 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import PersonTransferJobType
+from lp.registry.enums import (
+    PersonTransferJobType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
@@ -96,7 +98,8 @@ class PersonTransferJob(StormBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
-    def __init__(self, minor_person, major_person, job_type, metadata):
+    def __init__(self, minor_person, major_person, job_type, metadata,
+                 requester=None):
         """Constructor.
 
         :param minor_person: The person or team being added to or removed
@@ -108,7 +111,7 @@ class PersonTransferJob(StormBase):
                          dict.
         """
         super(PersonTransferJob, self).__init__()
-        self.job = Job()
+        self.job = Job(requester=requester)
         self.job_type = job_type
         self.major_person = major_person
         self.minor_person = minor_person
@@ -140,7 +143,7 @@ class PersonTransferJobDerived(BaseRunnableJob):
         self.context = job
 
     @classmethod
-    def create(cls, minor_person, major_person, metadata):
+    def create(cls, minor_person, major_person, metadata, requester=None):
         """See `IPersonTransferJob`."""
         if not IPerson.providedBy(minor_person):
             raise TypeError("minor_person must be IPerson: %s"
@@ -152,7 +155,8 @@ class PersonTransferJobDerived(BaseRunnableJob):
             minor_person=minor_person,
             major_person=major_person,
             job_type=cls.class_job_type,
-            metadata=metadata)
+            metadata=metadata,
+            requester=requester)
         derived = cls(job)
         derived.celeryRunOnCommit()
         return derived
@@ -310,7 +314,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
-            self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
+            self.team.membership_policy != TeamMembershipPolicy.OPEN):
             admin_template = get_email_template(
                 "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
@@ -356,10 +360,11 @@ class PersonMergeJob(PersonTransferJobDerived):
     config = config.IPersonMergeJobSource
 
     @classmethod
-    def create(cls, from_person, to_person, reviewer=None, delete=False):
+    def create(cls, from_person, to_person, requester, reviewer=None,
+               delete=False):
         """See `IPersonMergeJobSource`."""
-        if (from_person.is_merge_pending or
-            (not delete and to_person.is_merge_pending)):
+        if (from_person.isMergePending() or
+            (not delete and to_person.isMergePending())):
             return None
         if from_person.is_team:
             metadata = {'reviewer': reviewer.id}
@@ -372,7 +377,7 @@ class PersonMergeJob(PersonTransferJobDerived):
             to_person = getUtility(ILaunchpadCelebrities).registry_experts
         return super(PersonMergeJob, cls).create(
             minor_person=from_person, major_person=to_person,
-            metadata=metadata)
+            metadata=metadata, requester=requester)
 
     @classmethod
     def find(cls, from_person=None, to_person=None, any_person=False):
@@ -418,10 +423,7 @@ class PersonMergeJob(PersonTransferJobDerived):
 
     def getErrorRecipients(self):
         """See `IPersonMergeJob`."""
-        if self.to_person.is_team:
-            return self.to_person.getTeamAdminsEmailAddresses()
-        else:
-            return [format_address_for_person(self.to_person)]
+        return [format_address_for_person(self.requester)]
 
     def run(self):
         """Perform the merge."""
@@ -456,3 +458,7 @@ class PersonMergeJob(PersonTransferJobDerived):
             "<{self.__class__.__name__} to merge "
             "~{self.from_person.name} into ~{self.to_person.name}; "
             "status={self.job.status}>").format(self=self)
+
+    def getOperationDescription(self):
+        return ('merging ~%s into ~%s' %
+                (self.from_person.name, self.to_person.name))

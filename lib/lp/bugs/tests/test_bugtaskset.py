@@ -6,12 +6,9 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from lp.bugs.interfaces.bugtask import (
-    IBugTaskSet,
-    )
-from lp.bugs.interfaces.bug import (
-    IBugSet,
-    )
+
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.webapp.interfaces import ILaunchBag

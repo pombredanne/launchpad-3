@@ -183,11 +183,11 @@ When a private team has a mailing list, its messages can also be held
 for moderator approval.
 
     >>> from lp.registry.interfaces.person import (
-    ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
+    ...     IPersonSet, PersonVisibility, TeamMembershipPolicy)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
-    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED,
     ...     visibility=PersonVisibility.PRIVATE)
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet

@@ -112,7 +112,7 @@ class ExtractBugTrackerAndBugTestBase:
         try:
             bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             # The raised exception should contain enough information so
             # that we can register a new bug tracker.
             self.assertEqual(error.base_url, self.base_url)
@@ -371,7 +371,7 @@ class TestBugWatch(TestCaseWithFactory):
         # tasks which are not conjoined and for which the bug is not a
         # duplicate.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, owner=product.owner)
+        bug = self.factory.makeBug(target=product, owner=product.owner)
         product_task = bug.getBugTask(product)
         watch = self.factory.makeBugWatch(bug=bug)
         product_task.bugwatch = watch
@@ -391,7 +391,7 @@ class TestBugWatch(TestCaseWithFactory):
         # But once the bug is marked as a duplicate,
         # bugtasks_to_update yields nothing.
         bug.markAsDuplicate(
-            self.factory.makeBug(product=product, owner=product.owner))
+            self.factory.makeBug(target=product, owner=product.owner))
         self.failUnlessEqual(
             [], list(removeSecurityProxy(watch).bugtasks_to_update))
 

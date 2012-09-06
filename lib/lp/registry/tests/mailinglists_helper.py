@@ -22,17 +22,14 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,
     MailingListStatus,
     PostedMessageStatus,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
@@ -163,11 +160,11 @@ def new_team(team_name, with_list=False):
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
     # XXX BarryWarsaw 2007-09-27 bug 125505: Set the team's subscription
     # policy to OPEN.
-    policy = TeamSubscriptionPolicy.OPEN
+    policy = TeamMembershipPolicy.OPEN
     personset = getUtility(IPersonSet)
     team_creator = personset.getByName('no-priv')
     team = personset.newTeam(team_creator, team_name, displayname,
-                             subscriptionpolicy=policy)
+                             membership_policy=policy)
     if not with_list:
         return team
     else:
@@ -181,8 +178,6 @@ def new_list_for_team(team):
     """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
-    experts = getUtility(ILaunchpadCelebrities).registry_experts
-    reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
     team_list.startConstructing()
@@ -203,11 +198,11 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
     browser.getControl('Display Name').value = displayname
     if private:
         browser.getControl('Visibility').value = ['PRIVATE']
-        browser.getControl(name='field.subscriptionpolicy').value = [
+        browser.getControl(name='field.membership_policy').value = [
             'RESTRICTED']
     else:
         browser.getControl(
-            name='field.subscriptionpolicy').displayValue = ['Open Team']
+            name='field.membership_policy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Create the team's mailing list.
     browser.open('%s~%s/+mailinglist' % (rooturl, team_name))

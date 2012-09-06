@@ -405,7 +405,7 @@ We use getPackageUploads to inspect the current NEW queue and accept items.
     >>> for queue_item in queue_items:
     ...      try:
     ...          queue_item.setAccepted()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
     ...      else:
     ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,

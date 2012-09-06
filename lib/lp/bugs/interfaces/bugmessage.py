@@ -138,5 +138,3 @@ class IBugComment(IMessage, IComment):
         "Whether or not to show a footer for the comment.")
     patches = Attribute(
         "Patches attched to this comment.")
-    rendered_cache_time = Attribute(
-        "How long we can cache the rendered comment for.")

@@ -185,7 +185,7 @@ class TestBazaarBranchStore(WorkerTest):
         store = self.makeBranchStore()
         bzr_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
-        self.assertEqual([], bzr_branch.revision_history())
+        self.assertEqual(0, bzr_branch.revno())
 
     def test_getNewBranch_without_tree(self):
         # If pull() with needs_tree=False creates a new branch, it doesn't
@@ -657,7 +657,7 @@ class TestWorkerCore(WorkerTest):
         # import.
         worker = self.makeImportWorker()
         bzr_branch = worker.getBazaarBranch()
-        self.assertEqual([], bzr_branch.revision_history())
+        self.assertEqual(0, bzr_branch.revno())
 
     def test_bazaarBranchLocation(self):
         # getBazaarBranch makes the working tree under the current working
@@ -843,8 +843,7 @@ class TestActualImportMixin:
             opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_sync(self):
         # Do an import.
@@ -853,8 +852,7 @@ class TestActualImportMixin:
             opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
         # Change the remote branch.
         self.makeForeignCommit(worker.source_details)
@@ -864,8 +862,7 @@ class TestActualImportMixin:
 
         # Check that the new revisions are in the Bazaar branch.
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
@@ -901,8 +898,7 @@ class TestActualImportMixin:
             source_details.branch_id)
         branch = Branch.open(branch_url)
 
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_script_exit_codes(self):
         # After a successful import that imports revisions, the worker exits
@@ -1299,8 +1295,7 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            1, len(branch.revision_history()))
+        self.assertEqual(1, branch.revno())
         self.assertEqual(
             "Some Random Hacker <jane@example.com>",
             branch.repository.get_revision(branch.last_revision()).committer)

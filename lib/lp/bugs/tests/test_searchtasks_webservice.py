@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lp.registry.enums import InformationType
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -81,3 +82,69 @@ class TestLinkedBlueprintsParameter(TestCaseWithFactory):
         # validation is performed for the linked_blueprints parameter, and
         # thus no error is returned when we pass rubbish.
         self.search("beta", linked_blueprints="Teabags!")
+
+
+class TestSearchByInformationType(TestCaseWithFactory):
+    """Tests for the information_type parameter."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSearchByInformationType, self).setUp()
+        self.owner = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.product = self.factory.makeProduct()
+        self.bug = self.factory.makeBug(
+            target=self.product,
+            information_type=InformationType.PRIVATESECURITY)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def search(self, api_version, **kwargs):
+        return self.webservice.named_get(
+            '/%s' % self.product.name, 'searchTasks',
+            api_version=api_version, **kwargs).jsonBody()
+
+    def test_search_returns_results(self):
+        # A matching search returns results.
+        response = self.search(
+            "devel", information_type="Private Security")
+        self.assertEqual(response['total_size'], 1)
+
+    def test_search_returns_no_results(self):
+        # A non-matching search returns no results.
+        response = self.search("devel", information_type="Private")
+        self.assertEqual(response['total_size'], 0)
+
+
+class TestGetBugData(TestCaseWithFactory):
+    """Tests for the /bugs getBugData operation."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetBugData, self).setUp()
+        self.owner = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.product = self.factory.makeProduct()
+        self.bug = self.factory.makeBug(
+            target=self.product,
+            information_type=InformationType.PRIVATESECURITY)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def search(self, api_version, **kwargs):
+        return self.webservice.named_get(
+            '/bugs', 'getBugData',
+            api_version=api_version, **kwargs).jsonBody()
+
+    def test_search_returns_results(self):
+        # A matching search returns results.
+        response = self.search(
+            "devel", bug_id=self.bug.id)
+        self.assertEqual(self.bug.id, response[0]['id'])
+
+    def test_search_returns_no_results(self):
+        # A non-matching search returns no results.
+        response = self.search("devel", bug_id=0)
+        self.assertEqual(len(response), 0)

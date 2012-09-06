@@ -57,12 +57,12 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
@@ -93,6 +93,7 @@ from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
     PillarNavigationMixin,
+    PillarViewMixin,
     )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
@@ -107,7 +108,6 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
@@ -312,12 +312,7 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
-        text = 'Sharing'
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
-        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
-            or bool(getFeatureFlag(enabled_writable_flag)))
-        return Link('+sharing', text, icon='edit', enabled=enabled)
+        return Link('+sharing', 'Sharing', icon='edit')
 
     @cachedproperty
     def links(self):
@@ -500,12 +495,7 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     @property
     def links(self):
-        links = [
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            'filebug',
-            ]
+        links = ['bugsupervisor', 'cve', 'filebug']
         add_subscribe_link(links)
         return links
 
@@ -648,7 +638,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin):
+class DistributionView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -666,7 +656,7 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
             self.context, IDistribution['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+reassign',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer', show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -679,7 +669,7 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
             format_link(self.context.driver, empty_value=empty_value),
             header='Change driver', edit_view='+driver',
             null_display_value=empty_value,
-            step_title='Select a new driver')
+            step_title='Select a new driver', show_create_team=True)
 
     @property
     def members_widget(self):

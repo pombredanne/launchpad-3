@@ -175,3 +175,62 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
             product=self.product,
             )
         self.assertContentEqual(specifications, self.milestone.specifications)
+
+
+class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
+    """Milestones list specifications with some workitems targeted to it."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _create_milestones_on_target(self, **kwargs):
+        """Create a milestone on a target with work targeted to it.
+
+        Target should be specified using either product or distribution
+        argument which is directly passed into makeMilestone call.
+        """
+        other_milestone = self.factory.makeMilestone(**kwargs)
+        target_milestone = self.factory.makeMilestone(**kwargs)
+        specification = self.factory.makeSpecification(
+            milestone=other_milestone, **kwargs)
+        # Create two workitems to ensure this doesn't cause
+        # two specifications to be returned.
+        self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=target_milestone)
+        self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=target_milestone)
+        return specification, target_milestone
+
+    def test_milestones_on_product(self):
+        specification, target_milestone = self._create_milestones_on_target(
+            product=self.factory.makeProduct())
+        self.assertEqual([specification],
+                         list(target_milestone.specifications))
+
+    def test_milestones_on_distribution(self):
+        specification, target_milestone = self._create_milestones_on_target(
+            distribution=self.factory.makeDistribution())
+        self.assertEqual([specification],
+                         list(target_milestone.specifications))
+
+    def test_milestones_on_project(self):
+        # A Project (Project Group) milestone contains all specifications
+        # targetted to contained Products (Projects) for milestones of
+        # a certain name.
+        projectgroup = self.factory.makeProject()
+        product = self.factory.makeProduct(project=projectgroup)
+        specification, target_milestone = self._create_milestones_on_target(
+            product=product)
+        milestone = projectgroup.getMilestone(name=target_milestone.name)
+        self.assertEqual([specification],
+                         list(milestone.specifications))
+
+    def test_milestones_with_deleted_workitems(self):
+        # Deleted work items do not cause the specification to show up
+        # in the milestone page.
+        milestone = self.factory.makeMilestone(
+            product=self.factory.makeProduct())
+        specification = self.factory.makeSpecification(
+            milestone=milestone, product=milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=milestone, deleted=True)
+        self.assertEqual([], list(milestone.specifications))

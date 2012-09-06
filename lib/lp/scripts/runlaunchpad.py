@@ -449,7 +449,7 @@ def start_launchpad(argv=list(sys.argv), setup=None):
                     signal.pause()
                 except KeyboardInterrupt:
                     pass
-    except Exception, e:
+    except Exception as e:
         print >> sys.stderr, "stopping services on exception %r" % e
         for service in services:
             print >> sys.stderr, service, "fixture details:"

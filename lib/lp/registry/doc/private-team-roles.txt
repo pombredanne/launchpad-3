@@ -15,14 +15,14 @@ Bug subscriptions
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     PersonVisibility,
-    ...     TeamSubscriptionPolicy,
+    ...     TeamMembershipPolicy,
     ...     )
     >>> admin_user = getUtility(IPersonSet).getByEmail('admin@canonical.com')
     >>> ignored = login_person(admin_user)
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE,
-    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
 
 A private team can be subscribed to a bug.
 
@@ -188,7 +188,7 @@ or private, can be the project registrant.
     >>> public_team = factory.makeTeam(name='public-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PUBLIC,
-    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> product = factory.makeProduct(registrant=team_owner)
     >>> product = factory.makeProduct(registrant=public_team)
     >>> product = factory.makeProduct(registrant=priv_team)
@@ -223,8 +223,8 @@ Bug Supervisor
 A public team and a private team can be a project bug supervisor.
 
     >>> product = factory.makeProduct()
-    >>> product.setBugSupervisor(public_team, admin_user)
-    >>> product.setBugSupervisor(priv_team, admin_user)
+    >>> product.bug_supervisor = public_team
+    >>> product.bug_supervisor = priv_team
 
 
 Product Series Roles

@@ -113,4 +113,6 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = ProcessJobSourceGroups()
-    script.lock_and_run()
+    # We do not need to take a lock here; all the interesting work is done
+    # by process-job-source.py, which takes its own per-job-source locks.
+    script.run()

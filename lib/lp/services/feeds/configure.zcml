@@ -46,6 +46,7 @@
         name="index.html"
         permission="zope.Public"
         class="lp.services.webapp.login.FeedsUnauthorizedView"
+        template="../../app/templates/launchpad-forbidden.pt"
         attribute="__call__"
         layer="lp.layers.FeedsLayer"
         />

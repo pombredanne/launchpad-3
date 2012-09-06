@@ -15,10 +15,10 @@ from lazr.enum import (
 
 
 class MailingListAutoSubscribePolicy(DBEnumeratedType):
-    """A person's auto-subscription policy.
+    """A person's auto-subscribe policy.
 
     When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
+    auto-subscribe policy describes how and whether they will be
     automatically subscribed to any team mailing list that the team may have.
 
     This does not describe what happens when a team that already has members

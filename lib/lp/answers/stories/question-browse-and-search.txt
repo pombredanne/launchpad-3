@@ -311,7 +311,7 @@ That listing is also searchable. Since he's has lots of experience
 dealing with plugins problems, he always start by a search for such
 problems:
 
-    >>> browser.getControl(name='field.search_text').value = 'plug-in'
+    >>> browser.getControl(name='field.search_text').value = 'plugin'
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):

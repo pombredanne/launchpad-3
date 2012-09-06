@@ -325,7 +325,7 @@ def main(argv=sys.argv):
         opts, args = getopt.getopt(argv[1:], 'duniah',
                                    ['dot', 'unused', 'all', 'names', 'imports',
                                     'help'])
-    except getopt.error, e:
+    except getopt.error as e:
         print >> sys.stderr, "%s: %s" % (progname, e)
         print >> sys.stderr, "Try %s --help." % progname
         return 1

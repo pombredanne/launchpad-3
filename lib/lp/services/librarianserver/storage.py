@@ -65,7 +65,7 @@ class LibrarianStorage:
         self.incoming = os.path.join(self.directory, 'incoming')
         try:
             os.mkdir(self.incoming)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
 
@@ -191,7 +191,7 @@ class LibraryFileUpload(object):
             raise DuplicateFileIDError(fileID)
         try:
             os.makedirs(os.path.dirname(location))
-        except OSError, e:
+        except OSError as e:
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise

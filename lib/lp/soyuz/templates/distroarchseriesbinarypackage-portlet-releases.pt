@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-releases">
   <h2>Package releases</h2>
-  <div class="portletBody portletContent">
     <ul>
       <li tal:repeat="release context/releases">
         <a tal:attributes="href release/fmt:url"
@@ -16,5 +15,4 @@
       tal:replace="context/displayname">displayname</span> 
       have yet been published.</i>
     </p>
-  </div>
 </div>

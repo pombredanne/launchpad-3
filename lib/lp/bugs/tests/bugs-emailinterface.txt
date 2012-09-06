@@ -142,12 +142,11 @@ We define a helper to pretty-print the notification recipients:
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
 
-Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
-subscribed "implicitly", because he's the product owner.
+Foo Bar got subscribed to the bug.
 
     >>> added_bug = bug_notification.bug
     >>> getSubscribers(added_bug)
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    ['foo.bar@canonical.com']
 
 If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
@@ -182,12 +181,10 @@ A notification was added:
     >>> bug_notification.message == bug.initial_message
     True
 
-Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
-subscribed "implicitly" since he's a bug supervisor for the mozilla
-package:
+Foo Bar got subscribed to the bug.
 
     >>> getSubscribers(added_bug)
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    ['foo.bar@canonical.com']
 
 It's possible to file a bug on more than product/package at once:
 
@@ -822,14 +819,14 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'Sample Person', u'Ubuntu Team']
+    [u'Sample Person']
 
     >>> bug_six.subscribe(no_priv, no_priv)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'No Privileges Person', u'Sample Person', u'Ubuntu Team']
+    [u'No Privileges Person', u'Sample Person']
 
 Now, if we unsubscribe no-priv from bug #5, he will actually get
 unsubscribed from bug #6, thus no longer being indirectly subscribed to
@@ -845,7 +842,7 @@ bug #5.
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'Sample Person', u'Ubuntu Team']
+    [u'Sample Person']
 
 (Log back in for the tests that follow.)
 
@@ -1443,7 +1440,7 @@ Bug supervisors can set some restricted statuses:
 
     >>> with lp_dbuser():
     ...     login('foo.bar@canonical.com')
-    ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
+    ...     upstream_task.pillar.bug_supervisor = email_user
 
     >>> ignored = login_person(email_user)
 
@@ -1462,7 +1459,7 @@ Everyone else gets an explanatory error message:
 
     >>> with lp_dbuser():
     ...     login('foo.bar@canonical.com')
-    ...     upstream_task.pillar.setBugSupervisor(None, None)
+    ...     upstream_task.pillar.bug_supervisor = None
 
     >>> login('no-priv@canonical.com')
 
@@ -1529,11 +1526,11 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    critical, high, medium, low, wishlist, undecided
+    undecided, critical, high, medium, low, wishlist
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance critical
+        importance undecided
     ...
 
 XXX mpt 20060516: "importance undecided" is a silly example, but customizing

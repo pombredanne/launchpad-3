@@ -116,12 +116,12 @@ flag in the thread default controller.
 
 To simply check a boolean::
 
-    if features.getFeatureFlag('soyuz.derived_series_ui.enabled'):
+    if features.getFeatureFlag('example_flag.enabled'):
         ...
 
 and if you want to use the value ::
 
-     value = features.getFeatureFlag('soyuz.derived_series_ui.enabled')
+     value = features.getFeatureFlag('example_flag.enabled')
      if value:
         print value
 
@@ -181,6 +181,8 @@ other environments that have no explicit setup and teardown::
 
 import threading
 
+from lazr.restful.utils import safe_hasattr
+
 
 __all__ = [
     'currentScope',
@@ -206,11 +208,12 @@ def install_feature_controller(controller):
 
 
 def uninstall_feature_controller():
-    """Remove the current feature controller from this thread.
+    """Remove, if it exists, the current feature controller from this thread.
 
     This function is used to create a pristine environment in tests.
     """
-    del per_thread.features
+    if safe_hasattr(per_thread, 'features'):
+        del per_thread.features
 
 
 def get_relevant_feature_controller():

@@ -26,10 +26,10 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -236,18 +236,17 @@ class DistroSeriesSourcePackageRelease:
     def current_published(self):
         """See `IDistroArchSeriesSourcePackage`."""
         # Retrieve current publishing info
-        published_status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED]
+        archive_ids = removeSecurityProxy(
+            self.distroseries.distribution.all_distro_archive_ids)
         current = SourcePackagePublishingHistory.selectFirst("""
         distroseries = %s AND
         archive IN %s AND
         sourcepackagerelease = %s AND
         status IN %s
         """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
+                        archive_ids,
                         self.sourcepackagerelease,
-                        published_status),
+                        active_publishing_status),
             orderBy=['-datecreated', '-id'])
 
         return current

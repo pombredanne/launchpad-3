@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Methods required to customize the mimetypes library."""
@@ -20,10 +20,9 @@ def customizeMimetypes():
     """
     mimetypes.init()
 
-    # Add support for bz2 encodings, which is not present in python2.5.
-    mimetypes.encodings_map.setdefault('.bz2', 'bzip2')
+    # Add support for .bzip2 as well as .bz2.  Up to Python 3.2 (at least),
+    # only .bz2 is present.
     mimetypes.encodings_map.setdefault('.bzip2', 'bzip2')
-    mimetypes.suffix_map.setdefault('.tbz2', '.tar.bz2')
 
     # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
     # for Intrepid, to add .debdiff to /etc/mime.types, so we may be able

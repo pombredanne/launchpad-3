@@ -97,7 +97,7 @@ class GoogleServiceTestSetup:
         if cls.service:
             try:
                 os.kill(cls.service.pid, signal.SIGTERM)
-            except OSError, error:
+            except OSError as error:
                 if error.errno != errno.ESRCH:
                     raise
                 # The process with the given pid doesn't exist, so there's

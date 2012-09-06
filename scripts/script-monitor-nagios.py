@@ -102,7 +102,7 @@ def main():
             # Construct our return message
             print "All scripts ran as expected"
             return 0
-    except Exception, e:
+    except Exception as e:
         # Squeeze the exception type and stringification of the exception
         # value on to one line.
         print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))

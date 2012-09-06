@@ -138,7 +138,7 @@ class ImageChangeWidget(SimpleInputWidget):
             self._image = form.getOne(self.image_widget.name)
             try:
                 self.context.validate(self._image)
-            except ValidationError, v:
+            except ValidationError as v:
                 self._error = WidgetInputError(self.name, self.label, v)
                 raise self._error
             self._image.seek(0)

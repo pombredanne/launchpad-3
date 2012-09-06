@@ -6,15 +6,13 @@ __metaclass__ = type
 from datetime import datetime
 import time
 
-import pytz
 from lazr.jobrunner.jobrunner import LeaseHeld
+import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 
-from lp.code.model.branchmergeproposaljob import (
-    CodeReviewCommentEmailJob,
-    )
+from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (

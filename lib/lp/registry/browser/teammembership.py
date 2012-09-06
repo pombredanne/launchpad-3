@@ -278,7 +278,7 @@ class TeamMembershipEditView(LaunchpadView):
             else:
                 try:
                     expires = self._getExpirationDate()
-                except ValueError, err:
+                except ValueError as err:
                     self.errormessage = (
                         'Invalid expiration: %s' % err)
                     return False
@@ -304,7 +304,7 @@ class TeamMembershipEditView(LaunchpadView):
         expires = None
         try:
             expires = self.expiration_widget.getInputValue()
-        except InputErrors, value:
+        except InputErrors as value:
             # Handle conversion errors. We have to do this explicitly here
             # because we are not using the full form machinery which would
             # put the relevant error message into the field error. We are

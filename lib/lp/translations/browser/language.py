@@ -327,7 +327,7 @@ class LanguageAdminView(LaunchpadEditFormView):
         """Validate plural expression and number of plural forms."""
         try:
             make_friendly_plural_forms(pluralexpression, pluralforms)
-        except BadPluralExpression, e:
+        except BadPluralExpression as e:
             self.setFieldError('pluralexpression', str(e))
 
     def validate(self, data):

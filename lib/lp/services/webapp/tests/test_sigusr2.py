@@ -31,7 +31,6 @@ class SIGUSR2TestCase(unittest.TestCase):
             sys.executable,
             os.path.join(os.path.dirname(__file__), 'sigusr2.py'),
             main_log]
-
         proc = subprocess.Popen(
             helper_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         try:
@@ -69,13 +68,12 @@ class SIGUSR2TestCase(unittest.TestCase):
         self.assertEqual(open(main_log, 'r').read(), 'Message 3\n')
 
     def sync(self, step):
-        timeout = 10
+        retries = 200
         event_filename = os.path.join(self.logdir, step)
-        start_time = time.time()
-        while time.time() < start_time + timeout:
+        for i in range(retries):
             if os.path.exists(event_filename):
                 os.unlink(event_filename)
                 return
-        self.fail("sync step %s didn't happen in %d seconds." % (
-            step, timeout))
-
+            time.sleep(0.3)
+        self.fail("sync step %s didn't happen after %d retries." % (
+            step, retries))

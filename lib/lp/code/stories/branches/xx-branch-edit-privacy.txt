@@ -39,13 +39,13 @@ However an admin can.
 
     >>> admin_browser.open('http://code.launchpad.dev/~eric/fooix/trunk')
     >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Keep branch confidential').click()
+    >>> admin_browser.getControl('Private', index=1).click()
     >>> admin_browser.getControl('Change Branch').click()
 
 The branch is now private, so it assumes the standard private presentation.
 
     >>> print_tag_with_id(admin_browser.contents, 'privacy')
-    This branch is private
+    This branch contains Private information...
 
 
 Private branches allowed
@@ -68,33 +68,23 @@ able to mark the branch as private.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('Private', index=1).selected = True
     >>> browser.getControl('Change Branch').click()
-
-A notification is added to say the branch is now private.
-
-    >>> print_feedback_messages(browser.contents)
-    The branch is now private, and only visible to the owner and to subscribers.
 
 Since the branch is now private, it will have the standard Launchpad
 presentation for private things.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is private
+    This branch contains Private information...
 
 If Sample Person changes the branch from private back to public, the page
 reverts to its normal presentation.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = False
+    >>> browser.getControl('Public', index=0).selected = True
     >>> browser.getControl('Change Branch').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is public
-
-A notification is added to say the branch is now public.
-
-    >>> print_feedback_messages(browser.contents)
-    The branch is now publicly accessible.
+    This branch contains Public information...
 
 
 Private Only branches
@@ -113,19 +103,19 @@ a public branch private, but not vice versa.
 Mark the public branch private.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('Private', index=1).selected = True
     >>> browser.getControl('Change Branch').click()
 
 The branch is now private, so it assumes the standard private presentation.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is private
+    This branch contains Private information...
 
 However when the user now looks to edit the branch details, there
 is no option to mark the branch as public.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential')
+    >>> browser.getControl('Public')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Keep branch confidential'
+    LookupError: label 'Public'

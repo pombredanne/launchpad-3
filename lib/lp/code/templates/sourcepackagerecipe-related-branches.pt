@@ -5,7 +5,7 @@
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
   <legend>Related branches</legend>
-  <div class="extra-options unseen">
+  <div class="extra-options hidden">
 
     <div tal:condition="packageBranches" id="related-package-branches">
       <h2>Source package branches</h2>

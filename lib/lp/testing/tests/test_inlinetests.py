@@ -16,8 +16,8 @@ from lp.testing.systemdocs import LayeredDocFileSuite
 
 def test_suite():
     suite = LayeredDocFileSuite(
+        [],
         layer=BaseLayer)
     suite.addTest(doctest.DocTestSuite(
         testing, optionflags=NORMALIZE_WHITESPACE|ELLIPSIS))
     return suite
-

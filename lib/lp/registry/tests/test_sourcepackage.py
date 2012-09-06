@@ -12,9 +12,11 @@ from lazr.lifecycle.event import (
 from storm.locals import Store
 import transaction
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
 from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
 from zope.security.management import checkPermission
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.seriessourcepackagebranch import (
@@ -23,6 +25,7 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
@@ -45,6 +48,10 @@ from lp.testing.views import create_initialized_view
 class TestSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_interface_consistency(self):
+        package = self.factory.makeSourcePackage()
+        verifyObject(ISourcePackage, removeSecurityProxy(package))
 
     def test_path(self):
         sourcepackage = self.factory.makeSourcePackage()

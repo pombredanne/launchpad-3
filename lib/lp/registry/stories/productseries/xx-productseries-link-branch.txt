@@ -62,7 +62,7 @@ of the branch
     Series trunk : Mozilla Firefox
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
-    lp://dev/firefox - Sample Person
+    lp://dev/~name12/firefox/main - Sample Person
     Change branch
 
     >>> print sample_browser.getLink('Browse the code').url

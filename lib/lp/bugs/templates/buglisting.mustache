@@ -13,6 +13,13 @@
             {{status}}
         </div>
         {{/show_status}}
+        <div class="buginfo-extra">
+            {{#show_information_type}}
+                <div class="information_type">
+                    {{information_type}}
+                </div>
+            {{/show_information_type}}
+        </div>
     </div>
 
     <div class="buglisting-col2">
@@ -55,7 +62,7 @@
                 </span>
             {{/show_reporter}}
             {{#show_datecreated}}
-                <span class="sprite milestone field">
+                <span class="sprite aging field">
                     {{age}}
                 </span>
             {{/show_datecreated}}

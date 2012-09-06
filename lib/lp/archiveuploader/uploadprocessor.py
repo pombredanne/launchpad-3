@@ -191,7 +191,7 @@ class UploadProcessor:
                     continue
                 try:
                     handler = UploadHandler.forProcessor(self, fsroot, upload)
-                except CannotGetBuild, e:
+                except CannotGetBuild as e:
                     self.log.warn(e)
                 else:
                     handler.process()
@@ -225,7 +225,7 @@ class UploadProcessor:
         # be able to do so.
         try:
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError, err:
+        except OSError as err:
             self.log.debug('Could not fix the lockfile permission: %s' % err)
 
         try:
@@ -326,7 +326,7 @@ class UploadHandler:
         try:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
-        except UploadPathError, e:
+        except UploadPathError as e:
             # pick some defaults to create the NascentUpload() object.
             # We will be rejecting the upload so it doesn matter much.
             distribution = getUtility(IDistributionSet)['ubuntu']
@@ -337,7 +337,7 @@ class UploadHandler:
                      extra_info=(
                          "Please update your dput/dupload configuration "
                          "and then re-upload.")))
-        except PPAUploadPathError, e:
+        except PPAUploadPathError as e:
             # Again, pick some defaults but leave a hint for the rejection
             # emailer that it was a PPA failure.
             distribution = getUtility(IDistributionSet)['ubuntu']
@@ -408,7 +408,7 @@ class UploadHandler:
 
             try:
                 self._processUpload(upload)
-            except UploadPolicyError, e:
+            except UploadPolicyError as e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
                 logger.debug(
@@ -421,7 +421,7 @@ class UploadHandler:
                 upload.reject(
                     "Further error processing not possible because of "
                     "a critical previous error.")
-            except Exception, e:
+            except Exception as e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause
                 # a further exception, depending on the state of the

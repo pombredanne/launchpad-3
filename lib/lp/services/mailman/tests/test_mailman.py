@@ -83,14 +83,14 @@ def tearDown(testobj):
             VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
         # Delete the MHonArc archives if they exist.
         path = os.path.join(VAR_PREFIX, 'mhonarc', team_name)
         try:
             shutil.rmtree(path)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
     # Remove all held messages.

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -167,7 +167,7 @@ class QueueAction:
                 # retrieve PackageUpload item by id
                 try:
                     item = getUtility(IPackageUploadSet).get(int(term))
-                except NotFoundError, info:
+                except NotFoundError as info:
                     raise QueueActionError('Queue Item not found: %s' % info)
 
                 if item.status != self.queue:
@@ -260,8 +260,8 @@ class QueueAction:
             False: '-',
         }
         return (
-            source_tag[bool(queue_item.contains_source)] +
-            binary_tag[bool(queue_item.contains_build)])
+            source_tag[queue_item.contains_source] +
+            binary_tag[queue_item.contains_build])
 
     def displayItem(self, queue_item):
         """Display one line summary of the queue item provided."""
@@ -286,7 +286,7 @@ class QueueAction:
         Optionally pass a binarypackagename via 'only' argument to display
         only exact matches within the selected build queue items.
         """
-        if queue_item.package_copy_job or not queue_item.sources.is_empty():
+        if queue_item.package_copy_job or queue_item.sources:
             self.display(
                 "\t | * %s/%s Component: %s Section: %s" % (
                     queue_item.package_name,
@@ -429,7 +429,7 @@ class QueueActionFetch(QueueAction):
                 # do not overwrite files on disk (bug # 62976)
                 try:
                     existing_file = open(libfile.filename, "r")
-                except IOError, e:
+                except IOError as e:
                     if not e.errno == errno.ENOENT:
                         raise
                     # File does not already exist, so read file from librarian
@@ -477,7 +477,7 @@ class QueueActionReject(QueueAction):
             try:
                 queue_item.rejectFromQueue(
                     logger=self.log, dry_run=self.no_mail)
-            except QueueInconsistentStateError, info:
+            except QueueInconsistentStateError as info:
                 self.display('** %s could not be rejected due %s'
                              % (queue_item.displayname, info))
 
@@ -502,7 +502,7 @@ class QueueActionAccept(QueueAction):
             try:
                 queue_item.acceptFromQueue(
                     logger=self.log, dry_run=self.no_mail)
-            except QueueInconsistentStateError, info:
+            except QueueInconsistentStateError as info:
                 self.display('** %s could not be accepted due to %s'
                              % (queue_item.displayname, info))
                 continue
@@ -586,7 +586,7 @@ class QueueActionOverride(QueueAction):
                 component = getUtility(IComponentSet)[self.component_name]
             if self.section_name:
                 section = getUtility(ISectionSet)[self.section_name]
-        except NotFoundError, info:
+        except NotFoundError as info:
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
@@ -620,7 +620,7 @@ class QueueActionOverride(QueueAction):
                 section = getUtility(ISectionSet)[self.section_name]
             if self.priority_name:
                 priority = name_priority_map[self.priority_name]
-        except (NotFoundError, KeyError), info:
+        except (NotFoundError, KeyError) as info:
             raise QueueActionError('Not Found: %s' % info)
 
         overridden = []
@@ -731,7 +731,7 @@ class CommandRunner:
                 log=self.log)
             queue_action.initialize()
             queue_action.run()
-        except QueueActionError, info:
+        except QueueActionError as info:
             raise CommandRunnerError(info)
 
         return queue_action

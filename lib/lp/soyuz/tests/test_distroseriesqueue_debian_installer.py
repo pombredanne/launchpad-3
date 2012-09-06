@@ -49,7 +49,7 @@ class TestDistroSeriesQueueDebianInstaller(TestNativePublishingBase):
 
     def test_accepts_correct_upload(self):
         upload = self.uploadTestData()
-        self.assertEqual(1, upload.queue_root.customfiles.count())
+        self.assertEqual(1, len(upload.queue_root.customfiles))
 
     def test_generates_mail(self):
         # Two e-mail messages were generated (acceptance and announcement).

@@ -40,7 +40,7 @@ reveal its translations to the public or hide them from the public.
     ...
     ...     try:
     ...         view.checkTranslationsViewable()
-    ...     except TranslationUnavailable, message:
+    ...     except TranslationUnavailable as message:
     ...         return unicode(message)
     ...     return None
 

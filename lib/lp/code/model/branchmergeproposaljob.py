@@ -85,9 +85,7 @@ from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.bzrutils import server
-from lp.codehosting.vfs import (
-    get_ro_server,
-    )
+from lp.codehosting.vfs import get_ro_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol

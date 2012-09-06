@@ -73,7 +73,7 @@ so there whould be no emails.
     ...     browser.contents, 'branch-info'))
     Branch information ...
     Project:  GNOME Terminal
-    Status: Experimental
+    Status: Experimental Edit
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
 
@@ -112,7 +112,7 @@ The branch page is displayed with the new status:
     >>> contents = browser.contents
     >>> status_tag = find_tag_by_id(contents, 'edit-lifecycle_status')
     >>> print extract_text(status_tag)
-    Merged
+    Merged Edit
 
 Set the branch status back to its initial state.
 

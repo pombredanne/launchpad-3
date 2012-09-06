@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test buildd uploads use-cases."""
@@ -136,7 +136,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.assertTrue(
             queue_item is not None,
             "Binary Upload Failed\nGot: %s" % self.log.getLogBuffer())
-        self.assertEqual(queue_item.builds.count(), 1)
+        self.assertEqual(1, len(queue_item.builds))
         return queue_item.builds[0].build
 
     def _createBuild(self, archtag):

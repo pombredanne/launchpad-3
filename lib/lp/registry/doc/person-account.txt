@@ -95,7 +95,7 @@ will cause this spec to be reassigned.
     >>> [coc.active for coc in foobar.signedcocs]
     [True]
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> params = BugTaskSearchParams(foobar, assignee=foobar)
     >>> foobar.searchTasks(params).count() > 0
     True

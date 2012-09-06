@@ -125,7 +125,7 @@ class WalkerBase:
         """
         try:
             self.open()
-        except (IOError, socket.error), e:
+        except (IOError, socket.error) as e:
             self.log.info("Could not connect to %s" % self.base)
             self.log.info("Failure: %s" % e)
             return
@@ -341,10 +341,10 @@ class HTTPWalker(WalkerBase):
         try:
             self.request("HEAD", path)
             return False
-        except urllib2.HTTPError, exc:
+        except urllib2.HTTPError as exc:
             if exc.code != 301:
                 return False
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
@@ -376,7 +376,7 @@ class HTTPWalker(WalkerBase):
                 soup = BeautifulSoup(response.read())
             finally:
                 response.close()
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             raise HTTPWalkerError(str(exc))
 
         base = URI(self.base).resolve(dirname)

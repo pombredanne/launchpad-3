@@ -118,7 +118,7 @@ class Browser(_Browser):
         try:
             self.mech_browser.submit(id=control.id, name=control.name,
                 label=label, coord=coord)
-        except Exception, e:
+        except Exception as e:
             fix_exception_name(e)
             raise
         self._stop_timer()

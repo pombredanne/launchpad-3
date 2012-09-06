@@ -137,7 +137,7 @@ class ProvidesTests(TestCase):
         try:
             verifyObject(ITestInterface, obj)
             self.assert_("verifyObject did not raise an exception.")
-        except BrokenImplementation, e:
+        except BrokenImplementation as e:
             extra = str(e)
         self.assertEqual(extra, mismatch.extra)
 

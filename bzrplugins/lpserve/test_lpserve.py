@@ -641,12 +641,12 @@ class TestCaseWithLPForkingServiceDaemon(
     def _cleanup_daemon(self, pid, pid_filename):
         try:
             os.kill(pid, signal.SIGKILL)
-        except (OSError, IOError), e:
+        except (OSError, IOError) as e:
             trace.mutter('failed to kill pid %d, might be already dead: %s'
                          % (pid, e))
         try:
             os.remove(pid_filename)
-        except (OSError, IOError), e:
+        except (OSError, IOError) as e:
             if e.errno != errno.ENOENT:
                 trace.mutter('failed to remove %r: %s'
                              % (pid_filename, e))
@@ -697,7 +697,7 @@ class TestCaseWithLPForkingServiceDaemon(
         # message
         try:
             response = self.send_message_to_service('quit\n')
-        except socket.error, e:
+        except socket.error as e:
             # Ignore a failure to connect; the service must be
             # stopping/stopped already.
             response = None
@@ -714,7 +714,7 @@ class TestCaseWithLPForkingServiceDaemon(
         while tnow < tend:
             try:
                 os.kill(self.service_process, 0)
-            except (OSError, IOError), e:
+            except (OSError, IOError) as e:
                 if e.errno == errno.ESRCH:
                     # The process has successfully exited
                     stopped = True
@@ -729,7 +729,7 @@ class TestCaseWithLPForkingServiceDaemon(
                         unclean = True
                         try:
                             os.kill(self.service_process, sig)
-                        except (OSError, IOError), e:
+                        except (OSError, IOError) as e:
                             if e.errno == errno.ESRCH:
                                 stopped = True
                                 break

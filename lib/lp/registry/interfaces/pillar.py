@@ -27,16 +27,22 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Int,
     List,
     TextLine,
     )
 
 from lp import _
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    )
 
 
 __all__ = [
     'IHasAliases',
+    'IHasSharingPolicies',
     'IPillar',
     'IPillarName',
     'IPillarNameSet',
@@ -80,6 +86,20 @@ class IHasAliases(Interface):
         :param names: A sequence of names (as strings) that should be aliases
             to this pillar.
         """
+
+
+class IHasSharingPolicies(Interface):
+    """Sharing policies used to define bug and branch visibility rules."""
+    branch_sharing_policy = exported(Choice(
+        title=_('Branch sharing policy'),
+        description=_("Sharing policy for this pillar's branches."),
+        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        as_of='devel')
+    bug_sharing_policy = exported(Choice(
+        title=_('Bug sharing policy'),
+        description=_("Sharing policy for this pillar's bugs."),
+        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        as_of='devel')
 
 
 class IPillarName(Interface):

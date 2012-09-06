@@ -16,14 +16,12 @@ __all__ = [
     'DistributionSourcePackageView',
     ]
 
-from datetime import datetime
 import itertools
 import operator
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import pytz
 from zope.component import (
     adapter,
     getUtility,
@@ -57,6 +55,8 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -532,11 +532,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             for version in pocket_dict:
                 most_recent_publication = pocket_dict[version][0]
                 date_published = most_recent_publication.datepublished
-                if date_published is None:
-                    published_since = None
-                else:
-                    now = datetime.now(tz=pytz.UTC)
-                    published_since = now - date_published
                 pockets = ", ".join(
                     [pub.pocket.name for pub in pocket_dict[version]])
                 row = {
@@ -547,7 +542,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                     'publication': most_recent_publication,
                     'pockets': pockets,
                     'component': most_recent_publication.component_name,
-                    'published_since': published_since,
+                    'date_published': date_published,
                     }
                 rows.append(row)
             # We need a blank row after each section, so the series
@@ -580,6 +575,12 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             uses_bugs=uses_bugs, uses_answers=uses_answers,
             uses_both=uses_both, uses_either=uses_either)
 
+    @cachedproperty
+    def new_bugtasks_count(self):
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.NEW, omit_dupes=True)
+        return self.context.searchTasks(search_params).count()
+
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
@@ -596,6 +597,16 @@ class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
     """View for presenting `DistributionSourcePackage` publishing history."""
 
     page_title = 'Publishing history'
+
+    def initialize(self):
+        """Preload relevant `IPerson` objects."""
+        ids = set()
+        for spph in self.context.publishing_history:
+            ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
 
     @property
     def label(self):

@@ -481,7 +481,7 @@ not be deleted.
 If bugtasks are targeted to the milestone, it cannot be deleted.
 
     >>> milestone = ff_onedotzero.newMilestone('1.0.12')
-    >>> bug = factory.makeBug(product=upstream_firefox)
+    >>> bug = factory.makeBug(target=upstream_firefox)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone
     >>> milestone.destroySelf()

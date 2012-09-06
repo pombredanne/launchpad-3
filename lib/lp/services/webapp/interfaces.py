@@ -805,21 +805,6 @@ class DisallowedStore(Exception):
     """
 
 
-class ReadOnlyModeViolation(Exception):
-    """An attempt was made to write to a slave Store in read-only mode.
-
-    This can happen in legacy code where writes are being made to an
-    object retrieved from the default Store rather than casting the
-    object to a writable version using IMasterObject(obj).
-    """
-
-
-class ReadOnlyModeDisallowedStore(DisallowedStore, ReadOnlyModeViolation):
-    """A request was made to access a Store that cannot be granted
-    because we are running in read-only mode.
-    """
-
-
 class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 

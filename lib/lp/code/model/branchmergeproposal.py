@@ -195,10 +195,13 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.transitively_private or
-            self.target_branch.transitively_private or
+            (self.source_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
+            (self.target_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.transitively_private))
+             (self.prerequisite_branch.information_type in
+              PRIVATE_INFORMATION_TYPES)))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -417,6 +420,10 @@ class BranchMergeProposal(SQLBase):
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self._mark_unreviewed()
+
+    def _mark_unreviewed(self):
+        """Clear metadata about a previous review."""
         self.reviewer = None
         self.date_reviewed = None
         self.reviewed_revision_id = None
@@ -440,8 +447,7 @@ class BranchMergeProposal(SQLBase):
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
             # Clear out any reviewed or queued values.
-            self.reviewer = None
-            self.reviewed_revision_id = None
+            self._mark_unreviewed()
             self.queuer = None
             self.queued_revision_id = None
 
@@ -542,12 +548,18 @@ class BranchMergeProposal(SQLBase):
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
+        old_state = self.queue_status
         self._transitionToState(
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
         # Remove from the queue.
         self.queue_position = None
+
+        # The reviewer of a merged proposal is assumed to have approved, if
+        # they rejected it remove the review metadata to avoid confusion.
+        if old_state == BranchMergeProposalStatus.REJECTED:
+            self._mark_unreviewed()
 
         if merged_revno is not None:
             branch_revision = Store.of(self).find(
@@ -636,7 +648,7 @@ class BranchMergeProposal(SQLBase):
                     branch.stacked_on, user, checked_branches)
 
     def _acceptable_to_give_visibility(self, branch, reviewer):
-        # If the branch is private, only closed teams can be subscribed to
+        # If the branch is private, only exclusive teams can be subscribed to
         # prevent leaks.
         if (branch.information_type in PRIVATE_INFORMATION_TYPES and
             reviewer.is_team and reviewer.anyone_can_join()):

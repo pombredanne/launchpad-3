@@ -8,8 +8,7 @@
 
   <h2>Attendees</h2>
 
-  <div class="portletBody portletContent"
-       tal:define="attendances context/attendances">
+  <div tal:define="attendances context/attendances">
 
     <ul>
       <li tal:repeat="attendance attendances">

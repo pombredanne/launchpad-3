@@ -8,7 +8,7 @@ from others.
 Set Up
 ======
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
@@ -18,7 +18,7 @@ Set Up
 
     >>> soyuz_team = factory.makeTeam(
     ...     name='soyuz-team',
-    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> soyuz_team_owner = soyuz_team.teamowner
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
     >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)

@@ -486,7 +486,7 @@ class UnreferencedContentPruner:
             path = get_file_path(content_id)
             try:
                 os.unlink(path)
-            except OSError, e:
+            except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
                 if config.librarian_server.upstream_host is None:

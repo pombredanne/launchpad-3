@@ -171,7 +171,7 @@ class DistroSeriesVersionField(UniqueField):
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except VersionError, error:
+        except VersionError as error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error))
 
@@ -402,26 +402,6 @@ class IDistroSeriesPublic(
         development moves on to the other pockets.
         """
 
-    def canUploadToPocket(pocket):
-        """Decides whether or not allow uploads for a given pocket.
-
-        Only allow uploads for RELEASE pocket in unreleased
-        distroseries and the opposite, only allow uploads for
-        non-RELEASE pockets in released distroseries.
-        For instance, in edgy time :
-
-                warty         -> DENY
-                edgy          -> ALLOW
-                warty-updates -> ALLOW
-                edgy-security -> DENY
-
-        Note that FROZEN is not considered either 'stable' or 'unstable'
-        state.  Uploads to a FROZEN distroseries will end up in the
-        UNAPPROVED queue.
-
-        Return True if the upload is allowed and False if denied.
-        """
-
     def getLatestUploads():
         """Return the latest five source uploads for this DistroSeries.
 
@@ -546,6 +526,13 @@ class IDistroSeriesPublic(
             title=_("Custom Type"),
             description=_("Return only items with custom files of this "
                           "type."),
+            required=False),
+        name=TextLine(title=_("Package or file name"), required=False),
+        version=TextLine(title=_("Package version"), required=False),
+        exact_match=Bool(
+            title=_("Exact match"),
+            description=_("Whether to filter name and version by exact "
+                          "matching."),
             required=False),
         )
     # Really IPackageUpload, patched in _schema_circular_imports.py

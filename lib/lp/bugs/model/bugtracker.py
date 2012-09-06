@@ -845,9 +845,11 @@ class BugTrackerSet:
         from lp.registry.model.projectgroup import ProjectGroup
         ids = [str(b.id) for b in bugtrackers]
         products = Product.select(
-            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+            "bugtracker in (%s) AND active IS True" %
+            ",".join(ids), orderBy="name")
         projects = ProjectGroup.select(
-            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+            "bugtracker in (%s) AND active IS True" %
+            ",".join(ids), orderBy="name")
         ret = {}
         for product in products:
             ret.setdefault(product.bugtracker, []).append(product)

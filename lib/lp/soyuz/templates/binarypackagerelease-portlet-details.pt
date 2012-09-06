@@ -5,8 +5,6 @@
   class="portlet" id="portlet-details">
   <h2><span tal:replace="context/name" /> details</h2>
 
-  <div class="portletBody portletContent">
-
     <b>Package version:</b>
     <span tal:replace="context/version" /><br />
 
@@ -24,5 +22,4 @@
     <b>Priority:</b>
     <span tal:replace="context/priority/title" /><br />
 
-  </div>
 </div>

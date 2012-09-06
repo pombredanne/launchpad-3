@@ -721,7 +721,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_description_link_class(self):
         if self.context.description:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 
@@ -737,7 +737,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_commit_message_link_class(self):
         if self.context.commit_message:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 

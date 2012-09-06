@@ -84,7 +84,7 @@
     <div class="collapsible" tal:condition="view/release/changelog">
       <div>View the full changelog</div>
 
-      <div id="changelog" class="unseen"
+      <div id="changelog" class="hidden"
         tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
         ProductRelease.changelog.
       </div>

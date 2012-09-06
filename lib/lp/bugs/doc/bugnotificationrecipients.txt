@@ -47,10 +47,6 @@ appropriate for an email footer.
     mark@example.com
         Assignee
         You received this bug notification because you are a bug assignee.
-    support@ubuntu.com
-        Registrant (Ubuntu) @ubuntu-team
-        You received this bug notification because you are a member of
-        Ubuntu Team, which is the registrant for Ubuntu.
     test@canonical.com
         Subscriber
         You received this bug notification because you are subscribed
@@ -94,9 +90,6 @@ Then, subscribers of various types are added:
 
     >>> carlos = personset.getByEmail("carlos@canonical.com")
     >>> recipients.addStructuralSubscriber(carlos, pmount)
-
-    >>> testtest = personset.getByEmail("testtest@canonical.com")
-    >>> recipients.addRegistrant(testtest, gnomebaker)
 
 If we print out the recipients and rationales, here's what we get:
 
@@ -144,9 +137,6 @@ duplicate of).
     >>> carlos = personset.getByEmail("carlos@canonical.com")
     >>> recipients.addStructuralSubscriber(carlos, pmount)
 
-    >>> testtest = personset.getByEmail("testtest@canonical.com")
-    >>> recipients.addRegistrant(testtest, gnomebaker)
-
 If you print out rationales in this situation, you'll see that the
 message says "via Bug 2". The reason for this is that the people being
 notified here are actually subscribed to bug 2, and they may be asking
@@ -191,9 +181,6 @@ Here's an example of this situation:
     >>> name20 = personset.getByName("name20")
     >>> recipients.addStructuralSubscriber(name20, pmount)
 
-    >>> vcs_imports = personset.getByName("vcs-imports")
-    >>> recipients.addRegistrant(vcs_imports, gnomebaker)
-
     >>> commercial_admins = personset.getByName("commercial-admins")
     >>> recipients.addDirectSubscriber(commercial_admins)
 
@@ -211,10 +198,6 @@ membership is causing us to send mail.
           You received this bug notification because you are a member
           of Commercial Subscription Admins, which is subscribed to the
           bug report.
-      david.allouche@canonical.com
-          Registrant (gnomebaker) @vcs-imports
-          You received this bug notification because you are a member
-          of VCS imports, which is the registrant for gnomebaker.
       foo.bar@canonical.com
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
@@ -230,10 +213,6 @@ membership is causing us to send mail.
           You received this bug notification because you are a member
           of testing Spanish team, which is subscribed to a
           duplicate bug report.
-      robertc@robertcollins.net
-          Registrant (gnomebaker) @vcs-imports
-          You received this bug notification because you are a member
-          of VCS imports, which is the registrant for gnomebaker.
       support@ubuntu.com
           Assignee @guadamen
           You received this bug notification because you are a member
@@ -266,7 +245,6 @@ a pathological example:
     >>> recipients = BugNotificationRecipients()
     >>> recipients.addDirectSubscriber(test)
     >>> recipients.addAssignee(test)
-    >>> recipients.addRegistrant(test, gnomebaker)
     >>> recipients.addDirectSubscriber(foo_bar)
 
 This guy is emailed because he's a direct subscriber, an assignee and an

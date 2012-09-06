@@ -6,7 +6,7 @@ using Javascript after page load.
     >>> anon_browser.getLink(id='tags-content-link').click()
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
-    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'section')[0]
+    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'data-list')[0]
     >>> for a_tag in tags_portlet('a'):
     ...     print a_tag.renderContents()
     crash

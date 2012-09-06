@@ -211,7 +211,7 @@ class GoogleSearchService:
         action = timeline.start("google-search-api", search_url)
         try:
             gsp_xml = urlfetch(search_url)
-        except (TimeoutError, urllib2.HTTPError, urllib2.URLError), error:
+        except (TimeoutError, urllib2.HTTPError, urllib2.URLError) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
             raise GoogleResponseError(

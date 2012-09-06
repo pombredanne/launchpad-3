@@ -121,7 +121,7 @@ def record_errors(transaction, bug_watch_ids):
     """
     try:
         yield
-    except Exception, e:
+    except Exception as e:
         # We record the error against all the bugwatches that should
         # have been updated before re-raising it. We also update the
         # bug watches' lastchecked dates so that checkwatches
@@ -267,7 +267,7 @@ class CheckwatchesMaster(WorkingBase):
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
-        except Exception, error:
+        except Exception as error:
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
@@ -426,7 +426,7 @@ class CheckwatchesMaster(WorkingBase):
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
-            except (UnknownBugTrackerTypeError, ProtocolError), error:
+            except (UnknownBugTrackerTypeError, ProtocolError) as error:
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another

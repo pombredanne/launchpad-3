@@ -94,13 +94,13 @@ The list of indirect subscribers is accessed via
 IBug.getIndirectSubscribers().
 
     >>> linux_source_bug.getIndirectSubscribers()
-    [<Person at ...>]
+    []
 
 Finer-grained access to indirect subscribers is provided by
 getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 
     >>> list(linux_source_bug.getAlsoNotifiedSubscribers())
-    [<Person at ...>]
+    []
     >>> list(linux_source_bug.getSubscribersFromDuplicates())
     []
 
@@ -110,7 +110,7 @@ individual bug task.
     >>> from lp.bugs.model.bug import get_also_notified_subscribers
     >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
     >>> list(res)
-    [<Person at ...>]
+    []
 
 These are security proxied.
 
@@ -130,7 +130,6 @@ need it for changes made only to IBug.
     >>> print_displayname(task.bug_subscribers)
     Foo Bar
     Mark Shuttleworth
-    Ubuntu Team
 
 Here are some examples of the three types of indirect subscribers:
 
@@ -142,14 +141,12 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Sample Person
-    Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Sample Person
-    Ubuntu Team
 
 2. Structural subscribers
 
@@ -166,28 +163,24 @@ Here are some examples of the three types of indirect subscribers:
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
-    >>> linux_source.distribution.setBugSupervisor(ubuntu_team, ubuntu_team)
+    >>> linux_source.distribution.bug_supervisor = ubuntu_team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
 After adding a product bugtask we can see that the upstream bug
 supervisor is also an indirect subscriber.
@@ -200,36 +193,28 @@ supervisor is also an indirect subscriber.
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
-    >>> firefox.setBugSupervisor(lifeless, lifeless)
+    >>> firefox.bug_supervisor = lifeless
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
 If there were no upstream product bug subscribers, the product owner
 would be used instead.
 
-    >>> firefox.setBugSupervisor(None, None)
+    >>> firefox.bug_supervisor = None
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> previous_owner = firefox.owner
 
@@ -237,18 +222,14 @@ would be used instead.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> firefox.owner = previous_owner
-    >>> firefox.setBugSupervisor(lifeless, lifeless)
+    >>> firefox.bug_supervisor = lifeless
 
 IBug.getAlsoNotifiedSubscribers() and IBug.getIndirectSubscribers() take
 an optional parameter `level` allowing us to filter the result by
@@ -272,30 +253,22 @@ parameter values of level.
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
 If No Privileges Person created a single filter with a notification
 level set to LIFECYCLE, he will not be included, if the parameter
@@ -310,28 +283,20 @@ level set to LIFECYCLE, he will not be included, if the parameter
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.METADATA))
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.METADATA))
-    Robert Collins
     Sample Person
-    Ubuntu Team
 
 3. Direct subscribers of duplicate bugs.
 
@@ -356,16 +321,13 @@ subscribed to the dupe target.
     >>> print_displayname(linux_source_bug_dupe.getIndirectSubscribers())
     No Privileges Person
     Stuart Bishop
-    Ubuntu Team
 
     >>> linux_source_bug_dupe.markAsDuplicate(linux_source_bug)
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getSubscribersFromDuplicates())
     Scott James Remnant
@@ -374,13 +336,13 @@ If Scott James Remnant makes a structural subscription to linux_source,
 he will no longer appear in the list of subscribers of the duplicate
 bug.
 
-    >>> subscription_keybuk = linux_source.addBugSubscription(
-    ...     keybuk, keybuk)
+    >>> subscription_keybuk = linux_source.addBugSubscription(keybuk, keybuk)
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
-When a bug is marked private, specific people like the bugtask bug supervisors
-will be automatically subscribed.
+When a bug is marked private, specific people like the person marking private
+will be subscribed. People without pre-existing access and aren't one of the
+special users will be removed.
 
     >>> from zope.event import notify
 
@@ -405,18 +367,6 @@ will be automatically subscribed.
     Mark Shuttleworth
     Robert Collins
 
-A private bug never has indirect subscribers. Let's add an indirect subscriber
-to show that they still aren't included in the indirect subscriptions.
-
-    >>> linux_source_bug.bugtasks[0].transitionToAssignee(
-    ...     personset.getByName("martin-pitt"))
-
-    >>> linux_source_bug.getIndirectSubscribers()
-    []
-
-    >>> linux_source_bug.getSubscribersFromDuplicates()
-    ()
-
 Direct subscriptions always take precedence over indirect subscriptions.
 So, if we unmark the above bug as private, indirect_subscribers will include
 any subscribers not converted to direct subscribers.
@@ -430,18 +380,14 @@ any subscribers not converted to direct subscribers.
     Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
-    Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
-    Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
-    Ubuntu Team
 
 To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an
@@ -457,7 +403,6 @@ You can query for the addresses and reasons:
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 If IBug.getBugNotificationRecipients() is passed a  BugNotificationLevel
@@ -471,7 +416,6 @@ notification level or higher will be returned.
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 When Sample Person is unsubscribed from linux_source_bug, he is no
@@ -486,7 +430,6 @@ the COMMENTS level...
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 ...but remains included for the level LIFECYCLE.
@@ -500,7 +443,6 @@ the COMMENTS level...
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 To find out if someone is already directly subscribed to a bug, call
@@ -670,7 +612,7 @@ Define a function that get subscriber email addresses back conveniently:
 
 Let's have a look at an example for a distribution bug:
 
-    >>> ubuntu.setBugSupervisor(sample_person, sample_person)
+    >>> ubuntu.bug_supervisor = sample_person
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -687,25 +629,18 @@ But because Sample Person is the distribution contact for Ubuntu, he
 will be implicitly added to the notification recipients.
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
-
-The distro contact will also be subscribed to private bugs, because
-there is no security contact:
-
-    >>> ubuntu.security_contact is None
-    True
-
+    ['foo.bar@canonical.com']
     >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = ubuntu.createBug(params)
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com']
+    ['foo.bar@canonical.com']
 
 Even though support@ubuntu.com got subscribed while filing the bug, no
 "You have been subscribed" notification was sent, which is normally sent
@@ -717,7 +652,7 @@ to new subscribers.
 
 Another example, this time for an upstream:
 
-    >>> firefox.setBugSupervisor(mark, mark)
+    >>> firefox.bug_supervisor = mark
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -734,7 +669,7 @@ But the upstream Firefox bug supervisor, mark, is implicitly added to the
 recipients list.
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'mark@example.com', 'robertc@robertcollins.net']
+    ['foo.bar@canonical.com']
 
 If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 supervisor will be subscribed:
@@ -744,10 +679,6 @@ supervisor will be subscribed:
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    mark@example.com
-    robertc@robertcollins.net
-    support@ubuntu.com
-    test@canonical.com
 
 But still, only Foo Bar is explicitly subscribed.
 
@@ -759,7 +690,7 @@ When an upstream does *not* have a specific bug supervisor set, the
 product.owner is used instead. So, if Firefox's bug supervisor is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
 
-    >>> firefox.setBugSupervisor(None, None)
+    >>> firefox.bug_supervisor = None
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -777,23 +708,13 @@ recipient list:
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    mark@example.com
-    robertc@robertcollins.net
-    test@canonical.com
-
-The upstream maintainer will be subscribed to security-related private
-bugs, because upstream has no security contact, in this case.
-
-    >>> firefox.security_contact is None
-    True
-
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = firefox.createBug(params)
 
-    >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    >>> print '\n'.join(getSubscribers(new_bug))
+    foo.bar@canonical.com
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
@@ -809,7 +730,7 @@ contacts:
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+    ['foo.bar@canonical.com']
 
 Adding a package bug contact for evolution will mean that that package
 bug contact gets implicitly subscribed to all bugs ever opened on that
@@ -829,7 +750,7 @@ because they are the distro bug contact):
     [u'Foo Bar']
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com']
 
 And the Ubuntu team will be implicitly subscribed to future bugs:
 
@@ -844,22 +765,15 @@ And the Ubuntu team will be implicitly subscribed to future bugs:
     [u'Foo Bar']
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
-
-The distribution maintainer, Ubuntu Team, gets subscribed to the private
-security bug filed on a package, because Ubuntu has no security contact:
-
-    >>> ubuntu.security_contact is None
-    True
-
+    ['foo.bar@canonical.com', 'support@ubuntu.com']
     >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com']
+    ['foo.bar@canonical.com']
 
 
 Subscribed by

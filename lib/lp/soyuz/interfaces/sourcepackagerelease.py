@@ -135,8 +135,6 @@ class ISourcePackageRelease(Interface):
     distrosourcepackage = Attribute(
         "The magic DistroSourcePackage for the sourcepackagename and "
         "distribution of this object.")
-    productrelease = Attribute("The best guess we have as to the Launchpad "
-        "ProductRelease associated with this SourcePackageRelease.")
 
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
@@ -170,6 +168,21 @@ class ISourcePackageRelease(Interface):
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.
+        """
+
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        SourcePackageRelease context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc'.
+
+        :param filename: the exact filename to be looked up.
+
+        :raises NotFoundError if no file could be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
     def createBuild(distroarchseries, pocket, archive, processor=None,

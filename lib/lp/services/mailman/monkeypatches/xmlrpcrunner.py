@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC runner for querying Launchpad."""
@@ -172,10 +172,10 @@ class XMLRPCRunner(Runner):
         """See if there are any list actions to perform."""
         try:
             actions = self._proxy.getPendingActions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if actions:
@@ -222,9 +222,9 @@ class XMLRPCRunner(Runner):
             try:
                 self._proxy.reportStatus(this_status)
                 syslog('xmlrpc', '[%s] %s: %s' % (team_name, action, status))
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad:\n%s', error)
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
 
     def _update_list_subscriptions(self, list_name, subscription_info):
@@ -354,11 +354,11 @@ class XMLRPCRunner(Runner):
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
@@ -409,7 +409,7 @@ class XMLRPCRunner(Runner):
                 mm_cfg.VAR_PREFIX, 'backups', team_name + '.tgz')
             try:
                 tgz_file = tarfile.open(tgz_file_name, 'r:gz')
-            except IOError, error:
+            except IOError as error:
                 if error.errno != errno.ENOENT:
                     raise
                 # The archive tarfile does not exist, meaning this is the
@@ -457,7 +457,7 @@ class XMLRPCRunner(Runner):
         old_cwd = os.getcwd()
         try:
             os.chdir(lists_dir)
-            extractall(tgz_file)
+            tgz_file.extractall()
         finally:
             os.chdir(old_cwd)
         syslog('xmlrpc', '%s: %s', lists_dir, os.listdir(lists_dir))
@@ -593,10 +593,10 @@ class XMLRPCRunner(Runner):
         """See if any held messages have been accepted or rejected."""
         try:
             dispositions = self._proxy.getMessageDispositions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if dispositions:
@@ -701,36 +701,3 @@ class XMLRPCRunner(Runner):
                 # resynchronized.  Be sure to unlock it!
                 mlist.Unlock()
                 statuses[name] = ('resynchronize', 'success')
-
-
-def extractall(tgz_file):
-    """Extract all members of `tgz_file` to the current working directory."""
-    path = '.'
-    # XXX BarryWarsaw 2007-11-13: This is nearly a straight ripoff of
-    # Python 2.5's TarFile.extractall() method, though simplified for our
-    # particular purpose.  When we upgrade Launchpad to Python 2.5, this
-    # function can be removed.
-    directories = []
-    for tarinfo in tgz_file:
-        if tarinfo.isdir():
-            # Extract directory with a safe mode, so that
-            # all files below can be extracted as well.
-            try:
-                os.makedirs(os.path.join(path, tarinfo.name), 0777)
-            except EnvironmentError:
-                pass
-            directories.append(tarinfo)
-        else:
-            tgz_file.extract(tarinfo, path)
-    # Reverse sort directories.
-    directories.sort(lambda a, b: cmp(a.name, b.name))
-    directories.reverse()
-    # Set correct owner, mtime and filemode on directories.
-    for tarinfo in directories:
-        path = os.path.join(path, tarinfo.name)
-        try:
-            tgz_file.chown(tarinfo, path)
-            tgz_file.utime(tarinfo, path)
-            tgz_file.chmod(tarinfo, path)
-        except tarfile.ExtractError, e:
-            log_exception('xmlrpc', 'tarfile: %s', e)
