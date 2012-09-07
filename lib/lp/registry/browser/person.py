@@ -3598,6 +3598,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self._tableHeaderMessage(
             self.related_projects_count, label='project')
 
+    @cachedproperty
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
         return self.context.getOwnedOrDrivenPillars()
