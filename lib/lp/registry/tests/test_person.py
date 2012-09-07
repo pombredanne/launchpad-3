@@ -318,7 +318,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(None, person.homepage_content)
         self.assertEqual(None, person.teamdescription)
 
-    def test_getOwnedOrDrivenPillars_kinds(self):
+    def test_getAffiliatedPillars_kinds(self):
         # Distributions, project groups, and projects are returned in this
         # same order.
         user = self.factory.makePerson()
@@ -328,10 +328,10 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             distribution.name, project_group.name, project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getOwnedOrDrivenPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
-    def test_getOwnedOrDrivenPillars_roles(self):
+    def test_getAffiliatedPillars_roles(self):
         # owned, driven, and supervised pillars are returned ordered by
         # display name.
         user = self.factory.makePerson()
@@ -344,10 +344,10 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             driven_project.name, owned_project.name, supervised_project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getOwnedOrDrivenPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
-    def test_getOwnedOrDrivenPillars_active_pillars(self):
+    def test_getAffiliatedPillars_active_pillars(self):
         # Only active pillars are returned.
         user = self.factory.makePerson()
         active_project = self.factory.makeProject(owner=user)
@@ -356,7 +356,7 @@ class TestPerson(TestCaseWithFactory):
             inactive_project.active = False
         expected_pillars = [active_project.name]
         received_pillars = [pillar.name for pillar in
-            user.getOwnedOrDrivenPillars()]
+            user.getAffiliatedPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):

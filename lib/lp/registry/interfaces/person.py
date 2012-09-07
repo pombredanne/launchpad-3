@@ -1132,8 +1132,12 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                           the icons which represent that category.
         """
 
-    def getOwnedOrDrivenPillars():
-        """Return the pillars that this person directly owns or drives."""
+    def getAffiliatedPillars():
+        """Return the pillars that this person directly has a role with.
+
+        Returns distributions, project groups, and projects that this person
+        maintains, drives, or is the bug supervisor for.
+        """
 
     def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.
