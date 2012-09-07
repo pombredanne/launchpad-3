@@ -599,7 +599,6 @@ class IBugView(Interface):
           - maintainer
           - driver
           - bug supervisor
-          - security contact
 
         Additionally, the comment owners can hide their own comments but that
         is not checked here - this method is to see if arbitrary users can
@@ -837,9 +836,6 @@ class IBugEdit(Interface):
 
             :security_related: True/False.
             :who: The IPerson who is making the change.
-
-        This may also cause the security contact to be subscribed
-        if one is registered and if the bug is not private.
 
         Return True if a change is made, False otherwise.
         """
