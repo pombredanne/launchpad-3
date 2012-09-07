@@ -1128,7 +1128,8 @@ class Person(
                 WHERE
                     active = True AND
                     (driver = %(person)s
-                    OR owner = %(person)s)
+                    OR owner = %(person)s
+                    OR bug_supervisor = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1142,6 +1143,7 @@ class Person(
                 WHERE
                     driver = %(person)s
                     OR owner = %(person)s
+                    OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
             """ % sqlvalues(person=self))
