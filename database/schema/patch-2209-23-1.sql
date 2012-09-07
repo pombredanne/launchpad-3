@@ -3,9 +3,9 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX binarypackagename__name__idx ON binarypackagename
+CREATE INDEX binarypackagename__name__trgm ON binarypackagename
     USING gin (name trgm.gin_trgm_ops);
-CREATE INDEX sourcepackagename__name__idx ON sourcepackagename
+CREATE INDEX sourcepackagename__name__trgm ON sourcepackagename
     USING gin (name trgm.gin_trgm_ops);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 23, 1);
