@@ -722,7 +722,7 @@ class MilestoneEmailCommand(EditEmailCommand):
         if milestone_name == '-':
             # Remove milestone
             return {self.name: None}
-        elif self._userCanEditMilestone(user, context):
+        elif context.userHasBugSupervisorPrivileges(user):
             milestone = context.pillar.getMilestone(milestone_name)
             if milestone is None:
                 raise EmailProcessingError(
@@ -737,23 +737,6 @@ class MilestoneEmailCommand(EditEmailCommand):
                 "You do not have permission to set the milestone for %s. "
                 "Only owners, drivers and bug supervisors may assign "
                 "milestones." % (context.pillar.title,))
-
-    def _userCanEditMilestone(self, user, bugtask):
-        """Can the user edit the Milestone field?"""
-        # Adapted from BugTaskEditView.userCanEditMilestone.
-
-        # XXX: GavinPanella 2007-10-18 bug=154088: Consider
-        # refactoring this method and the userCanEditMilestone method
-        # on BugTaskEditView into a new method on IBugTask. This is
-        # non-trivial because check_permission cannot be used in a
-        # database class.
-
-        pillar = bugtask.pillar
-        bug_supervisor = pillar.bug_supervisor
-        if user is not None and bug_supervisor is not None:
-            if user.inTeam(bug_supervisor):
-                return True
-        return check_permission("launchpad.Edit", pillar)
 
 
 class DBSchemaEditEmailCommand(EditEmailCommand):
