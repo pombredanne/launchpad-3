@@ -19,10 +19,12 @@ from datetime import (
     )
 from textwrap import dedent
 
+import psycopg2
 from storm.cache import (
     Cache,
     GenerationalCache,
     )
+from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -80,6 +82,31 @@ def storm_cache_factory():
         assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
+def get_connected_store(name, flavor):
+    """Retrieve a store from the IZStorm Utility and ensure it is connected.
+
+    :raises storm.exceptions.DisconnectionError: On failures.
+    """
+    store_name = '%s-%s' % (name, flavor)
+    try:
+        store = getUtility(IZStorm).get(
+            store_name, 'launchpad:%s' % store_name)
+        store._connection._ensure_connected()
+        return store
+    except DisconnectionError:
+        # If the Store is in a disconnected state, ensure it is
+        # registered with the transaction manager. Otherwise, if
+        # _ensure_connected() caused the disconnected state it may not
+        # be put into reconnect state at the end of the transaction.
+        store._connection._event.emit('register-transaction')
+        raise
+    except psycopg2.OperationalError, exc:
+        # Per Bug #1025264, Storm emits psycopg2 errors when we
+        # want DisconnonnectionErrors, eg. attempting to open a
+        # new connection to a non-existent database.
+        raise DisconnectionError(str(exc))
+
+
 class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
@@ -95,9 +122,34 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
-        store_name = '%s-%s' % (name, flavor)
-        store = getUtility(IZStorm).get(
-            store_name, 'launchpad:%s' % store_name)
+        try:
+            store = get_connected_store(name, flavor)
+        except DisconnectionError:
+
+            # A request for a master database connection was made
+            # and failed. Nothing we can do so reraise the exception.
+            if flavor != SLAVE_FLAVOR:
+                raise
+
+            # A request for a slave database connection was made
+            # and failed. Try to return a master connection, this
+            # will be good enough. Note we don't call self.getStore()
+            # recursively because we want to make this attempt even if
+            # the DatabasePolicy normally disallows master database
+            # connections. All this behavior allows read-only requests
+            # to keep working when slave databases are being rebuilt or
+            # updated.
+            try:
+                flavor = MASTER_FLAVOR
+                store = get_connected_store(name, flavor)
+            except DisconnectionError:
+                store = None
+
+            # If we still haven't connected to a suitable database,
+            # reraise the original attempt's exception.
+            if store is None:
+                raise
+
         if not getattr(store, '_lp_store_initialized', False):
             # No existing Store. Create a new one and tweak its defaults.
 
