@@ -1141,65 +1141,30 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return SourcePackagePublishingHistory.select(
             query, clauseTables=['Archive'], orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket, component=None,
-                                   archive=None):
+    def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""
-        archives = self.distribution.getArchiveIDList(archive)
+        return Store.of(self).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == archive,
+            SourcePackagePublishingHistory.distroseries == self,
+            SourcePackagePublishingHistory.pocket == pocket,
+            SourcePackagePublishingHistory.component == component,
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
 
-        clause = """
-            SourcePackagePublishingHistory.sourcepackagename=
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.distroseries=%s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status=%s AND
-            SourcePackagePublishingHistory.pocket=%s
-            """ % sqlvalues(self, archives, status, pocket)
-
-        if component:
-            clause += (
-                " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component))
-
-        orderBy = ['SourcePackageName.name']
-        clauseTables = ['SourcePackageName']
-
-        return SourcePackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables)
-
-    def getBinaryPackagePublishing(self, archtag=None, pocket=None,
-                                   component=None, archive=None):
+    def getBinaryPackagePublishing(self, archtag, pocket, component, archive):
         """See `IDistroSeries`."""
-        archives = self.distribution.getArchiveIDList(archive)
-
-        query = ["""
-        BinaryPackagePublishingHistory.distroarchseries =
-            DistroArchSeries.id AND
-        DistroArchSeries.distroseries = %s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self, archives, PackagePublishingStatus.PUBLISHED)]
-
-        if archtag:
-            query.append('DistroArchSeries.architecturetag = %s'
-                      % sqlvalues(archtag))
-
-        if pocket:
-            query.append(
-                'BinaryPackagePublishingHistory.pocket = %s'
-                % sqlvalues(pocket))
-
-        if component:
-            query.append(
-                'BinaryPackagePublishingHistory.component = %s'
-                % sqlvalues(component))
-
-        query = " AND ".join(query)
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries']
-        result = BinaryPackagePublishingHistory.select(
-            query, distinct=False, clauseTables=clauseTables)
-
-        return result
+        return Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.component == component,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):

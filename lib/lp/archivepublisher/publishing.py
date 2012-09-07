@@ -414,8 +414,7 @@ class Publisher(object):
             source_index_root, self._config.temproot, 'Sources')
 
         for spp in distroseries.getSourcePackagePublishing(
-            PackagePublishingStatus.PUBLISHED, pocket=pocket,
-            component=component, archive=self.archive):
+                pocket, component, self.archive):
             stanza = spp.getIndexStanza().encode('utf8') + '\n\n'
             source_index.write(stanza)
 
@@ -441,8 +440,7 @@ class Publisher(object):
                 di_index_root, self._config.temproot, 'Packages')
 
             for bpp in distroseries.getBinaryPackagePublishing(
-                archtag=arch.architecturetag, pocket=pocket,
-                component=component, archive=self.archive):
+                    arch.architecturetag, pocket, component, self.archive):
                 stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
                 if (bpp.binarypackagerelease.binpackageformat in
                     (BinaryPackageFormat.DEB, BinaryPackageFormat.DDEB)):
