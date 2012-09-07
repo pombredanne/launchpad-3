@@ -829,7 +829,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
         if not context.canTransitionToStatus(attr_value, user):
             raise EmailProcessingError(
                 'The status cannot be changed to %s because you are not '
-                'the registrant or a bug supervisor for %s.' % (
+                'the maintainer, driver or bug supervisor for %s.' % (
                     attr_value.name.lower(), context.pillar.displayname))
 
         context.transitionToStatus(attr_value, user)
