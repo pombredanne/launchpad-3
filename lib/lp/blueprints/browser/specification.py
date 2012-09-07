@@ -274,8 +274,24 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     The context must correspond to a unique specification target.
     """
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def info_type_field(self):
+        """An info_type_field for creating a Specification.
+
+        If the user cannot select different information types, Interface is
+        returned instead, because Interface is a valid no-op parameter to
+        Fields.__init__.
+        """
+        info_types = self.context.getAllowedSpecificationInformationTypes()
+        if len(info_types) < 2:
+            return Interface
+        return copy_field(ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+
+    @property
+    def schema(self):
+        return Fields(INewSpecification, INewSpecificationSprint,
+                      self.info_type_field)
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -295,9 +311,12 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     """An abstract view for creating a specification from a series."""
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint,
-                    INewSpecificationSeriesGoal)
+    @property
+    def schema(self):
+        return Fields(INewSpecification,
+                      INewSpecificationSprint,
+                      INewSpecificationSeriesGoal,
+                      self.info_type_field)
 
     def transform(self, data):
         if data['goal']:
