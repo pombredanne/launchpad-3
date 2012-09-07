@@ -2055,9 +2055,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
-        # actually a composite of bug contacts, structural subscribers
-        # and assignees. As such, it's not possible to get them all with
-        # one query.
+        # actually a composite of bug structural subscribers and assignees.
+        # As such, it's not possible to get them all with one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
         if person in also_notified_subscribers:
             return True

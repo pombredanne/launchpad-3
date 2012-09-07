@@ -70,7 +70,6 @@ class PillarAffiliation(object):
         'maintainer': 1,
         'driver': 2,
         'bug supervisor': 3,
-        'security contact': 4,
     }
 
     def __init__(self, context):
