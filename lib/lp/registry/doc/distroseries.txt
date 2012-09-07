@@ -756,21 +756,8 @@ BinaryPackagePublishingHistory objects for the DistroSeries:
     ...     pkgpub.binarypackagerelease.binarypackagename.name
     ...     for pkgpub in bpphs)
     True
-
-It also allows us to pass wanted strings like: name, version, archtag and
-sourcename.
-
-    >>> warty.getBinaryPackagePublishing(
-    ...     name="nosuchpackage").count()
-    0
-    >>> warty.getBinaryPackagePublishing(
-    ...     version="nosuchversion").count()
-    0
     >>> warty.getBinaryPackagePublishing(
     ...     archtag="nosucharch").count()
-    0
-    >>> warty.getBinaryPackagePublishing(
-    ...     sourcename="nosuchsource").count()
     0
 
 We can restrict the results by component:
@@ -791,24 +778,14 @@ By pocket:
     ...     pocket=PackagePublishingPocket.BACKPORTS).count()
     0
 
-Or any combination of them:
-
-    >>> warty.getBinaryPackagePublishing(
-    ...     sourcename="alsa", pocket=PackagePublishingPocket.RELEASE,
-    ...     component=component_main).count()
-    0
-
-    >>> warty.getBinaryPackagePublishing(
-    ...     name="mozilla-firefox", archtag='i386',
-    ...     component=component_main).count()
-    2
-
 As getSourcePackagePublishing, getBinaryPublishing accepts 'archive'
 parameter for result restriction:
 
     >>> warty.getBinaryPackagePublishing(
-    ...     name="mozilla-firefox", archtag='i386',
-    ...     component=component_main, archive=debian_archive).count()
+    ...     archtag='i386', archive=ubuntu.main_archive).count()
+    8
+    >>> warty.getBinaryPackagePublishing(
+    ...     archtag='i386', archive=debian_archive).count()
     0
 
 getAllPublishedSources will return all publications with status PUBLISHED

@@ -1166,44 +1166,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(
-        self, name=None, version=None, archtag=None, sourcename=None,
-        orderBy=None, pocket=None, component=None, archive=None):
+    def getBinaryPackagePublishing(self, archtag=None, pocket=None,
+                                   component=None, archive=None):
         """See `IDistroSeries`."""
         archives = self.distribution.getArchiveIDList(archive)
 
         query = ["""
-        BinaryPackagePublishingHistory.binarypackagerelease =
-            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchseries =
             DistroArchSeries.id AND
-        BinaryPackageRelease.binarypackagename =
-            BinaryPackageName.id AND
-        BinaryPackageRelease.build =
-            BinaryPackageBuild.id AND
-        BinaryPackageBuild.source_package_release =
-            SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename =
-            SourcePackageName.id AND
         DistroArchSeries.distroseries = %s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
         """ % sqlvalues(self, archives, PackagePublishingStatus.PUBLISHED)]
 
-        if name:
-            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
-
-        if version:
-            query.append('BinaryPackageRelease.version = %s'
-                      % sqlvalues(version))
-
         if archtag:
             query.append('DistroArchSeries.architecturetag = %s'
                       % sqlvalues(archtag))
-
-        if sourcename:
-            query.append(
-                'SourcePackageName.name = %s' % sqlvalues(sourcename))
 
         if pocket:
             query.append(
@@ -1217,13 +1195,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         query = " AND ".join(query)
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName',
-                        'BinaryPackageBuild', 'SourcePackageRelease',
-                        'SourcePackageName']
-
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries']
         result = BinaryPackagePublishingHistory.select(
-            query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
+            query, distinct=False, clauseTables=clauseTables)
 
         return result
 
