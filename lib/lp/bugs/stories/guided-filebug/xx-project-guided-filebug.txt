@@ -25,7 +25,7 @@ product's +filebug page and presented with a list of possible duplicates.
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+filebug?field.actions.search=Continue&field.title=Evolution+crashes&field.tags='
+    'http://bugs...search=Continue&field.title=Evolution+crashes&field.tags='
     >>> print find_main_content(user_browser.contents).renderContents()
     <...
     No similar bug reports were found...
@@ -76,7 +76,7 @@ test it here.
     There are no projects registered for Test Group that use Launchpad to
     track bugs.
 
-If the project registrant visits the filebug page they will see an
+If the project maintainer visits the filebug page they will see an
 additional message:
 
     >>> admin_browser.open('http://launchpad.dev/test-group/+filebug')
