@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Interface for objects which have a bug contact."""
+"""Interface for objects which have a bug Supervisor."""
 
 __metaclass__ = type
 
