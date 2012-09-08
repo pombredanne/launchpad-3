@@ -733,17 +733,16 @@ contacts:
     ['foo.bar@canonical.com']
 
 Adding a package bug contact for evolution will mean that that package
-bug contact gets implicitly subscribed to all bugs ever opened on that
+bug supervisor gets implicitly subscribed to all bugs ever opened on that
 package.
 
-So, if the Ubuntu team is added as a bug contact to evolution:
+So, if the Ubuntu team is added as a bug supervisor to evolution:
 
     >>> evolution.addBugSubscription(ubuntu_team, ubuntu_team)
     <...StructuralSubscription object at ...>
 
 The team will be implicitly subscribed to the previous bug we
-created. (Remember that Sample Person is also implicitly subscribed
-because they are the distro bug contact):
+created:
 
     >>> [subscription.person.displayname
     ...  for subscription in new_bug.subscriptions]
