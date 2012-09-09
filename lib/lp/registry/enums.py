@@ -199,9 +199,9 @@ class SpecificationSharingPolicy(DBEnumeratedType):
     EMBARGOED_OR_PROPRIETARY = DBItem(5, """
         Embargoed, can be proprietary
 
-        New specifications are embargoed, but can be made proprietary later. Only
-        people who can see the project's proprietary information can create
-        new specifications.
+        New specifications are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new specifications.
         """)
 
 
