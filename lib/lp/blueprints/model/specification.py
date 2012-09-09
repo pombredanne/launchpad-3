@@ -67,9 +67,12 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import (
+    FREE_INFORMATION_TYPES,
     InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -116,6 +119,18 @@ def recursive_dependent_query(spec):
             FROM specificationdependency sd, dependencies d
             WHERE sd.specification = d.id
         )""" % spec.id
+
+
+SPECIFICATION_POLICY_ALLOWED_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        NON_EMBARGOED_INFORMATION_TYPES),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        NON_EMBARGOED_INFORMATION_TYPES),
+    SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
 
 
 class Specification(SQLBase, BugLinkTargetMixin):

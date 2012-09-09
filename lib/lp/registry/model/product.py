@@ -86,6 +86,7 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
