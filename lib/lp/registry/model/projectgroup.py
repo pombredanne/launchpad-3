@@ -68,9 +68,6 @@ from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
     )
-from lp.registry.enums import (
-    InformationType,
-    )
 from lp.registry.interfaces.person import (
     validate_person_or_closed_team,
     validate_public_person,
@@ -536,14 +533,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             or self.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
             return True
         return False
-
-    def getAllowedProductInformationTypes(self):
-        """See `IProductGroup`."""
-        return (InformationType.PUBLIC,
-                InformationType.EMBARGOED,
-                InformationType.PROPRIETARY)
-
-
 
 
 class ProjectGroupSet:
