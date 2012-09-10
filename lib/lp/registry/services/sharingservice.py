@@ -112,6 +112,7 @@ class SharingService:
             AccessPolicy.id.is_in(ids)
         )
 
+    @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -140,13 +141,20 @@ class SharingService:
 
         return bugtasks, branches
 
-    def getVisibleArtifacts(self, person, branches=None, bugs=None):
+    def getVisibleArtifacts(self, person, branches=None, bugs=None,
+                            ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
         for bug in bugs or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', bug)):
+                raise Unauthorized
             bugs_by_id[bug.id] = bug
         for branch in branches or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', branch)):
+                raise Unauthorized
             branches_by_id[branch.id] = branch
 
         # Load the bugs.
@@ -266,12 +274,12 @@ class SharingService:
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have branch sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have branch sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BranchSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary branches.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
@@ -284,12 +292,12 @@ class SharingService:
 
     def getBugSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have bug sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have bug sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BugSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary bugs.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,

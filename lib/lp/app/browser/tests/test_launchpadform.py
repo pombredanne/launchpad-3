@@ -207,11 +207,14 @@ class TestFormView(TestWidgetDivView):
     @action('Test', name='test',
         failure=LaunchpadFormView.ajax_failure_handler)
     def test_action(self, action, data):
-        pass
+        single_line_value = data['single_line']
+        if single_line_value == 'success':
+            return
+        self.addError("An action error")
 
     def validate(self, data):
         single_line_value = data['single_line']
-        if single_line_value == 'success':
+        if single_line_value != 'error':
             return
         self.setFieldError('single_line', 'An error occurred')
         self.addError('A form error')
@@ -264,3 +267,20 @@ class TestAjaxValidator(TestCase):
         view = TestFormView({}, request)
         view.initialize()
         self.assertIsNone(view.form_result)
+
+    def test_ajax_action_failure(self):
+        # When there are errors performing the action, these are recorded.
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST',
+            form={
+                'field.actions.test': 'Test',
+                'field.single_line': 'failure'},
+            **extra)
+        view = TestFormView({}, request)
+        view.initialize()
+        self.assertEqual(
+                {"error_summary": "There is 1 error.",
+                 "errors": {},
+                 "form_wide_errors": ["An action error"]},
+            simplejson.loads(view.form_result))

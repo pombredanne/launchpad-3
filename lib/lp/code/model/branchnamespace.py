@@ -51,8 +51,8 @@ from lp.registry.enums import (
     FREE_INFORMATION_TYPES,
     FREE_PRIVATE_INFORMATION_TYPES,
     InformationType,
-    PersonVisibility,
     NON_EMBARGOED_INFORMATION_TYPES,
+    PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
