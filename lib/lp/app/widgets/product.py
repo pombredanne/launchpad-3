@@ -300,6 +300,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         'ZPL': 'more',
         'CC_BY': 'more',
         'CC_BY_SA': 'more',
+        'PERL': 'deprecated',
         'OTHER_PROPRIETARY': 'special',
         'OTHER_OPEN_SOURCE': 'special',
         'DONT_KNOW': 'special',
@@ -329,6 +330,15 @@ class LicenseWidget(CheckBoxMatrixWidget):
             prefix='field', value=initial_value,
             context=field.context)
         self.source_package_release = None
+        # These will get filled in by _categorize().  They are the number of
+        # selected licences in the category.  The actual count doesn't matter,
+        # since if it's greater than 0 it will start opened.  Note that we
+        # always want the recommended licences to be opened, so we initialize
+        # its value to 1.
+        self.recommended_count = 1
+        self.more_count = 0
+        self.deprecated_count = 0
+        self.special_count = 0
 
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
@@ -386,15 +396,18 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # manually.
         # pylint: disable-msg=E1002
         super(LicenseWidget, self).__call__()
-        self.recommended = self._renderTable('recommended', 3, True)
+        self.recommended = self._renderTable('recommended', 3)
         self.more = self._renderTable('more', 3)
+        self.deprecated = self._renderTable('deprecated')
         self.special = self._renderTable('special')
         return self.template()
 
-    def _renderTable(self, category, column_count=1, start_opened=False):
+    def _renderTable(self, category, column_count=1):
         # The tables are wrapped in divs, since IE8 does not respond
         # to setting the table's height to zero.
-        klass = 'expanded' if start_opened else ''
+        attribute_name = category + '_count'
+        attr_count = getattr(self, attribute_name)
+        klass = 'expanded' if attr_count > 0 else ''
         html = [
             '<div id="%s" class="hide-on-load %s"><table>' % (category, klass)]
         rendered_items = self.items_by_category[category]
