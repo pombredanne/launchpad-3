@@ -247,13 +247,15 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def ensureAccessGrants(grantees, user, branches=None, bugs=None):
+    def ensureAccessGrants(grantees, user, branches=None, bugs=None,
+                           specifications=None):
         """Ensure a grantee has an access grant to the specified artifacts.
 
         :param grantees: the people or teams for whom to grant access
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
+        :param specifications: the specifications for which to grant access
         """
 
     @export_write_operation()

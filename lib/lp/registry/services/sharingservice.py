@@ -523,7 +523,7 @@ class SharingService:
             user, artifacts, grantee=grantee, pillar=pillar)
 
     def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
-                           ignore_permissions=False):
+                           specifications=None, ignore_permissions=False):
         """See `ISharingService`."""
 
         artifacts = []
@@ -531,6 +531,8 @@ class SharingService:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if specifications:
+            artifacts.extend(specifications)
         if not ignore_permissions:
             # The user needs to have launchpad.Edit permission on all supplied
             # bugs and branches or else we raise an Unauthorized exception.
