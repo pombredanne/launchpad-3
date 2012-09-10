@@ -256,3 +256,8 @@ h3 a.sprite {
 .hidden {
     display: none;
     }
+
+/* Some things we want to hide by default only if javascript is enabled. */
+.yui3-js-enabled .hide-on-load {
+    display: none;
+    }
