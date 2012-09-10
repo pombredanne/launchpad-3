@@ -17,7 +17,7 @@ from lp.bugs.interfaces.hasbug import IHasBug
 def update_bug_date_last_updated(object, event):
     """Update IBug.date_last_updated to the current date."""
     # If no fields on the bug have changed, do nothing.
-    if event.edited_fields is None:
+    if not event.edited_fields:
         return
     if IBug.providedBy(object):
         bug = object
