@@ -10,6 +10,7 @@ from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
@@ -1075,9 +1076,11 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         specification = self.factory.makeSpecification(
             product=product, owner=owner)
+        removeSecurityProxy(specification.target)._ensurePolicies(
+             [InformationType.EMBARGOED])
         with person_logged_in(owner):
             specification.transitionToInformationType(
-                InformationType.USERDATA, owner)
+                InformationType.EMBARGOED, owner)
         self._assert_ensureAccessGrants(owner, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):

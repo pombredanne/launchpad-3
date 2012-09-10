@@ -249,31 +249,27 @@ class SpecificationTests(TestCaseWithFactory):
                 setattr(specification, attribute, value)
 
     def test_anon_read_access(self):
-        # Anonymous users have access to public specifications...
+        # Anonymous users have access to public specifications but not
+        # to private specifications.
         specification = self.factory.makeSpecification()
-        for information_type in PUBLIC_INFORMATION_TYPES:
-            with person_logged_in(specification.owner):
-                specification.transitionToInformationType(
-                    information_type, specification.owner)
-            self.read_access_to_ISpecificationView(
-                ANONYMOUS, specification, error_expected=False)
-        # ...but not to private specifications.
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in PRIVATE_INFORMATION_TYPES:
+        all_types = specification.getAllowedInformationTypes(ANONYMOUS)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
+            error_expected = information_type not in PUBLIC_INFORMATION_TYPES
             self.read_access_to_ISpecificationView(
-                ANONYMOUS, specification, error_expected=True)
+                ANONYMOUS, specification, error_expected)
 
     def test_anon_write_access(self):
         # Anonymous users do not have write access to specifications.
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in (PUBLIC_INFORMATION_TYPES +
-                                 PRIVATE_INFORMATION_TYPES):
+        all_types = specification.getAllowedInformationTypes(ANONYMOUS)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
@@ -285,49 +281,37 @@ class SpecificationTests(TestCaseWithFactory):
                 attribute='name', value='foo')
 
     def test_ordinary_user_read_access(self):
-        # Oridnary users have access to public specifications...
+        # Oridnary users have access to public specifications but not
+        # to private specifications.
         specification = self.factory.makeSpecification()
-        user = self.factory.makePerson()
-        for information_type in PUBLIC_INFORMATION_TYPES:
-            with person_logged_in(specification.owner):
-                specification.transitionToInformationType(
-                    information_type, specification.owner)
-            self.read_access_to_ISpecificationView(
-                user, specification, error_expected=False)
-        # ...but not to private specifications.
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in PRIVATE_INFORMATION_TYPES:
+        user = self.factory.makePerson()
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
+            error_expected = information_type not in PUBLIC_INFORMATION_TYPES
             self.read_access_to_ISpecificationView(
-                user, specification, error_expected=True)
+                user, specification, error_expected)
 
     def test_ordinary_user_write_access(self):
         # Oridnary users can change the whiteborad of public specifications.
-        # They cannot change other attributes.
+        # They cannot change other attributes of public speicifcaitons and
+        # no attributes of private specifications.
         specification = self.factory.makeSpecification()
-        user = self.factory.makePerson()
-        for information_type in PUBLIC_INFORMATION_TYPES:
-            with person_logged_in(specification.owner):
-                specification.transitionToInformationType(
-                    information_type, specification.owner)
-            self.write_access_to_ISpecificationView(
-                user, specification, error_expected=False,
-                attribute='whiteboard', value='foo')
-            self.write_access_to_ISpecificationView(
-                user, specification, error_expected=True,
-                attribute='name', value='foo')
-        # The cannot change any attribute of private specifcations.
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in PRIVATE_INFORMATION_TYPES:
+        user = self.factory.makePerson()
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
+            error_expected = information_type not in PUBLIC_INFORMATION_TYPES
             self.write_access_to_ISpecificationView(
-                user, specification, error_expected=True,
+                user, specification, error_expected,
                 attribute='whiteboard', value='foo')
             self.write_access_to_ISpecificationView(
                 user, specification, error_expected=True,
@@ -339,8 +323,9 @@ class SpecificationTests(TestCaseWithFactory):
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in (PUBLIC_INFORMATION_TYPES +
-                                 PRIVATE_INFORMATION_TYPES):
+        all_types = specification.getAllowedInformationTypes(
+            specification.owner)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
@@ -353,8 +338,9 @@ class SpecificationTests(TestCaseWithFactory):
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        for information_type in (PUBLIC_INFORMATION_TYPES +
-                                 PRIVATE_INFORMATION_TYPES):
+        all_types = specification.getAllowedInformationTypes(
+            specification.owner)
+        for information_type in all_types:
             with person_logged_in(specification.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
