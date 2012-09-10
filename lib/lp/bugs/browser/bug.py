@@ -103,6 +103,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -604,6 +605,13 @@ class BugView(LaunchpadView, BugViewMixin):
 class BugActivity(BugView):
 
     page_title = 'Activity log'
+
+    @property
+    def activity(self):
+        activity = IBug(self.context).activity
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [a.personID for a in activity], need_validity=True))
+        return activity
 
 
 class BugSubscriptionPortletDetails:
