@@ -2131,7 +2131,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
-        if private_projects:
+        if private_projects and not IProduct.providedBy(self.context):
             self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
