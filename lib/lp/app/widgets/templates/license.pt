@@ -26,7 +26,7 @@ function unset_licenses() {
 // and breaks with every YUI/lazr-js upgrade.
 // Tread carefully, or else please make this better
 // and add tests, too (preferably in reverse order there.)
-LPJS.use('node', 'lazr.effects', function(Y) {
+LPJS.use('node', 'lp.ui.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
@@ -48,7 +48,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
                 // licences in that category.  A '0' means 'no'.
                 var arrow = Y.one(arrow_name);
                 if (arrow.getAttribute('start_expanded') == '0') {
-                    target.slide = Y.lazr.effects.slide_in(table_name);
+                    target.slide = Y.lp.ui.effects.slide_in(table_name);
                 }
                 else {
                     // This is wrong on so many levels.  The view should
@@ -64,7 +64,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
                     } else {
                         expanded_height = 65;
                     }
-                    target.slide = Y.lazr.effects.slide_out(
+                    target.slide = Y.lp.ui.effects.slide_out(
                         table_name, {to: {height: expanded_height}});
                 }
                 target.slide.stop();
@@ -139,20 +139,20 @@ LPJS.use('node', 'lazr.effects', function(Y) {
         function reveal_details(e) {
             if (other_com.get('checked') || other_os.get('checked')) {
                 if (!details.hasClass('lazr-opened')) {
-                    Y.lazr.effects.slide_out(details).run();
+                    Y.lp.ui.effects.slide_out(details).run();
                 }
             } else {
                 if (!details.hasClass('lazr-closed')) {
-                    Y.lazr.effects.slide_in(details).run();
+                    Y.lp.ui.effects.slide_in(details).run();
                 }
             }
             if (other_com.get('checked')) {
                 if (!proprietary.hasClass('lazr-opened')) {
-                    Y.lazr.effects.slide_out(proprietary).run();
+                    Y.lp.ui.effects.slide_out(proprietary).run();
                 }
             } else {
                 if (!proprietary.hasClass('lazr-closed')) {
-                    Y.lazr.effects.slide_in(proprietary).run();
+                    Y.lp.ui.effects.slide_in(proprietary).run();
                 }
             }
         }
