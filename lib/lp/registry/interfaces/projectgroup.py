@@ -346,6 +346,14 @@ class IProjectGroupPublic(
     def getSeries(series_name):
         """Return a ProjectGroupSeries object with name `series_name`."""
 
+    def getAllowedProductInformationTypes():
+        """Get the information types that a project can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
+
+
     product_milestones = Attribute('all the milestones for all the products.')
 
 

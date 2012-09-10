@@ -68,6 +68,9 @@ from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
     )
+from lp.registry.enums import (
+    InformationType,
+    )
 from lp.registry.interfaces.person import (
     validate_person_or_closed_team,
     validate_public_person,
@@ -534,6 +537,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return True
         return False
 
+    def getAllowedProductInformationTypes(self):
+        """See `IProductGroup`."""
+        return (InformationType.PUBLIC,
+                InformationType.EMBARGOED,
+                InformationType.PROPRIETARY)
+
+
+
 
 class ProjectGroupSet:
     implements(IProjectGroupSet)
@@ -575,7 +586,7 @@ class ProjectGroupSet:
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
-            registrant=None):
+            registrant=None, bug_supervisor=None, driver=None):
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner

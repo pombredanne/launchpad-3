@@ -2125,10 +2125,13 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].hint = ('When published, '
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
-
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
-        self.widgets['information_type'].value = InformationType.PUBLIC
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if private_projects:
+            self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
@@ -2226,8 +2229,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
-            bug_supervisor=data['bug_supervisor'],
-            driver=data['driver'],
+            bug_supervisor=data.get('bug_supervisor', None),
+            driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],

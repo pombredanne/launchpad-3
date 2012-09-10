@@ -799,12 +799,6 @@ class IProductPublic(
         :return: A sequence of `InformationType`s.
         """
 
-    def getAllowedInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
-        """
-
     def getDefaultBugInformationType():
         """Get the default information type of a new bug in this project.
 
