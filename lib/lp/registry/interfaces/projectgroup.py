@@ -352,8 +352,6 @@ class IProjectGroupPublic(
         :return: A sequence of `InformationType`s.
         """
 
-
-
     product_milestones = Attribute('all the milestones for all the products.')
 
 

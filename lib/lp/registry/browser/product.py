@@ -2085,7 +2085,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
-        if not private_projects:
+        if not private_projects or not IProductSet.providedBy(self.context):
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
@@ -2102,7 +2102,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2130,7 +2129,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
-        if private_projects:
+
+        if private_projects and IProductSet.providedBy(self.context):
             self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
