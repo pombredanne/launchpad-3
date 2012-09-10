@@ -294,6 +294,8 @@ class NewSpecificationFromTargetView(NewSpecificationView):
         return Fields(INewSpecification, INewSpecificationSprint,
                       self.info_type_field)
 
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for creating a specification from a distribution."""
