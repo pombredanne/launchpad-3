@@ -2029,18 +2029,17 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invokved.
-        if IProduct.providedBy(self.context):
-            cache = IJSONRequestCache(self.request)
-            cache.objects['private_types'] = [
-                type.name for type in PRIVATE_INFORMATION_TYPES]
-            cache.objects['public_types'] = [
-                    type.name for type in PUBLIC_INFORMATION_TYPES]
-            cache.objects['information_type_data'] = [
-                {'value': term.name, 'description': term.description,
-                'name': term.title,
-                'description_css_class': 'choice-description'}
-                for term in
-                    self.context.getAllowedProductInformationTypes()]
+        cache = IJSONRequestCache(self.request)
+        cache.objects['private_types'] = [
+            type.name for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['public_types'] = [
+                type.name for type in PUBLIC_INFORMATION_TYPES]
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in
+                self.context.getAllowedProductInformationTypes()]
 
         super(ProjectAddStepTwo, self).initialize()
 
@@ -2086,7 +2085,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
-        if not private_projects or not IProduct.providedBy(self.context):
+        if not private_projects or not IProductSet.providedBy(self.context):
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
@@ -2103,7 +2102,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2131,7 +2129,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
-        if private_projects and not IProduct.providedBy(self.context):
+
+        if private_projects and IProductSet.providedBy(self.context):
             self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses

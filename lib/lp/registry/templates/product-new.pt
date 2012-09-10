@@ -17,9 +17,10 @@
 LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
     Y.on('domready', function() {
         // Setup the information choice widget.
-        Y.lp.app.choice.addPopupChoiceForRadioButtons(
-            'information_type', LP.cache.information_type_data, true);
-
+        if (Y.one('input[name="field.information_type"]')) {
+            Y.lp.app.choice.addPopupChoiceForRadioButtons(
+                'information_type', LP.cache.information_type_data, true);
+        }
 
         /* These two regexps serve slightly different purposes.  The first
          * finds the leftmost run of valid url characters for the autofill
