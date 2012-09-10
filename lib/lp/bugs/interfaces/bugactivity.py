@@ -16,7 +16,10 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Datetime,
     Text,
@@ -42,6 +45,7 @@ class IBugActivity(Interface):
                  description=_("The date on which this activity occurred."),
                  readonly=True))
 
+    personID = Attribute('DB ID for Person')
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
