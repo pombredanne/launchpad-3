@@ -544,8 +544,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 InformationType.PROPRIETARY)
 
 
-
-
 class ProjectGroupSet:
     implements(IProjectGroupSet)
 
