@@ -810,8 +810,7 @@ class SpecificationInformationTypeEditView(LaunchpadFormView):
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
-        info_types = self.context.getAllowedSpecificationInformationTypes(
-            self.user)
+        info_types = self.context.getAllowedInformationTypes(self.user)
 
         class information_type_schema(Interface):
             information_type_field = copy_field(
