@@ -103,9 +103,8 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
-from lp.registry.model.person import ValidPersonCache
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.vocabularies import InformationTypeVocabulary
-from lp.services.database.bulk import load_related
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -610,7 +609,8 @@ class BugActivity(BugView):
     @property
     def activity(self):
         activity = IBug(self.context).activity
-        load_related(ValidPersonCache, activity, ['personID'])
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [a.personID for a in activity], need_validity=True))
         return activity
 
 

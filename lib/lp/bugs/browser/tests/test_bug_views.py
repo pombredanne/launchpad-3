@@ -701,9 +701,9 @@ class TestBugActivityView(TestCaseWithFactory):
                 bug.addChange(BugAttachmentChange(
                     ten_minutes_ago, self.factory.makePerson(), 'attachment',
                     None, attachment))
-        Store.of(bug).flush()
+        Store.of(bug).invalidate()
         with StormStatementRecorder() as recorder:
             view = create_initialized_view(
                 bug.default_bugtask, name='+activity')
             view.render()
-        self.assertThat(recorder, HasQueryCount(Equals(5)))
+        self.assertThat(recorder, HasQueryCount(Equals(7)))
