@@ -224,7 +224,8 @@ class NewSpecificationView(LaunchpadFormView):
             assignee=data.get('assignee'),
             approver=data.get('approver'),
             distribution=data.get('distribution'),
-            definition_status=data.get('definition_status'))
+            definition_status=data.get('definition_status'),
+            information_type=data.get('information_type'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -554,6 +555,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def information_type(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Change privacy/security'
@@ -808,7 +810,8 @@ class SpecificationInformationTypeEditView(LaunchpadFormView):
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
-        info_types = self.context.getAllowedInformationTypes(self.user)
+        info_types = self.context.getAllowedSpecificationInformationTypes(
+            self.user)
 
         class information_type_schema(Interface):
             information_type_field = copy_field(

@@ -818,7 +818,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self.id, self.name, self.target.name)
 
     def getAllowedInformationTypes(self, who):
-        return set(PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        return self.target.getAllowedSpecificationInformationTypes()
 
     def transitionToInformationType(self, information_type, who):
         """See `IBug`."""
