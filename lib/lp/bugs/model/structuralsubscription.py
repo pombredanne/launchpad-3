@@ -422,7 +422,7 @@ class StructuralSubscriptionTargetMixin:
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
         # subscription. It is useful so long as subscriptions are mainly
-        # used to implement bug contacts.
+        # used to implement bug supervisor rules.
         if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s' % (
@@ -909,11 +909,11 @@ def _calculate_tag_query(conditions, tags):
             BugSubscriptionFilter.id,
             tables=[BugSubscriptionFilter, tag_join],
             where=And(
-                Or(# We want filters that proclaim they simply want any tags.
+                Or(  # We want filters that proclaim they simply want any tags.
                    BugSubscriptionFilter.include_any_tags,
                    # Also include filters that match any tag...
                    And(Not(BugSubscriptionFilter.find_all_tags),
-                       Or(# ...with a positive match...
+                       Or(  # ...with a positive match...
                           And(BugSubscriptionFilterTag.include,
                               In(BugSubscriptionFilterTag.tag, tags)),
                           # ...or with a negative match...

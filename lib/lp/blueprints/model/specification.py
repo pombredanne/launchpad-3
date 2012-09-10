@@ -70,6 +70,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
@@ -817,7 +818,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self.id, self.name, self.target.name)
 
     def getAllowedInformationTypes(self, who):
-        return set(InformationType.items)
+        return set(PUBLIC_PROPRIETARY_INFORMATION_TYPES)
 
     def transitionToInformationType(self, information_type, who):
         """See ISpecification."""
