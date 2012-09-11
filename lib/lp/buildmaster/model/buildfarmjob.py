@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,18 +9,16 @@ __all__ = [
     'BuildFarmJobOldDerived',
     ]
 
-
 import hashlib
 
 from lazr.delegates import delegates
 import pytz
 from storm.expr import (
-    And,
     Desc,
     LeftJoin,
+    Not,
     Or,
     Select,
-    Union,
     )
 from storm.locals import (
     Bool,
@@ -42,7 +40,6 @@ from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -56,6 +53,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
@@ -422,9 +420,9 @@ class BuildFarmJobSet:
         from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
 
-        extra_clauses = [BuildFarmJob.builder == builder_id]
+        clauses = [BuildFarmJob.builder == builder_id]
         if status is not None:
-            extra_clauses.append(BuildFarmJob.status == status)
+            clauses.append(BuildFarmJob.status == status)
 
         # We need to ensure that we don't include any private builds.
         # Currently only package builds can be private (via their
@@ -437,70 +435,26 @@ class BuildFarmJobSet:
                 PackageBuild.build_farm_job == BuildFarmJob.id),
             ]
 
-        # STORM syntax has totally obfuscated this query and wasted
-        # THREE hours of my time converting perfectly good SQL syntax.  I'm
-        # really sorry if you're the poor sap who has to maintain this.
-
-        inner_privacy_query = (
-            Union(
-                Select(
-                    Archive.id,
-                    tables=(Archive,),
-                    where=(Archive._private == False)
-                    ),
-                Select(
-                    Archive.id,
-                    tables=(Archive,),
-                    where=And(
-                        Archive._private == True,
-                        Archive.ownerID.is_in(
-                            Select(
-                                TeamParticipation.teamID,
-                                where=(TeamParticipation.person == user),
-                                distinct=True
-                            )
-                        )
-                    )
-                )
-            )
-        )
-
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            extra_clauses.append(
-                Or(
-                    PackageBuild.id == None,
-                    PackageBuild.archive_id.is_in(
+            origin.append(
+                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
+            clauses.append(Or(PackageBuild.id == None, Not(Archive._private)))
+        elif not IPersonRoles(user).in_admin:
+            # Non-admin users see all public builds and the specific
+            # private builds to which they have access.
+            origin.append(
+                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
+            clauses.append(
+                Or(PackageBuild.id == None, Not(Archive._private),
+                    Archive.ownerID.is_in(
                         Select(
-                            Archive.id,
-                            tables=(Archive,),
-                            where=(Archive._private == False)
-                            )
-                        )
-                    )
-                )
+                            TeamParticipation.teamID,
+                            where=(TeamParticipation.person == user)))))
 
-        elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            # Admins get to see everything.
-            pass
-        else:
-            # Everyone else sees all public builds and the
-            # specific private builds to which they have access.
-            extra_clauses.append(
-                Or(
-                    PackageBuild.id == None,
-                    PackageBuild.archive_id.is_in(inner_privacy_query)
-                    )
-                )
-
-        filtered_builds = IStore(BuildFarmJob).using(*origin).find(
-            BuildFarmJob, *extra_clauses)
-
-        filtered_builds.order_by(
-            Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
-        filtered_builds.config(distinct=True)
-
-        return filtered_builds
+        return IStore(BuildFarmJob).using(*origin).find(
+            BuildFarmJob, *clauses).order_by(
+                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
     def getByID(self, job_id):
         """See `IBuildfarmJobSet`."""
