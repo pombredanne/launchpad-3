@@ -9,6 +9,7 @@ __all__ = [
     'recursive_blocked_query',
     'recursive_dependent_query',
     'Specification',
+    'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SpecificationSet',
     ]
 
