@@ -16,6 +16,7 @@ import transaction
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
@@ -619,6 +620,8 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         """Ensure transitionToInformationType works."""
         spec = self.factory.makeSpecification()
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
+        removeSecurityProxy(spec.target)._ensurePolicies(
+            [InformationType.EMBARGOED])
         with person_logged_in(spec.owner):
             result = spec.transitionToInformationType(
                 InformationType.EMBARGOED, spec.owner)
