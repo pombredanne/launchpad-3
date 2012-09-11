@@ -29,7 +29,7 @@ AS $function$
             OR milestone = $1.milestone)
         AND importance = $1.importance
         AND has_patch = $1.has_patch
-        AND access_policy IS NOT DISTINCT FROM access_policy;
+        AND access_policy IS NOT DISTINCT FROM $1.access_policy;
 $function$;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 32, 0);
