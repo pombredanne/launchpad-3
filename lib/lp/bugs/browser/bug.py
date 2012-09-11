@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
+from zope.publisher.defaultview import getDefaultViewName
 
 __metaclass__ = type
 
@@ -705,8 +706,12 @@ class BugWithoutContextView(RedirectionView):
     """
 
     def __init__(self, context, request):
+        redirected_context = context.default_bugtask
+        viewname = getDefaultViewName(redirected_context, request)
+        cache_view = getMultiAdapter(
+            (redirected_context, request), name=viewname)
         super(BugWithoutContextView, self).__init__(
-            canonical_url(context.default_bugtask), request)
+            canonical_url(redirected_context), request, cache_view=cache_view)
 
 
 class BugEditViewBase(LaunchpadEditFormView):
@@ -980,14 +985,14 @@ class DeprecatedAssignedBugsView(RedirectionView):
     """
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        redirected_context = getUtility(ILaunchBag).user
+        viewname = '+assignedbugs'
+        cache_view = getMultiAdapter(
+            (redirected_context, request), name=viewname)
+        target = canonical_url(redirected_context, view_name='+assignedbugs')
+        super(DeprecatedAssignedBugsView, self).__init__(
+            target, request, cache_view=cache_view)
         self.status = 303
-
-    def __call__(self):
-        self.target = canonical_url(
-            getUtility(ILaunchBag).user, view_name='+assignedbugs')
-        super(DeprecatedAssignedBugsView, self).__call__()
 
 
 normalize_mime_type = re.compile(r'\s+')
