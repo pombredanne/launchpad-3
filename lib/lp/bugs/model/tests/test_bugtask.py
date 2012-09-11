@@ -3055,6 +3055,19 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             "%s doesn't allow Public bugs." % commercial_prod.displayname,
             validate_target, bug, commercial_prod)
 
+    def test_illegal_information_type_allowed_if_pillar_not_new(self):
+        # The bug's current information_type does not have to be permitted if
+        # we already affect the pillar.
+        public_prod = self.factory.makeProduct()
+        commercial_prod = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        commercial_series = self.factory.makeProductSeries(
+            product=commercial_prod)
+        bug = self.factory.makeBug(target=public_prod)
+        self.factory.makeBugTask(bug=bug, target=commercial_prod)
+        removeSecurityProxy(bug).information_type = InformationType.USERDATA
+        validate_target(removeSecurityProxy(bug), commercial_series)
+
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
 

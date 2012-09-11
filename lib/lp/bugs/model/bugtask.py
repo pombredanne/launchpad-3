@@ -338,7 +338,8 @@ def validate_target(bug, target, retarget_existing=True):
                 raise IllegalTarget(e[0])
 
     legal_types = target.pillar.getAllowedBugInformationTypes()
-    if bug.information_type not in legal_types:
+    new_pillar = target.pillar not in bug.affected_pillars
+    if new_pillar and bug.information_type not in legal_types:
         raise IllegalTarget(
             "%s doesn't allow %s bugs." % (
             target.pillar.bugtargetdisplayname, bug.information_type.title))
