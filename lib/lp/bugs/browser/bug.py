@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
-from zope.publisher.defaultview import getDefaultViewName
 
 __metaclass__ = type
 
@@ -56,6 +55,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
+from zope.publisher.defaultview import getDefaultViewName
 from zope.schema import (
     Bool,
     Choice,
