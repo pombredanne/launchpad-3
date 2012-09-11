@@ -275,27 +275,32 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         self.match_it = soupmatchers.HTMLContains(it_field)
 
     def test_from_root(self):
+        """Information_type is included creating from root."""
         browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
         self.assertThat(browser.contents, self.match_it)
 
     def test_from_root_no_flag(self):
+        """Information_type is excluded with no flag."""
         set_blueprint_information_type(self, False)
         browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
         self.assertThat(browser.contents, Not(self.match_it))
 
     def test_from_sprint(self):
+        """Information_type is included creating from a sprint."""
         sprint = self.factory.makeSprint()
         browser = self.getViewBrowser(sprint, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
 
     def test_from_sprint_no_flag(self):
+        """Information_type is excluded with no flag."""
         set_blueprint_information_type(self, False)
         sprint = self.factory.makeSprint()
         browser = self.getViewBrowser(sprint, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
     def submitSpec(self, browser):
-        name =  self.factory.getUniqueString()
+        """Submit a Specification via a browser."""
+        name = self.factory.getUniqueString()
         browser.getControl('Name').value = name
         browser.getControl('Title').value = self.factory.getUniqueString()
         browser.getControl('Summary').value = self.factory.getUniqueString()
@@ -303,15 +308,17 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         return name
 
     def createSpec(self, information_type):
+        """Create a specification via a browser."""
         with person_logged_in(self.user):
             product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+addspec')
-        control = browser.getControl(information_type.title)
-        if not control.selected:
-            control.click()
-        return product.getSpecification(self.submitSpec(browser))
+            browser = self.getViewBrowser(product, view_name='+addspec')
+            control = browser.getControl(information_type.title)
+            if not control.selected:
+                control.click()
+            return product.getSpecification(self.submitSpec(browser))
 
     def test_from_product(self):
+        """Creating from a product defaults to PUBLIC."""
         product = self.factory.makeProduct()
         browser = self.getViewBrowser(product, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
@@ -319,6 +326,7 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         self.assertEqual(spec.information_type, InformationType.PUBLIC)
 
     def test_supplied_information_types(self):
+        """Creating honours information types."""
         spec = self.createSpec(InformationType.PUBLIC)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         spec = self.createSpec(InformationType.PROPRIETARY)
@@ -327,28 +335,33 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         self.assertEqual(InformationType.EMBARGOED, spec.information_type)
 
     def test_from_product_no_flag(self):
+        """information_type is excluded with no flag."""
         set_blueprint_information_type(self, False)
         product = self.factory.makeProduct()
         browser = self.getViewBrowser(product, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
     def test_from_productseries(self):
+        """Information_type is included creating from productseries."""
         series = self.factory.makeProductSeries()
         browser = self.getViewBrowser(series, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
 
     def test_from_productseries_no_flag(self):
+        """information_type is excluded with no flag."""
         set_blueprint_information_type(self, False)
         series = self.factory.makeProductSeries()
         browser = self.getViewBrowser(series, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
     def test_from_distribution(self):
+        """information_type is excluded creating from distro."""
         distro = self.factory.makeDistribution()
         browser = self.getViewBrowser(distro, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
     def test_from_distroseries(self):
+        """information_type is excluded creating from distroseries."""
         series = self.factory.makeDistroSeries()
         browser = self.getViewBrowser(series, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))

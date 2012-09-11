@@ -976,6 +976,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Specification.selectOneBy(distribution=self, name=name)
 
     def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
         return (InformationType.PUBLIC,)
 
     def searchQuestions(self, search_text=None,
