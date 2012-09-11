@@ -71,7 +71,7 @@ class IPackagesetViewOnly(IHasOwner):
         description=_("The creation date/time for the package set at hand.")))
 
     owner = exported(Reference(
-        IPerson, title=_("Person"), required=True, readonly=True,
+        IPerson, title=_("Person"), required=True,
         description=_("The person who owns this package set.")))
 
     name = exported(TextLine(
@@ -79,7 +79,7 @@ class IPackagesetViewOnly(IHasOwner):
         required=True, constraint=name_validator))
 
     description = exported(TextLine(
-        title=_("Description"), required=True, readonly=True,
+        title=_("Description"), required=True,
         description=_("The description for the package set at hand.")))
 
     distroseries = exported(Reference(
