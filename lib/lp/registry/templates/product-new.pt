@@ -16,7 +16,6 @@
        */
       LPJS.use('lp.registry.product.new',  function(Y) {
           Y.on('domready', function() {
-              debugger;
               var view = new Y.lp.registry.product.new.View();
               view.render();
           });
