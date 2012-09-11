@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-12 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.testing.fixture."""
@@ -10,6 +10,7 @@ import sys
 import oops_amqp
 import psycopg2
 from storm.exceptions import DisconnectionError
+import transaction
 from zope.component import (
     adapts,
     ComponentLookupError,
@@ -124,13 +125,11 @@ class TestPGBouncerFixtureWithCA(TestCase):
 
     def is_connected(self):
         # First rollback any existing transaction to ensure we attempt
-        # to reconnect. We currently rollback the store explicitely
-        # rather than call transaction.abort() due to Bug #819282.
-        store = IMasterStore(Person)
-        store.rollback()
+        # to reconnect.
+        transaction.abort()
 
         try:
-            store.find(Person).first()
+            IMasterStore(Person).find(Person).first()
             return True
         except DisconnectionError:
             return False

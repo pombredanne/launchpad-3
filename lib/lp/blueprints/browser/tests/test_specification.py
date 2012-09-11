@@ -232,6 +232,8 @@ class TestSpecificationInformationType(BrowserTestCase):
         """Setting the value via '+secrecy' works."""
         owner = self.factory.makePerson()
         spec = self.factory.makeSpecification(owner=owner)
+        removeSecurityProxy(spec.target)._ensurePolicies(
+            [InformationType.PROPRIETARY])
         self.set_secrecy(spec, owner)
         with person_logged_in(owner):
             self.assertEqual(InformationType.PROPRIETARY,
