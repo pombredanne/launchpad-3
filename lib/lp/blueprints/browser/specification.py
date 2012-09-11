@@ -609,14 +609,10 @@ class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
 
     @cachedproperty
     def privacy_portlet_css(self):
-        if self.private:
+        if self.context.private:
             return 'portlet private'
         else:
             return 'portlet public'
-
-    @cachedproperty
-    def private(self):
-        return self.context.information_type in PRIVATE_INFORMATION_TYPES
 
 
 class SpecificationView(SpecificationSimpleView):
