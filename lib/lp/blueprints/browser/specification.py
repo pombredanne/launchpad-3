@@ -116,11 +116,15 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -137,6 +141,9 @@ from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
+
+
+INFORMATION_TYPE_FLAG = 'blueprints.information_type.enabled'
 
 
 class INewSpecification(Interface):
@@ -207,7 +214,10 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+
     custom_widget('specurl', TextWidget, displayWidth=60)
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
@@ -294,8 +304,6 @@ class NewSpecificationFromTargetView(NewSpecificationView):
         return Fields(INewSpecification, INewSpecificationSprint,
                       self.info_type_field)
 
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
-
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for creating a specification from a distribution."""
@@ -342,13 +350,17 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
         data['product'] = self.context.product
 
 
+all_info_type_field = copy_field(ISpecification['information_type'],
+    readonly=False, vocabulary=InformationTypeVocabulary(
+        types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+
+
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for creating a specification outside a target context.
 
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
-
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)
@@ -371,22 +383,32 @@ class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
 
     schema = Fields(INewSpecificationProjectTarget,
                     INewSpecification,
-                    INewSpecificationSprint)
+                    INewSpecificationSprint,
+                    all_info_type_field,)
 
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from the root of Launchpad."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        if getFeatureFlag(INFORMATION_TYPE_FLAG):
+            fields = fields + Fields(all_info_type_field)
+        return fields
 
 
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a sprint."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget, INewSpecification)
+        if getFeatureFlag(INFORMATION_TYPE_FLAG):
+            fields = fields + Fields(all_info_type_field)
+        return fields
 
     def transform(self, data):
         super(NewSpecificationFromSprintView, self).transform(data)

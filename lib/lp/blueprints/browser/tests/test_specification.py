@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
+from lp.blueprints.browser.specification import INFORMATION_TYPE_FLAG
 from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -175,6 +176,12 @@ class TestSpecificationView(TestCaseWithFactory):
                 "... Registered by Some Person ... ago ..."))
 
 
+def set_blueprint_information_type(test_case, enabled):
+    value = 'true' if enabled else ''
+    fixture = FeatureFixture({INFORMATION_TYPE_FLAG: value})
+    test_case.useFixture(fixture)
+
+
 class TestSpecificationInformationType(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -184,8 +191,7 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def setUp(self):
         super(TestSpecificationInformationType, self).setUp()
-        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
-            'true'}))
+        set_blueprint_information_type(self, True)
 
     def assertBrowserMatches(self, matcher):
         browser = self.getViewBrowser(self.factory.makeSpecification())
@@ -195,8 +201,7 @@ class TestSpecificationInformationType(BrowserTestCase):
         self.assertBrowserMatches(soupmatchers.HTMLContains(self.portlet_tag))
 
     def test_privacy_portlet_requires_flag(self):
-        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
-            ''}))
+        set_blueprint_information_type(self, False)
         self.assertBrowserMatches(
             Not(soupmatchers.HTMLContains(self.portlet_tag)))
 
@@ -252,6 +257,42 @@ class TestSpecificationInformationType(BrowserTestCase):
         with ExpectedException(Unauthorized):
             self.set_secrecy(spec, person)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
+
+
+# canonical_url erroneously returns http://blueprints.launchpad.dev/+new
+NEW_SPEC_FROM_ROOT_URL = 'http://blueprints.launchpad.dev/specs/+new'
+
+
+class TestNewSpecificationInformationType(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestNewSpecificationInformationType, self).setUp()
+        set_blueprint_information_type(self, True)
+        it_field = soupmatchers.Tag('it-field', True,
+                                    attrs=dict(name='field.information_type'))
+        self.match_it = soupmatchers.HTMLContains(it_field)
+
+    def test_from_root(self):
+        browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
+        self.assertThat(browser.contents, self.match_it)
+
+    def test_from_root_no_flag(self):
+        set_blueprint_information_type(self, False)
+        browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
+        self.assertThat(browser.contents, Not(self.match_it))
+
+    def test_from_sprint(self):
+        sprint = self.factory.makeSprint()
+        browser = self.getViewBrowser(sprint, view_name='+addspec')
+        self.assertThat(browser.contents, self.match_it)
+
+    def test_from_sprint_no_flag(self):
+        set_blueprint_information_type(self, False)
+        sprint = self.factory.makeSprint()
+        browser = self.getViewBrowser(sprint, view_name='+addspec')
+        self.assertThat(browser.contents, Not(self.match_it))
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
