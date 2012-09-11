@@ -910,7 +910,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
             IProductPublic['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
-    def setSpecificationSharingPolicy(branch_sharing_policy):
+    def setSpecificationSharingPolicy(specification_sharing_policy):
         """Mutator for specification_sharing_policy.
 
         Checks authorization and entitlement.
