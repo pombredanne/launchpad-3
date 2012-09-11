@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -346,6 +347,12 @@ class IPackagesetEdit(Interface):
 
         :param names: an iterable with string package set names
         """
+
+    @export_write_operation()
+    @export_operation_as('delete')
+    @operation_for_version('beta')
+    def destroySelf():
+        """Delete the package set."""
 
 
 class IPackagesetRestricted(Interface):
