@@ -118,7 +118,6 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.enums import (
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    PRIVATE_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
