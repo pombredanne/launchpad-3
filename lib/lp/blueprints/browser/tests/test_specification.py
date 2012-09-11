@@ -294,10 +294,37 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         browser = self.getViewBrowser(sprint, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
+    def submitSpec(self, browser):
+        name =  self.factory.getUniqueString()
+        browser.getControl('Name').value = name
+        browser.getControl('Title').value = self.factory.getUniqueString()
+        browser.getControl('Summary').value = self.factory.getUniqueString()
+        browser.getControl('Register Blueprint').click()
+        return name
+
+    def createSpec(self, information_type):
+        with person_logged_in(self.user):
+            product = self.factory.makeProduct()
+        browser = self.getViewBrowser(product, view_name='+addspec')
+        control = browser.getControl(information_type.title)
+        if not control.selected:
+            control.click()
+        return product.getSpecification(self.submitSpec(browser))
+
     def test_from_product(self):
         product = self.factory.makeProduct()
         browser = self.getViewBrowser(product, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
+        spec = product.getSpecification(self.submitSpec(browser))
+        self.assertEqual(spec.information_type, InformationType.PUBLIC)
+
+    def test_supplied_information_types(self):
+        spec = self.createSpec(InformationType.PUBLIC)
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
+        spec = self.createSpec(InformationType.PROPRIETARY)
+        self.assertEqual(InformationType.PROPRIETARY, spec.information_type)
+        spec = self.createSpec(InformationType.EMBARGOED)
+        self.assertEqual(InformationType.EMBARGOED, spec.information_type)
 
     def test_from_product_no_flag(self):
         set_blueprint_information_type(self, False)
