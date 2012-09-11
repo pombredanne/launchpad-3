@@ -147,8 +147,8 @@
       </p>
 
       <p tal:condition="not: product/bug_tracking_usage/enumvalue:LAUNCHPAD">
-        <tal:product tal:replace="product/displayname">Firefox</tal:product>.
-        does not use Launchpad to track bugs, nobody will be notifies about
+        <tal:product tal:replace="product/displayname">Firefox</tal:product>
+        does not use Launchpad to track bugs. Nobody will be notified about
         this issue.
       </p>
     </metal:widgets>

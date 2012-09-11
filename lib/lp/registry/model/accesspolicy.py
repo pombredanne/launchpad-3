@@ -70,7 +70,7 @@ def reconcile_access_for_artifact(artifact, information_type, pillars,
         (pillar, information_type) for pillar in pillars)
     missing_pillars = set(pillars) - set([ap.pillar for ap in aps])
     if len(missing_pillars):
-        pillar_str =  ', '.join([p.name for p in missing_pillars])
+        pillar_str = ', '.join([p.name for p in missing_pillars])
         raise AssertionError(
             "Pillar(s) %s require an access policy for information type "
             "%s." % (pillar_str, information_type.title))
@@ -97,20 +97,25 @@ class AccessArtifact(StormBase):
     bug = Reference(bug_id, 'Bug.id')
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
+    specification_id = Int(name='specification')
+    specification = Reference(specification_id, 'Specification.id')
 
     @property
     def concrete_artifact(self):
-        artifact = self.bug or self.branch
+        artifact = self.bug or self.branch or self.specification
         return artifact
 
     @classmethod
     def _constraintForConcrete(cls, concrete_artifact):
+        from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
         if IBug.providedBy(concrete_artifact):
             col = cls.bug
         elif IBranch.providedBy(concrete_artifact):
             col = cls.branch
+        elif ISpecification.providedBy(concrete_artifact):
+            col = cls.specification
         else:
             raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
@@ -128,6 +133,7 @@ class AccessArtifact(StormBase):
     @classmethod
     def ensure(cls, concrete_artifacts):
         """See `IAccessArtifactSource`."""
+        from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
 
@@ -143,12 +149,16 @@ class AccessArtifact(StormBase):
         insert_values = []
         for concrete in needed:
             if IBug.providedBy(concrete):
-                insert_values.append((concrete, None))
+                insert_values.append((concrete, None, None))
             elif IBranch.providedBy(concrete):
-                insert_values.append((None, concrete))
+                insert_values.append((None, concrete, None))
+            elif ISpecification.providedBy(concrete):
+                insert_values.append((None, None, concrete))
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
-        new = create((cls.bug, cls.branch), insert_values, get_objects=True)
+        new = create(
+            (cls.bug, cls.branch, cls.specification),
+            insert_values, get_objects=True)
         return list(existing) + new
 
     @classmethod
