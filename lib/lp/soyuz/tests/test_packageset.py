@@ -7,10 +7,13 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.lpstorm import IStore
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
     IPackagesetSet,
+    NoSuchPackageSet,
     )
+from lp.soyuz.model.packagesetgroup import PackagesetGroup
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 
@@ -226,3 +229,36 @@ class TestPackageset(TestCaseWithFactory):
         # Unsurprisingly, the unrelated package set is not associated with any
         # other package set.
         self.failUnlessEqual(pset3.relatedSets().count(), 0)
+
+    def test_destroy(self):
+        pset = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        pset.destroySelf()
+        self.assertRaises(NoSuchPackageSet, self.packageset_set.getByName,
+                          u'kernel')
+
+        # Did we clean up the single packagesetgroup?
+        store = IStore(PackagesetGroup)
+        result_set = store.find(PackagesetGroup)
+        self.assertTrue(result_set.is_empty())
+
+    def test_destroy_with_ancestor(self):
+        ancestor = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        pset = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1,
+            distroseries=self.distroseries_experimental, related_set=ancestor)
+        pset.destroySelf()
+        self.assertRaises(
+            NoSuchPackageSet, self.packageset_set.getByName,
+            u'kernel', distroseries=self.distroseries_experimental)
+
+    def test_destroy_with_packages(self):
+        pset = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        package = self.factory.makeSourcePackageName()
+        pset.addSources([package.name])
+
+        pset.destroySelf()
+        self.assertRaises(NoSuchPackageSet, self.packageset_set.getByName,
+                          u'kernel')
