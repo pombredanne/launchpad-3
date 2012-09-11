@@ -262,3 +262,27 @@ class TestPackageset(TestCaseWithFactory):
         pset.destroySelf()
         self.assertRaises(NoSuchPackageSet, self.packageset_set.getByName,
                           u'kernel')
+
+    def test_destroy_child(self):
+        parent = self.packageset_set.new(
+            u'core', u'Contains all the important packages', self.person1)
+        child = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        parent.add((child,))
+
+        child.destroySelf()
+        self.assertRaises(NoSuchPackageSet, self.packageset_set.getByName,
+                          u'kernel')
+        self.assertTrue(parent.setsIncluded(direct_inclusion=True).is_empty())
+
+    def test_destroy_parent(self):
+        parent = self.packageset_set.new(
+            u'core', u'Contains all the important packages', self.person1)
+        child = self.packageset_set.new(
+            u'kernel', u'Contains all OS kernel packages', self.person1)
+        parent.add((child,))
+
+        parent.destroySelf()
+        self.assertRaises(NoSuchPackageSet, self.packageset_set.getByName,
+                          u'core')
+        self.assertTrue(child.setsIncludedBy(direct_inclusion=True).is_empty())
