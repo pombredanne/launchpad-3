@@ -49,6 +49,12 @@
     <legend>More open source licences</legend>
     <input tal:replace="structure view/more" />
     </div>
+    <div tal:condition="view/deprecated_count">
+    <div class="collapsible">
+    <legend>Deprecated licences</legend>
+    <input tal:replace="structure view/deprecated" />
+    </div>
+    </div>
 
     <div class="collapsible">
     <legend>Other choices</legend>
