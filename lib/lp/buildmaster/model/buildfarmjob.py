@@ -420,9 +420,9 @@ class BuildFarmJobSet:
         from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
 
-        extra_clauses = [BuildFarmJob.builder == builder_id]
+        clauses = [BuildFarmJob.builder == builder_id]
         if status is not None:
-            extra_clauses.append(BuildFarmJob.status == status)
+            clauses.append(BuildFarmJob.status == status)
 
         # We need to ensure that we don't include any private builds.
         # Currently only package builds can be private (via their
@@ -439,23 +439,21 @@ class BuildFarmJobSet:
             # Anonymous requests don't get to see private builds at all.
             origin.append(
                 LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            extra_clauses.append(
-                Or(PackageBuild.id == None, Not(Archive._private)))
+            clauses.append(Or(PackageBuild.id == None, Not(Archive._private)))
         elif not IPersonRoles(user).in_admin:
             # Non-admin users see all public builds and the specific
             # private builds to which they have access.
             origin.append(
                 LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            extra_clauses.append(
-                Or(PackageBuild.id == None,
-                    Not(Archive._private), Archive.ownerID.is_in(
+            clauses.append(
+                Or(PackageBuild.id == None, Not(Archive._private),
+                    Archive.ownerID.is_in(
                         Select(
                             TeamParticipation.teamID,
-                            where=(TeamParticipation.person == user),
-                            distinct=True))))
+                            where=(TeamParticipation.person == user)))))
 
         return IStore(BuildFarmJob).using(*origin).find(
-            BuildFarmJob, *extra_clauses).order_by(
+            BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
     def getByID(self, job_id):
