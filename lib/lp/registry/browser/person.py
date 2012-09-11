@@ -3556,7 +3556,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         projects = []
         user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
-        pillarnames = self._related_projects()[:max_projects]
+        pillarnames = self._related_projects[:max_projects]
         products = [pillarname.pillar for pillarname in pillarnames
                     if IProduct.providedBy(pillarname.pillar)]
         bugtask_set = getUtility(IBugTaskSet)
@@ -3581,12 +3581,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
-        return self._related_projects()[:5]
+        return self._related_projects[:5]
 
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return self._related_projects().count()
+        return self._related_projects.count()
 
     @cachedproperty
     def has_more_related_projects(self):
