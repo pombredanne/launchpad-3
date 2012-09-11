@@ -14,6 +14,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -328,6 +329,9 @@ class Packageset(Storm):
             Packageset.packagesetgroup == self.packagesetgroup,
             Packageset.id != self.id)
         return _order_result_set(result_set)
+
+    def destroySelf(self):
+        Store.of(self).remove(self)
 
 
 class PackagesetSet:
