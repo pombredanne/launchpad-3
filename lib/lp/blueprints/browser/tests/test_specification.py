@@ -294,6 +294,38 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         browser = self.getViewBrowser(sprint, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
 
+    def test_from_product(self):
+        product = self.factory.makeProduct()
+        browser = self.getViewBrowser(product, view_name='+addspec')
+        self.assertThat(browser.contents, self.match_it)
+
+    def test_from_product_no_flag(self):
+        set_blueprint_information_type(self, False)
+        product = self.factory.makeProduct()
+        browser = self.getViewBrowser(product, view_name='+addspec')
+        self.assertThat(browser.contents, Not(self.match_it))
+
+    def test_from_productseries(self):
+        series = self.factory.makeProductSeries()
+        browser = self.getViewBrowser(series, view_name='+addspec')
+        self.assertThat(browser.contents, self.match_it)
+
+    def test_from_productseries_no_flag(self):
+        set_blueprint_information_type(self, False)
+        series = self.factory.makeProductSeries()
+        browser = self.getViewBrowser(series, view_name='+addspec')
+        self.assertThat(browser.contents, Not(self.match_it))
+
+    def test_from_distribution(self):
+        distro = self.factory.makeDistribution()
+        browser = self.getViewBrowser(distro, view_name='+addspec')
+        self.assertThat(browser.contents, Not(self.match_it))
+
+    def test_from_distroseries(self):
+        series = self.factory.makeDistroSeries()
+        browser = self.getViewBrowser(series, view_name='+addspec')
+        self.assertThat(browser.contents, Not(self.match_it))
+
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
     """ Tests that specifications with private team artifacts can be viewed.

@@ -289,20 +289,23 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     def info_type_field(self):
         """An info_type_field for creating a Specification.
 
-        If the user cannot select different information types, Interface is
-        returned instead, because Interface is a valid no-op parameter to
-        Fields.__init__.
+        None if the user cannot select different information types or the
+        feature flag is not enabled.
         """
+        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
+            return None
         info_types = self.context.getAllowedSpecificationInformationTypes()
         if len(info_types) < 2:
-            return Interface
+            return None
         return copy_field(ISpecification['information_type'], readonly=False,
                 vocabulary=InformationTypeVocabulary(types=info_types))
 
     @property
     def schema(self):
-        return Fields(INewSpecification, INewSpecificationSprint,
-                      self.info_type_field)
+        fields = Fields(INewSpecification, INewSpecificationSprint)
+        if self.info_type_field is not None:
+            fields = fields + Fields(self.info_type_field)
+        return fields
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -324,10 +327,12 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
 
     @property
     def schema(self):
-        return Fields(INewSpecification,
-                      INewSpecificationSprint,
-                      INewSpecificationSeriesGoal,
-                      self.info_type_field)
+        fields = Fields(INewSpecification,
+                        INewSpecificationSprint,
+                        INewSpecificationSeriesGoal)
+        if self.info_type_field is not None:
+            fields = fields + Fields(self.info_type_field)
+        return fields
 
     def transform(self, data):
         if data['goal']:
