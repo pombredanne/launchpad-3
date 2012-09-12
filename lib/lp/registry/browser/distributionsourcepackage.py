@@ -41,10 +41,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from lp.app.browser.stringformatter import (
-    extract_bug_numbers,
-    extract_email_addresses,
-    )
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -54,7 +50,6 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
@@ -219,11 +214,10 @@ class DecoratedDistributionSourcePackageRelease:
 
     def __init__(
         self, distributionsourcepackagerelease, publishing_history,
-        package_diffs, person_data, user):
+        package_diffs, user):
         self.context = distributionsourcepackagerelease
         self._publishing_history = publishing_history
         self._package_diffs = package_diffs
-        self._person_data = person_data
         self._user = user
 
     @property
@@ -239,8 +233,7 @@ class DecoratedDistributionSourcePackageRelease:
     @property
     def change_summary(self):
         """ See `ISourcePackageRelease`."""
-        return linkify_changelog(
-            self._user, self.context.change_summary, self._person_data)
+        return linkify_changelog(self._user, self.context.change_summary)
 
 
 class IDistributionSourcePackageActionMenu(Interface):
@@ -290,28 +283,6 @@ class DistributionSourcePackageBaseView(LaunchpadView):
             return []
 
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        # Pre-load the bugs and persons referenced by the +changelog page from
-        # the database.
-        # This will improve the performance of the ensuing changelog
-        # linkification.
-        the_changelog = '\n'.join(
-            [spr.changelog_entry for spr in sprs
-             if not_empty(spr.changelog_entry)])
-        unique_bugs = extract_bug_numbers(the_changelog)
-        self._bug_data = list(
-            getUtility(IBugSet).getByNumbers(
-                [int(key) for key in unique_bugs.keys()]))
-        # Preload email/person data only if user is logged on. In the opposite
-        # case the emails in the changelog will be obfuscated anyway and thus
-        # cause no database lookups.
-        if self.user:
-            self._person_data = dict(
-                [(email.email, person) for (email, person) in
-                    getUtility(IPersonSet).getByEmails(
-                        extract_email_addresses(the_changelog),
-                        include_hidden=False)])
-        else:
-            self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
         pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
             sprs, preload_for_display=True)
@@ -323,7 +294,7 @@ class DistributionSourcePackageBaseView(LaunchpadView):
         return [
             DecoratedDistributionSourcePackageRelease(
                 dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
-                self._person_data, self.user)
+                self.user)
             for (dspr, spphs) in dspr_pubs]
 
 
