@@ -124,6 +124,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     SpecificationSharingPolicy,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
@@ -398,6 +399,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
+    def information_type(self):
+        """See `IProduct`
+
+        Place holder for a db column.
+        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
+        into place.
+        """
+        pass
+
+    @property
     def pillar(self):
         """See `IBugTarget`."""
         return self
@@ -615,6 +626,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
+
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        return PUBLIC_PROPRIETARY_INFORMATION_TYPES
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
@@ -1562,6 +1577,12 @@ class ProductSet:
             results = results.limit(num_products)
         return results
 
+    def getAllowedProductInformationTypes(self):
+        """See `IProductSet`."""
+        return (InformationType.PUBLIC,
+                InformationType.EMBARGOED,
+                InformationType.PROPRIETARY)
+
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
@@ -1569,7 +1590,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1584,7 +1605,8 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
+            bug_supervisor=bug_supervisor, driver=driver)
 
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC

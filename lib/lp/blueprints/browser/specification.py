@@ -116,11 +116,14 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -137,6 +140,9 @@ from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
+
+
+INFORMATION_TYPE_FLAG = 'blueprints.information_type.enabled'
 
 
 class INewSpecification(Interface):
@@ -207,7 +213,10 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+
     custom_widget('specurl', TextWidget, displayWidth=60)
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
@@ -224,7 +233,8 @@ class NewSpecificationView(LaunchpadFormView):
             assignee=data.get('assignee'),
             approver=data.get('approver'),
             distribution=data.get('distribution'),
-            definition_status=data.get('definition_status'))
+            definition_status=data.get('definition_status'),
+            information_type=data.get('information_type'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -274,8 +284,27 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     The context must correspond to a unique specification target.
     """
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def info_type_field(self):
+        """An info_type_field for creating a Specification.
+
+        None if the user cannot select different information types or the
+        feature flag is not enabled.
+        """
+        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
+            return None
+        info_types = self.context.getAllowedSpecificationInformationTypes()
+        if len(info_types) < 2:
+            return None
+        return copy_field(ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification, INewSpecificationSprint)
+        if self.info_type_field is not None:
+            fields = fields + Fields(self.info_type_field)
+        return fields
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -295,9 +324,14 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     """An abstract view for creating a specification from a series."""
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint,
-                    INewSpecificationSeriesGoal)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification,
+                        INewSpecificationSprint,
+                        INewSpecificationSeriesGoal)
+        if self.info_type_field is not None:
+            fields = fields + Fields(self.info_type_field)
+        return fields
 
     def transform(self, data):
         if data['goal']:
@@ -320,13 +354,17 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
         data['product'] = self.context.product
 
 
+all_info_type_field = copy_field(ISpecification['information_type'],
+    readonly=False, vocabulary=InformationTypeVocabulary(
+        types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+
+
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for creating a specification outside a target context.
 
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
-
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)
@@ -349,22 +387,32 @@ class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
 
     schema = Fields(INewSpecificationProjectTarget,
                     INewSpecification,
-                    INewSpecificationSprint)
+                    INewSpecificationSprint,
+                    all_info_type_field,)
 
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from the root of Launchpad."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        if getFeatureFlag(INFORMATION_TYPE_FLAG):
+            fields = fields + Fields(all_info_type_field)
+        return fields
 
 
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a sprint."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget, INewSpecification)
+        if getFeatureFlag(INFORMATION_TYPE_FLAG):
+            fields = fields + Fields(all_info_type_field)
+        return fields
 
     def transform(self, data):
         super(NewSpecificationFromSprintView, self).transform(data)
@@ -535,6 +583,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def information_type(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Change privacy/security'
@@ -559,14 +608,10 @@ class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
 
     @cachedproperty
     def privacy_portlet_css(self):
-        if self.private:
+        if self.context.private:
             return 'portlet private'
         else:
             return 'portlet public'
-
-    @cachedproperty
-    def private(self):
-        return self.context.information_type in PRIVATE_INFORMATION_TYPES
 
 
 class SpecificationView(SpecificationSimpleView):

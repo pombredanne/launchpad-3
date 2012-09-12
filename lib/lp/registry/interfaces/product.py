@@ -109,6 +109,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
+    InformationType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -448,6 +449,13 @@ class IProductPublic(
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True,
+            description=_(
+                'The type of of data contained in this project.')))
 
     owner = exported(
         PersonChoice(
@@ -984,6 +992,12 @@ class IProductSet(Interface):
         returned.
         """
 
+    def getAllowedProductInformationTypes():
+        """Get the information types that a project can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', project='project_group',
@@ -998,7 +1012,7 @@ class IProductSet(Interface):
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
-                   'registrant'])
+                   'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -1007,7 +1021,7 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """Create and return a brand new Product.
 
         See `IProduct` for a description of the parameters.
