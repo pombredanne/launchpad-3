@@ -1039,8 +1039,10 @@ class SpecGraph:
 
         There can be at most one root node set.
         """
-        assert self.getNode(spec.name) is None, (
-            "A spec called %s is already in the graph" % spec.name)
+        if self.getNode(spec) is None:
+            raise AssertionError(
+            "A spec called %s/%s is already in the graph" %
+            (spec.target.name, spec.name))
         node = SpecGraphNode(spec, root=root,
                 url_pattern_for_testing=self.url_pattern_for_testing)
         self.nodes.add(node)
@@ -1049,14 +1051,14 @@ class SpecGraph:
             self.root_node = node
         return node
 
-    def getNode(self, name):
+    def getNode(self, spec):
         """Return the node with the given name.
 
         Return None if there is no such node.
         """
-        # Efficiency: O(n)
+        unique_name = '%s-%s' % (spec.target.name, spec.name)
         for node in self.nodes:
-            if node.name == name:
+            if node.name == unique_name:
                 return node
         return None
 
@@ -1066,7 +1068,7 @@ class SpecGraph:
         If there is already a node for spec.name, return that node.
         Otherwise, create a new node for the spec, and return that.
         """
-        node = self.getNode(spec.name)
+        node = self.getNode(spec)
         if node is None:
             node = self.newNode(spec)
         return node
@@ -1220,9 +1222,9 @@ class SpecGraphNode:
     """
 
     def __init__(self, spec, root=False, url_pattern_for_testing=None):
-        self.name = spec.name
+        self.name = '%s-%s' % (spec.target.name, spec.name)
         if url_pattern_for_testing:
-            self.URL = url_pattern_for_testing % self.name
+            self.URL = url_pattern_for_testing % spec.name
         else:
             self.URL = canonical_url(spec)
         self.isRoot = root
