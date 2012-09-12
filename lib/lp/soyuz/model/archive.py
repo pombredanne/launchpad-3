@@ -1267,6 +1267,7 @@ class Archive(SQLBase):
         pre_release_pockets = (
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
             )
         if (pocket not in pre_release_pockets and
             distroseries.status not in stable_states):
