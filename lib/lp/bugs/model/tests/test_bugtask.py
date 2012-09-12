@@ -3058,19 +3058,16 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
     def test_illegal_information_type_allowed_if_pillar_not_new(self):
         # The bug's current information_type does not have to be permitted if
         # we already affect the pillar.
-        public_prod = self.factory.makeProduct()
         owner = self.factory.makePerson()
-        commercial_prod = self.factory.makeProduct(owner=owner)
-        commercial_series = self.factory.makeProductSeries(
-            product=commercial_prod)
+        prod = self.factory.makeProduct(owner=owner)
+        series = self.factory.makeProductSeries(product=prod)
         bug = self.factory.makeBug(
-            target=public_prod, information_type=InformationType.USERDATA,
+            target=prod, information_type=InformationType.USERDATA,
             owner=owner)
-        self.factory.makeBugTask(bug=bug, target=commercial_prod)
-        self.factory.makeCommercialSubscription(commercial_prod)
+        self.factory.makeCommercialSubscription(prod)
         with person_logged_in(owner):
-            commercial_prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
-            validate_target(bug, commercial_series)
+            prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            validate_target(bug, series)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
