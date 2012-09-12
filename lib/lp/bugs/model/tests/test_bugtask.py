@@ -3059,14 +3059,18 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         # The bug's current information_type does not have to be permitted if
         # we already affect the pillar.
         public_prod = self.factory.makeProduct()
-        commercial_prod = self.factory.makeProduct(
-            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        owner = self.factory.makePerson()
+        commercial_prod = self.factory.makeProduct(owner=owner)
         commercial_series = self.factory.makeProductSeries(
             product=commercial_prod)
-        bug = self.factory.makeBug(target=public_prod)
+        bug = self.factory.makeBug(
+            target=public_prod, information_type=InformationType.USERDATA,
+            owner=owner)
         self.factory.makeBugTask(bug=bug, target=commercial_prod)
-        removeSecurityProxy(bug).information_type = InformationType.USERDATA
-        validate_target(removeSecurityProxy(bug), commercial_series)
+        self.factory.makeCommercialSubscription(commercial_prod)
+        with person_logged_in(owner):
+            commercial_prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            validate_target(bug, commercial_series)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
