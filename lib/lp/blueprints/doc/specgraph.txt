@@ -173,41 +173,10 @@ don't want a link to the spec we're currently looking at.
     "fnord-foo2" -> "fnord-foo"
     }
 
-Now, add a circle at the top.
+The graph grows when specifications gain more dependencies.
 
     >>> foo1.dependencies.append(foo)
-    >>> print_graph()
-    Root is <fnord-foo>
-    <fnord-foo>:
-        fnord-foo1
-    <fnord-foo1>:
-        fnord-foo
-    <fnord-foo11>:
-        fnord-foo1
-    <fnord-foo111>:
-        fnord-foo11
-    <fnord-foo2>:
-        fnord-foo
-
-Now add another circle at the bottom.
-
     >>> foo111.dependencies.append(foo1)
-    >>> print_graph()
-    Root is <fnord-foo>
-    <fnord-foo>:
-        fnord-foo1
-    <fnord-foo1>:
-        fnord-foo
-        fnord-foo111
-    <fnord-foo11>:
-        fnord-foo1
-    <fnord-foo111>:
-        fnord-foo11
-    <fnord-foo2>:
-        fnord-foo
-
-Now make it even more convoluted, for fun.
-
     >>> foo111.dependencies.append(foo)
     >>> foo2.dependencies.append(foo1)
     >>> foo1.dependencies.append(foo2)
