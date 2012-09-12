@@ -7,9 +7,12 @@ __metaclass__ = type
 __all__ = []
 
 from textwrap import dedent
+import time
 
 from fixtures import Fixture
 from lazr.restful.interfaces import IWebServiceConfiguration
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from storm.exceptions import DisconnectionError
 import transaction
 from zope.component import (
@@ -355,3 +358,138 @@ class MasterFallbackTestCase(TestCase):
         master_store = IMasterStore(Person)
         slave_store = ISlaveStore(Person)
         self.assertIsNot(master_store, slave_store)
+
+
+class TestFastDowntimeRollout(TestCase):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestFastDowntimeRollout, self).setUp()
+
+        self.master_dbname = DatabaseLayer._db_fixture.dbname
+        self.slave_dbname = self.master_dbname + '_slave'
+
+        self.pgbouncer_fixture = PGBouncerFixture()
+        self.pgbouncer_fixture.databases[self.slave_dbname] = (
+            self.pgbouncer_fixture.databases[self.master_dbname])
+
+        # Configure master and slave connections to go via different
+        # pgbouncer aliases.
+        config_key = 'master-slave-separation'
+        config.push(config_key, dedent('''\
+            [database]
+            rw_main_master: dbname=%s host=localhost
+            rw_main_slave: dbname=%s host=localhost
+            ''' % (self.master_dbname, self.slave_dbname)))
+        self.addCleanup(lambda: config.pop(config_key))
+
+        self.useFixture(self.pgbouncer_fixture)
+
+        self.pgbouncer_con = psycopg2.connect(
+            'dbname=pgbouncer user=pgbouncer host=localhost')
+        self.pgbouncer_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.pgbouncer_cur = self.pgbouncer_con.cursor()
+
+        transaction.abort()
+
+    def store_is_working(self, store):
+        try:
+            store.execute('SELECT TRUE')
+            return True
+        except DisconnectionError:
+            return False
+
+    def store_is_slave(self, store):
+        return store.get_database().name == 'main-slave'
+
+    def store_is_master(self, store):
+        return not self.store_is_slave(store)
+
+    def wait_until_connectable(self, dbname):
+        timeout = 80
+        start = time.time()
+        while time.time() < start + timeout:
+            try:
+                con = psycopg2.connect(
+                    'dbname=%s host=localhost user=launchpad_main' % dbname)
+                con.cursor().execute('SELECT TRUE')
+                con.close()
+                return
+            except psycopg2.Error:
+                pass
+            time.sleep(0.2)
+        self.fail("Unable to resume database %s" % dbname)
+
+    def test_slave_only_fast_downtime_rollout(self):
+        '''You can always access a working slave store during fast downtime.
+        '''
+        # Everything is running happily.
+        store = ISlaveStore(Person)
+        original_store = store
+        self.assertTrue(self.store_is_working(store))
+        self.assertTrue(self.store_is_slave(store))
+
+        # But fast downtime is about to happen.
+
+        # Replication is stopped on the slave, and lag starts
+        # increasing.
+
+        # All connections to the master are killed so database schema
+        # updates can be applied.
+        self.pgbouncer_cur.execute('DISABLE %s' % self.master_dbname)
+        self.pgbouncer_cur.execute('KILL %s' % self.master_dbname)
+
+        # Of course, slave connections are unaffected.
+        self.assertTrue(self.store_is_working(store))
+        self.assertTrue(self.store_is_slave(store))
+
+        # After schema updates have been made to the master, it is
+        # reenabled.
+        self.pgbouncer_cur.execute('RESUME %s' % self.master_dbname)
+        self.pgbouncer_cur.execute('ENABLE %s' % self.master_dbname)
+
+        # And the slaves taken down, and replication reenabled so the
+        # schema updates can replicate.
+        self.pgbouncer_cur.execute('DISABLE %s' % self.slave_dbname)
+        self.pgbouncer_cur.execute('KILL %s' % self.slave_dbname)
+
+        # The next attempt at accessing the slave store will fail
+        # with a DisconnectionError.
+        self.assertRaises(
+            DisconnectionError, store.execute, 'SELECT TRUE')
+        transaction.abort()
+
+        # But if we handle that and retry, we can continue.
+        # Now the failed connection has been detected, the next Store
+        # we are handed is a master Store instead of a slave.
+        store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_master(store))
+        self.assertIsNot(ISlaveStore(Person), original_store)
+
+        # But alas, it might not work the first transaction. If it has
+        # been earlier, its connection was killed by pgbouncer earlier
+        # but it hasn't noticed yet.
+        self.assertFalse(self.store_is_working(store))
+        transaction.abort()
+
+        # Next retry attempt, everything is fine using the master
+        # connection, even though our code only asked for a slave.
+        store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_master(store))
+        self.assertTrue(self.store_is_working(store))
+
+        # The original Store is busted though. You cannot reuse Stores
+        # across transaction bounderies because you might end up using
+        # the wrong Store.
+        self.assertFalse(self.store_is_working(original_store))
+        transaction.abort()
+
+        # Once replication has caught up, the slave is reenabled.
+        self.pgbouncer_cur.execute('RESUME %s' % self.slave_dbname)
+        self.pgbouncer_cur.execute('ENABLE %s' % self.slave_dbname)
+
+        # And next transaction, we are back to normal.
+        store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_working(store))
+        self.assertTrue(self.store_is_slave(store))
+        self.assertIs(original_store, store)
