@@ -167,6 +167,34 @@ class BranchSharingPolicy(DBEnumeratedType):
         """)
 
 
+class BugSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Bugs are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New bugs are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New bugs are proprietary, but can be made public later.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Bugs are always proprietary.
+        """)
+
+
 class SpecificationSharingPolicy(DBEnumeratedType):
 
     PUBLIC = DBItem(1, """
@@ -202,34 +230,6 @@ class SpecificationSharingPolicy(DBEnumeratedType):
         New specifications are embargoed, but can be made proprietary later.
         Only people who can see the project's proprietary information can
         create new specifications.
-        """)
-
-
-class BugSharingPolicy(DBEnumeratedType):
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Bugs are public unless they contain sensitive security
-        information.
-        """)
-
-    PUBLIC_OR_PROPRIETARY = DBItem(2, """
-        Public, can be proprietary
-
-        New bugs are public, but can be made proprietary later.
-        """)
-
-    PROPRIETARY_OR_PUBLIC = DBItem(3, """
-        Proprietary, can be public
-
-        New bugs are proprietary, but can be made public later.
-        """)
-
-    PROPRIETARY = DBItem(4, """
-        Proprietary
-
-        Bugs are always proprietary.
         """)
 
 
