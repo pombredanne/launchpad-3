@@ -127,8 +127,8 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantSource,
     IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences

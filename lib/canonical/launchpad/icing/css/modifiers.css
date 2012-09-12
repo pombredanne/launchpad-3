@@ -253,6 +253,10 @@ h3 a.sprite {
     margin: 0;
     }
 
-.hidden {
+/* Use 'hidden' to hide elements unconditionally.
+ * Some things we want to hide by default only if javascript is enabled; for
+ * these cases use 'hide-on-load'.
+ */
+.hidden, .yui3-js-enabled .hide-on-load {
     display: none;
     }

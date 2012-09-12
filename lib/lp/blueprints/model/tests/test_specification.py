@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for blueprints here."""
@@ -11,10 +11,12 @@ from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
@@ -22,6 +24,12 @@ from lp.blueprints.interfaces.specificationworkitem import (
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
+from lp.registry.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
 from lp.services.mail import stub
 from lp.services.webapp import canonical_url
@@ -29,6 +37,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -601,3 +610,50 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         return dict(
             title=wi.title, status=wi.status, assignee=wi.assignee,
             milestone=wi.milestone, sequence=sequence)
+
+
+class TestSpecificationInformationType(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transitionToInformationType(self):
+        """Ensure transitionToInformationType works."""
+        spec = self.factory.makeSpecification()
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
+        removeSecurityProxy(spec.target)._ensurePolicies(
+            [InformationType.EMBARGOED])
+        with person_logged_in(spec.owner):
+            result = spec.transitionToInformationType(
+                InformationType.EMBARGOED, spec.owner)
+            self.assertEqual(InformationType.EMBARGOED, spec.information_type)
+        self.assertTrue(result)
+
+    def test_transitionToInformationType_no_change(self):
+        """Return False on no change."""
+        spec = self.factory.makeSpecification()
+        with person_logged_in(spec.owner):
+            result = spec.transitionToInformationType(InformationType.PUBLIC,
+                                                      spec.owner)
+        self.assertFalse(result)
+
+    def test_transitionToInformationType_forbidden(self):
+        """Raise if specified type is not supported."""
+        spec = self.factory.makeSpecification()
+        with person_logged_in(spec.owner):
+            with ExpectedException(CannotChangeInformationType, '.*'):
+                spec.transitionToInformationType(None, spec.owner)
+
+    def test_getAllowedInformationTypesJustProprietary(self):
+        """Allowed types should include proprietary types and PUBLIC.
+
+        We do not want to introduce support for Private/Userdata or Security
+        blueprints.
+        """
+        spec = self.factory.makeSpecification()
+        allowed = spec.getAllowedInformationTypes(spec.owner)
+        self.assertIn(InformationType.PUBLIC, allowed)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            self.assertIn(info_type, allowed)
+        self.assertNotIn(InformationType.USERDATA, allowed)
+        for info_type in SECURITY_INFORMATION_TYPES:
+            self.assertNotIn(info_type, allowed)

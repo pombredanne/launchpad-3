@@ -1473,7 +1473,7 @@ Everyone else gets an explanatory error message:
         status wontfix
     ...
     The status cannot be changed to wontfix because you are not the
-    registrant or a bug supervisor for Mozilla Firefox.
+    maintainer, driver or bug supervisor for Mozilla Firefox.
     ...
 
     >>> submit_commands(bug_four, 'affects firefox', 'status expired')
@@ -1486,7 +1486,7 @@ Everyone else gets an explanatory error message:
         status expired
     ...
     The status cannot be changed to expired because you are not the
-    registrant or a bug supervisor for Mozilla Firefox.
+    maintainer, driver or bug supervisor for Mozilla Firefox.
     ...
 
 Let's take a look at all the other error messages that the sub

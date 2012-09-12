@@ -276,6 +276,12 @@
                 template="../templates/specification-portlet-blocked.pt"/>
         </browser:pages>
         <browser:page
+            name="+secrecy"
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specification.SpecificationInformationTypeEditView"
+            permission="launchpad.Edit"
+            template="../templates/bug-secrecy.pt"/>
+        <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+portlet-subscribers"
             class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
@@ -311,6 +317,9 @@
             <browser:page
                 name="+listing-detailed"
                 template="../templates/specification-listing-detailed.pt"/>
+            <browser:page
+                name="+portlet-privacy"
+                template="../templates/blueprint-portlet-privacy.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"

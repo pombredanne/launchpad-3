@@ -21,10 +21,7 @@ __all__ = [
 import operator
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
+from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -58,6 +55,7 @@ from lp.services.webapp import (
     StandardLaunchpadFacets,
     stepthrough,
     )
+from lp.services.webapp.batching import StormRangeFactory
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
     BuildNavigationMixin,
@@ -296,6 +294,7 @@ class BuilderHistoryView(BuildRecordsView):
 
     page_title = 'Build history'
     binary_only = False
+    range_factory = StormRangeFactory
 
     @property
     def label(self):

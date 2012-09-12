@@ -722,7 +722,7 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.binarypackagename =
                 BinaryPackageName.id
         """ % sqlvalues(self)]
         clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
@@ -988,7 +988,8 @@ class Archive(SQLBase):
         return store.find(
             BinaryPackagePublishingHistory,
             BinaryPackageName.name == dep_name,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                BinaryPackageName.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.distroarchseries ==

@@ -10,9 +10,11 @@ from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
@@ -43,6 +45,7 @@ from lp.testing import (
     admin_logged_in,
     login,
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -201,7 +204,8 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBranchSharingPolicies(distro, [])
+        self._assert_getBranchSharingPolicies(
+            distro, [BranchSharingPolicy.PUBLIC])
 
     def _assert_getBugSharingPolicies(self, pillar, expected_policies):
         policy_data = self.service.getBugSharingPolicies(pillar)
@@ -228,7 +232,7 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBugSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBugSharingPolicies(distro, [])
+        self._assert_getBugSharingPolicies(distro, [BugSharingPolicy.PUBLIC])
 
     def test_jsonGranteeData_with_Some(self):
         # jsonGranteeData returns the expected data for a grantee with
@@ -1010,22 +1014,26 @@ class TestSharingService(TestCaseWithFactory):
             ValueError, self.service.revokeAccessGrants,
             product, grantee, product.owner)
 
-    def _assert_ensureAccessGrants(self, user, bugs, branches,
+    def _assert_ensureAccessGrants(self, user, bugs, branches, specifications,
                                    grantee=None):
         # Creating access grants works as expected.
         if not grantee:
             grantee = self.factory.makePerson()
         self.service.ensureAccessGrants(
-            [grantee], user, bugs=bugs, branches=branches)
+            [grantee], user, bugs=bugs, branches=branches,
+            specifications=specifications)
 
         # Check that grantee has expected access grants.
         shared_bugs = []
         shared_branches = []
+        shared_specifications = []
         all_pillars = []
         for bug in bugs or []:
             all_pillars.extend(bug.affected_pillars)
         for branch in branches or []:
             all_pillars.append(branch.target.context)
+        for specification in specifications or []:
+            all_pillars.append(specification.target)
         policies = getUtility(IAccessPolicySource).findByPillar(all_pillars)
 
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
@@ -1035,8 +1043,11 @@ class TestSharingService(TestCaseWithFactory):
                 shared_bugs.append(a.concrete_artifact)
             elif IBranch.providedBy(a.concrete_artifact):
                 shared_branches.append(a.concrete_artifact)
+            elif ISpecification.providedBy(a.concrete_artifact):
+                shared_specifications.append(a.concrete_artifact)
         self.assertContentEqual(bugs or [], shared_bugs)
         self.assertContentEqual(branches or [], shared_branches)
+        self.assertContentEqual(specifications or [], shared_specifications)
 
     def test_ensureAccessGrantsBugs(self):
         # Access grants can be created for bugs.
@@ -1046,7 +1057,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, [bug], None)
+        self._assert_ensureAccessGrants(owner, [bug], None, None)
 
     def test_ensureAccessGrantsBranches(self):
         # Access grants can be created for branches.
@@ -1056,7 +1067,21 @@ class TestSharingService(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, None, [branch])
+        self._assert_ensureAccessGrants(owner, None, [branch], None)
+
+    def test_ensureAccessGrantsSpecifications(self):
+        # Access grants can be created for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        specification = self.factory.makeSpecification(
+            product=product, owner=owner)
+        removeSecurityProxy(specification.target)._ensurePolicies(
+             [InformationType.EMBARGOED])
+        with person_logged_in(owner):
+            specification.transitionToInformationType(
+                InformationType.EMBARGOED, owner)
+        self._assert_ensureAccessGrants(owner, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):
         # Any existing access grants are retained and new ones created.
@@ -1074,7 +1099,8 @@ class TestSharingService(TestCaseWithFactory):
         self.service.ensureAccessGrants([grantee], owner, bugs=[bug])
         # Test with a new bug as well as the one for which access is already
         # granted.
-        self._assert_ensureAccessGrants(owner, [bug, bug2], None, grantee)
+        self._assert_ensureAccessGrants(
+            owner, [bug, bug2], None, None, grantee)
 
     def _assert_ensureAccessGrantsUnauthorized(self, user):
         # ensureAccessGrants raises an Unauthorized exception if the user
@@ -1414,6 +1440,17 @@ class ApiTestMixin:
         self.grantor = self.factory.makePerson()
         self.grantee_uri = canonical_url(self.grantee, force_local_path=True)
         self.grantor_uri = canonical_url(self.grantor, force_local_path=True)
+        self.bug = self.factory.makeBug(
+            owner=self.owner, target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        self.branch = self.factory.makeBranch(
+            owner=self.owner, product=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        login_person(self.owner)
+        self.bug.subscribe(self.grantee, self.owner)
+        self.branch.subscribe(
+            self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+            None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
         transaction.commit()
 
     def test_getPillarGranteeData(self):
@@ -1423,7 +1460,9 @@ class ApiTestMixin:
                         if d['name'] != 'thundercat']
         self.assertEqual('grantee', grantee_data['name'])
         self.assertEqual(
-            {InformationType.USERDATA.name: SharingPermission.ALL.name},
+            {InformationType.USERDATA.name: SharingPermission.ALL.name,
+             InformationType.PRIVATESECURITY.name:
+                 SharingPermission.SOME.name},
             grantee_data['permissions'])
 
 
@@ -1494,3 +1533,29 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             permissions={
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
+
+    def test_getSharedArtifacts(self):
+        # Test the exported getSharedArtifacts() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        (bugtasks, branches) = self.service.getSharedArtifacts(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
+
+    def test_getVisibleArtifacts(self):
+        # Test the exported getVisibleArtifacts() method.
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        # Sadly lazr.restful doesn't know how to marshall lists of entities
+        # so we have to use links directly.
+        ws_bug_link = ws_object(self.launchpad, self.bug).self_link
+        ws_branch_link = ws_object(self.launchpad, self.branch).self_link
+        (bugs, branches) = self.service.getVisibleArtifacts(
+            person=ws_grantee,
+            branches=[ws_branch_link], bugs=[ws_bug_link])
+        self.assertEqual(1, len(bugs))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugs[0]['title'], self.bug.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)

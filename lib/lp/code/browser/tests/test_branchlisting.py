@@ -65,9 +65,7 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
-from lp.testing.sampledata import (
-    ADMIN_EMAIL,
-    )
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
     create_view,

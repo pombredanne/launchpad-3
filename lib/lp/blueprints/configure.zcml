@@ -150,10 +150,6 @@
   <class class="lp.blueprints.model.specification.Specification">
     <allow interface="lp.blueprints.interfaces.specification.ISpecificationPublic"/>
     <require
-        permission="launchpad.Edit"
-        set_attributes="information_type" />
-
-    <require
         permission="launchpad.LimitedView"
         interface="lp.blueprints.interfaces.specification.ISpecificationView" />
 
