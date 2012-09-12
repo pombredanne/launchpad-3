@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import json
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -260,12 +261,17 @@ class TestSpecificationInformationType(BrowserTestCase):
         owner = self.factory.makePerson()
         spec = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY, owner=owner)
+
+        privacy_banner = soupmatchers.Tag('privacy-banner', True,
+                attrs={'class': 'banner-text'},
+                text=re.compile('This page contains Proprietary information'))
+
         browser = self.getViewBrowser(spec, '+index', user=owner)
-        self.assertIn('This page contains Proprietary information.',
-                      browser.contents)
+        self.assertThat(browser.contents,
+                        soupmatchers.HTMLContains(privacy_banner))
         browser = self.getViewBrowser(spec, '+subscribe', user=owner)
-        self.assertIn('This page contains Proprietary information.',
-                      browser.contents)
+        self.assertThat(browser.contents,
+                        soupmatchers.HTMLContains(privacy_banner))
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
