@@ -50,13 +50,3 @@ related bug.
     >>> [security_bug_task] = security_bug.bugtasks
     >>> security_bug_task.bug.private
     True
-
-For a security related bug, the security contact or the product owner
-(if no security contact) is subscribed.
-
-    >>> security_bug_task.bug.security_related
-    True
-
-    >>> sorted(
-    ...     sub.name for sub in security_bug_task.bug.getDirectSubscribers())
-    [u'no-priv']

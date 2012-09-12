@@ -289,6 +289,13 @@ class TestAccessArtifactBug(BaseAccessArtifactTests,
         return self.factory.makeBug()
 
 
+class TestAccessArtifactSpecification(BaseAccessArtifactTests,
+                            TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeSpecification()
+
+
 class TestAccessArtifactGrant(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 

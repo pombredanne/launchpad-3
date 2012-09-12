@@ -332,7 +332,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
         # selected licences in the category.  The actual count doesn't matter,
-        # since if it's greater than 0 it will start opened.  NOte that we
+        # since if it's greater than 0 it will start opened.  Note that we
         # always want the recommended licences to be opened, so we initialize
         # its value to 1.
         self.recommended_count = 1
@@ -351,8 +351,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return value
         else:
             return structured(
-                '%s&nbsp;<a href="%s" class="sprite external-link action-icon">'
-                'view licence</a>'
+                '%s&nbsp;<a href="%s" class="sprite external-link action-icon"'
+                '>view licence</a>'
                 % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):
@@ -405,7 +405,11 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def _renderTable(self, category, column_count=1):
         # The tables are wrapped in divs, since IE8 does not respond
         # to setting the table's height to zero.
-        html = ['<div id="%s"><table>' % category]
+        attribute_name = category + '_count'
+        attr_count = getattr(self, attribute_name)
+        klass = 'expanded' if attr_count > 0 else ''
+        html = [
+            '<div id="%s" class="hide-on-load %s"><table>' % (category, klass)]
         rendered_items = self.items_by_category[category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):

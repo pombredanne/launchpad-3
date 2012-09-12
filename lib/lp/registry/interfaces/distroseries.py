@@ -733,23 +733,18 @@ class IDistroSeriesPublic(
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""
 
-    def getBinaryPackagePublishing(
-        name=None, version=None, archtag=None, sourcename=None, orderBy=None,
-        pocket=None, component=None, archive=None):
+    def getBinaryPackagePublishing(archtag, pocket, component, archive):
         """Get BinaryPackagePublishings in a DistroSeries.
 
-        Can optionally restrict the results by name, version,
-        architecturetag, pocket and/or component.
+        Can optionally restrict the results by architecturetag, pocket and/or
+        component.
 
-        If sourcename is passed, only packages that are built from
-        source packages by that name will be returned.
         If archive is passed, restricted the results to the given archive,
         if it is suppressed the results will be restricted to the
         distribution 'main_archive'.
         """
 
-    def getSourcePackagePublishing(status, pocket, component=None,
-                                   archive=None):
+    def getSourcePackagePublishing(pocket, component, archive):
         """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
