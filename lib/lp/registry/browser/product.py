@@ -162,6 +162,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -2040,7 +2041,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                 'name': term.title,
                 'description_css_class': 'choice-description'}
                 for term in
-                    self.context.getAllowedProductInformationTypes()]
+                    lp.registry.enums.PUBLIC_PROPRIETARY_INFORMATION_TYPES]
 
         super(ProjectAddStepTwo, self).initialize()
 
