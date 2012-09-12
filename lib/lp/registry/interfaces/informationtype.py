@@ -12,6 +12,7 @@ from lp import _
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.registry.enums import InformationType
 
+
 class IInformationType(IPrivacy):
 
     information_type = Choice(

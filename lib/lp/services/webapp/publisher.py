@@ -968,7 +968,9 @@ class Navigation:
                             nextobj = None
                         else:
                             # Circular import; breaks make.
-                            from lp.services.webapp.breadcrumb import Breadcrumb
+                            from lp.services.webapp.breadcrumb import (
+                                Breadcrumb,
+                            )
                             stepthrough_page = queryMultiAdapter(
                                     (self.context, self.request), name=name)
                             if stepthrough_page:
