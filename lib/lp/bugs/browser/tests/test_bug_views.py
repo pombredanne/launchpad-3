@@ -5,20 +5,29 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from BeautifulSoup import BeautifulSoup
+import pytz
 import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
     )
+from storm.store import Store
 from testtools.matchers import (
     Contains,
+    Equals,
     MatchesAll,
     Not,
     )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.bugs.adapters.bugchange import BugAttachmentChange
 from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
@@ -35,12 +44,14 @@ from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import find_tag_by_id
 from lp.testing.views import (
     create_initialized_view,
@@ -673,3 +684,26 @@ class TestBugMarkAsDuplicateView(TestCaseWithFactory):
             'table',
             {'id': 'affected-software', 'class': 'listing'})
         self.assertIsNotNone(table)
+
+
+class TestBugActivityView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_bug_activity_query_count(self):
+        # Bug:+activity doesn't make O(n) queries based on the amount of
+        # activity.
+        bug = self.factory.makeBug()
+        ten_minutes_ago = datetime.now(pytz.UTC) - timedelta(minutes=10)
+        with person_logged_in(bug.owner):
+            attachment = self.factory.makeBugAttachment(bug=bug)
+            for i in range(10):
+                bug.addChange(BugAttachmentChange(
+                    ten_minutes_ago, self.factory.makePerson(), 'attachment',
+                    None, attachment))
+        Store.of(bug).invalidate()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                bug.default_bugtask, name='+activity')
+            view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(7)))

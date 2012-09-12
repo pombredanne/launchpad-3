@@ -23,6 +23,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
+from lp.registry.enums import BugSharingPolicy
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -192,95 +193,75 @@ class TestBugCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def createBug(self, owner=None, title="A bug",
+                  comment="Nothing important.", **kwargs):
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title=title, comment=comment, **kwargs)
+            bug = getUtility(IBugSet).createBug(params)
+        return bug
+
     def test_CreateBugParams_accepts_target(self):
         # The initial bug task's target can be set using
         # CreateBugParams.
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                target=target)
-            bug = getUtility(IBugSet).createBug(params)
-            self.assertEqual(bug.default_bugtask.target, target)
+        bug = self.createBug(owner=owner, target=target)
+        self.assertEqual(bug.default_bugtask.target, target)
 
     def test_CreateBugParams_rejects_series_target(self):
         # createBug refuses attempts to create a bug with a series
         # target. A non-series task must be created first.
         owner = self.factory.makePerson()
         target = self.factory.makeProductSeries(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                target=target)
-            self.assertRaises(
-                IllegalTarget, getUtility(IBugSet).createBug, params)
+        self.assertRaises(
+            IllegalTarget, self.createBug, owner=owner, target=target)
 
     def test_CreateBugParams_accepts_importance(self):
         # The importance of the initial bug task can be set using
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                importance=BugTaskImportance.HIGH, target=target)
-            bug = getUtility(IBugSet).createBug(params)
-            self.assertEqual(
-                bug.default_bugtask.importance, params.importance)
+        bug = self.createBug(
+            owner=owner, target=target, importance=BugTaskImportance.HIGH)
+        self.assertEqual(
+            BugTaskImportance.HIGH, bug.default_bugtask.importance)
 
     def test_CreateBugParams_accepts_assignee(self):
         # The assignee of the initial bug task can be set using
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                assignee=owner, target=target)
-            bug = getUtility(IBugSet).createBug(params)
-            self.assertEqual(
-                bug.default_bugtask.assignee, params.assignee)
+        bug = self.createBug(owner=owner, target=target, assignee=owner)
+        self.assertEqual(owner, bug.default_bugtask.assignee)
 
     def test_CreateBugParams_accepts_milestone(self):
         # The milestone of the initial bug task can be set using
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                target=target,
-                milestone=self.factory.makeMilestone(product=target))
-            bug = getUtility(IBugSet).createBug(params)
-            self.assertEqual(
-                bug.default_bugtask.milestone, params.milestone)
+        milestone = self.factory.makeMilestone(product=target)
+        bug = self.createBug(owner=owner, target=target, milestone=milestone)
+        self.assertEqual(milestone, bug.default_bugtask.milestone)
 
     def test_CreateBugParams_accepts_status(self):
         # The status of the initial bug task can be set using
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        with person_logged_in(owner):
-            params = CreateBugParams(
-                owner=owner, title="A bug", comment="Nothing important.",
-                status=BugTaskStatus.TRIAGED, target=target)
-            bug = getUtility(IBugSet).createBug(params)
-            self.assertEqual(
-                bug.default_bugtask.status, params.status)
+        bug = self.createBug(
+            owner=owner, target=target, status=BugTaskStatus.TRIAGED)
+        self.assertEqual(BugTaskStatus.TRIAGED, bug.default_bugtask.status)
 
     def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
         # createBug() will reject any importance value passed by users
         # who don't have the right to set the importance.
         person = self.factory.makePerson()
         target = self.factory.makeProduct()
-        with person_logged_in(person):
-            params = CreateBugParams(
-                owner=person, title="A bug", comment="Nothing important.",
-                importance=BugTaskImportance.HIGH, target=target)
-            self.assertRaises(
-                UserCannotEditBugTaskImportance,
-                getUtility(IBugSet).createBug, params)
+        self.assertRaises(
+            UserCannotEditBugTaskImportance,
+            self.createBug, owner=person, target=target,
+            importance=BugTaskImportance.HIGH)
 
     def test_CreateBugParams_rejects_not_allowed_assignee_changes(self):
         # createBug() will reject any importance value passed by users
@@ -293,35 +274,53 @@ class TestBugCreation(TestCaseWithFactory):
         # another Person is passed as `assignee`.
         with person_logged_in(target.owner):
             target.bug_supervisor = target.owner
-        with person_logged_in(person):
-            params = CreateBugParams(
-                owner=person, title="A bug", comment="Nothing important.",
-                assignee=person_2, target=target)
-            self.assertRaises(
-                UserCannotEditBugTaskAssignee,
-                getUtility(IBugSet).createBug, params)
+        self.assertRaises(
+            UserCannotEditBugTaskAssignee,
+            self.createBug, owner=person, target=target, assignee=person_2)
 
     def test_CreateBugParams_rejects_not_allowed_milestone_changes(self):
         # createBug() will reject any importance value passed by users
         # who don't have the right to set the milestone.
         person = self.factory.makePerson()
         target = self.factory.makeProduct()
-        with person_logged_in(person):
-            params = CreateBugParams(
-                owner=person, title="A bug", comment="Nothing important.",
-                target=target,
-                milestone=self.factory.makeMilestone(product=target))
-            self.assertRaises(
-                UserCannotEditBugTaskMilestone,
-                getUtility(IBugSet).createBug, params)
+        self.assertRaises(
+            UserCannotEditBugTaskMilestone,
+            self.createBug, owner=person, target=target,
+            milestone=self.factory.makeMilestone(product=target))
 
     def test_createBug_cve(self):
         cve = self.factory.makeCVE('1999-1717')
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
-        with person_logged_in(person):
-            params = CreateBugParams(
-                owner=person, title="A bug", comment="bad thing.", cve=cve,
-                target=target)
-        bug = getUtility(IBugSet).createBug(params)
+        bug = self.createBug(owner=person, target=target, cve=cve)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
+
+    def test_createBug_subscribers(self):
+        # Bugs normally start with just the reporter subscribed.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        bug = self.createBug(owner=person, target=target)
+        self.assertContentEqual([person], bug.getDirectSubscribers())
+
+    def test_createBug_legacy_private_bugs_subscribers(self):
+        # If a project is using the legacy private_bugs setting, the bug
+        # supervisor is subscribed to new non-security bugs.
+        person = self.factory.makePerson()
+        target = self.factory.makeLegacyProduct(
+            private_bugs=True, bug_supervisor=self.factory.makePerson())
+        bug = self.createBug(owner=person, target=target)
+        with person_logged_in(person):
+            self.assertContentEqual(
+                [person, target.bug_supervisor], bug.getDirectSubscribers())
+
+    def test_createBug_proprietary_subscribers(self):
+        # If a project's sharing policy requests proprietary bugs, only
+        # the reporter is subscribed. Even if private_bugs is set.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY,
+            private_bugs=True)
+        bug = self.createBug(owner=person, target=target)
+        with person_logged_in(person):
+            self.assertContentEqual(
+                [person], bug.getDirectSubscribers())

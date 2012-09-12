@@ -70,6 +70,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
@@ -817,15 +818,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self.id, self.name, self.target.name)
 
     def getAllowedInformationTypes(self, who):
-        return set(InformationType.items)
+        return set(PUBLIC_PROPRIETARY_INFORMATION_TYPES)
 
     def transitionToInformationType(self, information_type, who):
-        """See `IBug`."""
+        """See ISpecification."""
+        # avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            reconcile_access_for_artifact,
+            )
         if self.information_type == information_type:
             return False
         if information_type not in self.getAllowedInformationTypes(who):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
+        reconcile_access_for_artifact(self, information_type, [self.target])
         return True
 
     @property

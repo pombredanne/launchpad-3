@@ -22,6 +22,7 @@ from lp.services.webapp import publisher
 from lp.services.webapp.publisher import (
     FakeRequest,
     LaunchpadView,
+    RedirectionView,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -116,6 +117,28 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(branch, request)
         self.assertIs(None, view.user)
         self.assertNotIn('user@domain', view.getCacheJSON())
+
+    def test_getCache_redirected_view_default(self):
+        # A redirection view by default provides no json cache data.
+        request = LaunchpadTestRequest()
+        view = RedirectionView(None, request)
+        json_dict = simplejson.loads(view.getCacheJSON())
+        self.assertEqual({}, json_dict)
+
+    def test_getCache_redirected_view(self):
+        # A redirection view may be provided with a target view instance from
+        # which json cache data is obtained.
+
+        class TestView(LaunchpadView):
+            pass
+
+        request = LaunchpadTestRequest()
+        test_view = TestView(self.getCanada(), request)
+        view = RedirectionView(None, request, cache_view=test_view)
+        IJSONRequestCache(request).objects['my_bool'] = True
+        json_dict = simplejson.loads(view.getCacheJSON())
+        self.assertIsCanada(json_dict['context'])
+        self.assertIn('my_bool', json_dict)
 
     def test_related_feature_info__default(self):
         # By default, LaunchpadView.related_feature_info is empty.
@@ -310,7 +333,7 @@ class TestLaunchpadView(TestCaseWithFactory):
 
         view = LaunchpadView(PrivateObject(False), FakeRequest())
         self.assertFalse(view.private)
-    
+
     def test_view_beta_features_simple(self):
         class TestView(LaunchpadView):
             related_features = ['test_feature']
@@ -322,7 +345,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = TestView(object(), request)
         expected_beta_features = [{
             'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
-            'value': u'on', 'title': 'title'}]         
+            'value': u'on', 'title': 'title'}]
         self.assertEqual(expected_beta_features, view.beta_features)
 
     def test_view_beta_features_mixed(self):
@@ -342,8 +365,9 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = TestView(object(), request)
         expected_beta_features = [{
             'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
-            'value': u'on', 'title': 'title'}]         
+            'value': u'on', 'title': 'title'}]
         self.assertEqual(expected_beta_features, view.beta_features)
+
 
 def test_suite():
     suite = TestSuite()

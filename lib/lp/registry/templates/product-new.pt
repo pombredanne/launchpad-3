@@ -14,7 +14,7 @@
  * details widgets until the user states that the project they are
  * registering is not a duplicate.
  */
-LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
+LPJS.use('node', 'lp.ui.effects', 'lp.app.choice', function(Y) {
     Y.on('domready', function() {
         // Setup the information choice widget.
         if (Y.one('input[name="field.information_type"]')) {
@@ -162,7 +162,7 @@ LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
                     arrow.setAttribute('src', '/@@/treeExpanded');
                     arrow.setAttribute('title', 'Hide search results');
                     arrow.setAttribute('alt', 'Hide search results');
-                    Y.lazr.effects.slide_out(search_results).run();
+                    Y.lp.ui.effects.slide_out(search_results).run();
                     show_separator(true);
                 }
                 else {
@@ -172,7 +172,7 @@ LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
                     arrow.setAttribute('src', '/@@/treeCollapsed');
                     arrow.setAttribute('title', 'Show search results');
                     arrow.setAttribute('alt', 'Show search results');
-                    Y.lazr.effects.slide_in(search_results).run();
+                    Y.lp.ui.effects.slide_in(search_results).run();
                     show_separator(false);
                 }
             });
@@ -183,13 +183,13 @@ LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
             details_buttons.addClass('hidden');
 
             /* Slide out the registration details widgets, but add an 'end'
-             * event handler so that the height style left by lazr.effects is
+             * event handler so that the height style left by lp.ui.effects is
              * removed when the animation is done.  We're never going to slide
              * the form widgets back in, and the height style causes the
              * licence widget to dive under the Complete Registration button.
              * See bug 391138 for details.
              */
-            var anim = Y.lazr.effects.slide_out(form_widgets);
+            var anim = Y.lp.ui.effects.slide_out(form_widgets);
             anim.on('end', function() {
                 form_widgets.setStyle('height', null);
             });
@@ -206,7 +206,7 @@ LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
 
             var reset_height = search_results.getComputedStyle('height');
             search_results.setStyle('height', reset_height);
-            Y.lazr.effects.slide_in(search_results).run();
+            Y.lp.ui.effects.slide_in(search_results).run();
 
             /* Append a special marker to the hidden state widget.  See
              * ProjectAddStepTwo.search_results_count() for details.
