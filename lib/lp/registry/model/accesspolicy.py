@@ -10,6 +10,7 @@ __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
+    'AccessPolicyGrantFlat',
     'reconcile_access_for_artifact',
     ]
 
