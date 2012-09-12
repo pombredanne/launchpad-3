@@ -261,6 +261,8 @@ the graph.
     >>> ant_node = test_graph.newNode(ant_spec, root=True)
     >>> a_bat_node = test_graph.newNode(a_bat_spec)
     >>> b_bat_node = test_graph.newNode(b_bat_spec)
+    >>> test_graph.getNode(b_bat_spec) is b_bat_node
+    True
 
 
 SpecificationTreeImageTag and SpecificationView

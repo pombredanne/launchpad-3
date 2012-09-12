@@ -1039,8 +1039,8 @@ class SpecGraph:
 
         There can be at most one root node set.
         """
-        if self.getNode(spec) is None:
-            raise AssertionError(
+        if self.getNode(spec) is not None:
+            raise ValueError(
             "A spec called %s/%s is already in the graph" %
             (spec.target.name, spec.name))
         node = SpecGraphNode(spec, root=root,
@@ -1052,10 +1052,7 @@ class SpecGraph:
         return node
 
     def getNode(self, spec):
-        """Return the node with the given name.
-
-        Return None if there is no such node.
-        """
+        """Return the node with the given spec, or None if not matched."""
         unique_name = '%s-%s' % (spec.target.name, spec.name)
         for node in self.nodes:
             if node.name == unique_name:
