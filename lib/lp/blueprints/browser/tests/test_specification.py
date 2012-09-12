@@ -255,6 +255,18 @@ class TestSpecificationInformationType(BrowserTestCase):
             self.set_secrecy(spec, person)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
+    def test_view_banner(self):
+        """The privacy banner should reflect the information_type."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        browser = self.getViewBrowser(spec, '+index', user=owner)
+        self.assertIn('This page contains Proprietary information.',
+                      browser.contents)
+        browser = self.getViewBrowser(spec, '+subscribe', user=owner)
+        self.assertIn('This page contains Proprietary information.',
+                      browser.contents)
+
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
     """ Tests that specifications with private team artifacts can be viewed.
