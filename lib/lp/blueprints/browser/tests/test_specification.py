@@ -22,6 +22,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import format_link
+from lp.app.interfaces.services import IService
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.blueprints.interfaces.specification import (
@@ -202,9 +203,17 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def test_has_privacy_banner(self):
         owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        removeSecurityProxy(target)._ensurePolicies(
+            [InformationType.PROPRIETARY])
         spec = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY, owner=owner)
-        browser = self.getViewBrowser(spec, user=owner)
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            product=target)
+        with person_logged_in(target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [owner], target.owner, specifications=[spec])
+        with person_logged_in(owner):
+            browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
                 attrs={'class': 'banner-text'})
         self.assertThat(browser.contents,

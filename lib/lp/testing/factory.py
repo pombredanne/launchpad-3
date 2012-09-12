@@ -2107,9 +2107,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             approver=approver,
             product=product,
             distribution=distribution,
-            priority=priority,
-            information_type=information_type)
+            priority=priority)
         naked_spec = removeSecurityProxy(spec)
+        if information_type is not None:
+            naked_spec.transitionToInformationType(
+                information_type, spec.target.owner)
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
