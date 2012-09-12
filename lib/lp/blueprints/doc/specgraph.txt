@@ -21,9 +21,9 @@ SpecGraph to keep track of the nodes that have been added.
     >>> class Spec(object):
     ...
     ...     def __init__(self, name,
-    ...           is_complete=False, title=None, assignee=None, target=None):
+    ...             is_complete=False, title=None, assignee=None):
     ...         self.name = name
-    ...         self.target = target or default_target
+    ...         self.target = default_target
     ...         self.title = title or name
     ...         self.is_complete = is_complete
     ...         self.assignee = assignee
