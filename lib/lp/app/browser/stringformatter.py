@@ -9,6 +9,7 @@ __all__ = [
     'break_long_words',
     'escape',
     'extract_bug_numbers',
+    'extract_email_addresses',
     'FormattersAPI',
     'linkify_bug_numbers',
     're_substitute',
@@ -238,6 +239,12 @@ def linkify_bug_numbers(text):
                 replace_text,
                 FormattersAPI._linkify_substitution(bug_match))
     return text
+
+
+def extract_email_addresses(text):
+    '''Unique email addresses in the text.'''
+    matches = re.finditer(re_email_address, text)
+    return list(set([match.group() for match in matches]))
 
 
 class FormattersAPI:
