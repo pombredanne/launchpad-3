@@ -19,6 +19,7 @@ from storm.expr import (
     In,
     Min,
     Not,
+    Update,
     SQL,
     )
 from storm.locals import (
@@ -58,6 +59,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1060,11 +1062,16 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_SpecificationSharingPolicyDefault(self):
         switch_dbuser('testadmin')
+        # Set all existing projects to something other than None or 1.
+        store = IMasterStore(Product)
+        store.execute(Update(
+            {Product.specification_sharing_policy: 2}))
+        store.flush()
+        # Make a new product without a specification_sharing_policy.
         product = self.factory.makeProduct()
         removeSecurityProxy(product).specification_sharing_policy = None
-        store = Store.of(product)
         store.flush()
-        self.assertEqual(26, store.find(Product,
+        self.assertEqual(1, store.find(Product,
             Product.specification_sharing_policy == None).count())
         self.runDaily()
         self.assertEqual(0, store.find(Product,
