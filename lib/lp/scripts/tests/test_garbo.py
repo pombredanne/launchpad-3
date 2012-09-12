@@ -58,6 +58,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -1056,6 +1057,18 @@ class TestGarbo(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
+
+    def test_SpecificationSharingPolicyDefault(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).specification_sharing_policy = None
+        store = Store.of(product)
+        store.flush()
+        self.assertEqual(26, store.find(Product,
+            Product.specification_sharing_policy == None).count())
+        self.runDaily()
+        self.assertEqual(0, store.find(Product,
+            Product.specification_sharing_policy == None).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):
