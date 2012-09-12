@@ -263,7 +263,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def autoApprove(self, upload):
         """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
 
-        PPA & BACKPORTS uploads are always auto-approved.
+        PPA uploads are always auto-approved.
         RELEASE and PROPOSED pocket uploads (to main archives) are only
         auto-approved if the distroseries is in a non-FROZEN state
         pre-release.  (We already performed the IArchive.canModifySuite
@@ -271,7 +271,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         uploads post-release, but it doesn't hurt to repeat this for that
         case.)
         """
-        if upload.is_ppa or self.pocket == PackagePublishingPocket.BACKPORTS:
+        if upload.is_ppa:
             return True
 
         auto_approve_pockets = (
