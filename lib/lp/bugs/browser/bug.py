@@ -985,14 +985,14 @@ class DeprecatedAssignedBugsView(RedirectionView):
     """
 
     def __init__(self, context, request):
-        redirected_context = getUtility(ILaunchBag).user
-        viewname = '+assignedbugs'
-        cache_view = getMultiAdapter(
-            (redirected_context, request), name=viewname)
-        target = canonical_url(redirected_context, view_name='+assignedbugs')
-        super(DeprecatedAssignedBugsView, self).__init__(
-            target, request, cache_view=cache_view)
+        self.context = context
+        self.request = request
         self.status = 303
+
+    def __call__(self):
+        self.target = canonical_url(
+            getUtility(ILaunchBag).user, view_name='+assignedbugs')
+        super(DeprecatedAssignedBugsView, self).__call__()
 
 
 normalize_mime_type = re.compile(r'\s+')
