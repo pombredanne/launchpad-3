@@ -55,6 +55,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
+from zope.publisher.defaultview import getDefaultViewName
 from zope.schema import (
     Bool,
     Choice,
@@ -705,8 +706,12 @@ class BugWithoutContextView(RedirectionView):
     """
 
     def __init__(self, context, request):
+        redirected_context = context.default_bugtask
+        viewname = getDefaultViewName(redirected_context, request)
+        cache_view = getMultiAdapter(
+            (redirected_context, request), name=viewname)
         super(BugWithoutContextView, self).__init__(
-            canonical_url(context.default_bugtask), request)
+            canonical_url(redirected_context), request, cache_view=cache_view)
 
 
 class BugEditViewBase(LaunchpadEditFormView):
