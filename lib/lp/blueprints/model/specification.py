@@ -75,12 +75,9 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import (
-    FREE_INFORMATION_TYPES,
     InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import CannotChangeInformationType
