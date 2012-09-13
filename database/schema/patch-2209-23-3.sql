@@ -3,8 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX binarypackagepublishinghistory__archive__das__bpn__status__idx
+CREATE INDEX binarypackagepublishinghistory__archive__das__bpn__idx
     ON binarypackagepublishinghistory
-    (archive, distroarchseries, binarypackagename, status);
+    (archive, distroarchseries, binarypackagename);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 23, 3);
