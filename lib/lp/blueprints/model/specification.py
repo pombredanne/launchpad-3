@@ -10,6 +10,7 @@ __all__ = [
     'recursive_dependent_query',
     'Specification',
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
+    'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     ]
 
@@ -138,6 +139,17 @@ SPECIFICATION_POLICY_ALLOWED_TYPES = {
     SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
+
+SPECIFICATION_POLICY_DEFAULT_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        InformationType.PUBLIC),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        InformationType.PROPRIETARY),
+    SpecificationSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY: (
+        InformationType.EMBARGOED),
     }
 
 

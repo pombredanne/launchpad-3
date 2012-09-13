@@ -87,6 +87,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
+    SPECIFICATION_POLICY_DEFAULT_TYPES,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -636,6 +637,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDefaultSpecificationInformationType(self):
         """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_DEFAULT_TYPES[
+                self.specification_sharing_policy]
         return InformationType.PUBLIC
 
     def _ensurePolicies(self, information_types):
