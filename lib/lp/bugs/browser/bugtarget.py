@@ -69,6 +69,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
@@ -116,7 +117,6 @@ from lp.registry.browser.product import (
     ProductPrivateBugsMixin,
     )
 from lp.registry.enums import (
-    information_type_to_dict,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -263,9 +263,9 @@ class FileBugViewBase(LaunchpadFormView):
         cache.objects['bug_private_by_default'] = (
             self.context.pillar.getDefaultBugInformationType() in
             PRIVATE_INFORMATION_TYPES)
-        cache.objects['information_type_data'] = information_type_to_dict(
-            self.context.pillar.getAllowedBugInformationTypes()
-        )
+        json_dump_information_types(
+            cache,
+            self.context.pillar.getAllowedBugInformationTypes())
 
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',

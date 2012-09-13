@@ -8,6 +8,7 @@ __all__ = [
 
 from lazr.restful.interfaces import IJSONRequestCache
 
+from lp.app.utilities import json_dump_information_types
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 
 
@@ -15,13 +16,9 @@ class InformationTypePortletMixin:
 
     def initialize(self):
         cache = IJSONRequestCache(self.request)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in self.context.getAllowedInformationTypes(self.user)]
-        cache.objects['private_types'] = [
-            type.name for type in PRIVATE_INFORMATION_TYPES]
+        json_dump_information_types(
+            cache,
+            self.context.getAllowedInformationTypes(self.user))
 
     @property
     def information_type(self):
