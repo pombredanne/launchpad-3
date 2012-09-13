@@ -528,6 +528,17 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
             InformationType.PROPRIETARY,
             product.getDefaultSpecificationInformationType())
 
+    def test_sharing_policy_embargoed_or_proprietary(self):
+        # specification_sharing_policy can be embargoed and then proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            product.getDefaultSpecificationInformationType())
+
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):
