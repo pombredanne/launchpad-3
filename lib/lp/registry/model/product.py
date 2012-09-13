@@ -125,7 +125,6 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     SpecificationSharingPolicy,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (

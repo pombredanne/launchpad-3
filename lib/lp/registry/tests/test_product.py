@@ -540,7 +540,6 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
             product.getDefaultSpecificationInformationType())
 
 
-
 class ProductPermissionTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
