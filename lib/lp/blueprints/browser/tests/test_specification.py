@@ -280,6 +280,10 @@ class TestSpecificationInformationType(BrowserTestCase):
                 attrs={'class': 'banner-text'},
                 text=re.compile('This page contains Proprietary information'))
 
+        getUtility(IService, 'sharing').ensureAccessGrants(
+              [owner], owner, specifications=[spec],
+              ignore_permissions=True)
+
         browser = self.getViewBrowser(spec, '+index', user=owner)
         self.assertThat(browser.contents,
                         soupmatchers.HTMLContains(privacy_banner))
