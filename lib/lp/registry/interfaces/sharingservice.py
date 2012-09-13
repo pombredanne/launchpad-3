@@ -35,6 +35,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
@@ -147,6 +148,9 @@ class ISharingService(IService):
 
     def getBranchSharingPolicies(pillar):
         """Return the allowed branch sharing policies for the given pillar."""
+
+    def getSpecificationSharingPolicies(pillar):
+        """Return specification sharing policies for a given pillar."""
 
     def getSharingPermissions():
         """Return the information sharing permissions."""
@@ -262,13 +266,17 @@ class ISharingService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         branch_sharing_policy=Choice(vocabulary=BranchSharingPolicy),
-        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy))
+        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy),
+        specification_sharing_policy=Choice(
+            vocabulary=SpecificationSharingPolicy))
     @operation_for_version('devel')
     def updatePillarSharingPolicies(pillar, branch_sharing_policy=None,
-                                    bug_sharing_policy=None):
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
         """Update the sharing policies for a pillar.
 
         :param pillar: the pillar to update
         :param branch_sharing_policy: the new branch sharing policy
         :param bug_sharing_policy: the new bug sharing policy
+        :param specification_sharing_policy: the new spec. sharing policy
         """
