@@ -212,8 +212,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         size quota.Binary upload will be skipped to avoid unnecessary hassle
         dealing with FAILEDTOUPLOAD builds.
         """
-        # Skip the check for binary uploads.
-        if upload.binaryful:
+        # Skip the check for binary uploads or archives with no quota.
+        if upload.binaryful or self.archive.authorized_size is None:
             return
 
         # Calculate the incoming upload total size.
@@ -223,8 +223,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
         # All value in bytes.
         MEGA = 2 ** 20
-        if not self.archive.authorized_size:
-            return
         limit_size = self.archive.authorized_size * MEGA
         current_size = self.archive.estimated_size
         new_size = current_size + upload_size
@@ -249,18 +247,15 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is targeted to any PPA, checks if the upload is within
-        the allowed quota.
+        Also check if the upload is within the allowed quota.
         """
-        if upload.is_ppa:
-            self.checkArchiveSizeQuota(upload)
-        else:
-            # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
-            # to SECURITY will not be built.  See
-            # BuildPackageJob.postprocessCandidate.
-            if self.pocket == PackagePublishingPocket.SECURITY:
-                upload.reject(
-                    "This upload queue does not permit SECURITY uploads.")
+        self.checkArchiveSizeQuota(upload)
+        # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+        # to SECURITY will not be built.  See
+        # BuildPackageJob.postprocessCandidate.
+        if self.pocket == PackagePublishingPocket.SECURITY:
+            upload.reject(
+                "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
