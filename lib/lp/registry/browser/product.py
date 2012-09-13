@@ -2041,7 +2041,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                 'name': term.title,
                 'description_css_class': 'choice-description'}
                 for term in
-                    lp.registry.enums.PUBLIC_PROPRIETARY_INFORMATION_TYPES]
+                    PUBLIC_PROPRIETARY_INFORMATION_TYPES]
 
         super(ProjectAddStepTwo, self).initialize()
 
