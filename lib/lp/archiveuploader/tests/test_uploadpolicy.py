@@ -249,20 +249,6 @@ class TestUploadPolicy(TestCaseWithFactory):
         self.assertTrue(insecure_policy.autoApprove(
             make_fake_upload(is_ppa=True)))
 
-    def test_insecure_does_not_approve_backports_before_release(self):
-        # Uploads to the BACKPORTS pocket are approved by the insecure policy
-        self.setHoaryStatus(SeriesStatus.CURRENT)
-        insecure_policy = findPolicyByName("insecure")
-        insecure_policy.setOptions(FakeOptions(distroseries="hoary-backports"))
-        self.assertFalse(insecure_policy.autoApprove(make_fake_upload()))
-
-    def test_insecure_does_not_approve_backports_after_release(self):
-        # Uploads to the BACKPORTS pocket are approved by the insecure policy
-        self.setHoaryStatus(SeriesStatus.CURRENT)
-        insecure_policy = findPolicyByName("insecure")
-        insecure_policy.setOptions(FakeOptions(distroseries="hoary-backports"))
-        self.assertFalse(insecure_policy.autoApprove(make_fake_upload()))
-
     def test_buildd_does_not_approve_uefi(self):
         # Uploads to the primary archive containing UEFI custom files are
         # not approved.
