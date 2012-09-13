@@ -37,6 +37,7 @@ from lp import _
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    SpecificationSharingPolicy,
     )
 
 
@@ -99,6 +100,11 @@ class IHasSharingPolicies(Interface):
         title=_('Bug sharing policy'),
         description=_("Sharing policy for this pillar's bugs."),
         required=False, readonly=True, vocabulary=BugSharingPolicy),
+        as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Specification sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
 
 

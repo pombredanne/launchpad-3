@@ -97,6 +97,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -292,6 +293,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasSharingPolicies."""
         # Sharing policy for distributions is always PUBLIC.
         return BugSharingPolicy.PUBLIC
+
+    @property
+    def specification_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return SpecificationSharingPolicy.PUBLIC
 
     @property
     def uploaders(self):
