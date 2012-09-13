@@ -41,37 +41,37 @@ class InformationType(DBEnumeratedType):
     Launchpad artifacts, including bugs and branches.
     """
 
-    PUBLIC = DBInformationTypeItem(1, """
+    PUBLIC = DBItem(1, """
         Public
 
         Everyone can see this information.
         """)
 
-    PUBLICSECURITY = DBInformationTypeItem(2, """
+    PUBLICSECURITY = DBItem(2, """
         Public Security
 
         Everyone can see this security related information.
         """)
 
-    PRIVATESECURITY = DBInformationTypeItem(3, """
+    PRIVATESECURITY = DBItem(3, """
         Private Security
 
        Only the security group can see this information.
         """)
 
-    USERDATA = DBInformationTypeItem(4, """
+    USERDATA = DBItem(4, """
         Private
 
         Only shared with users permitted to see private user information.
         """)
 
-    PROPRIETARY = DBInformationTypeItem(5, """
+    PROPRIETARY = DBItem(5, """
         Proprietary
 
         Only shared with users permitted to see proprietary information.
         """)
 
-    EMBARGOED = DBInformationTypeItem(6, """
+    EMBARGOED = DBItem(6, """
         Embargoed
 
         Only shared with users permitted to see embargoed information.
