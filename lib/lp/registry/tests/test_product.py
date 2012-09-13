@@ -34,6 +34,7 @@ from lp.registry.enums import (
     FREE_INFORMATION_TYPES,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
@@ -463,6 +464,14 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def makeProductWithPolicy(self, specification_sharing_policy):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setSpecificationSharingPolicy(
+                specification_sharing_policy)
+        return product
+
     def test_no_policy(self):
         # Projects that have not specified a policy can use the PUBLIC
         # information type.
@@ -473,6 +482,19 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PUBLIC,
             product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_public(self):
+        # Projects with a purely public policy should use PUBLIC
+        # information type.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC)
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):
