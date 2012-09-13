@@ -1041,7 +1041,7 @@ class SpecGraph:
         """
         if self.getNode(spec) is not None:
             raise ValueError(
-            "A spec called %s/%s is already in the graph" %
+            "A spec called %s/+spec/%s is already in the graph" %
             (spec.target.name, spec.name))
         node = SpecGraphNode(spec, root=root,
                 url_pattern_for_testing=self.url_pattern_for_testing)
