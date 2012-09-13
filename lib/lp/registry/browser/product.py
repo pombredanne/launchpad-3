@@ -2031,17 +2031,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # when an action is invokved.
         if IProductSet.providedBy(self.context):
             cache = IJSONRequestCache(self.request)
-            cache.objects['private_types'] = [
-                type.name for type in PRIVATE_INFORMATION_TYPES]
-            cache.objects['public_types'] = [
-                    type.name for type in PUBLIC_INFORMATION_TYPES]
-            cache.objects['information_type_data'] = [
-                {'value': term.name, 'description': term.description,
-                'name': term.title,
-                'description_css_class': 'choice-description'}
-                for term in
-                    self.context.getAllowedProductInformationTypes()]
-
+            json_dump_information_types(
+                cache
+                self.context.getAllowedProductInformationTypes())
         super(ProjectAddStepTwo, self).initialize()
 
     @property
