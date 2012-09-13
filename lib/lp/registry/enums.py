@@ -34,6 +34,26 @@ from lazr.enum import (
     )
 
 
+class DBInformationTypeItem(DBItem):
+    """DBItem with metadata about the Information Type."""
+    is_private = False
+
+    def __init__(self, value, title, description=None, url=None,
+            is_private=False):
+        DBItem.__init__(self, value, title, description, url)
+        self.is_private=is_private
+
+
+def information_type_to_dict(information_types):
+    """Dump a dict of the data in the types requsted."""
+    return dict([(term.name, {'value': term.name,
+                              'description': term.description,
+                              'name': term.title,
+                              'is_private': term.is_private,
+                              'description_css_class': 'choice-description'})
+        for term in information_types])
+
+
 class InformationType(DBEnumeratedType):
     """Information Type.
 
@@ -41,41 +61,41 @@ class InformationType(DBEnumeratedType):
     Launchpad artifacts, including bugs and branches.
     """
 
-    PUBLIC = DBItem(1, """
+    PUBLIC = DBInformationTypeItem(1, """
         Public
 
         Everyone can see this information.
         """)
 
-    PUBLICSECURITY = DBItem(2, """
+    PUBLICSECURITY = DBInformationTypeItem(2, """
         Public Security
 
         Everyone can see this security related information.
         """)
 
-    PRIVATESECURITY = DBItem(3, """
+    PRIVATESECURITY = DBInformationTypeItem(3, """
         Private Security
 
        Only the security group can see this information.
-        """)
+        """, is_private=True)
 
-    USERDATA = DBItem(4, """
+    USERDATA = DBInformationTypeItem(4, """
         Private
 
         Only shared with users permitted to see private user information.
-        """)
+        """, is_private=True)
 
-    PROPRIETARY = DBItem(5, """
+    PROPRIETARY = DBInformationTypeItem(5, """
         Proprietary
 
         Only shared with users permitted to see proprietary information.
-        """)
+        """, is_private=True)
 
-    EMBARGOED = DBItem(6, """
+    EMBARGOED = DBInformationTypeItem(6, """
         Embargoed
 
         Only shared with users permitted to see embargoed information.
-        """)
+        """, is_private=True)
 
 
 PUBLIC_INFORMATION_TYPES = (

@@ -116,6 +116,7 @@ from lp.registry.browser.product import (
     ProductPrivateBugsMixin,
     )
 from lp.registry.enums import (
+    information_type_to_dict,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -259,17 +260,13 @@ class FileBugViewBase(LaunchpadFormView):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invokved.
         cache = IJSONRequestCache(self.request)
-        cache.objects['private_types'] = [
-            type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
             self.context.pillar.getDefaultBugInformationType() in
             PRIVATE_INFORMATION_TYPES)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in
-            self.context.pillar.getAllowedBugInformationTypes()]
+        cache.objects['information_type_data'] = information_type_to_dict(
+            self.context.pillar.getAllowedBugInformationTypes()
+        )
+
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
