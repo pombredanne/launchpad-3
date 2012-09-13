@@ -459,6 +459,22 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
             product.getDefaultBugInformationType())
 
 
+class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
+        product = self.factory.makeProduct()
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
+
 class ProductPermissionTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
