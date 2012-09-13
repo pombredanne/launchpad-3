@@ -104,7 +104,7 @@ will cause this spec to be reassigned.
     True
 
     >>> foobar_pillars = []
-    >>> for pillar_name in foobar.getOwnedOrDrivenPillars():
+    >>> for pillar_name in foobar.getAffiliatedPillars():
     ...     pillar = pillar_name.pillar
     ...     if pillar.owner == foobar or pillar.driver == foobar:
     ...         foobar_pillars.append(pillar_name)
@@ -183,7 +183,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no owned or driven pillars...
 
-    >>> foobar.getOwnedOrDrivenPillars().count()
+    >>> foobar.getAffiliatedPillars().count()
     0
 
 ...and, finally, to not be considered a valid person in Launchpad.
@@ -198,7 +198,7 @@ Bar are now owned/driven by the registry admins team.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
-    >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
+    >>> registry_pillars = set(registry_experts.getAffiliatedPillars())
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 

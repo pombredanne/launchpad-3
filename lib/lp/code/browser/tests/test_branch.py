@@ -40,9 +40,7 @@ from lp.registry.enums import (
     InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    )
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text

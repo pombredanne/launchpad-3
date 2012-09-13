@@ -112,6 +112,7 @@ class SharingService:
             AccessPolicy.id.is_in(ids)
         )
 
+    @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -140,13 +141,20 @@ class SharingService:
 
         return bugtasks, branches
 
-    def getVisibleArtifacts(self, person, branches=None, bugs=None):
+    def getVisibleArtifacts(self, person, branches=None, bugs=None,
+                            ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
         for bug in bugs or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', bug)):
+                raise Unauthorized
             bugs_by_id[bug.id] = bug
         for branch in branches or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', branch)):
+                raise Unauthorized
             branches_by_id[branch.id] = branch
 
         # Load the bugs.
@@ -266,12 +274,12 @@ class SharingService:
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have branch sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have branch sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BranchSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary branches.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
@@ -284,12 +292,12 @@ class SharingService:
 
     def getBugSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have bug sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have bug sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BugSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary bugs.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
@@ -462,25 +470,26 @@ class SharingService:
         # First delete any access policy grants.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, grantee) for policy in pillar_policies]
-        grants = [
+        grants_to_revoke = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
-        if len(grants) > 0:
-            policy_grant_source.revoke(grants)
+        if len(grants_to_revoke) > 0:
+            policy_grant_source.revoke(grants_to_revoke)
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+        artifacts_to_revoke = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
-        if len(to_delete) > 0:
+        if len(artifacts_to_revoke) > 0:
             getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                to_delete, [grantee])
+                artifacts_to_revoke, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, artifacts=None, grantee=grantee, pillar=pillar,
-            information_types=information_types)
+        if grants_to_revoke or artifacts_to_revoke:
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, artifacts=None, grantee=grantee, pillar=pillar,
+                information_types=information_types)
 
         grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
         invisible_types = [
@@ -514,7 +523,7 @@ class SharingService:
             user, artifacts, grantee=grantee, pillar=pillar)
 
     def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
-                           ignore_permissions=False):
+                           specifications=None, ignore_permissions=False):
         """See `ISharingService`."""
 
         artifacts = []
@@ -522,6 +531,8 @@ class SharingService:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if specifications:
+            artifacts.extend(specifications)
         if not ignore_permissions:
             # The user needs to have launchpad.Edit permission on all supplied
             # bugs and branches or else we raise an Unauthorized exception.
@@ -542,3 +553,17 @@ class SharingService:
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
             list(product(missing_artifacts, grantees, [user])))
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None):
+        if not branch_sharing_policy and not bug_sharing_policy:
+            return None
+        # Only Products have sharing policies.
+        if not IProduct.providedBy(pillar):
+            raise ValueError(
+                "Sharing policies are only supported for products.")
+        if branch_sharing_policy:
+            pillar.setBranchSharingPolicy(branch_sharing_policy)
+        if bug_sharing_policy:
+            pillar.setBugSharingPolicy(bug_sharing_policy)

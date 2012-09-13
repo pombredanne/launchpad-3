@@ -77,8 +77,7 @@ a.help:hover, a.action-icon:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
-a.invalid-link {
-    disabled: True;
+a.invalid-link, a.invalid-link:active, a.invalid-link:hover {
     color: #909090;
     text-decoration: none;
     cursor: default;

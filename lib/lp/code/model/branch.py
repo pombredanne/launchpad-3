@@ -172,6 +172,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import (
+    Array,
     ArrayAgg,
     ArrayIntersects,
     )
@@ -908,7 +909,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
         ignored, branches = service.getVisibleArtifacts(
-            person, branches=[self])
+            person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(
                 [person], subscribed_by, branches=[self],
@@ -1635,15 +1636,17 @@ def get_branch_privacy_filter(user, branch_class=Branch):
                 where=(TeamParticipation.person == user)
             )), False)
 
-    policy_grant_query = branch_class.access_policy.is_in(
+    policy_grant_query = Coalesce(
+        ArrayIntersects(
+            Array(branch_class.access_policy),
             Select(
-                AccessPolicyGrant.policy_id,
+                ArrayAgg(AccessPolicyGrant.policy_id),
                 tables=(AccessPolicyGrant,
                         Join(TeamParticipation,
                             TeamParticipation.teamID ==
                             AccessPolicyGrant.grantee_id)),
                 where=(TeamParticipation.person == user)
-            ))
+            )), False)
 
     return [
         Or(public_branch_filter, artifact_grant_query, policy_grant_query)]

@@ -1132,8 +1132,12 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                           the icons which represent that category.
         """
 
-    def getOwnedOrDrivenPillars():
-        """Return the pillars that this person directly owns or drives."""
+    def getAffiliatedPillars():
+        """Return the pillars that this person directly has a role with.
+
+        Returns distributions, project groups, and projects that this person
+        maintains, drives, or is the bug supervisor for.
+        """
 
     def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.
@@ -1876,7 +1880,7 @@ class ITeamPublic(Interface):
         - any of the team's super teams are closed.
         - the team has any active PPAs
         - it is subscribed or assigned to any private bugs
-        - it owns or is the security contact for any pillars
+        - it owns any pillars
 
         :param policy: The policy that is being checked for validity. This is
             an optional parameter used in the message of the exception raised

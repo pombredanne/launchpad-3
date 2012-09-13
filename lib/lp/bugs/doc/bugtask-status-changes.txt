@@ -6,7 +6,7 @@ Restrictions
 
 There are a few simple rules around who can change the status of a
 bug task.  There are three statuses that can only be set by either
-the project registrant or the bug supervisor:
+the project maintainer, driver or bug supervisor:
 
  * Won't Fix
  * Expired
@@ -27,7 +27,7 @@ Regular users of Launchpad cannot transition a bug task to any of
 these statuses.
 
 An additional restraint is added to Won't Fix.  Only the product
-registrant or bug supervisor can change from this status to any
+maintainer, driver or bug supervisor can change from this status to any
 other status.
 
     >>> ignored = login_person(user)
