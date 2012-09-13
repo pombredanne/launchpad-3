@@ -622,6 +622,8 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             distroseries=distroseries)
 
     def test_checkUpload_backports_development(self):
+        # It should be possible to upload to the BACKPORTS pocket while the
+        # distroseries is in the DEVELOPMENT status.
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(
             purpose=ArchivePurpose.PRIMARY)
         sourcepackagename = self.factory.makeSourcePackageName()
