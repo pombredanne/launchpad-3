@@ -223,6 +223,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
         # All value in bytes.
         MEGA = 2 ** 20
+        if not self.archive.authorized_size:
+            return
         limit_size = self.archive.authorized_size * MEGA
         current_size = self.archive.estimated_size
         new_size = current_size + upload_size
