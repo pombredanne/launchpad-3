@@ -1161,12 +1161,13 @@ class SpecificationSet(HasSpecificationsMixin):
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
         definition_status = SpecificationDefinitionStatus.items[status_name]
-        return Specification(name=name, title=title, specurl=specurl,
+        spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
-            information_type=information_type)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+        spec.transitionToInformationType(information_type, None)
+        return spec
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
