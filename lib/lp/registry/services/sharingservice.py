@@ -113,16 +113,17 @@ class SharingService:
         )
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getSharedArtifacts(self, pillar, person, user):
+    def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
+                           include_branches=True):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
         bug_ids = set()
         branch_ids = set()
         for artifact in flat_source.findArtifactsByGrantee(person, policies):
-            if artifact.bug_id:
+            if artifact.bug_id and include_bugs:
                 bug_ids.add(artifact.bug_id)
-            elif artifact.branch_id:
+            elif artifact.branch_id and include_branches:
                 branch_ids.add(artifact.branch_id)
 
         # Load the bugs.
@@ -140,6 +141,20 @@ class SharingService:
             branches = list(wanted_branches.getBranches())
 
         return bugtasks, branches
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBugs(self, pillar, person, user):
+        """See `ISharingService`."""
+        bugtasks, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_branches=False)
+        return bugtasks
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBranches(self, pillar, person, user):
+        """See `ISharingService`."""
+        ignore, branches = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False)
+        return branches
 
     def getVisibleArtifacts(self, person, branches=None, bugs=None,
                             ignore_permissions=False):
