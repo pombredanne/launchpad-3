@@ -172,6 +172,25 @@ for their singular form.
     used_css_class:  green
     used_percentage: 0.92
 
+The authorized_size of a PPA can also be None (IE: no limit.)
+
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.authorized_size = None
+    >>> login(ANONYMOUS)
+
+    >>> mark_archive_view = create_initialized_view(
+    ...     mark.archive, name="+index")
+    >>> mark_repository_usage = mark_archive_view.repository_usage
+    >>> print_repository_usage(mark_repository_usage)
+    binaries_size:   0
+    binary_label:    1 binary package
+    quota:           0
+    source_label:    1 source package
+    sources_size:    9922683
+    used:            9924731
+    used_css_class:  green
+    used_percentage: 0.00
+
 An ArchiveView provides a batched_sources property that can be used
 to get the current batch of publishing records for an archive:
 
