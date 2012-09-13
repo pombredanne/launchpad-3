@@ -495,6 +495,17 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
             InformationType.PUBLIC,
             product.getDefaultSpecificationInformationType())
 
+    def test_sharing_policy_public_or_proprietary(self):
+        # specification_sharing_policy can enable Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):
