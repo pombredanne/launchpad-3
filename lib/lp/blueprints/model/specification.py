@@ -132,9 +132,9 @@ def recursive_dependent_query(spec):
 SPECIFICATION_POLICY_ALLOWED_TYPES = {
     SpecificationSharingPolicy.PUBLIC: [InformationType.PUBLIC],
     SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY:
-        [InformationType.Public, InformationType.PROPRIETARY],
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
     SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC:
-        [InformationType.Public, InformationType.PROPRIETARY],
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
     SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
