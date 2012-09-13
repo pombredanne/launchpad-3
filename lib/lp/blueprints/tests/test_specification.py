@@ -18,6 +18,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.security import IAuthorization
+from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -26,8 +27,10 @@ from lp.blueprints.enums import (
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.enums import (
+    InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SharingPermission,
     )
 from lp.security import (
     AdminSpecification,
@@ -35,6 +38,7 @@ from lp.security import (
     EditWhiteboardSpecification,
     ViewSpecification,
     )
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
@@ -256,7 +260,7 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         all_types = specification.getAllowedInformationTypes(ANONYMOUS)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -270,7 +274,7 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         all_types = specification.getAllowedInformationTypes(ANONYMOUS)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.write_access_to_ISpecificationView(
@@ -289,7 +293,7 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -306,7 +310,7 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -317,20 +321,74 @@ class SpecificationTests(TestCaseWithFactory):
                 user, specification, error_expected=True,
                 attribute='name', value='foo')
 
-    def test_special_user_read_access(self):
-        # Users with special privileges can aceess the attributes
-        # of public and private specifcations.
+    def test_user_with_grant_for_target_read_access(self):
+        # Users with a grant for the specification's target
+        # have access to a specification if the information_type
+        # of the specification matches the type if the grant.
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        all_types = specification.getAllowedInformationTypes(
-            specification.owner)
+        user = self.factory.makePerson()
+        permissions = {
+            InformationType.PROPRIETARY: SharingPermission.ALL,
+            }
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                specification.target, user, specification.target.owner,
+                permissions)
+        all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            error_expected = (
+                information_type not in PUBLIC_INFORMATION_TYPES and
+                information_type not in permissions)
+            self.read_access_to_ISpecificationView(
+                user, specification, error_expected)
+            del get_property_cache(specification)._known_viewers
+
+    def test_user_with_grant_for_specification_read_access(self):
+        # Users with a grant for the specification have access to this
+        # specification.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        user = self.factory.makePerson()
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], specification.target.owner,
+                specifications=[specification], ignore_permissions=True)
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.read_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False)
+                user, specification, error_expected=False)
+
+    def test_user_with_grant_for_specification_write_access(self):
+        # Users with a grant for the specification can change the whiteboard
+        # but no other attributes.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        user = self.factory.makePerson()
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], specification.target.owner,
+                specifications=[specification], ignore_permissions=True)
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            self.write_access_to_ISpecificationView(
+                user, specification, error_expected=False,
+                attribute='whiteboard', value='foo')
+            self.write_access_to_ISpecificationView(
+                user, specification, error_expected=True,
+                attribute='name', value='foo')
 
     def test_special_user_write_access(self):
         # Users with special privileges can change the attributes
@@ -341,15 +399,15 @@ class SpecificationTests(TestCaseWithFactory):
         all_types = specification.getAllowedInformationTypes(
             specification.owner)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.write_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False,
-                attribute='whiteboard', value='foo')
+                specification.target.owner, specification,
+                error_expected=False, attribute='whiteboard', value='foo')
             self.write_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False,
-                attribute='name', value='foo')
+                specification.target.owner, specification,
+                error_expected=False, attribute='name', value='foo')
 
 
 class TestSpecificationSet(TestCaseWithFactory):

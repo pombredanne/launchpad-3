@@ -25,6 +25,13 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm.expr import (
+    And,
+    In,
+    Join,
+    Or,
+    Select,
+    )
 from storm.locals import (
     Desc,
     SQL,
@@ -70,7 +77,6 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
@@ -79,6 +85,7 @@ from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -819,7 +826,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self.id, self.name, self.target.name)
 
     def getAllowedInformationTypes(self, who):
-        return set(PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        """See `ISpecification`."""
+        return self.target.getAllowedSpecificationInformationTypes()
 
     def transitionToInformationType(self, information_type, who):
         """See ISpecification."""
@@ -839,21 +847,62 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view the specifcation."""
+        return set()
+
     def userCanView(self, user):
         """See `ISpecification`."""
+        # Avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            AccessArtifact,
+            AccessPolicy,
+            AccessPolicyGrantFlat,
+            )
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
             return False
-        # Temporary: we should access the grant tables instead of
-        # checking if a given user has special roles.
-        # The following is basically copied from
-        # EditSpecificationByRelatedPeople.checkAuthenticated()
-        return (user.in_admin or
-                user.isOwner(self.target) or
-                user.isOneOfDrivers(self.target) or
-                user.isOneOf(
-                    self, ['owner', 'drafter', 'assignee', 'approver']))
+        if user.id in self._known_viewers:
+            return True
+
+        # Check if access has been granted to the user for either
+        # the pillar of this specification or the specification
+        # itself.
+        #
+        # A DB constraint ensures that either Specification.product or
+        # Specification.distribution is not null.
+        if self.product is not None:
+            pillar_clause = AccessPolicy.product == self.productID
+        else:
+            pillar_clause = AccessPolicy.distribution == self.distributionID
+        tables = (
+            AccessPolicyGrantFlat,
+            Join(
+                AccessPolicy,
+                AccessPolicyGrantFlat.policy_id == AccessPolicy.id),
+            Join(
+                TeamParticipation,
+                AccessPolicyGrantFlat.grantee == TeamParticipation.teamID)
+            )
+        grants = Store.of(self).using(*tables).find(
+            AccessPolicyGrantFlat,
+            pillar_clause,
+            Or(
+                And(
+                    AccessPolicyGrantFlat.abstract_artifact == None,
+                    AccessPolicy.type == self.information_type),
+                In(
+                    AccessPolicyGrantFlat.abstract_artifact_id,
+                    Select(
+                        AccessArtifact.id,
+                        AccessArtifact.specification_id == self.id))),
+            TeamParticipation.personID == user.id)
+        if grants.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
 
 
 class HasSpecificationsMixin:
