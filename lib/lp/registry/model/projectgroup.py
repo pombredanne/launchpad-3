@@ -575,7 +575,7 @@ class ProjectGroupSet:
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
-            registrant=None):
+            registrant=None, bug_supervisor=None, driver=None):
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner

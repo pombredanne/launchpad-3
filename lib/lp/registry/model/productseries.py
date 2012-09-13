@@ -14,6 +14,7 @@ __all__ = [
 
 import datetime
 
+from lazr.delegates import delegates
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -45,6 +46,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -122,6 +124,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     implements(
         IBugSummaryDimension, IProductSeries, IServiceUsage,
         ISeriesBugTarget)
+
+    delegates(ISpecificationTarget, 'product')
 
     _table = 'ProductSeries'
 
@@ -450,10 +454,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         return BugSummary.productseries_id == self.id
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.product.getSpecification(name)
 
     def getLatestRelease(self):
         """See `IProductRelease.`"""
