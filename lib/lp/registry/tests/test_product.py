@@ -464,8 +464,8 @@ class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_no_policy(self):
-        # New projects can only use the non-proprietary information
-        # types.
+        # Projects that have not specified a policy can use the PUBLIC
+        # information type.
         product = self.factory.makeProduct()
         self.assertContentEqual(
             [InformationType.PUBLIC],

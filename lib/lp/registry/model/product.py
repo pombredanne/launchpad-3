@@ -629,7 +629,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
-        return PUBLIC_PROPRIETARY_INFORMATION_TYPES
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_ALLOWED_TYPES[
+                self.specification_sharing_policy]
+        return [InformationType.PUBLIC]
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        return InformationType.PUBLIC
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
