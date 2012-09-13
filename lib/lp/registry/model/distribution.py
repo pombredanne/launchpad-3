@@ -979,6 +979,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `ISpecificationTarget`."""
         return (InformationType.PUBLIC,)
 
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        return InformationType.PUBLIC
+
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
