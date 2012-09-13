@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0211,E0213
 
 """ProjectGroup-related interfaces for Launchpad."""
-from lazr.restful.interface import copy_field
 
 __metaclass__ = type
 
@@ -29,6 +28,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
