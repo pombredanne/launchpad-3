@@ -26,6 +26,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -206,6 +207,49 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         self._assert_getBranchSharingPolicies(
             distro, [BranchSharingPolicy.PUBLIC])
+
+    def _assert_getSpecificationSharingPolicies(self, pillar, expected_policies):
+        policy_data = self.service.getSpecificationSharingPolicies(pillar)
+        self._assert_enumData(expected_policies, policy_data)
+
+    def test_getSpecificationSharingPolicies_product(self):
+        product = self.factory.makeProduct()
+        self._assert_getSpecificationSharingPolicies(
+            product, [SpecificationSharingPolicy.PUBLIC])
+
+    def test_getSpecificationSharingPolicies_expired_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self._assert_getSpecificationSharingPolicies(
+            product, [SpecificationSharingPolicy.PUBLIC])
+
+    def test_getSpecificationSharingPolicies_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self._assert_getSpecificationSharingPolicies(
+            product,
+            [SpecificationSharingPolicy.PUBLIC,
+             SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+             SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+             SpecificationSharingPolicy.PROPRIETARY])
+
+    def test_getSpecificationSharingPolicies_product_with_embargoed(self):
+        # The sharing policies will contain the product's sharing policy even
+        # if it is not in the nominally allowed policy list.
+        product = self.factory.makeProduct(
+            specification_sharing_policy=SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self._assert_getSpecificationSharingPolicies(
+            product,
+            [SpecificationSharingPolicy.PUBLIC,
+             SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+             SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+             SpecificationSharingPolicy.PROPRIETARY,
+             SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+
+    def test_getSpecificationSharingPolicies_distro(self):
+        distro = self.factory.makeDistribution()
+        self._assert_getSpecificationSharingPolicies(
+            distro, [SpecificationSharingPolicy.PUBLIC])
 
     def _assert_getBugSharingPolicies(self, pillar, expected_policies):
         policy_data = self.service.getBugSharingPolicies(pillar)
