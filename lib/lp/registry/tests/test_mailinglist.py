@@ -130,6 +130,21 @@ class MailingListTestCase(TestCaseWithFactory):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
 
+    def test_new_list_notification(self):
+        team = self.factory.makeTeam(name='team')
+        member = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(member, reviewer=team.teamowner)
+            pop_notifications()
+            self.factory.makeMailingList(team, team.teamowner)
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        self.assertEqual(
+            'New Mailing List for Team', notifications[0]['subject'])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*To subscribe:.*http://launchpad.dev/~.*/\+editemails.*',
+            notifications[0].get_payload())
+
     def test_subscribe_without_address(self):
         # An error is raised if subscribe() if a team is passed.
         team, member = self.factory.makeTeamWithMailingListSubscribers(
