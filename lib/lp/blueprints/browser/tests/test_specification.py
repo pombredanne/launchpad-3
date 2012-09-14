@@ -30,7 +30,10 @@ from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SpecificationSharingPolicy,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
@@ -333,7 +336,9 @@ class TestNewSpecificationInformationType(BrowserTestCase):
 
     def test_from_product(self):
         """Creating from a product defaults to PUBLIC."""
-        product = self.factory.makeProduct()
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         browser = self.getViewBrowser(product, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
         spec = product.getSpecification(self.submitSpec(browser))
@@ -357,7 +362,10 @@ class TestNewSpecificationInformationType(BrowserTestCase):
 
     def test_from_productseries(self):
         """Information_type is included creating from productseries."""
-        series = self.factory.makeProductSeries()
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
         browser = self.getViewBrowser(series, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
 
