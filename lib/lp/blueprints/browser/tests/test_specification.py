@@ -268,7 +268,11 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def test_secrecy_change_unprivileged(self):
         """Unprivileged users cannot change information_type."""
-        spec = self.factory.makeSpecification()
+        product = self.factory.makeProduct(
+            owner=self.factory.makePerson(),
+            specification_sharing_policy=
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        spec = self.factory.makeSpecification(product=product)
         person = self.factory.makePerson()
         with ExpectedException(Unauthorized):
             self.set_secrecy(spec, person)
