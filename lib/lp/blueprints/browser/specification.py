@@ -53,6 +53,7 @@ from lazr.restful.interface import (
     )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 from zope import component
@@ -117,6 +118,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.enums import (
+    json_dump_information_types,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
@@ -218,6 +220,11 @@ class NewSpecificationView(LaunchpadFormView):
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
+    def initialize(self):
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache, self.info_types)
+        super(NewSpecificationView, self).initialize()
+
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
@@ -285,6 +292,10 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     """
 
     @property
+    def info_types(self):
+        return self.context.getAllowedSpecificationInformationTypes()
+
+    @property
     def info_type_field(self):
         """An info_type_field for creating a Specification.
 
@@ -293,11 +304,10 @@ class NewSpecificationFromTargetView(NewSpecificationView):
         """
         if not getFeatureFlag(INFORMATION_TYPE_FLAG):
             return None
-        info_types = self.context.getAllowedSpecificationInformationTypes()
-        if len(info_types) < 2:
+        if len(self.info_types) < 2:
             return None
         return copy_field(ISpecification['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(types=info_types))
+                vocabulary=InformationTypeVocabulary(types=self.info_types))
 
     @property
     def schema(self):
@@ -365,6 +375,8 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+    info_types = PUBLIC_PROPRIETARY_INFORMATION_TYPES
+
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)

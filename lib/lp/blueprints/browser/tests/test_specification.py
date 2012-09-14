@@ -9,6 +9,7 @@ import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 import soupmatchers
 from testtools.matchers import (
@@ -294,6 +295,70 @@ class TestSpecificationInformationType(BrowserTestCase):
 
 # canonical_url erroneously returns http://blueprints.launchpad.dev/+new
 NEW_SPEC_FROM_ROOT_URL = 'http://blueprints.launchpad.dev/specs/+new'
+
+
+class NewSpecificationTests:
+
+    expected_keys = set(['PROPRIETARY', 'PUBLIC', 'EMBARGOED'])
+
+    def test_cache_contains_information_type(self):
+        view = self.createInitializedView()
+        cache = IJSONRequestCache(view.request)
+        info_data = cache.objects.get('information_type_data')
+        self.assertIsNot(None, info_data)
+        self.assertEqual(self.expected_keys, set(info_data.keys()))
+
+
+class TestNewSpecificationFromRootView(TestCaseWithFactory,
+                                       NewSpecificationTests):
+
+    layer = DatabaseFunctionalLayer
+
+    def createInitializedView(self):
+        specs = getUtility(ISpecificationSet)
+        return create_initialized_view(specs, '+new')
+
+
+class TestNewSpecificationFromSprintView(TestCaseWithFactory,
+                                         NewSpecificationTests):
+
+    layer = DatabaseFunctionalLayer
+
+    def createInitializedView(self):
+        sprint = self.factory.makeSprint()
+        return create_initialized_view(sprint, '+addspec')
+
+
+class TestNewSpecificationFromProjectView(TestCaseWithFactory,
+                                          NewSpecificationTests):
+
+    layer = DatabaseFunctionalLayer
+
+    def createInitializedView(self):
+        project = self.factory.makeProject()
+        return create_initialized_view(project, '+addspec')
+
+
+class TestNewSpecificationFromProductView(TestCaseWithFactory,
+                                          NewSpecificationTests):
+
+    layer = DatabaseFunctionalLayer
+
+    def createInitializedView(self):
+        product = self.factory.makeProduct()
+        return create_initialized_view(product, '+addspec')
+
+
+class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
+                                               NewSpecificationTests):
+
+    layer = DatabaseFunctionalLayer
+
+    expected_keys = set(['PUBLIC'])
+
+    def createInitializedView(self):
+        distro = self.factory.makeDistribution()
+        return create_initialized_view(distro, '+addspec')
 
 
 class TestNewSpecificationInformationType(BrowserTestCase):
