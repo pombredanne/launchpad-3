@@ -12,6 +12,8 @@ from zope.component import getUtility
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
+    IMessageApprovalSet,
+    PostedMessageStatus,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -244,6 +246,39 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
             (member1.displayname, member1.preferredemail.email),
             (sender.displayname, sender.preferredemail.email)])
         self.assertEqual(list_senders, sorted(result[team1.name]))
+
+
+class MessageApprovalSetTestCase(MailingListMessageTestCase):
+    """Test the MessageApprovalSet behaviour."""
+
+    def test_getMessageByMessageID(self):
+        # held Messages can be looked up by rfc822 messsge id.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team1, member1, owner1, sender, held_message = test_objects
+        message_approval_set = getUtility(IMessageApprovalSet)
+        found_message = message_approval_set.getMessageByMessageID(
+            '<first-post>')
+        self.assertEqual(held_message.id, found_message.id)
+
+    def test_getHeldMessagesWithStatus(self):
+        # Messages can be retrieved by status.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team1, member1, owner1, sender, held_message = test_objects
+        message_approval_set = getUtility(IMessageApprovalSet)
+        found_messages = message_approval_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.NEW)
+        self.assertEqual(1, len(found_messages))
+        self.assertEqual(held_message.id, found_messages[0].id)
+
+    def test_acknowledgeMessagesWithStatus(self):
+        # Messages can be retrieved by status.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team1, member1, owner1, sender, held_message = test_objects
+        held_message.status = PostedMessageStatus.APPROVAL_PENDING
+        message_approval_set = getUtility(IMessageApprovalSet)
+        message_approval_set.acknowledgeMessagesWithStatus(
+            PostedMessageStatus.APPROVAL_PENDING)
+        self.assertEqual(PostedMessageStatus.APPROVED, held_message.status)
 
 
 class HeldMessageDetailsTestCase(MailingListMessageTestCase):
