@@ -321,7 +321,10 @@ class TestNewSpecificationInformationType(BrowserTestCase):
     def createSpec(self, information_type):
         """Create a specification via a browser."""
         with person_logged_in(self.user):
-            product = self.factory.makeProduct()
+            product = self.factory.makeProduct(owner=self.user)
+            policy = self.factory.makeAccessPolicy(product, information_type)
+            self.factory.makeAccessPolicyGrant(
+                policy, grantee=self.user, grantor=self.user)
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:

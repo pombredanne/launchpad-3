@@ -18,7 +18,7 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     REQUEST_USER,
-    )
+    operation_returns_collection_of)
 from lazr.restful.fields import Reference
 from zope.schema import (
     Choice,
@@ -63,12 +63,6 @@ class ISharingService(IService):
         information type.
         """
 
-    @export_read_operation()
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        pillar=Reference(IPillar, title=_('Pillar'), required=True),
-        person=Reference(IPerson, title=_('Person'), required=True))
-    @operation_for_version('devel')
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
@@ -83,13 +77,39 @@ class ISharingService(IService):
         """
 
     @export_read_operation()
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True),
-        branches=List(
-            Reference(schema=IBranch), title=_('Branches'), required=False),
-        bugs=List(
-            Reference(schema=IBug), title=_('Bugs'), required=False))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBug)
     @operation_for_version('devel')
+    def getSharedBugs(pillar, person, user):
+        """Return the bugs shared between the pillar and person.
+
+        The result includes bugtasks rather than bugs since this is what the
+        pillar filtering is applied to. The shared bug can be obtained simply
+        by reading the bugtask.bug attribute.
+
+        :param user: the user making the request. Only bugs visible to the
+             user will be included in the result.
+        :return: a collection of bug tasks.
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBranch)
+    @operation_for_version('devel')
+    def getSharedBranches(pillar, person, user):
+        """Return the branches shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of branches
+        """
+
     def getVisibleArtifacts(person, branches=None, bugs=None):
         """Return the artifacts shared with person.
 

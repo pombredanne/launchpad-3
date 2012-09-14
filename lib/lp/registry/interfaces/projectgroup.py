@@ -28,6 +28,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -72,6 +73,7 @@ from lp.registry.interfaces.karma import IKarmaContext
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
+    IProjectGroupMilestone,
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import (
@@ -126,6 +128,16 @@ class IProjectGroupPublic(
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
+
+    # The following milestone collections are copied from IHasMilestone so that
+    # we can override the collection value types to be IProjectGroupMilestone.
+    milestones = copy_field(
+        IHasMilestones['milestones'],
+        value_type=Reference(schema=IProjectGroupMilestone))
+
+    all_milestones = copy_field(
+        IHasMilestones['all_milestones'],
+        value_type=Reference(schema=IProjectGroupMilestone))
 
     owner = exported(
         PublicPersonChoice(
