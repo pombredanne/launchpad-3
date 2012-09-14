@@ -290,6 +290,21 @@ class MailinglistSetTestCase(TestCaseWithFactory):
             for m in team1.allmembers if m.preferredemail])
         self.assertEqual(list_senders, sorted(result[team1.name]))
 
+    def test_getSenderAddresses_non_members(self):
+        # getSenderAddresses() only contains active and admin members.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team')
+        with person_logged_in(team.teamowner):
+            team.membership_policy = TeamMembershipPolicy.MODERATED
+        non_member = self.factory.makePerson()
+        with person_logged_in(non_member):
+            non_member.join(team)
+        result = self.mailing_list_set.getSenderAddresses([team.name])
+        list_senders = sorted([
+            (team.teamowner.displayname, team.teamowner.preferredemail.email),
+            (member.displayname, member.preferredemail.email)])
+        self.assertEqual(list_senders, sorted(result[team.name]))
+
     def test_getSenderAddresses_inactive_list(self):
         # Inactive lists are not include
         team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
@@ -355,6 +370,19 @@ class MailinglistSetTestCase(TestCaseWithFactory):
             (member1.displayname, member1.preferredemail.email),
             (member2.displayname, member2.preferredemail.email)])
         self.assertEqual(list_subscribers, sorted(result[team1.name]))
+
+    def test_getSubscribedAddresses_non_members(self):
+        # getSubscribedAddresses() only contains active and admin members..
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
+        with person_logged_in(team.teamowner):
+            team.membership_policy = TeamMembershipPolicy.MODERATED
+        non_member = self.factory.makePerson()
+        with person_logged_in(non_member):
+            non_member.join(team)
+        result = self.mailing_list_set.getSubscribedAddresses([team.name])
+        list_subscribers = [(member.displayname, member.preferredemail.email)]
+        self.assertEqual(list_subscribers, result[team.name])
 
     def test_getSubscribedAddresses_preferredemail_dict_values(self):
         # getSubscribedAddresses() dict values include users who want email to
