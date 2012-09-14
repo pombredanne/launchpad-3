@@ -197,19 +197,17 @@ class TestMailinglistSet(TestCaseWithFactory):
         self.assertEqual(list_subscribers, result[team1.name])
 
 
-class TestMailinglistSetMessages(TestCaseWithFactory):
+class HeldMessageTestCase(TestCaseWithFactory):
     """Test the mailing list set class message rules."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestMailinglistSetMessages, self).setUp()
+        super(HeldMessageTestCase, self).setUp()
         self.mailing_list_set = getUtility(IMailingListSet)
         login_celebrity('admin')
 
-    def test_getSenderAddresses_approved_dict_values(self):
-        # getSenderAddresses() dict values includes senders where were
-        # approved in the list moderation queue.
+    def makeMailingListAndHeldMessage(self):
         team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         owner1 = team1.teamowner
@@ -224,6 +222,13 @@ class TestMailinglistSetMessages(TestCaseWithFactory):
             """ % (sender.preferredemail.email, team1.mailing_list.address)))
         message = getUtility(IMessageSet).fromEmail(email)
         held_message = team1.mailing_list.holdMessage(message)
+        return team1, member1, owner1, sender, held_message
+
+    def test_mailinglistset_getSenderAddresses_approved_dict_values(self):
+        # getSenderAddresses() dict values includes senders where were
+        # approved in the list moderation queue.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team1, member1, owner1, sender, held_message = test_objects
         held_message.approve(owner1)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
         list_senders = sorted([
