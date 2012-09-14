@@ -14,6 +14,7 @@ from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
     IMessageApprovalSet,
+    MailingListStatus,
     PostedMessageStatus,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -232,13 +233,13 @@ class MailingListTestCase(TestCaseWithFactory):
             ['pa2', 'pb1'], [person.name for person in subscribers])
 
 
-class TestMailinglistSet(TestCaseWithFactory):
+class MailinglistSetTestCase(TestCaseWithFactory):
     """Test the mailing list set class."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestMailinglistSet, self).setUp()
+        super(MailinglistSetTestCase, self).setUp()
         self.mailing_list_set = getUtility(IMailingListSet)
         login_celebrity('admin')
 
@@ -288,6 +289,19 @@ class TestMailinglistSet(TestCaseWithFactory):
             (m.displayname, m.preferredemail.email)
             for m in team1.allmembers if m.preferredemail])
         self.assertEqual(list_senders, sorted(result[team1.name]))
+
+    def test_getSenderAddresses_inactive_list(self):
+        # Inactive lists are not include
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=True)
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
+            'team2', auto_subscribe=True)
+        with person_logged_in(team2.teamowner):
+            team2.mailing_list.deactivate()
+            team2.mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        team_names = [team1.name, team2.name]
+        result = self.mailing_list_set.getSenderAddresses(team_names)
+        self.assertEqual([team1.name], result.keys())
 
     def test_getSubscribedAddresses_dict_keys(self):
         # getSubscribedAddresses() returns a dict of team names.
@@ -352,6 +366,19 @@ class TestMailinglistSet(TestCaseWithFactory):
         list_subscribers = [
             (member1.displayname, member1.preferredemail.email)]
         self.assertEqual(list_subscribers, result[team1.name])
+
+    def test_getSubscribedAddresses_inactive_list(self):
+        # Inactive lists are not include
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=True)
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
+            'team2', auto_subscribe=True)
+        with person_logged_in(team2.teamowner):
+            team2.mailing_list.deactivate()
+            team2.mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        team_names = [team1.name, team2.name]
+        result = self.mailing_list_set.getSubscribedAddresses(team_names)
+        self.assertEqual([team1.name], result.keys())
 
 
 class MailingListMessageTestCase(TestCaseWithFactory):
