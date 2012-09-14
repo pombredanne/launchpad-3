@@ -66,6 +66,3 @@ team's list.
     >>> join_team(open_team)
     You have successfully joined open-team-with-list.
     You have been subscribed to this team&#x2019;s mailing list.
-
-    >>> sorted(open_list.getSubscribedAddresses())
-    [u'test@canonical.com']

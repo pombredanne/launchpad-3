@@ -439,20 +439,6 @@ class MailingList(SQLBase):
         else:
             subscription.email_addressID = address.id
 
-    def getSubscribedAddresses(self):
-        """See `IMailingList`."""
-        return [
-            address for (name, address) in
-            getUtility(IMailingListSet).getSubscribedAddresses(
-                [self.team.name]).get(self.team.name, [])]
-
-    def getSenderAddresses(self):
-        """See `IMailingList`."""
-        return [
-            address for (name, address) in
-            getUtility(IMailingListSet).getSenderAddresses(
-                [self.team.name]).get(self.team.name, [])]
-
     def holdMessage(self, message):
         """See `IMailingList`."""
         held_message = MessageApproval(message=message,

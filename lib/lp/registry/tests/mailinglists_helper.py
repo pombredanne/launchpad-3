@@ -136,21 +136,6 @@ def print_dispositions(dispositions):
         print message_id, list_name, action
 
 
-def print_addresses(data):
-    """Print the addresses in a dictionary.
-
-    This is used for the results returned by `IMailingListSet` methods
-    `getSenderAddresses()` and `getSubscribedAddresses()`.
-
-    :param data: The data as returned by the above methods.
-    :type data: dictionary of 2-tuples
-    """
-    for team_name in sorted(data):
-        print team_name
-        print COMMASPACE.join(sorted(
-            address for (real_name, address) in data[team_name]))
-
-
 def new_team(team_name, with_list=False):
     """A helper function for the mailinglist doctests.
 
