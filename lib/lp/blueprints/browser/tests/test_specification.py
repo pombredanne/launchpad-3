@@ -211,7 +211,9 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def test_has_privacy_banner(self):
         owner = self.factory.makePerson()
-        target = self.factory.makeProduct()
+        target = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         removeSecurityProxy(target)._ensurePolicies(
             [InformationType.PROPRIETARY])
         spec = self.factory.makeSpecification(
