@@ -1086,10 +1086,11 @@ class SpecificationSet(HasSpecificationsMixin):
         #
 
         # filter out specs on inactive products
-        base = """(Specification.product IS NULL OR
+        base = """((Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
+                   AND Specification.information_type = 1)
                 """
         query = base
         # look for informational specs
