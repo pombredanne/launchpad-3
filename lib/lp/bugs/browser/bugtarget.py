@@ -69,7 +69,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
-from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
@@ -117,6 +116,7 @@ from lp.registry.browser.product import (
     ProductPrivateBugsMixin,
     )
 from lp.registry.enums import (
+    json_dump_information_types,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
