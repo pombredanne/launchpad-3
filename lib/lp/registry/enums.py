@@ -14,6 +14,7 @@ __all__ = [
     'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
+    'json_dump_information_types',
     'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
