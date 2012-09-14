@@ -56,6 +56,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.batching import (
     BatchNavigator,
@@ -292,8 +293,10 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def specification_sharing_policies(self):
-        return self._getSharingService().getSpecificationSharingPolicies(
-            self.context)
+        if getFeatureFlag('blueprints.information_type.enabled'):
+            return self._getSharingService().getSpecificationSharingPolicies(
+                self.context)
+        return None
 
     @property
     def sharing_permissions(self):
