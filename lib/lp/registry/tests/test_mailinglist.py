@@ -32,6 +32,61 @@ from lp.testing.layers import (
 from lp.testing.mail_helpers import pop_notifications
 
 
+class PersonMailingListTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_autoSubscribeToMailingList_ON_REGISTRATION_someone_else(self):
+        # Users with autoSubscribeToMailingList set to ON_REGISTRATION
+        # are not subscribed when someone else adds them.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        subscribed = member.autoSubscribeToMailingList(
+            team.mailing_list, team.teamowner)
+        self.assertEqual(
+            MailingListAutoSubscribePolicy.ON_REGISTRATION,
+            member.mailing_list_auto_subscribe_policy)
+        self.assertIs(False, subscribed)
+        self.assertEqual(None, team.mailing_list.getSubscription(member))
+
+    def test_autoSubscribeToMailingList_ON_REGISTRATION_user(self):
+        # Users with autoSubscribeToMailingList set to ON_REGISTRATION
+        # are subscribed when when they add them selves.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertEqual(
+            MailingListAutoSubscribePolicy.ON_REGISTRATION,
+            member.mailing_list_auto_subscribe_policy)
+        self.assertIs(True, subscribed)
+        self.assertIsNot(None, team.mailing_list.getSubscription(member))
+
+    def test_autoSubscribeToMailingList_ALWAYS(self):
+        # When autoSubscribeToMailingList set to ALWAYS
+        # users subscribed when when added by anyone.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(member):
+            member.mailing_list_auto_subscribe_policy = (
+                MailingListAutoSubscribePolicy.ALWAYS)
+        subscribed = member.autoSubscribeToMailingList(
+            team.mailing_list, team.teamowner)
+        self.assertIs(True, subscribed)
+        self.assertIsNot(None, team.mailing_list.getSubscription(member))
+
+    def test_autoSubscribeToMailingList_NEVER(self):
+        # When autoSubscribeToMailingList set to NEVER
+        # users are never subscribed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(member):
+            member.mailing_list_auto_subscribe_policy = (
+                MailingListAutoSubscribePolicy.NEVER)
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertIs(False, subscribed)
+        self.assertIs(None, team.mailing_list.getSubscription(member))
+
+
 class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
     """Tests for `IMailingList`.getSubscribers()."""
 
