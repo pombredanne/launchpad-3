@@ -958,6 +958,67 @@ class TestBranchEditView(TestCaseWithFactory):
         with person_logged_in(person):
             self.assertEquals(team, branch.owner)
 
+    def test_branch_target_widget_renders_junk(self):
+        # The branch target widget renders correctly for a junk branch.
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        login_person(person)
+        view = create_initialized_view(branch, name='+edit')
+        self.assertEqual('personal', view.widgets['target'].default_option)
+
+    def test_branch_target_widget_renders_product(self):
+        # The branch target widget renders correctly for a product branch.
+        person = self.factory.makePerson()
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
+        login_person(person)
+        view = create_initialized_view(branch, name='+edit')
+        self.assertEqual('product', view.widgets['target'].default_option)
+        self.assertEqual(
+            product.name, view.widgets['target'].product_widget.selected_value)
+
+    def test_no_branch_target_widget_for_source_package_branch(self):
+        # The branch target widget is not rendered for a package branch.
+        person = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(owner=person)
+        login_person(person)
+        view = create_initialized_view(branch, name='+edit')
+        self.assertFalse(view.widgets.get('target'))
+
+    def test_branch_target_widget_saves_junk(self):
+        # The branch target widget can retarget to a junk branch.
+        person = self.factory.makePerson()
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
+        login_person(person)
+        form = {
+            'field.target': 'personal',
+            'field.actions.change': 'Change Branch',
+        }
+        view = create_initialized_view(branch, name='+edit', form=form)
+        self.assertEqual(person, branch.target.context)
+        self.assertEqual(
+            'This branch is now a personal branch for %s' % person.displayname,
+            view.request.response.notifications[0].message)
+
+    def test_branch_target_widget_saves_product(self):
+        # The branch target widget can retarget to a product branch.
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        product = self.factory.makeProduct()
+        login_person(person)
+        form = {
+            'field.target': 'product',
+            'field.target.product': product.name,
+            'field.actions.change': 'Change Branch',
+        }
+        view = create_initialized_view(branch, name='+edit', form=form)
+        self.assertEqual(product, branch.target.context)
+        self.assertEqual(
+            'The branch target has been changed to %s (%s)'
+                % (product.displayname, product.name),
+            view.request.response.notifications[0].message)
+
     def test_information_type_in_ui(self):
         # The information_type of a branch can be changed via the UI by an
         # authorised user.
