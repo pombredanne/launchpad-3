@@ -108,6 +108,20 @@ class TestMailinglistSet(TestCaseWithFactory):
             for m in team1.allmembers])
         self.assertEqual(list_senders, sorted(result[team1.name]))
 
+    def test_getSenderAddresses_multiple_and_lowercase_email(self):
+        # getSenderAddresses() contains multiple email addresses for
+        # users and they are lowercased for mailman.
+        # {team_name: [(member_displayname, member_email) ...]}
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1', auto_subscribe=False)
+        email = self.factory.makeEmail('me@EG.dom', member1)
+        result = self.mailing_list_set.getSenderAddresses([team1.name])
+        list_senders = sorted([
+            (m.displayname, m.preferredemail.email)
+            for m in team1.allmembers])
+        list_senders.append((member1.displayname, email.email.lower()))
+        self.assertContentEqual(list_senders, result[team1.name])
+
     def test_getSenderAddresses_participation_dict_values(self):
         # getSenderAddresses() dict values includes indirect participants.
         team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
@@ -139,6 +153,25 @@ class TestMailinglistSet(TestCaseWithFactory):
         list_subscribers = [
             (member1.displayname, member1.preferredemail.email)]
         self.assertEqual(list_subscribers, result[team1.name])
+
+    def test_getSubscribedAddresses_multiple_lowercase_email(self):
+        # getSubscribedAddresses() contains email addresses for
+        # users and they are lowercased for mailman. The email maybe
+        # explicitly set instead of the preferred email.
+        # {team_name: [(member_displayname, member_email) ...]}
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
+        with person_logged_in(member1):
+            email1 = self.factory.makeEmail('me@EG.dom', member1)
+            member1.setPreferredEmail(email1)
+        with person_logged_in(team1.teamowner):
+            email2 = self.factory.makeEmail('you@EG.dom', team1.teamowner)
+            team1.mailing_list.subscribe(team1.teamowner, email2)
+        result = self.mailing_list_set.getSubscribedAddresses([team1.name])
+        list_subscribers = [
+            (member1.displayname, email1.email.lower()),
+            (team1.teamowner.displayname, email2.email.lower())]
+        self.assertContentEqual(list_subscribers, result[team1.name])
 
     def test_getSubscribedAddresses_participation_dict_values(self):
         # getSubscribedAddresses() dict values includes indirect participants.

@@ -8,6 +8,8 @@ __all__ = [
     'DistroSeriesBinaryPackage',
     ]
 
+from operator import attrgetter
+
 from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
@@ -101,51 +103,35 @@ class DistroSeriesBinaryPackage:
         return cache.description
 
     @property
-    def current_publishings(self):
-        """See IDistroSeriesBinaryPackage."""
-        ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(
-                    self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
-                    self.binarypackagename),
-            orderBy=['-datecreated'],
-            clauseTables=['DistroArchSeries', 'BinaryPackageRelease'])
-        return sorted(ret, key=lambda a: (
-            a.distroarchseries.architecturetag,
-            a.datecreated))
-
-    @property
-    def last_published(self):
-        """See `IDistroSeriesBinaryPackage`."""
+    def _current_publishings(self):
         # Import here so as to avoid circular import.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
-
-        store = Store.of(self.distroseries)
-
-        publishing_history = store.find(
+        return Store.of(self.distroseries).find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.distroarchseries ==
                 DistroArchSeries.id,
             DistroArchSeries.distroseries == self.distroseries,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == self.binarypackagename,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                self.binarypackagename,
             BinaryPackagePublishingHistory.archiveID.is_in(
                 self.distribution.all_distro_archive_ids),
             BinaryPackagePublishingHistory.dateremoved == None)
 
-        last_published_history = publishing_history.order_by(
-            Desc(BinaryPackagePublishingHistory.datepublished)).first()
+    @property
+    def current_publishings(self):
+        """See IDistroSeriesBinaryPackage."""
+        return sorted(
+            self._current_publishings,
+            key=attrgetter('distroarchseries.architecturetag', 'datecreated'))
 
+    @property
+    def last_published(self):
+        """See `IDistroSeriesBinaryPackage`."""
+        last_published_history = self._current_publishings.order_by(
+            Desc(BinaryPackagePublishingHistory.datepublished)).first()
         if last_published_history is None:
             return None
         else:
