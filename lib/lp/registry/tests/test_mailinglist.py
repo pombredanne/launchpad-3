@@ -10,6 +10,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.mailinglist import (
+    CannotChangeSubscription,
     CannotSubscribe,
     IHeldMessageDetails,
     IMailingListSet,
@@ -182,6 +183,45 @@ class MailingListTestCase(TestCaseWithFactory):
             team.mailing_list.deactivate()
         self.assertRaises(CannotSubscribe, team.mailing_list.subscribe, member)
 
+    def test_changeAddress_with_address(self):
+        # User can change the subscription email address
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=True)
+        other_email = self.factory.makeEmail('me@eg.dom', member)
+        team.mailing_list.changeAddress(member, other_email)
+        subscription = team.mailing_list.getSubscription(member)
+        self.assertEqual(other_email, subscription.email_address)
+
+    def test_changeAddress_without_address(self):
+        # Users can clear the subacription email address to use the preferred.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=True)
+        other_email = self.factory.makeEmail('me@eg.dom', member)
+        team.mailing_list.changeAddress(member, other_email)
+        team.mailing_list.changeAddress(member, None)
+        subscription = team.mailing_list.getSubscription(member)
+        self.assertIs(None, subscription.email_address)
+
+    def test_changeAddress_wrong_address_error(self):
+        # Users can change to another user's email address.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=True)
+        other_user = self.factory.makePerson()
+        other_email = self.factory.makeEmail('me@eg.dom', other_user)
+        with person_logged_in(member):
+            self.assertRaises(
+                CannotChangeSubscription, team.mailing_list.changeAddress,
+                member, other_email)
+
+    def test_changeAddress_non_subscriber_error(self):
+        # Users cannot change the address if they are not subacribed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(member):
+            self.assertRaises(
+                CannotChangeSubscription, team.mailing_list.changeAddress,
+                member, None)
+
     def test_unsubscribe_deleted_email_address(self):
         # When a user delete an email address that use used by a
         # subscription, the user is implicitly unsubscibed.
@@ -233,13 +273,13 @@ class MailingListTestCase(TestCaseWithFactory):
             ['pa2', 'pb1'], [person.name for person in subscribers])
 
 
-class MailinglistSetTestCase(TestCaseWithFactory):
+class MailingListSetTestCase(TestCaseWithFactory):
     """Test the mailing list set class."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(MailinglistSetTestCase, self).setUp()
+        super(MailingListSetTestCase, self).setUp()
         self.mailing_list_set = getUtility(IMailingListSet)
         login_celebrity('admin')
 
