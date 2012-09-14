@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import json
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -279,6 +280,27 @@ class TestSpecificationInformationType(BrowserTestCase):
         with ExpectedException(Unauthorized):
             self.set_secrecy(spec, person)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
+
+    def test_view_banner(self):
+        """The privacy banner should reflect the information_type."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+
+        privacy_banner = soupmatchers.Tag('privacy-banner', True,
+                attrs={'class': 'banner-text'},
+                text=re.compile('This page contains Proprietary information'))
+
+        getUtility(IService, 'sharing').ensureAccessGrants(
+              [owner], owner, specifications=[spec],
+              ignore_permissions=True)
+
+        browser = self.getViewBrowser(spec, '+index', user=owner)
+        self.assertThat(browser.contents,
+                        soupmatchers.HTMLContains(privacy_banner))
+        browser = self.getViewBrowser(spec, '+subscribe', user=owner)
+        self.assertThat(browser.contents,
+                        soupmatchers.HTMLContains(privacy_banner))
 
 
 # canonical_url erroneously returns http://blueprints.launchpad.dev/+new

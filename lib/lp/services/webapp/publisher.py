@@ -90,6 +90,7 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
+from lp.registry.interfaces.informationtype import IInformationType
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -300,6 +301,14 @@ class LaunchpadView(UserAttributeCache):
             return privacy.private
         else:
             return False
+
+    @property
+    def information_type(self):
+        """A view has the information_type of its context."""
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.title
 
     def __init__(self, context, request):
         self.context = context
@@ -959,7 +968,9 @@ class Navigation:
                             nextobj = None
                         else:
                             # Circular import; breaks make.
-                            from lp.services.webapp.breadcrumb import Breadcrumb
+                            from lp.services.webapp.breadcrumb import (
+                                Breadcrumb,
+                            )
                             stepthrough_page = queryMultiAdapter(
                                     (self.context, self.request), name=name)
                             if stepthrough_page:

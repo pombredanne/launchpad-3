@@ -143,6 +143,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceType,
     InformationType,
     SpecificationSharingPolicy,
+    PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -2117,6 +2118,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
         if information_type is not None:
+            if information_type not in PUBLIC_INFORMATION_TYPES:
+                naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
                 information_type, spec.target.owner)
         if status.name not in status_names:

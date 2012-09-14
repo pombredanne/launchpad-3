@@ -84,6 +84,7 @@ from lp.registry.enums import (
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -156,7 +157,7 @@ SPECIFICATION_POLICY_DEFAULT_TYPES = {
 class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification, IBugLinkTarget)
+    implements(ISpecification, IBugLinkTarget, IInformationType)
 
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
