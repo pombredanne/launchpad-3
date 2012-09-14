@@ -208,7 +208,8 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_getBranchSharingPolicies(
             distro, [BranchSharingPolicy.PUBLIC])
 
-    def _assert_getSpecificationSharingPolicies(self, pillar, expected_policies):
+    def _assert_getSpecificationSharingPolicies(
+        self, pillar, expected_policies):
         policy_data = self.service.getSpecificationSharingPolicies(pillar)
         self._assert_enumData(expected_policies, policy_data)
 
@@ -237,7 +238,8 @@ class TestSharingService(TestCaseWithFactory):
         # The sharing policies will contain the product's sharing policy even
         # if it is not in the nominally allowed policy list.
         product = self.factory.makeProduct(
-            specification_sharing_policy=SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
         self._assert_getSpecificationSharingPolicies(
             product,
             [SpecificationSharingPolicy.PUBLIC,
