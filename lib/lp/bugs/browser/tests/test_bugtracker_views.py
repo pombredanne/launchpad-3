@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -19,6 +19,23 @@ from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
+
+class TestBugTrackerView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_linked_projects_only_shows_active_projects(self):
+        tracker = self.factory.makeBugTracker()
+        active_product = self.factory.makeProduct()
+        inactive_product = self.factory.makeProduct()
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        with person_logged_in(admin):
+            active_product.bugtracker = tracker
+            inactive_product.bugtracker = tracker
+            inactive_product.active = False
+        view = create_initialized_view(tracker, name='+index')
+        self.assertEqual([active_product], view.related_projects)
+            
 
 class TestBugTrackerSetView(TestCaseWithFactory):
 
@@ -36,7 +53,7 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         active_tracker2 = self.factory.makeBugTracker()
         inactive_tracker1 = self.factory.makeBugTracker()
         inactive_tracker2 = self.factory.makeBugTracker()
-        admin = getUtility(IPersonSet).find(ADMIN_EMAIL).any()
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
         with person_logged_in(admin):
             inactive_tracker1.active = False
             inactive_tracker2.active = False
