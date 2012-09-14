@@ -1122,13 +1122,6 @@ class IBranchEdit(Interface):
           set, or if either the project or source_package fail to be
           adapted to an IBranchTarget.
         """
-    def setBranchTarget(user, target):
-        """ Set the target of the branch.
-
-        :param user:
-        :param target:
-        :return:
-        """
 
     def requestUpgrade(requester):
         """Create an IBranchUpgradeJob to upgrade this branch."""
