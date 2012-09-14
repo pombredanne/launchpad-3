@@ -55,6 +55,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
+from zope.publisher.defaultview import getDefaultViewName
 from zope.schema import (
     Bool,
     Choice,
@@ -103,6 +104,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -605,6 +607,13 @@ class BugActivity(BugView):
 
     page_title = 'Activity log'
 
+    @property
+    def activity(self):
+        activity = IBug(self.context).activity
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [a.personID for a in activity], need_validity=True))
+        return activity
+
 
 class BugSubscriptionPortletDetails:
     """A mixin used to collate bug subscription details for a view."""
@@ -697,8 +706,12 @@ class BugWithoutContextView(RedirectionView):
     """
 
     def __init__(self, context, request):
+        redirected_context = context.default_bugtask
+        viewname = getDefaultViewName(redirected_context, request)
+        cache_view = getMultiAdapter(
+            (redirected_context, request), name=viewname)
         super(BugWithoutContextView, self).__init__(
-            canonical_url(context.default_bugtask), request)
+            canonical_url(redirected_context), request, cache_view=cache_view)
 
 
 class BugEditViewBase(LaunchpadEditFormView):

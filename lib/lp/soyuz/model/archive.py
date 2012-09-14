@@ -722,7 +722,7 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.binarypackagename =
                 BinaryPackageName.id
         """ % sqlvalues(self)]
         clauseTables = ['BinaryPackageRelease', 'BinaryPackageName']
@@ -988,7 +988,8 @@ class Archive(SQLBase):
         return store.find(
             BinaryPackagePublishingHistory,
             BinaryPackageName.name == dep_name,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                BinaryPackageName.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.distroarchseries ==
@@ -1592,14 +1593,15 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
             BinaryPackageRelease,
-            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagename == name,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
             BinaryPackageRelease.version == version,
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
             DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
             DistroArchSeries.architecturetag == archtag,
-            BinaryPackagePublishingHistory.archive == self,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True)
+            ).config(distinct=True)
         if results.count() > 1:
             return None
         return results.one()

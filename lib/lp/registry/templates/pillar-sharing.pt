@@ -25,45 +25,61 @@
 <body>
   <div metal:fill-slot="main">
     <h2>What's shared</h2>
-    <p tal:condition="context/has_current_commercial_subscription|nothing">
+    <tal:what-shared condition="exists:context/licenses">
+    <p id='commercial-project-text'
+       tal:condition="context/has_current_commercial_subscription|nothing">
       You can choose whether new bugs and branches are public or
       proprietary by default, and what you can change them to
       afterwards. Changing the default here won't automatically change
       existing bugs or branches.
     </p>
-    <p tal:condition="not: context/has_current_commercial_subscription|nothing">
+    <p id='non-commercial-project-text'
+       tal:condition="not: context/has_current_commercial_subscription|nothing">
       Open source projects have limited access to sharing features. You can
       <a href="https://help.launchpad.net/CommercialHosting">purchase a
       commercial subscription</a> to enable more privacy options, such as
       setting bugs and branches to be proprietary by default.
     </p>
+    </tal:what-shared>
       <table>
         <tr id="branch-sharing-policy-row"
            tal:condition="view/branch_sharing_policies">
            <td id="branch-sharing-policy">
              Branches sharing policy:&nbsp;
-             <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon" href="#"
+             <strong><span class="value"
+                 tal:content="context/branch_sharing_policy/title|string:Legacy policy"
+                 ></span></strong>
+             <a class="editicon sprite edit action-icon hidden" href="#"
                  style="padding-bottom: 0;">Edit</a>
-             <div id="branch-sharing-policy-description" class="formHelp"></div>
+             <div id="branch-sharing-policy-description" class="formHelp"
+                 tal:content="context/branch_sharing_policy/description|
+                 string:Legacy project sharing policy will continue to be used until
+                 a new policy is configured."
+                 ></div>
            </td>
         </tr>
         <tr id="bug-sharing-policy-row"
            tal:condition="view/bug_sharing_policies">
            <td id="bug-sharing-policy">
              Bugs sharing policy:&nbsp;
-             <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon" href="#"
+             <strong><span class="value"
+                 tal:content="context/bug_sharing_policy/title|string:Legacy policy"
+                 ></span></strong>
+             <a class="editicon sprite edit action-icon hidden" href="#"
                  style="padding-bottom: 0;">Edit</a>
-             <div id="bug-sharing-policy-description" class="formHelp"></div>
+             <div id="bug-sharing-policy-description" class="formHelp"
+                 tal:content="context/bug_sharing_policy/description|
+                 string:Legacy project sharing policy will continue to be used until
+                 a new policy is configured."
+                 ></div>
            </td>
         </tr>
       </table>
     <h2>Who it's shared with</h2>
     <div id="sharing-header">
-      <p>
-        Everyone can see your project's public information. You can
-        choose who can see the private bugs and branches.
+      <p tal:content="string:
+        Everyone can see ${context/displayname}'s public information. You can
+        choose who can see the private bugs and branches.">
      </p>
     </div>
     <ul class="horizontal">

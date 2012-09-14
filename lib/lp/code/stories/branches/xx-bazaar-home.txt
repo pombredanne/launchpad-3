@@ -152,16 +152,3 @@ imported branch listings.
     Project
     Last Modified
     Last Commit
-
-
-Recently built recipes
-......................
-
-Source package recipes have their own section on the home page.
-
-    >>> browser.open('http://code.launchpad.dev/')
-    >>> changed = find_tag_by_id(browser.contents, 'build-recipes')
-    >>> print changed.fetch('a')[0]['href']
-    /+daily-builds
-    >>> print changed.fetch('a')[-1]['href']
-    https://help.launchpad.net/Packaging/SourceBuilds

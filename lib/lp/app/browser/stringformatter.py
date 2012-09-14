@@ -1,9 +1,7 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
-from base64 import urlsafe_b64encode
-
 
 __metaclass__ = type
 __all__ = [
@@ -18,12 +16,13 @@ __all__ = [
     'split_paragraphs',
     ]
 
+from base64 import urlsafe_b64encode
 import cgi
 import re
-from lxml import html
 from xml.sax.saxutils import unescape as xml_unescape
-import markdown
 
+from lxml import html
+import markdown
 from zope.component import getUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
@@ -31,18 +30,16 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from lp.services.config import config
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.utils import (
-    re_email_address,
     obfuscate_email,
+    re_email_address,
     )
-from lp.services.features import (
-    getFeatureFlag,
-    )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def escape(text, quote=True):

@@ -52,6 +52,8 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
+
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
@@ -114,6 +116,7 @@ from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -141,6 +144,7 @@ from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
     )
+from lp.services.features import getFeatureFlag
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -154,6 +158,11 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1986,9 +1995,9 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'homepageurl', 'licenses', 'license_info',
-                    'owner',
+    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+                    'homepageurl', 'information_type', 'licenses',
+                    'license_info', 'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2002,11 +2011,38 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
         show_create_team_link=True)
     custom_widget(
+        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'driver', PersonPickerWidget, header="Set a driver",
+        required=True, show_create_team_link=True)
+    custom_widget(
         'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invokved.
+        if IProductSet.providedBy(self.context):
+            cache = IJSONRequestCache(self.request)
+            cache.objects['private_types'] = [
+                type.name for type in PRIVATE_INFORMATION_TYPES]
+            cache.objects['public_types'] = [
+                    type.name for type in PUBLIC_INFORMATION_TYPES]
+            cache.objects['information_type_data'] = [
+                {'value': term.name, 'description': term.description,
+                'name': term.title,
+                'description_css_class': 'choice-description'}
+                for term in
+                    self.context.getAllowedProductInformationTypes()]
+
+        super(ProjectAddStepTwo, self).initialize()
 
     @property
     def main_action_label(self):
@@ -2036,13 +2072,24 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     @property
     def initial_values(self):
-        return {'owner': self.user.name}
+        return {
+            'driver': self.user.name,
+            'bug_supervisor': self.user.name,
+            'owner': self.user.name,
+        }
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        hidden_names = ('__visited_steps__', 'license_info')
+        hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects or not IProductSet.providedBy(self.context):
+            hidden_names.extend([
+                'information_type', 'bug_supervisor', 'driver'])
+
         visible_fields = self.form_fields.omit(*hidden_names)
         self.form_fields = (visible_fields +
                             self._createDisclaimMaintainerField() +
@@ -2056,7 +2103,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2079,9 +2125,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].hint = ('When published, '
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
-
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+
+        if private_projects and IProductSet.providedBy(self.context):
+            self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
@@ -2150,6 +2201,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             for error in errors:
                 self.errors.remove(error)
 
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if private_projects:
+            if data.get('information_type') != InformationType.PUBLIC:
+                for required_field in ('bug_supervisor', 'driver'):
+                    if data.get(required_field) is None:
+                        self.setFieldError(
+                            required_field,
+                            'Select a user or team.')
+
     @property
     def label(self):
         """See `LaunchpadFormView`."""
@@ -2169,6 +2230,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
+            bug_supervisor=data.get('bug_supervisor', None),
+            driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],

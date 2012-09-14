@@ -1073,8 +1073,8 @@ class AdminDistribution(AdminByAdminsTeam):
 
 class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its
-    information; it is mainly administrative data, such as bug
-    contacts. Note that creation of new distributions and distribution
+    information; it is mainly administrative data, such as bug supervisors.
+    Note that creation of new distributions and distribution
     series is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution

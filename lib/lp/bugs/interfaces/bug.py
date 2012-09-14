@@ -441,15 +441,13 @@ class IBugView(Interface):
         """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
-        BugSubscription table. This includes bug contacts, subscribers from
-        dupes, etc.
+        BugSubscription table. This subscribers from dupes, etc.
         """
 
     def getAlsoNotifiedSubscribers(recipients=None, level=None):
         """Return IPersons in the "Also notified" subscriber list.
 
-        This includes bug contacts and assignees, but not subscribers
-        from duplicates.
+        This includes assignees, but not subscribers from duplicates.
         """
 
     def getSubscriptionsFromDuplicates():
@@ -599,7 +597,6 @@ class IBugView(Interface):
           - maintainer
           - driver
           - bug supervisor
-          - security contact
 
         Additionally, the comment owners can hide their own comments but that
         is not checked here - this method is to see if arbitrary users can
@@ -837,9 +834,6 @@ class IBugEdit(Interface):
 
             :security_related: True/False.
             :who: The IPerson who is making the change.
-
-        This may also cause the security contact to be subscribed
-        if one is registered and if the bug is not private.
 
         Return True if a change is made, False otherwise.
         """
@@ -1179,9 +1173,6 @@ class IBugSet(Interface):
           * distribution, product and package contacts (whichever ones are
             applicable based on the bug report target) will be subscribed to
             all *public bugs only*
-
-          * for public upstream bugs where there is no upstream bug contact,
-            the product owner will be subscribed instead
 
           * if either product or distribution is specified, an appropiate
             bug task will be created

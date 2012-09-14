@@ -1466,7 +1466,7 @@ class PublishingSet:
                 BinaryPackagePublishingHistory.archiveID ==
                     get_archive(archive, bpr).id,
                 BinaryPackagePublishingHistory.distroarchseriesID == das.id,
-                BinaryPackageRelease.binarypackagenameID ==
+                BinaryPackagePublishingHistory.binarypackagenameID ==
                     bpr.binarypackagenameID,
                 BinaryPackageRelease.version == bpr.version,
                 )

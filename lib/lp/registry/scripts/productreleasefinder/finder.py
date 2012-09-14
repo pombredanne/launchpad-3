@@ -44,12 +44,12 @@ processors = '|'.join([
     'sparc',
     ])
 flavor_pattern = re.compile(r"""
-    (~                            # Packaging target
-     |_[a-z][a-z]_[A-Z][A-Z]      # or language version
-     |_(%s)                       # or processor version
-     |[\.-](win32|OSX)            # or OS version
-     |\.(deb|noarch|rpm|dmg|exe)  # or packaging version
-    ).*                           # to the end of the string
+    (~                                # Packaging target
+     |_[a-z][a-z]_[A-Z][A-Z]          # or language version
+     |_(%s)                           # or processor version
+     |[\.-](win32|OSX)                # or OS version
+     |\.(deb|noarch|rpm|dmg|exe|apk)  # or packaging version
+    ).*                               # to the end of the string
     """ % processors, re.VERBOSE)
 
 
@@ -196,14 +196,13 @@ class ProductReleaseFinder:
             self.ztm.abort()
             raise
 
-
     def handleRelease(self, product_name, series_name, url):
         """If the given URL looks like a release tarball, download it
         and create a corresponding ProductRelease."""
         filename = urlparse.urlsplit(url)[2]
         slash = filename.rfind("/")
         if slash != -1:
-            filename = filename[slash+1:]
+            filename = filename[slash + 1:]
         self.log.debug("Filename portion is %s", filename)
 
         version = extract_version(filename)

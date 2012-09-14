@@ -99,7 +99,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.model.branchtarget import PersonBranchTarget
-from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
+from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
@@ -787,7 +787,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @property
     def initial_values(self):
-        distroseries = get_buildable_distroseries_set(self.user)
+        distroseries = BuildableDistroSeries.findSeries(self.user)
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
