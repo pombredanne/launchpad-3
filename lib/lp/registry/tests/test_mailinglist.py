@@ -286,6 +286,25 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
             (sender.displayname, sender.preferredemail.email)])
         self.assertEqual(list_senders, sorted(result[team.name]))
 
+    def test_new_state(self):
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        self.assertEqual(PostedMessageStatus.NEW, held_message.status)
+        self.assertIs(None, held_message.disposed_by)
+        self.assertIs(None, held_message.disposal_date)
+        self.assertEqual(sender, held_message.posted_by)
+        self.assertEqual(team.mailing_list, held_message.mailing_list)
+        self.assertEqual('<first-post>', held_message.message.rfc822msgid)
+        self.assertEqual(
+            held_message.message.datecreated, held_message.posted_date)
+        try:
+            held_message.posted_message.open()
+            text = held_message.posted_message.read()
+        finally:
+            held_message.posted_message.close()
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*Message-ID: <first-post>.*', text)
+
     def test_approve(self):
         test_objects = self.makeMailingListAndHeldMessage()
         team, member, sender, held_message = test_objects
@@ -312,6 +331,18 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
             PostedMessageStatus.DISCARD_PENDING, held_message.status)
         self.assertEqual(team.teamowner, held_message.disposed_by)
         self.assertIsNot(None, held_message.disposal_date)
+
+    def test_acknowledge(self):
+        # The acknowledge method changes the pending status to the
+        # final status.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_message.discard(team.teamowner)
+        self.assertEqual(
+            PostedMessageStatus.DISCARD_PENDING, held_message.status)
+        held_message.acknowledge()
+        self.assertEqual(
+            PostedMessageStatus.DISCARDED, held_message.status)
 
 
 class MessageApprovalSetTestCase(MailingListMessageTestCase):
