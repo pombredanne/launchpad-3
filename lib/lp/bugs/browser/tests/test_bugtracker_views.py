@@ -24,7 +24,20 @@ class TestBugTrackerView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_related_projects(self):
+        # Related products and projectgroups are shown by the view.
+        tracker = self.factory.makeBugTracker()
+        project_group = self.factory.makeProject() 
+        product = self.factory.makeProduct()
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        with person_logged_in(admin):
+            project_group.bugtracker = tracker
+            product.bugtracker = tracker
+        view = create_initialized_view(tracker, name='+index')
+        self.assertEqual([project_group, product], view.related_projects)
+
     def test_linked_projects_only_shows_active_projects(self):
+        # Inactive projects are not shown as the related projects.
         tracker = self.factory.makeBugTracker()
         active_product = self.factory.makeProduct()
         inactive_product = self.factory.makeProduct()
