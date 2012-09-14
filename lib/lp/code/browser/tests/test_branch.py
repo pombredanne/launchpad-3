@@ -983,7 +983,7 @@ class TestBranchEditView(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(owner=person)
         login_person(person)
         view = create_initialized_view(branch, name='+edit')
-        self.assertFalse(view.widgets.get('target'))
+        self.assertIsNone(view.widgets.get('target'))
 
     def test_branch_target_widget_saves_junk(self):
         # The branch target widget can retarget to a junk branch.
