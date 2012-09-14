@@ -9,7 +9,6 @@ __all__ = []
 from textwrap import dedent
 import time
 
-from fixtures import Fixture
 from lazr.restful.interfaces import IWebServiceConfiguration
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -25,7 +24,6 @@ from zope.security.management import (
     newInteraction,
     )
 from zope.session.interfaces import (
-    IClientIdManager,
     ISession,
     )
 
