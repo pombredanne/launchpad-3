@@ -24,7 +24,10 @@ from lp.blueprints.interfaces.specificationworkitem import (
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SpecificationSharingPolicy,
+    )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
 from lp.services.mail import stub
@@ -614,14 +617,18 @@ class TestSpecificationInformationType(TestCaseWithFactory):
 
     def test_transitionToInformationType(self):
         """Ensure transitionToInformationType works."""
-        spec = self.factory.makeSpecification()
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        spec = self.factory.makeSpecification(product=product)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         removeSecurityProxy(spec.target)._ensurePolicies(
-            [InformationType.EMBARGOED])
+            [InformationType.PROPRIETARY])
         with person_logged_in(spec.owner):
             result = spec.transitionToInformationType(
-                InformationType.EMBARGOED, spec.owner)
-            self.assertEqual(InformationType.EMBARGOED, spec.information_type)
+                InformationType.PROPRIETARY, spec.owner)
+            self.assertEqual(
+                InformationType.PROPRIETARY, spec.information_type)
         self.assertTrue(result)
 
     def test_transitionToInformationType_no_change(self):
