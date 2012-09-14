@@ -372,89 +372,12 @@ the notification message is properly encoded.
     The Launchpad team
     ----------------------------------------
 
-
 == Posting privileges ==
-Message approvals are also used to derived posting privileges for non-team
-members.  To start with, only the team owner can post to the list.
-
-    >>> login('no-priv@canonical.com')
-    >>> team_three, list_three = mailinglists_helper.new_team(
-    ...     'test-three', True)
-    >>> sorted(list_three.getSenderAddresses())
-    [u'no-priv@canonical.com']
-
-Salgado posts a message to the list, but because he is not a team member, it
-gets held for approval.
-
-    >>> message = message_set.fromEmail("""\
-    ... From: guilherme.salgado@canonical.com
-    ... To: test-one@lists.launchpad.dev
-    ... Subject: My first test
-    ... Message-ID: <zebra>
-    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
-    ...
-    ... This is my first post!
-    ... """)
-    >>> held_message = list_three.holdMessage(message)
-    >>> transaction.commit()
-
-If the message gets discarded (or rejected), Salgado is still not allowed to
-post to the mailing list.
-
-    >>> held_message.discard(owner)
-    >>> held_message.acknowledge()
-    >>> transaction.commit()
-
-    >>> sorted(list_three.getSenderAddresses())
-    [u'no-priv@canonical.com']
-
-    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
-    >>> mailinglist_set = getUtility(IMailingListSet)
-    >>> bulk_addresses = mailinglist_set.getSenderAddresses(['test-three'])
-    >>> sorted(email for name, email in bulk_addresses['test-three'])
-    [u'no-priv@canonical.com']
-
-Salgado posts another message to the list, but this time it's approved.
-
-    >>> message = message_set.fromEmail("""\
-    ... From: guilherme.salgado@canonical.com
-    ... To: test-one@lists.launchpad.dev
-    ... Subject: My first test
-    ... Message-ID: <yeti>
-    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
-    ...
-    ... This is my second post!
-    ... """)
-    >>> held_message = list_three.holdMessage(message)
-    >>> transaction.commit()
-
-    >>> held_message.approve(owner)
-    >>> held_message.acknowledge()
-    >>> transaction.commit()
-
-Now, Salgado is on the list of approved posters.
-
-    >>> sorted(list_three.getSenderAddresses())
-    [u'guilherme.salgado@canonical.com', u'no-priv@canonical.com']
-
-    >>> bulk_addresses = mailinglist_set.getSenderAddresses(['test-three'])
-    >>> sorted(email for name, email in bulk_addresses['test-three'])
-    [u'guilherme.salgado@canonical.com', u'no-priv@canonical.com']
-
-But he will still not get messages delivered to his address, since he's not
-subscribed to the team mailing list.
-
-    >>> sorted(list_three.getSubscribedAddresses())
-    []
-
-Of course, Salgado still cannot post to a mailing list that he has not been
-approved for, because he has not had three approved moderations.
 
     >>> team_four, list_four = mailinglists_helper.new_team(
     ...     'test-four', True)
     >>> sorted(list_four.getSenderAddresses())
     [u'no-priv@canonical.com']
-
 
 == Duplicates ==
 

@@ -616,7 +616,7 @@ class MailingListSet:
         for email, display_name, team_name in preferred:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            value = (display_name, email)
+            value = (display_name, email.lower())
             by_team[team_name].add(value)
         explicit = store.using(*tables).find(
             (EmailAddress.email, Person.displayname, Team.name),
@@ -628,7 +628,7 @@ class MailingListSet:
         for email, display_name, team_name in explicit:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            value = (display_name, email)
+            value = (display_name, email.lower())
             by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
@@ -688,7 +688,7 @@ class MailingListSet:
         for team_name, person_displayname, email in all_posters:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            value = (person_displayname, email)
+            value = (person_displayname, email.lower())
             by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}

@@ -1167,51 +1167,86 @@ class TestSharingService(TestCaseWithFactory):
         login_person(anyone)
         self._assert_updatePillarSharingPoliciesUnauthorized(anyone)
 
-    def test_getSharedArtifacts(self):
-        # Test the getSharedArtifacts method.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        login_person(owner)
-
+    def create_shared_artifacts(self, product, grantee, user):
+        # Create some shared bugs and branches.
         bugs = []
         bug_tasks = []
         for x in range(0, 10):
             bug = self.factory.makeBug(
-                target=product, owner=owner,
+                target=product, owner=product.owner,
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
             bug_tasks.append(bug.default_bugtask)
         branches = []
         for x in range(0, 10):
             branch = self.factory.makeBranch(
-                product=product, owner=owner,
+                product=product, owner=product.owner,
                 information_type=InformationType.USERDATA)
             branches.append(branch)
 
         # Grant access to grantee as well as the person who will be doing the
         # query. The person who will be doing the query is not granted access
         # to the last bug/branch so those won't be in the result.
-        grantee = self.factory.makePerson()
-        user = self.factory.makePerson()
-
         def grant_access(artifact, grantee_only):
             access_artifact = self.factory.makeAccessArtifact(
                 concrete=artifact)
             self.factory.makeAccessArtifactGrant(
-                artifact=access_artifact, grantee=grantee, grantor=owner)
+                artifact=access_artifact, grantee=grantee,
+                grantor=product.owner)
             if not grantee_only:
                 self.factory.makeAccessArtifactGrant(
-                    artifact=access_artifact, grantee=user, grantor=owner)
+                    artifact=access_artifact, grantee=user,
+                    grantor=product.owner)
 
         for i, bug in enumerate(bugs):
             grant_access(bug, i == 9)
         for i, branch in enumerate(branches):
             grant_access(branch, i == 9)
+        return bug_tasks, branches
+
+    def test_getSharedArtifacts(self):
+        # Test the getSharedArtifacts method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+        bug_tasks, branches = self.create_shared_artifacts(
+            product, grantee, user)
 
         # Check the results.
         shared_bugtasks, shared_branches = self.service.getSharedArtifacts(
             product, grantee, user)
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
+        self.assertContentEqual(branches[:9], shared_branches)
+
+    def test_getSharedBugs(self):
+        # Test the getSharedBugs method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+        bug_tasks, ignored = self.create_shared_artifacts(
+            product, grantee, user)
+
+        # Check the results.
+        shared_bugtasks = self.service.getSharedBugs(product, grantee, user)
+        self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
+
+    def test_getSharedBranches(self):
+        # Test the getSharedBranches method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+        ignored, branches = self.create_shared_artifacts(
+            product, grantee, user)
+
+        # Check the results.
+        shared_branches = self.service.getSharedBranches(
+            product, grantee, user)
         self.assertContentEqual(branches[:9], shared_branches)
 
     def test_getPeopleWithAccessBugs(self):
@@ -1534,28 +1569,20 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
 
-    def test_getSharedArtifacts(self):
+    def test_getSharedBugs(self):
+        # Test the exported getSharedBugs() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        bugtasks = self.service.getSharedBugs(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(bugtasks[0].title, self.bug.default_bugtask.title)
+
+    def test_getSharedBranches(self):
         # Test the exported getSharedArtifacts() method.
         ws_pillar = ws_object(self.launchpad, self.pillar)
         ws_grantee = ws_object(self.launchpad, self.grantee)
-        (bugtasks, branches) = self.service.getSharedArtifacts(
+        branches = self.service.getSharedBranches(
             pillar=ws_pillar, person=ws_grantee)
-        self.assertEqual(1, len(bugtasks))
         self.assertEqual(1, len(branches))
-        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
-        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
-
-    def test_getVisibleArtifacts(self):
-        # Test the exported getVisibleArtifacts() method.
-        ws_grantee = ws_object(self.launchpad, self.grantee)
-        # Sadly lazr.restful doesn't know how to marshall lists of entities
-        # so we have to use links directly.
-        ws_bug_link = ws_object(self.launchpad, self.bug).self_link
-        ws_branch_link = ws_object(self.launchpad, self.branch).self_link
-        (bugs, branches) = self.service.getVisibleArtifacts(
-            person=ws_grantee,
-            branches=[ws_branch_link], bugs=[ws_bug_link])
-        self.assertEqual(1, len(bugs))
-        self.assertEqual(1, len(branches))
-        self.assertEqual(bugs[0]['title'], self.bug.title)
-        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
+        self.assertEqual(branches[0].unique_name, self.branch.unique_name)
