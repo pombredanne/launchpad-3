@@ -448,6 +448,24 @@ class MailingListSetTestCase(TestCaseWithFactory):
         result = self.mailing_list_set.getSubscribedAddresses(team_names)
         self.assertEqual([team1.name], result.keys())
 
+    def test_getSubscribedAddresses_after_rejoin(self):
+        # A users subscription is preserved when a user leaved a team, then
+        # rejoins
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        team.mailing_list.subscribe(member)
+        list_subscribers = [(member.displayname, member.preferredemail.email)]
+        result = self.mailing_list_set.getSubscribedAddresses([team.name])
+        self.assertEqual(list_subscribers, result[team.name])
+        with person_logged_in(member):
+            member.leave(team)
+        result = self.mailing_list_set.getSubscribedAddresses([team.name])
+        self.assertEqual({}, result)
+        with person_logged_in(member):
+            member.join(team)
+        result = self.mailing_list_set.getSubscribedAddresses([team.name])
+        self.assertEqual(list_subscribers, result[team.name])
+
 
 class MailingListMessageTestCase(TestCaseWithFactory):
 
