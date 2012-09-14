@@ -323,10 +323,13 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         browser.getControl('Register Blueprint').click()
         return name
 
-    def createSpec(self, information_type):
+    def createSpec(self, information_type, sharing_policy=None):
         """Create a specification via a browser."""
         with person_logged_in(self.user):
             product = self.factory.makeProduct(owner=self.user)
+            if sharing_policy is not None:
+                self.factory.makeCommercialSubscription(product)
+                product.setSpecificationSharingPolicy(sharing_policy)
             policy = self.factory.makeAccessPolicy(product, information_type)
             self.factory.makeAccessPolicyGrant(
                 policy, grantee=self.user, grantor=self.user)
@@ -348,11 +351,17 @@ class TestNewSpecificationInformationType(BrowserTestCase):
 
     def test_supplied_information_types(self):
         """Creating honours information types."""
-        spec = self.createSpec(InformationType.PUBLIC)
+        spec = self.createSpec(
+            InformationType.PUBLIC,
+            sharing_policy=SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
-        spec = self.createSpec(InformationType.PROPRIETARY)
+        spec = self.createSpec(
+            InformationType.PROPRIETARY,
+            sharing_policy=SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertEqual(InformationType.PROPRIETARY, spec.information_type)
-        spec = self.createSpec(InformationType.EMBARGOED)
+        spec = self.createSpec(
+            InformationType.EMBARGOED,
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self.assertEqual(InformationType.EMBARGOED, spec.information_type)
 
     def test_from_product_no_flag(self):
