@@ -307,7 +307,7 @@ class IMilestoneSet(Interface):
 
 class IProjectGroupMilestone(IAbstractMilestone):
     """A marker interface for milestones related to a project"""
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
 
 class IHasMilestones(Interface):
