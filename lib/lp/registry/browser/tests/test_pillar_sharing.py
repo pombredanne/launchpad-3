@@ -269,6 +269,9 @@ class PillarSharingViewTestMixin:
         self.assertIsNotNone(cache.objects.get('branch_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+        # Ensure we don't set specification_sharing_policies without the
+        # feature flag enabled.
+        self.assertIsNone(cache.objects.get('specification_sharing_policies'))
         batch_size = config.launchpad.default_batch_size
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
         grantees = apgfs.findGranteePermissionsByPolicy(
