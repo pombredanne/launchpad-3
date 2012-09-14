@@ -10,6 +10,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.mailinglist import (
+    CannotSubscribe,
     IHeldMessageDetails,
     IMailingListSet,
     IMessageApprovalSet,
@@ -86,9 +87,39 @@ class PersonMailingListTestCase(TestCaseWithFactory):
         self.assertIs(False, subscribed)
         self.assertIs(None, team.mailing_list.getSubscription(member))
 
+    def test_autoSubscribeToMailingList_without_preferredemail(self):
+        # Users without preferred email addresses cannot subscribe.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(member):
+            member.setPreferredEmail(None)
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertIs(False, subscribed)
+        self.assertIs(None, team.mailing_list.getSubscription(member))
 
-class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
-    """Tests for `IMailingList`.getSubscribers()."""
+    def test_autoSubscribeToMailingList_with_inactive_list(self):
+        # Users cannot subscribe to inactive lists.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertIs(False, subscribed)
+        self.assertIs(None, team.mailing_list.getSubscription(member))
+
+    def test_autoSubscribeToMailingList_twice(self):
+        # Users cannot subscribe twice.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertIs(True, subscribed)
+        subscribed = member.autoSubscribeToMailingList(team.mailing_list)
+        self.assertIs(False, subscribed)
+        self.assertIsNot(None, team.mailing_list.getSubscription(member))
+
+
+class MailingListTestCase(TestCaseWithFactory):
+    """Tests for MailingList data and behaviour."""
 
     layer = DatabaseFunctionalLayer
 
@@ -97,7 +128,71 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
 
-    def test_only_active_members_can_be_subscribers(self):
+    def test_subscribe_without_address(self):
+        # An error is raised if subscribe() if a team is passed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        team.mailing_list.subscribe(member)
+        subscription = team.mailing_list.getSubscription(member)
+        self.assertEqual(member, subscription.person)
+        self.assertIs(None, subscription.email_address)
+
+    def test_subscribe_with_address(self):
+        # An error is raised if subscribe() if a team is passed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        email = self.factory.makeEmail('him@eg.dom', member)
+        team.mailing_list.subscribe(member, email)
+        subscription = team.mailing_list.getSubscription(member)
+        self.assertEqual(member, subscription.person)
+        self.assertEqual(email, subscription.email_address)
+
+    def test_subscribe_team_error(self):
+        # An error is raised if subscribe() if a team is passed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        other_team = self.factory.makeTeam()
+        self.assertRaises(
+            CannotSubscribe, team.mailing_list.subscribe, other_team)
+
+    def test_subscribe_wrong_address_error(self):
+        # An error is raised if subscribe() is called with an address that
+        # does not belong to the user.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        email = self.factory.makeEmail('him@eg.dom', self.factory.makePerson())
+        with person_logged_in(member):
+            self.assertRaises(
+                CannotSubscribe, team.mailing_list.subscribe, member, email)
+
+    def test_subscribe_twice_error(self):
+        # An error is raised if subscribe() is called with a user already
+        # subscribed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        team.mailing_list.subscribe(member)
+        self.assertRaises(CannotSubscribe, team.mailing_list.subscribe, member)
+
+    def test_subscribe_inactive_list_error(self):
+        # An error is raised if subscribe() is called on an inactive list.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+        self.assertRaises(CannotSubscribe, team.mailing_list.subscribe, member)
+
+    def test_unsubscribe_deleted_email_address(self):
+        # When a user delete an email address that use used by a
+        # subscription, the user is implicitly unsubscibed.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        email = self.factory.makeEmail('him@eg.dom', member)
+        team.mailing_list.subscribe(member, email)
+        with person_logged_in(member):
+            email.destroySelf()
+        self.assertIs(None, team.mailing_list.getSubscription(member))
+
+    def test_getSubscribers_only_active_members_are_subscribers(self):
         former_member = self.factory.makePerson()
         pending_member = self.factory.makePerson()
         active_member = self.active_member = self.factory.makePerson()
