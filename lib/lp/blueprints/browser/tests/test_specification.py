@@ -184,6 +184,29 @@ def set_blueprint_information_type(test_case, enabled):
     test_case.useFixture(fixture)
 
 
+class TestSpecificationSet(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_index_with_proprietary(self):
+        """Blueprints home page tolerates proprietary Specifications."""
+        specs = getUtility(ISpecificationSet)
+        spec = self.factory.makeSpecification()
+        spec_name = spec.name
+        spec_owner = spec.owner
+        browser = self.getViewBrowser(specs)
+        self.assertNotIn('Not allowed', browser.contents)
+        self.assertIn(spec_name, browser.contents)
+        with person_logged_in(spec_owner):
+            removeSecurityProxy(spec.target)._ensurePolicies(
+                [InformationType.PROPRIETARY])
+            spec.transitionToInformationType(InformationType.PROPRIETARY,
+                                             spec.owner)
+        browser = self.getViewBrowser(specs)
+        self.assertNotIn('Not allowed', browser.contents)
+        self.assertNotIn(spec_name, browser.contents)
+
+
 class TestSpecificationInformationType(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
