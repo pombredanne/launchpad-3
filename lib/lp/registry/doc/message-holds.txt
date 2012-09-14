@@ -372,6 +372,13 @@ the notification message is properly encoded.
     The Launchpad team
     ----------------------------------------
 
+== Posting privileges ==
+
+    >>> team_four, list_four = mailinglists_helper.new_team(
+    ...     'test-four', True)
+    >>> sorted(list_four.getSenderAddresses())
+    [u'no-priv@canonical.com']
+
 == Duplicates ==
 
 When a person responds to a bug email, the message can end up in the database
