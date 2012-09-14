@@ -17,6 +17,7 @@ from cStringIO import StringIO
 import logging
 
 import apt_pkg
+from lazr.delegates import delegates
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -48,6 +49,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -200,6 +202,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         ICanPublishPackages, IBugSummaryDimension, IDistroSeries,
         IHasBuildRecords, IHasQueueItems, IServiceUsage,
         ISeriesBugTarget)
+
+    delegates(ISpecificationTarget, 'distribution')
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -907,10 +911,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.distribution.getSpecification(name)
 
     def getDistroSeriesLanguage(self, language):
         """See `IDistroSeries`."""

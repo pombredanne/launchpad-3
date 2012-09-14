@@ -566,10 +566,7 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
         """
 
     def getAllowedInformationTypes(who):
-        """Get a list of acceptable `InformationType`s for this spec.
-
-        The intersection of the affected pillars' allowed types is permitted.
-        """
+        """Get a list of acceptable `InformationType`s for this spec."""
 
 
 class ISpecificationEditRestricted(Interface):
