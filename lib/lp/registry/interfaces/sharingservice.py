@@ -298,5 +298,5 @@ class ISharingService(IService):
         :param pillar: the pillar to update
         :param branch_sharing_policy: the new branch sharing policy
         :param bug_sharing_policy: the new bug sharing policy
-        :param specification_sharing_policy: the new spec. sharing policy
+        :param specification_sharing_policy: new specification sharing policy
         """
