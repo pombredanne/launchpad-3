@@ -441,7 +441,6 @@ class TestFastDowntimeRollout(TestCase):
 
         # Of course, slave connections are unaffected.
         self.assertTrue(self.store_is_working(store))
-        self.assertTrue(self.store_is_slave(store))
 
         # After schema updates have been made to the master, it is
         # reenabled.
@@ -455,8 +454,7 @@ class TestFastDowntimeRollout(TestCase):
 
         # The next attempt at accessing the slave store will fail
         # with a DisconnectionError.
-        self.assertRaises(
-            DisconnectionError, store.execute, 'SELECT TRUE')
+        self.assertRaises(DisconnectionError, store.execute, 'SELECT TRUE')
         transaction.abort()
 
         # But if we handle that and retry, we can continue.
@@ -493,3 +491,76 @@ class TestFastDowntimeRollout(TestCase):
         self.assertTrue(self.store_is_working(store))
         self.assertTrue(self.store_is_slave(store))
         self.assertIs(original_store, store)
+
+    def test_master_slave_fast_downtime_rollout(self):
+        '''Parts of your app can keep working during a fast downtime update.
+        '''
+        # Everything is running happily.
+        master_store = IMasterStore(Person)
+        self.assertTrue(self.store_is_master(master_store))
+        self.assertTrue(self.store_is_working(master_store))
+
+        slave_store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_slave(slave_store))
+        self.assertTrue(self.store_is_working(slave_store))
+
+        # But fast downtime is about to happen.
+
+        # Replication is stopped on the slave, and lag starts
+        # increasing.
+
+        # All connections to the master are killed so database schema
+        # updates can be applied.
+        self.pgbouncer_cur.execute('DISABLE %s' % self.master_dbname)
+        self.pgbouncer_cur.execute('KILL %s' % self.master_dbname)
+
+        # Of course, slave connections are unaffected.
+        self.assertTrue(self.store_is_working(slave_store))
+
+        # But attempts to use a master store will fail.
+        self.assertFalse(self.store_is_working(master_store))
+        transaction.abort()
+
+        # After schema updates have been made to the master, it is
+        # reenabled.
+        self.pgbouncer_cur.execute('RESUME %s' % self.master_dbname)
+        self.pgbouncer_cur.execute('ENABLE %s' % self.master_dbname)
+
+        # And the slaves taken down, and replication reenabled so the
+        # schema updates can replicate.
+        self.pgbouncer_cur.execute('DISABLE %s' % self.slave_dbname)
+        self.pgbouncer_cur.execute('KILL %s' % self.slave_dbname)
+
+        # The master store is working again.
+        master_store = IMasterStore(Person)
+        self.assertTrue(self.store_is_master(master_store))
+        self.assertTrue(self.store_is_working(master_store))
+
+        # The next attempt at accessing the slave store will fail
+        # with a DisconnectionError.
+        slave_store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_slave(slave_store))
+        self.assertRaises(
+            DisconnectionError, slave_store.execute, 'SELECT TRUE')
+        transaction.abort()
+
+        # But if we handle that and retry, we can continue.
+        # Now the failed connection has been detected, the next Store
+        # we are handed is a master Store instead of a slave.
+        slave_store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_master(slave_store))
+        self.assertTrue(self.store_is_working(slave_store))
+
+        # Once replication has caught up, the slave is reenabled.
+        self.pgbouncer_cur.execute('RESUME %s' % self.slave_dbname)
+        self.pgbouncer_cur.execute('ENABLE %s' % self.slave_dbname)
+
+        # And next transaction, we are back to normal.
+        transaction.abort()
+        master_store = IMasterStore(Person)
+        self.assertTrue(self.store_is_master(master_store))
+        self.assertTrue(self.store_is_working(master_store))
+
+        slave_store = ISlaveStore(Person)
+        self.assertTrue(self.store_is_slave(slave_store))
+        self.assertTrue(self.store_is_working(slave_store))
