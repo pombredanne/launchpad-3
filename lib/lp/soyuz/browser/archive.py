@@ -633,14 +633,17 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
         binary_label = '%s binary %s' % (
             number_of_binaries, package_plural(number_of_binaries))
 
-        # Quota is stored in MiB, convert it to bytes.
-        quota = self.context.authorized_size * (2 ** 20)
         used = self.context.estimated_size
-
-        # Calculate the usage factor and limit it to 100%.
-        used_factor = (float(used) / quota)
-        if used_factor > 1:
-            used_factor = 1
+        if self.context.authorized_size:
+            # Quota is stored in MiB, convert it to bytes.
+            quota = self.context.authorized_size * (2 ** 20)
+            # Calculate the usage factor and limit it to 100%.
+            used_factor = (float(used) / quota)
+            if used_factor > 1:
+                used_factor = 1
+        else:
+            quota = 0
+            used_factor = 0
 
         # Calculate the appropriate CSS class to be used with the usage
         # factor. Highlight it (in red) if usage is over 90% of the quota.

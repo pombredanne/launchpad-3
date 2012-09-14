@@ -22,6 +22,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import format_link
+from lp.app.interfaces.services import IService
 from lp.blueprints.browser import specification
 from lp.blueprints.browser.specification import INFORMATION_TYPE_FLAG
 from lp.blueprints.enums import SpecificationImplementationStatus
@@ -207,9 +208,17 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def test_has_privacy_banner(self):
         owner = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        removeSecurityProxy(target)._ensurePolicies(
+            [InformationType.PROPRIETARY])
         spec = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY, owner=owner)
-        browser = self.getViewBrowser(spec, user=owner)
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            product=target)
+        with person_logged_in(target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [owner], target.owner, specifications=[spec])
+        with person_logged_in(owner):
+            browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
                 attrs={'class': 'banner-text'})
         self.assertThat(browser.contents,
@@ -312,7 +321,10 @@ class TestNewSpecificationInformationType(BrowserTestCase):
     def createSpec(self, information_type):
         """Create a specification via a browser."""
         with person_logged_in(self.user):
-            product = self.factory.makeProduct()
+            product = self.factory.makeProduct(owner=self.user)
+            policy = self.factory.makeAccessPolicy(product, information_type)
+            self.factory.makeAccessPolicyGrant(
+                policy, grantee=self.user, grantor=self.user)
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:

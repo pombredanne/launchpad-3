@@ -982,7 +982,7 @@ class Navigation:
                                     text=stepthrough_text)
                                 self.request.traversed_objects.append(
                                     stepthrough_breadcrumb)
-                                
+
                         return self._handle_next_object(nextobj, request,
                             nextstep)
 
@@ -1018,10 +1018,21 @@ class Navigation:
 class RedirectionView:
     implements(IBrowserPublisher)
 
-    def __init__(self, target, request, status=None):
+    def __init__(self, target, request, status=None, cache_view=None):
         self.target = target
         self.request = request
         self.status = status
+        self.cache_view = cache_view
+
+    def initialize(self):
+        if self.cache_view:
+            self.cache_view.initialize()
+
+    def getCacheJSON(self):
+        if self.cache_view:
+            return self.cache_view.getCacheJSON()
+        else:
+            return simplejson.dumps({})
 
     def __call__(self):
         self.request.response.redirect(self.target, status=self.status)

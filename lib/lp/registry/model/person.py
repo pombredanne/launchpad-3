@@ -1117,7 +1117,7 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getOwnedOrDrivenPillars(self):
+    def getAffiliatedPillars(self):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
         origin = SQL("""
@@ -1128,7 +1128,8 @@ class Person(
                 WHERE
                     active = True AND
                     (driver = %(person)s
-                    OR owner = %(person)s)
+                    OR owner = %(person)s
+                    OR bug_supervisor = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1142,6 +1143,7 @@ class Person(
                 WHERE
                     driver = %(person)s
                     OR owner = %(person)s
+                    OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
             """ % sqlvalues(person=self))
@@ -2223,7 +2225,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getOwnedOrDrivenPillars():
+        for pillar_name in self.getAffiliatedPillars():
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
