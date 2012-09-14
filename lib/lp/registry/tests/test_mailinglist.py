@@ -286,6 +286,33 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
             (sender.displayname, sender.preferredemail.email)])
         self.assertEqual(list_senders, sorted(result[team.name]))
 
+    def test_approve(self):
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_message.approve(team.teamowner)
+        self.assertEqual(
+            PostedMessageStatus.APPROVAL_PENDING, held_message.status)
+        self.assertEqual(team.teamowner, held_message.disposed_by)
+        self.assertIsNot(None, held_message.disposal_date)
+
+    def test_reject(self):
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_message.reject(team.teamowner)
+        self.assertEqual(
+            PostedMessageStatus.REJECTION_PENDING, held_message.status)
+        self.assertEqual(team.teamowner, held_message.disposed_by)
+        self.assertIsNot(None, held_message.disposal_date)
+
+    def test_discad(self):
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_message.discard(team.teamowner)
+        self.assertEqual(
+            PostedMessageStatus.DISCARD_PENDING, held_message.status)
+        self.assertEqual(team.teamowner, held_message.disposed_by)
+        self.assertIsNot(None, held_message.disposal_date)
+
 
 class MessageApprovalSetTestCase(MailingListMessageTestCase):
     """Test the MessageApprovalSet behaviour."""
