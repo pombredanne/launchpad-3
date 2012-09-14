@@ -213,9 +213,8 @@ class MailingListMessageTestCase(TestCaseWithFactory):
         login_celebrity('admin')
 
     def makeMailingListAndHeldMessage(self):
-        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
-            'team1', auto_subscribe=False)
-        owner1 = team1.teamowner
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
         sender = self.factory.makePerson()
         email = dedent(str("""\
             From: %s
@@ -224,11 +223,11 @@ class MailingListMessageTestCase(TestCaseWithFactory):
             Message-ID: <first-post>
             Date: Fri, 01 Aug 2000 01:08:59 -0000\n
             I have a question about this team.
-            """ % (sender.preferredemail.email, team1.mailing_list.address)))
+            """ % (sender.preferredemail.email, team.mailing_list.address)))
         message = getUtility(IMessageSet).fromEmail(email)
-        held_message = team1.mailing_list.holdMessage(message)
+        held_message = team.mailing_list.holdMessage(message)
         transaction.commit()
-        return team1, member1, owner1, sender, held_message
+        return team, member, sender, held_message
 
 
 class MessageApprovalTestCase(MailingListMessageTestCase):
@@ -238,14 +237,14 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
         # getSenderAddresses() dict values includes senders where were
         # approved in the list moderation queue.
         test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
-        held_message.approve(owner1)
-        result = self.mailing_list_set.getSenderAddresses([team1.name])
+        team, member, sender, held_message = test_objects
+        held_message.approve(team.teamowner)
+        result = self.mailing_list_set.getSenderAddresses([team.name])
         list_senders = sorted([
-            (owner1.displayname, owner1.preferredemail.email),
-            (member1.displayname, member1.preferredemail.email),
+            (team.teamowner.displayname, team.teamowner.preferredemail.email),
+            (member.displayname, member.preferredemail.email),
             (sender.displayname, sender.preferredemail.email)])
-        self.assertEqual(list_senders, sorted(result[team1.name]))
+        self.assertEqual(list_senders, sorted(result[team.name]))
 
 
 class MessageApprovalSetTestCase(MailingListMessageTestCase):
@@ -253,28 +252,30 @@ class MessageApprovalSetTestCase(MailingListMessageTestCase):
 
     def test_getMessageByMessageID(self):
         # held Messages can be looked up by rfc822 messsge id.
-        test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        held_message = self.makeMailingListAndHeldMessage()[-1]
         message_approval_set = getUtility(IMessageApprovalSet)
         found_message = message_approval_set.getMessageByMessageID(
-            '<first-post>')
-        self.assertEqual(held_message.id, found_message.id)
+            held_message.message_id)
+        self.assertEqual(held_message.message_id, found_message.message_id)
 
     def test_getHeldMessagesWithStatus(self):
         # Messages can be retrieved by status.
         test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        team, member, sender, held_message = test_objects
         message_approval_set = getUtility(IMessageApprovalSet)
         found_messages = message_approval_set.getHeldMessagesWithStatus(
             PostedMessageStatus.NEW)
-        self.assertEqual(1, len(found_messages))
-        self.assertEqual(held_message.id, found_messages[0].id)
+        self.assertEqual(1, found_messages.count())
+        self.assertEqual(
+            (held_message.message_id, team.name), found_messages[0])
 
     def test_acknowledgeMessagesWithStatus(self):
-        # Messages can be retrieved by status.
+        # Message statuses can be updated from pending states to final states.
         test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
-        held_message.status = PostedMessageStatus.APPROVAL_PENDING
+        team, member, sender, held_message = test_objects
+        held_message.approve(team.teamowner)
+        self.assertEqual(
+            PostedMessageStatus.APPROVAL_PENDING, held_message.status)
         message_approval_set = getUtility(IMessageApprovalSet)
         message_approval_set.acknowledgeMessagesWithStatus(
             PostedMessageStatus.APPROVAL_PENDING)
@@ -285,8 +286,7 @@ class HeldMessageDetailsTestCase(MailingListMessageTestCase):
     """Test the HeldMessageDetails data."""
 
     def test_attributes(self):
-        test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        held_message = self.makeMailingListAndHeldMessage()[-1]
         details = IHeldMessageDetails(held_message)
         self.assertEqual(held_message, details.message_approval)
         self.assertEqual(held_message.message, details.message)
@@ -296,20 +296,18 @@ class HeldMessageDetailsTestCase(MailingListMessageTestCase):
         self.assertEqual(held_message.message.owner, details.author)
 
     def test_email_message(self):
-        test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        held_message = self.makeMailingListAndHeldMessage()[-1]
         details = IHeldMessageDetails(held_message)
         self.assertEqual('A question', details.email_message['subject'])
 
     def test_sender(self):
         test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        team, member, sender, held_message = test_objects
         details = IHeldMessageDetails(held_message)
         self.assertEqual(sender.preferredemail.email, details.sender)
 
     def test_body(self):
-        test_objects = self.makeMailingListAndHeldMessage()
-        team1, member1, owner1, sender, held_message = test_objects
+        held_message = self.makeMailingListAndHeldMessage()[-1]
         details = IHeldMessageDetails(held_message)
         self.assertEqual(
             'I have a question about this team.', details.body.strip())
