@@ -222,6 +222,13 @@ class MailingListTestCase(TestCaseWithFactory):
                 CannotChangeSubscription, team.mailing_list.changeAddress,
                 member, None)
 
+    def test_unsubscribe(self):
+        # A user can unsubscribe.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=True)
+        team.mailing_list.unsubscribe(member)
+        self.assertIs(None, team.mailing_list.getSubscription(member))
+
     def test_unsubscribe_deleted_email_address(self):
         # When a user delete an email address that use used by a
         # subscription, the user is implicitly unsubscibed.
