@@ -1586,3 +1586,14 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             pillar=ws_pillar, person=ws_grantee)
         self.assertEqual(1, len(branches))
         self.assertEqual(branches[0].unique_name, self.branch.unique_name)
+
+    def test_getSharedArtifacts(self):
+        # Test the exported getSharedArtifacts() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        (bugtasks, branches) = self.service.getSharedArtifacts(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
