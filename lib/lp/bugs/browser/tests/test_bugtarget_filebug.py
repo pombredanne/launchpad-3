@@ -28,6 +28,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -636,16 +637,15 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             bugtask_importance_data.append(new_item)
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
-        self.assertContentEqual(cache['private_types'], [
-            type.name for type in PRIVATE_INFORMATION_TYPES])
         self.assertEqual(cache['bug_private_by_default'], private_bugs)
-        bugtask_info_type_data = []
+        bugtask_info_type_data = {}
         if not IProjectGroup.providedBy(view.context):
             for item in view.context.getAllowedBugInformationTypes():
                 new_item = {'name': item.title, 'value': item.name,
                             'description': item.description,
+                            'is_private': item not in PUBLIC_INFORMATION_TYPES,
                             'description_css_class': 'choice-description'}
-                bugtask_info_type_data.append(new_item)
+                bugtask_info_type_data[item.name] = new_item
             self.assertContentEqual(
                 bugtask_info_type_data, cache['information_type_data'])
 
