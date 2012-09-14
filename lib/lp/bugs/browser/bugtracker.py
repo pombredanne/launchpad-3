@@ -227,8 +227,8 @@ class BugTrackerView(LaunchpadView):
         This property was created for the Related projects portlet in
         the bug tracker's page.
         """
-        return shortlist(chain(self.context.projects,
-                               self.context.products), 100)
+        return shortlist([p for p in chain(self.context.projects,
+                             self.context.products) if p.active], 100)
 
     @property
     def related_component_groups(self):
