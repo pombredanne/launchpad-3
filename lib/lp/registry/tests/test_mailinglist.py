@@ -29,6 +29,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
@@ -214,7 +215,7 @@ class MailingListMessageTestCase(TestCaseWithFactory):
 
     def makeMailingListAndHeldMessage(self):
         team, member = self.factory.makeTeamWithMailingListSubscribers(
-            'team', auto_subscribe=False)
+            'team', auto_subscribe=True)
         sender = self.factory.makePerson()
         email = dedent(str("""\
             From: %s
@@ -230,8 +231,47 @@ class MailingListMessageTestCase(TestCaseWithFactory):
         return team, member, sender, held_message
 
 
+class MailingListHeldMessageTestCase(MailingListMessageTestCase):
+    """Test the MailingList held message behaviour."""
+
+    def test_holdMessage(self):
+        # calling holdMessage() will create a held message and a notification.
+        # The messages content is re-encoded
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        sender = self.factory.makePerson()
+        email = dedent(str("""\
+            From: %s
+            To: %s
+            Subject:  =?iso-8859-1?q?Adi=C3=B3s?=
+            Message-ID: <first-post>
+            Date: Fri, 01 Aug 2000 01:08:59 -0000\n
+            hi.
+            """ % (sender.preferredemail.email, team.mailing_list.address)))
+        message = getUtility(IMessageSet).fromEmail(email)
+        pop_notifications()
+        held_message = team.mailing_list.holdMessage(message)
+        self.assertEqual(PostedMessageStatus.NEW, held_message.status)
+        self.assertEqual(message.rfc822msgid, held_message.message_id)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'New mailing list message requiring approval for Team',
+            notifications[0]['subject'])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*Subject: Adi=C3=83=C2=B3s.*', notifications[0].get_payload())
+
+    def test_getReviewableMessages(self):
+        # All the messages that need review can be retrieved.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_messages = team.mailing_list.getReviewableMessages()
+        self.assertEqual(1, held_messages.count())
+        self.assertEqual(held_message.message_id, held_messages[0].message_id)
+
+
 class MessageApprovalTestCase(MailingListMessageTestCase):
-    """Test the MessageApproval behaviour."""
+    """Test the MessageApproval data behaviour."""
 
     def test_mailinglistset_getSenderAddresses_approved_dict_values(self):
         # getSenderAddresses() dict values includes senders where were
