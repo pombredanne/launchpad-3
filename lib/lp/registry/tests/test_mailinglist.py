@@ -13,7 +13,9 @@ from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
     CannotSubscribe,
     IHeldMessageDetails,
+    IMailingList,
     IMailingListSet,
+    IMessageApproval,
     IMessageApprovalSet,
     MailingListStatus,
     PostedMessageStatus,
@@ -23,6 +25,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login_celebrity,
     person_logged_in,
@@ -129,6 +132,12 @@ class MailingListTestCase(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
+
+    def test_IMailingList(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team)
+        self.assertIs(True, verifyObject(IMailingList, mailing_list))
 
     def test_new_list_notification(self):
         team = self.factory.makeTeam(name='team')
@@ -304,6 +313,10 @@ class MailingListSetTestCase(TestCaseWithFactory):
         super(MailingListSetTestCase, self).setUp()
         self.mailing_list_set = getUtility(IMailingListSet)
         login_celebrity('admin')
+
+    def test_IMessageApprovalSet(self):
+        self.assertIs(
+            True, verifyObject(IMailingListSet, self.mailing_list_set))
 
     def test_getSenderAddresses_dict_keys(self):
         # getSenderAddresses() returns a dict of teams names
@@ -574,6 +587,7 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
     def test_new_state(self):
         test_objects = self.makeMailingListAndHeldMessage()
         team, member, sender, held_message = test_objects
+        self.assertIs(True, verifyObject(IMessageApproval, held_message))
         self.assertEqual(PostedMessageStatus.NEW, held_message.status)
         self.assertIs(None, held_message.disposed_by)
         self.assertIs(None, held_message.disposal_date)
@@ -633,6 +647,11 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
 class MessageApprovalSetTestCase(MailingListMessageTestCase):
     """Test the MessageApprovalSet behaviour."""
 
+    def test_IMessageApprovalSet(self):
+        message_approval_set = getUtility(IMessageApprovalSet)
+        self.assertIs(
+            True, verifyObject(IMessageApprovalSet, message_approval_set))
+
     def test_getMessageByMessageID(self):
         # held Messages can be looked up by rfc822 messsge id.
         held_message = self.makeMailingListAndHeldMessage()[-1]
@@ -671,6 +690,7 @@ class HeldMessageDetailsTestCase(MailingListMessageTestCase):
     def test_attributes(self):
         held_message = self.makeMailingListAndHeldMessage()[-1]
         details = IHeldMessageDetails(held_message)
+        self.assertIs(True, verifyObject(IHeldMessageDetails, details))
         self.assertEqual(held_message, details.message_approval)
         self.assertEqual(held_message.message, details.message)
         self.assertEqual(held_message.message_id, details.message_id)
