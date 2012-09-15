@@ -24,6 +24,10 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -201,6 +205,39 @@ class MailingListTestCase(TestCaseWithFactory):
         self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
         self.assertEqual(
             'http://lists.launchpad.dev/team', mailing_list.archive_url)
+        email = getUtility(IEmailAddressSet).getByEmail(
+            team.mailing_list.address)
+        self.assertEqual(
+            EmailAddressStatus.VALIDATED, email.status)
+
+    def test_deactivate(self):
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+        self.assertEqual(
+            MailingListStatus.DEACTIVATING, team.mailing_list.status)
+
+    def test_deactivate_to_DEACTIVATED(self):
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+        team.mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        self.assertEqual(MailingListStatus.INACTIVE, team.mailing_list.status)
+        email = getUtility(IEmailAddressSet).getByEmail(
+            team.mailing_list.address)
+        self.assertEqual(EmailAddressStatus.NEW, email.status)
+
+    def test_reactivate(self):
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+        team.mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.reactivate()
+        self.assertEqual(MailingListStatus.APPROVED, team.mailing_list.status)
 
     def test_subscribe_without_address(self):
         # An error is raised if subscribe() if a team is passed.
