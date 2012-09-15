@@ -14,7 +14,7 @@ correctness of exposing package sets on the web services API.
 The actual package set *functionality* is tested in much greater detail
 here:
 
-    lib/lp/soyuz/doc/packageset.txt
+    lb/lp/soyuz/tests/test_packageset.py
 
 Please refer to the tests contained in the file above if you are really
 interested in package sets and the complete functionality they offer.
