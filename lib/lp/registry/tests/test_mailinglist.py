@@ -239,6 +239,28 @@ class MailingListTestCase(TestCaseWithFactory):
             team.mailing_list.reactivate()
         self.assertEqual(MailingListStatus.APPROVED, team.mailing_list.status)
 
+    def test_welcome_message(self):
+        # Setting the welcome message changes the list status.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.welcome_message = "hi"
+        self.assertEqual('hi', team.mailing_list.welcome_message)
+        self.assertEqual(MailingListStatus.MODIFIED, team.mailing_list.status)
+
+    def test_welcome_message_error(self):
+        # The welcome message cannot be changed when the list is not ACTIVE.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+
+        def test_call():
+            team.mailing_list.welcome_message = "goodbye"
+
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+            self.assertIs(False, team.mailing_list.is_usable)
+            self.assertRaises(AssertionError, test_call)
+
     def test_subscribe_without_address(self):
         # An error is raised if subscribe() if a team is passed.
         team, member = self.factory.makeTeamWithMailingListSubscribers(
