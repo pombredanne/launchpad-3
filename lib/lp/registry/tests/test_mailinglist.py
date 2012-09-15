@@ -19,6 +19,7 @@ from lp.registry.interfaces.mailinglist import (
     IMessageApprovalSet,
     MailingListStatus,
     PostedMessageStatus,
+    UnsafeToPurge,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -238,6 +239,38 @@ class MailingListTestCase(TestCaseWithFactory):
         with person_logged_in(team.teamowner):
             team.mailing_list.reactivate()
         self.assertEqual(MailingListStatus.APPROVED, team.mailing_list.status)
+
+    def test_purge(self):
+        # Mailing lists can be purged after they are successfully deactivated.
+        team, member = self.factory.makeTeamWithMailingListSubscribers(
+            'team', auto_subscribe=False)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.deactivate()
+            team.mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+            team.mailing_list.purge()
+        self.assertEqual(
+            MailingListStatus.PURGED, team.mailing_list.status)
+
+    def test_purge_construction_fails(self):
+        # Mailing lists can be purged if they failed to construct.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list_set.new(team, team.teamowner)
+        team.mailing_list.startConstructing()
+        team.mailing_list.transitionToStatus(MailingListStatus.FAILED)
+        with person_logged_in(team.teamowner):
+            team.mailing_list.purge()
+        self.assertEqual(
+            MailingListStatus.PURGED, team.mailing_list.status)
+
+    def test_purge_error(self):
+        # Mailing lists can not be purged before it is inactive.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        self.assertIs(None, team.mailing_list)
+        mailing_list_set.new(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            self.assertRaises(UnsafeToPurge, team.mailing_list.purge)
 
     def test_welcome_message(self):
         # Setting the welcome message changes the list status.
