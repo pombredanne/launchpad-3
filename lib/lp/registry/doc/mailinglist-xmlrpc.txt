@@ -356,36 +356,3 @@ And of course, entirely bogus status strings aren't accepted either.
     ...
     Fault: <Fault 160: 'Bad status string "entirely-bogus"
             for team: team-four'>
-
-
-Public teams
-============
-
-We provide a method to query whether or not a given team is public.  That's
-useful when deciding whether or not anonymous access to the team's mailing
-list archive is allowed.
-
-    >>> team_public = factory.makeTeam(no_priv, name='team-public')
-    >>> mailinglist_api.isTeamPublic('team-public')
-    True
-
-    >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> team_not_public = factory.makeTeam(
-    ...     no_priv, name='team-not-public',
-    ...     visibility=PersonVisibility.PRIVATE)
-    >>> mailinglist_api.isTeamPublic('team-not-public')
-    False
-
-    # If the visibility of a public team is changed to anything other than
-    # public, it's not reported as public anymore, just like if it were not
-    # public since its creation.
-    >>> team_public.visibility = PersonVisibility.PRIVATE
-    >>> mailinglist_api.isTeamPublic('team-public')
-    False
-
-If there is no team with the given name, an error is raised.
-
-    >>> mailinglist_api.isTeamPublic('team-non-existent')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 200: 'No such person or team: team-non-existent'>

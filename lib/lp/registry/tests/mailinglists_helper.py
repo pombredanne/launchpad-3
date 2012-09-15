@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'apply_for_list',
     'fault_catcher',
     'get_alternative_email',
     'mailman',
@@ -13,7 +12,6 @@ __all__ = [
     'new_team',
     'print_actions',
     'print_dispositions',
-    'review_list',
     ]
 
 
@@ -140,29 +138,6 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
-                   private=False):
-    """Create a team and apply for its mailing list.
-
-    This should only be used in page tests.
-    """
-    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    browser.open(rooturl + 'people/+newteam')
-    browser.getControl(name='field.name').value = team_name
-    browser.getControl('Display Name').value = displayname
-    if private:
-        browser.getControl('Visibility').value = ['PRIVATE']
-        browser.getControl(name='field.membership_policy').value = [
-            'RESTRICTED']
-    else:
-        browser.getControl(
-            name='field.membership_policy').displayValue = ['Open Team']
-    browser.getControl('Create').click()
-    # Create the team's mailing list.
-    browser.open('%s~%s/+mailinglist' % (rooturl, team_name))
-    browser.getControl('Create new Mailing List').click()
-
-
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
 
@@ -173,22 +148,6 @@ def get_alternative_email(person):
     assert len(alternatives) == 1, (
         'Unexpected email count: %d' % len(alternatives))
     return alternatives[0]
-
-
-def review_list(list_name, status=None):
-    """Review a mailing list application.
-
-    :param list_name: The name of the mailing list to review.  This is
-        equivalent to the name of the team that the mailing list is
-        associated with.
-    :param status: The status applied to the reviewed mailing list.  This must
-        be either MailingListStatus.APPROVED or MailingListStatus.DECLINED
-        with the former being used if `status` is not given.
-    """
-    if status is None:
-        status = MailingListStatus.APPROVED
-    list_set = getUtility(IMailingListSet)
-    return list_set.get(list_name)
 
 
 class MailmanStub:
