@@ -133,11 +133,18 @@ class MailingListTestCase(TestCaseWithFactory):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
 
-    def test_IMailingList(self):
+    def test_attributes(self):
         mailing_list_set = getUtility(IMailingListSet)
         team = self.factory.makeTeam(name='team')
-        mailing_list = mailing_list_set.new(team)
+        self.assertIs(None, team.mailing_list)
+        mailing_list = mailing_list_set.new(team, team.teamowner)
         self.assertIs(True, verifyObject(IMailingList, mailing_list))
+        self.assertEqual(mailing_list, team.mailing_list)
+        self.assertEqual(team, mailing_list.team)
+        self.assertEqual(team.teamowner, mailing_list.registrant)
+        self.assertEqual(MailingListStatus.APPROVED, mailing_list.status)
+        self.assertIs(None, mailing_list.date_activated)
+        self.assertIs(None, mailing_list.welcome_message)
 
     def test_new_list_notification(self):
         team = self.factory.makeTeam(name='team')
@@ -314,9 +321,34 @@ class MailingListSetTestCase(TestCaseWithFactory):
         self.mailing_list_set = getUtility(IMailingListSet)
         login_celebrity('admin')
 
-    def test_IMessageApprovalSet(self):
+    def test_IMailingListSet(self):
         self.assertIs(
             True, verifyObject(IMailingListSet, self.mailing_list_set))
+
+    def test_new(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team, team.teamowner)
+        self.assertIs(True, verifyObject(IMailingList, mailing_list))
+        self.assertEqual(mailing_list, team.mailing_list)
+
+    def test_new_twice_error(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list_set.new(team, team.teamowner)
+        self.assertRaises(
+            ValueError, mailing_list_set.new, team, team.teamowner)
+
+    def test_new_user_error(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        user = self.factory.makePerson()
+        self.assertRaises(ValueError, mailing_list_set.new, user, user)
+
+    def test_new_wrong_owner_error(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        user = self.factory.makePerson()
+        self.assertRaises(ValueError, mailing_list_set.new, team, user)
 
     def test_getSenderAddresses_dict_keys(self):
         # getSenderAddresses() returns a dict of teams names
