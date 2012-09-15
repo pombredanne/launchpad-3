@@ -13,7 +13,6 @@ __all__ = [
     'new_team',
     'print_actions',
     'print_dispositions',
-    'print_info',
     'review_list',
     ]
 
@@ -31,7 +30,6 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.xmlrpc.mailinglist import MailingListAPIView
-from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 
 
@@ -98,35 +96,6 @@ def print_actions(pending_actions):
                 print team, '-->', action, state
             else:
                 print value, '-->', action
-
-
-def print_info(info, full=False):
-    """A helper function for the mailing list tests.
-
-    This prints the results of the XMLRPC .getPendingActions() call.
-
-    Note that in order to make the tests that use this method a little
-    clearer, we specifically suppress printing of the mail-archive recipient
-    when `full` is False (the default).
-    """
-    status_mapping = {
-        0: 'RECIPIENT',
-        2: 'X',
-        }
-    for team_name in sorted(info):
-        print team_name
-        subscribees = info[team_name]
-        for address, realname, flags, status_id in subscribees:
-            status = status_mapping.get(status_id, '??')
-            if realname == '':
-                realname = '(n/a)'
-            if (not full and
-                config.mailman.archive_address and
-                address == config.mailman.archive_address):
-                # Don't print this information
-                pass
-            else:
-                print '    %-25s %-15s' % (address, realname), flags, status
 
 
 def print_dispositions(dispositions):
