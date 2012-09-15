@@ -735,7 +735,6 @@ class TestArchivePermissionSet(TestCaseWithFactory):
             self.ap_set.packagesetsForUploader(
                 self.archive, self.person).is_empty())
 
-    # TODO: More tests here
     def test_new_packageset_uploader_simple(self):
         # newPackagesetUploader grants upload rights to a packagset
         permission = self.ap_set.newPackagesetUploader(
