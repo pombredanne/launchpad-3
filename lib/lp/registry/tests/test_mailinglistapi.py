@@ -8,7 +8,10 @@ __all__ = []
 
 
 from lp.registry.tests.mailinglists_helper import new_team
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonalStanding,
+    PersonVisibility,
+    )
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
     ENABLED,
@@ -17,6 +20,7 @@ from lp.registry.xmlrpc.mailinglist import (
 from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -119,3 +123,11 @@ class MailingListAPITestCase(TestCaseWithFactory):
     def test_isTeamPublic_fault(self):
         self.assertIsInstance(
             self.api.isTeamPublic('not-team'), faults.NoSuchPersonWithName)
+
+    def test_inGoodStanding(self):
+        self.factory.makePerson(email='no@eg.dom')
+        yes_person = self.factory.makePerson(email='yes@eg.dom')
+        with celebrity_logged_in('admin'):
+            yes_person.personal_standing = PersonalStanding.GOOD
+        self.assertIs(True, self.api.inGoodStanding('yes@eg.dom'))
+        self.assertIs(False, self.api.inGoodStanding('no@eg.dom'))
