@@ -7,10 +7,16 @@ __metaclass__ = type
 __all__ = []
 
 
+from zope.component import getUtility
+
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonVisibility,
+    )
+from lp.registry.interfaces.mailinglist import (
+    IMailingListSet,
+    MailingListStatus,
     )
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
@@ -131,3 +137,177 @@ class MailingListAPITestCase(TestCaseWithFactory):
             yes_person.personal_standing = PersonalStanding.GOOD
         self.assertIs(True, self.api.inGoodStanding('yes@eg.dom'))
         self.assertIs(False, self.api.inGoodStanding('no@eg.dom'))
+
+
+class MailingListAPIWorkflowTestCase(TestCaseWithFactory):
+    """Tests for MailingListAPIView workflows.
+
+    getPendingActions and reportStatus combinations.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(MailingListAPIWorkflowTestCase, self).setUp()
+        self.mailinglist_api = MailingListAPIView(None, None)
+        self.mailinglist_set = getUtility(IMailingListSet)
+
+    def test_getPendingActions_nothing(self):
+        # An empty dict is returned if there are no pending actions.
+        self.assertEqual({}, self.mailinglist_api.getPendingActions())
+
+    def test_getPendingActions_dict_format(self):
+        # The dict has actions for keys. The values of each action is
+        # a list of things that define what the action is to perform
+        # on. The list can be tuples of teams and data dict to change.
+        team_a = self.factory.makeTeam(name='team-a')
+        team_b = self.factory.makeTeam(name='team-b')
+        self.mailinglist_set.new(team_a, team_a.teamowner)
+        self.mailinglist_set.new(team_b, team_b.teamowner)
+        self.assertEqual(
+            {'create': [
+                (u'team-a', {}),
+                (u'team-b', {})]},
+            self.mailinglist_api.getPendingActions())
+
+    def test_getPendingActions_constructing(self):
+        # APPROVED lists have "create" actions that transition to CONSTRUCTING.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.mailinglist_set.new(team, team.teamowner)
+        self.assertEqual(MailingListStatus.APPROVED, team_list.status)
+        actions = self.mailinglist_api.getPendingActions()
+        self.assertEqual({'create': [(u'team', {})]}, actions)
+        self.assertEqual(MailingListStatus.CONSTRUCTING, team_list.status)
+
+    def test_reportStatus_constructing_success(self):
+        # Successful constructions lead to ACTIVE lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.mailinglist_set.new(team, team.teamowner)
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertEqual(MailingListStatus.ACTIVE, team_list.status)
+
+    def test_reportStatus_constructing_failure(self):
+        # Failure constructions lead to FAILED lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.mailinglist_set.new(team, team.teamowner)
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'failure'})
+        self.assertEqual(MailingListStatus.FAILED, team_list.status)
+
+    def test_getPendingActions_unsynchronized_constructing(self):
+        # Once a list enters CONSTRUCTING, it enters the unsynchronize
+        # action.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.mailinglist_set.new(team, team.teamowner)
+        actions = self.mailinglist_api.getPendingActions()
+        actions = self.mailinglist_api.getPendingActions()
+        self.assertEqual(
+            {'unsynchronized': [(u'team', 'constructing')]}, actions)
+        self.assertEqual(MailingListStatus.CONSTRUCTING, team_list.status)
+
+    def test_getPendingActions_deactivating(self):
+        # DEACTIVATING lists have "deactivate" actions.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.deactivate()
+        self.assertEqual(MailingListStatus.DEACTIVATING, team_list.status)
+        actions = self.mailinglist_api.getPendingActions()
+        self.assertEqual({'deactivate': [u'team']}, actions)
+        self.assertEqual(MailingListStatus.DEACTIVATING, team_list.status)
+
+    def test_reportStatus_deactivating_success(self):
+        # Successful deactivations lead to INACTIVE lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.deactivate()
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertEqual(MailingListStatus.INACTIVE, team_list.status)
+
+    def test_reportStatus_deactivating_failure(self):
+        # Failure deactivations lead to MOD_FAILED lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.deactivate()
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'failure'})
+        self.assertEqual(MailingListStatus.MOD_FAILED, team_list.status)
+
+    def test_getPendingActions_modifying(self):
+        # MODIFIED lists have "modify" actions.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.welcome_message = 'hi'
+        self.assertEqual(MailingListStatus.MODIFIED, team_list.status)
+        actions = self.mailinglist_api.getPendingActions()
+        self.assertEqual(
+            {'modify': [(u'team', {'welcome_message': u'hi'})]}, actions)
+        self.assertEqual(MailingListStatus.UPDATING, team_list.status)
+
+    def test_reportStatus_modifying_success(self):
+        # Successfule modifications lead to ACTIVE lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.welcome_message = 'hi'
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertEqual(MailingListStatus.ACTIVE, team_list.status)
+
+    def test_reportStatus_modifying_failure(self):
+        # Successfule modifications lead to ACTIVE lists.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.welcome_message = 'hi'
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'failure'})
+        self.assertEqual(MailingListStatus.MOD_FAILED, team_list.status)
+
+    def test_reportStatus_UnexpectedStatusReport_ACTIVE_fault(self):
+        # A fault is raised if any status is sent about an ACTIVE list.
+        team = self.factory.makeTeam(name='team')
+        self.factory.makeMailingList(team, team.teamowner)
+        info = self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertIsInstance(info, faults.UnexpectedStatusReport)
+
+    def test_reportStatus_UnexpectedStatusReport_FAILED_fault(self):
+        # A fault is raised if any status is sent about an FAILED list.
+        team = self.factory.makeTeam(name='team')
+        self.mailinglist_set.new(team, team.teamowner)
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'failure'})
+        info = self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertIsInstance(info, faults.UnexpectedStatusReport)
+
+    def test_reportStatus_UnexpectedStatusReport_MOD_FAILED_fault(self):
+        # A fault is raised if any status is sent about an MOD_FAILED list.
+        team = self.factory.makeTeam(name='team')
+        team_list = self.factory.makeMailingList(team, team.teamowner)
+        with person_logged_in(team.teamowner):
+            team_list.welcome_message = 'hi'
+        self.mailinglist_api.getPendingActions()
+        self.mailinglist_api.reportStatus({'team': 'failure'})
+        info = self.mailinglist_api.reportStatus({'team': 'success'})
+        self.assertIsInstance(info, faults.UnexpectedStatusReport)
+
+    def test_reportStatus_NoSuchTeamMailingList_fault(self):
+        # A fault is raised if the team name does not exist.
+        team = self.factory.makeTeam(name='team')
+        self.factory.makeMailingList(team, team.teamowner)
+        info = self.mailinglist_api.reportStatus({'not-team': 'success'})
+        self.assertIsInstance(info, faults.NoSuchTeamMailingList)
+
+    def test_reportStatus_BadStatus_fault(self):
+        # A fault is raised if the stautus is not 'success' or 'failure'.
+        team = self.factory.makeTeam(name='team')
+        self.factory.makeMailingList(team, team.teamowner)
+        info = self.mailinglist_api.reportStatus({'team': 'SUCCESS'})
+        self.assertIsInstance(info, faults.BadStatus)
+        info = self.mailinglist_api.reportStatus({'team': 'bogus'})
+        self.assertIsInstance(info, faults.BadStatus)
