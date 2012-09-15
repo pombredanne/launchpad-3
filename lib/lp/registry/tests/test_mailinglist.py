@@ -142,9 +142,12 @@ class MailingListTestCase(TestCaseWithFactory):
         self.assertEqual(mailing_list, team.mailing_list)
         self.assertEqual(team, mailing_list.team)
         self.assertEqual(team.teamowner, mailing_list.registrant)
+        self.assertEqual('team@lists.launchpad.dev', mailing_list.address)
         self.assertEqual(MailingListStatus.APPROVED, mailing_list.status)
         self.assertIs(None, mailing_list.date_activated)
         self.assertIs(None, mailing_list.welcome_message)
+        # archive_url is None until the archive is constructed.
+        self.assertIs(None, mailing_list.archive_url)
 
     def test_new_list_notification(self):
         team = self.factory.makeTeam(name='team')
@@ -160,6 +163,44 @@ class MailingListTestCase(TestCaseWithFactory):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             '.*To subscribe:.*http://launchpad.dev/~.*/\+editemails.*',
             notifications[0].get_payload())
+
+    def test_startConstructing_from_APPROVED(self):
+        # Only approved mailing lists can be constructed.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team, team.teamowner)
+        mailing_list.startConstructing()
+        self.assertEqual(MailingListStatus.CONSTRUCTING, mailing_list.status)
+        self.assertIs(None, mailing_list.archive_url)
+
+    def test_startConstructing_error(self):
+        # Once constructed, a mailing list cannot be constructed again.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team, team.teamowner)
+        mailing_list.startConstructing()
+        self.assertRaises(AssertionError, mailing_list.startConstructing)
+
+    def test_startConstructing_to_FAIL(self):
+        # Construction can faiil, and the archive_url remains None.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team, team.teamowner)
+        mailing_list.startConstructing()
+        mailing_list.transitionToStatus(MailingListStatus.FAILED)
+        self.assertEqual(MailingListStatus.FAILED, mailing_list.status)
+        self.assertIs(None, mailing_list.archive_url)
+
+    def test_startConstructing_to_ACTIVE(self):
+        # When construction succeeds, the archive_url is set.
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list = mailing_list_set.new(team, team.teamowner)
+        mailing_list.startConstructing()
+        mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+        self.assertEqual(
+            'http://lists.launchpad.dev/team', mailing_list.archive_url)
 
     def test_subscribe_without_address(self):
         # An error is raised if subscribe() if a team is passed.
@@ -349,6 +390,19 @@ class MailingListSetTestCase(TestCaseWithFactory):
         team = self.factory.makeTeam(name='team')
         user = self.factory.makePerson()
         self.assertRaises(ValueError, mailing_list_set.new, team, user)
+
+    def test_get(self):
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        mailing_list_set.new(team, team.teamowner)
+        self.assertEqual(team.mailing_list, mailing_list_set.get(team.name))
+
+    def test_get_non_list(self):
+        # None is returned when there is no list
+        mailing_list_set = getUtility(IMailingListSet)
+        team = self.factory.makeTeam(name='team')
+        self.assertIs(None, mailing_list_set.get(team.name))
+        self.assertIs(None, mailing_list_set.get('fnord'))
 
     def test_getSenderAddresses_dict_keys(self):
         # getSenderAddresses() returns a dict of teams names
