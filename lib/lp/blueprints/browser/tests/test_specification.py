@@ -194,7 +194,10 @@ class TestSpecificationSet(BrowserTestCase):
     def test_index_with_proprietary(self):
         """Blueprints home page tolerates proprietary Specifications."""
         specs = getUtility(ISpecificationSet)
-        spec = self.factory.makeSpecification()
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        spec = self.factory.makeSpecification(product=product)
         spec_name = spec.name
         spec_owner = spec.owner
         browser = self.getViewBrowser(specs)
