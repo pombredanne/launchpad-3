@@ -86,6 +86,8 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    SPECIFICATION_POLICY_DEFAULT_TYPES,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -122,7 +124,7 @@ from lp.registry.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
@@ -487,6 +489,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         enum=BugSharingPolicy, notNull=False, default=None)
     branch_sharing_policy = EnumCol(
         enum=BranchSharingPolicy, notNull=False, default=None)
+    specification_sharing_policy = EnumCol(
+        enum=SpecificationSharingPolicy, notNull=False, default=None)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -600,6 +604,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_sharing_policy = bug_sharing_policy
         self._pruneUnusedPolicies()
 
+    def setSpecificationSharingPolicy(self, specification_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            specification_sharing_policy, SpecificationSharingPolicy,
+            'specifications', SPECIFICATION_POLICY_ALLOWED_TYPES)
+        self.specification_sharing_policy = specification_sharing_policy
+        self._pruneUnusedPolicies()
+
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
@@ -617,7 +629,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
-        return PUBLIC_PROPRIETARY_INFORMATION_TYPES
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_ALLOWED_TYPES[
+                self.specification_sharing_policy]
+        return [InformationType.PUBLIC]
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_DEFAULT_TYPES[
+                self.specification_sharing_policy]
+        return InformationType.PUBLIC
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
