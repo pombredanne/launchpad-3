@@ -9,6 +9,8 @@ __all__ = [
     'recursive_blocked_query',
     'recursive_dependent_query',
     'Specification',
+    'SPECIFICATION_POLICY_ALLOWED_TYPES',
+    'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     ]
 
@@ -77,6 +79,7 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
@@ -126,6 +129,29 @@ def recursive_dependent_query(spec):
             FROM specificationdependency sd, dependencies d
             WHERE sd.specification = d.id
         )""" % spec.id
+
+
+SPECIFICATION_POLICY_ALLOWED_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: [InformationType.PUBLIC],
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
+
+SPECIFICATION_POLICY_DEFAULT_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        InformationType.PUBLIC),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        InformationType.PROPRIETARY),
+    SpecificationSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY: (
+        InformationType.EMBARGOED),
+    }
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
