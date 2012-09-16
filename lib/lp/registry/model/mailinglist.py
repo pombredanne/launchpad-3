@@ -439,20 +439,6 @@ class MailingList(SQLBase):
         else:
             subscription.email_addressID = address.id
 
-    def getSubscribedAddresses(self):
-        """See `IMailingList`."""
-        return [
-            address for (name, address) in
-            getUtility(IMailingListSet).getSubscribedAddresses(
-                [self.team.name]).get(self.team.name, [])]
-
-    def getSenderAddresses(self):
-        """See `IMailingList`."""
-        return [
-            address for (name, address) in
-            getUtility(IMailingListSet).getSenderAddresses(
-                [self.team.name]).get(self.team.name, [])]
-
     def holdMessage(self, message):
         """See `IMailingList`."""
         held_message = MessageApproval(message=message,
@@ -503,8 +489,8 @@ class MailingListSet:
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
-        assert team.is_team, (
-            'Cannot register a list for a person who is not a team')
+        if not team.is_team:
+            raise ValueError('Cannot register a list for a user.')
         if registrant is None:
             registrant = team.teamowner
         else:
@@ -519,7 +505,7 @@ class MailingListSet:
                 if registrant.inTeam(admin):
                     break
             else:
-                raise AssertionError(
+                raise ValueError(
                     'registrant is not a team owner or administrator')
         # See if the mailing list already exists.  If so, it must be in the
         # purged state for us to be able to recreate it.
@@ -529,9 +515,11 @@ class MailingListSet:
             return MailingList(team=team, registrant=registrant,
                                date_registered=UTC_NOW)
         else:
-            assert existing_list.status == MailingListStatus.PURGED, (
-                'Mailing list for team "%s" already exists' % team.name)
-            assert existing_list.team == team, 'Team mismatch'
+            if existing_list.status != MailingListStatus.PURGED:
+                raise ValueError(
+                    'Mailing list for team "%s" already exists' % team.name)
+            if existing_list.team != team:
+                raise ValueError('Team mismatch.')
             # It's in the PURGED state, so just tweak the existing record.
             existing_list.registrant = registrant
             existing_list.date_registered = UTC_NOW
