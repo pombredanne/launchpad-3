@@ -6,9 +6,14 @@
 __metaclass__ = type
 __all__ = []
 
+from email import message_from_string
+from textwrap import dedent
+import transaction
+import xmlrpclib
 
 from zope.component import getUtility
 
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.interfaces.person import (
     PersonalStanding,
@@ -17,6 +22,8 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
+    IMessageApprovalSet,
+    PostedMessageStatus,
     )
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
@@ -25,12 +32,17 @@ from lp.registry.xmlrpc.mailinglist import (
     )
 from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.mail_helpers import pop_notifications
 from lp.xmlrpc import faults
 
 
@@ -311,3 +323,137 @@ class MailingListAPIWorkflowTestCase(TestCaseWithFactory):
         self.assertIsInstance(info, faults.BadStatus)
         info = self.mailinglist_api.reportStatus({'team': 'bogus'})
         self.assertIsInstance(info, faults.BadStatus)
+
+
+class MailingListAPIMessageTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(MailingListAPIMessageTestCase, self).setUp()
+        self.mailinglist_api = MailingListAPIView(None, None)
+        self.mailinglist_set = getUtility(IMailingListSet)
+        self.message_set = getUtility(IMessageSet)
+        self.message_approval_set = getUtility(IMessageApprovalSet)
+
+    def makeMailingListAndHeldMessage(self, private=False):
+        if private:
+            visibility = PersonVisibility.PRIVATE
+        else:
+            visibility = PersonVisibility.PUBLIC
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            name='team', owner=owner, visibility=visibility,
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        with person_logged_in(owner):
+            self.factory.makeMailingList(team, owner)
+        sender = self.factory.makePerson(email='me@eg.dom')
+        with person_logged_in(sender):
+            message = message_from_string(dedent("""\
+                From: me@eg.dom
+                To: team@lists.launchpad.dev
+                Subject: A question
+                Message-ID: <first-post>
+                Date: Fri, 01 Aug 2000 01:08:59 -0000\n
+                I have a question about this team.
+                """))
+        return team, sender, message
+
+    def test_holdMessage(self):
+        # Calling holdMessages send a copy of the message text to Lp
+        # and notifies a team admins to moderate it.
+        team, sender, message = self.makeMailingListAndHeldMessage()
+        pop_notifications()
+        info = self.mailinglist_api.holdMessage('team', message.as_string())
+        notifications = pop_notifications()
+        found = self.message_approval_set.getMessageByMessageID('<first-post>')
+        self.assertIs(True, info)
+        self.assertIsNot(None, found)
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'New mailing list message requiring approval for Team',
+            notifications[0]['subject'])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*http://launchpad.dev/~team/\+mailinglist-moderate.*',
+            notifications[0].get_payload())
+        self.assertEqual({}, self.mailinglist_api.getMessageDispositions())
+
+    def test_holdMessage_private_team(self):
+        # Users can send messages to private teams (did they guess the name)?
+        team, sender, message = self.makeMailingListAndHeldMessage(
+            private=True)
+        info = self.mailinglist_api.holdMessage('team', message.as_string())
+        found = self.message_approval_set.getMessageByMessageID('<first-post>')
+        self.assertIs(True, info)
+        self.assertIsNot(None, found)
+
+    def test_holdMessage_non_ascii_message_headers(self):
+        # Non-ascii messages headers are re-encoded for moderators.
+        team, sender, message = self.makeMailingListAndHeldMessage()
+        with person_logged_in(sender):
+            message = message_from_string(dedent("""\
+                From: \xa9 me <me@eg.dom>
+                To: team@lists.launchpad.dev
+                Subject: \xa9 gremlins
+                Message-ID: <\xa9-me>
+                Date: Fri, 01 Aug 2000 01:08:59 -0000\n
+                I put \xa9 in the body.
+                """))
+        info = self.mailinglist_api.holdMessage(
+            'team', xmlrpclib.Binary(message.as_string()))
+        transaction.commit()
+        found = self.message_approval_set.getMessageByMessageID('<\\xa9-me>')
+        self.assertIs(True, info)
+        self.assertIsNot(None, found)
+        try:
+            found.posted_message.open()
+            text = found.posted_message.read()
+        finally:
+            found.posted_message.close()
+        self.assertEqual([
+            'From: \\xa9 me <me@eg.dom>',
+            'To: team@lists.launchpad.dev',
+            'Subject: \\xa9 gremlins',
+            'Message-ID: <\\xa9-me>',
+            'Date: Fri, 01 Aug 2000 01:08:59 -0000',
+            '',
+            'I put \xa9 in the body.'], text.splitlines())
+
+    def test_getMessageDispositions_accept(self):
+        # List moderators can approve messages.
+        team, sender, message = self.makeMailingListAndHeldMessage()
+        pop_notifications()
+        self.mailinglist_api.holdMessage('team', message.as_string())
+        found = self.message_approval_set.getMessageByMessageID('<first-post>')
+        found.approve(team.teamowner)
+        self.assertEqual(PostedMessageStatus.APPROVAL_PENDING, found.status)
+        self.assertEqual(
+            {u'<first-post>': (u'team', 'accept')},
+            self.mailinglist_api.getMessageDispositions())
+        self.assertEqual(PostedMessageStatus.APPROVED, found.status)
+
+    def test_getMessageDispositions_reject(self):
+        # List moderators can reject messages.
+        team, sender, message = self.makeMailingListAndHeldMessage()
+        pop_notifications()
+        self.mailinglist_api.holdMessage('team', message.as_string())
+        found = self.message_approval_set.getMessageByMessageID('<first-post>')
+        found.reject(team.teamowner)
+        self.assertEqual(PostedMessageStatus.REJECTION_PENDING, found.status)
+        self.assertEqual(
+            {u'<first-post>': (u'team', 'decline')},
+            self.mailinglist_api.getMessageDispositions())
+        self.assertEqual(PostedMessageStatus.REJECTED, found.status)
+
+    def test_getMessageDispositions_discard(self):
+        # List moderators can discard messages.
+        team, sender, message = self.makeMailingListAndHeldMessage()
+        pop_notifications()
+        self.mailinglist_api.holdMessage('team', message.as_string())
+        found = self.message_approval_set.getMessageByMessageID('<first-post>')
+        found.discard(team.teamowner)
+        self.assertEqual(PostedMessageStatus.DISCARD_PENDING, found.status)
+        self.assertEqual(
+            {u'<first-post>': (u'team', 'discard')},
+            self.mailinglist_api.getMessageDispositions())
+        self.assertEqual(PostedMessageStatus.DISCARDED, found.status)
