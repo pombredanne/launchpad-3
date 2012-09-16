@@ -63,6 +63,12 @@ class ISharingService(IService):
         information type.
         """
 
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_for_version('devel')
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 

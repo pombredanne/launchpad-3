@@ -14,6 +14,7 @@ __all__ = [
     'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
+    'json_dump_information_types',
     'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
@@ -108,6 +109,21 @@ PUBLIC_PROPRIETARY_INFORMATION_TYPES = (
     (InformationType.PUBLIC,) + PROPRIETARY_INFORMATION_TYPES
 )
 
+
+def json_dump_information_types(cache, information_types):
+    """Dump a dict of the data in the types requested."""
+    dump = {}
+    order = list(InformationType.sort_order)
+    for term in information_types:
+        dump[term.name] = {
+            'value': term.name,
+            'description': term.description,
+            'name': term.title,
+            'order': order.index(term.name),
+            'is_private': (term not in PUBLIC_INFORMATION_TYPES), 'description_css_class': 'choice-description',
+        }
+
+    cache.objects['information_type_data'] = dump
 
 class SharingPermission(DBEnumeratedType):
     """Sharing permission.

@@ -104,4 +104,4 @@ class TestBugInformationTypePortletView(TestCaseWithFactory):
             InformationType.USERDATA.name]
         self.assertContentEqual(expected, [
             type['value']
-            for type in cache.objects['information_type_data']])
+            for type in cache.objects['information_type_data'].values()])
