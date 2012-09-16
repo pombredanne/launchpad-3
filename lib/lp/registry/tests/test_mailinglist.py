@@ -395,7 +395,7 @@ class MailingListTestCase(TestCaseWithFactory):
 
     def test_unsubscribe_deleted_email_address(self):
         # When a user delete an email address that use used by a
-        # subscription, the user is implicitly unsubscibed.
+        # subscription, the user is implicitly unsubsscibed.
         team, member = self.factory.makeTeamWithMailingListSubscribers(
             'team', auto_subscribe=False)
         email = self.factory.makeEmail('him@eg.dom', member)
