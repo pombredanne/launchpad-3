@@ -1118,15 +1118,18 @@ class TestSharingService(TestCaseWithFactory):
     def test_ensureAccessGrantsSpecifications(self):
         # Access grants can be created for branches.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         login_person(owner)
         specification = self.factory.makeSpecification(
             product=product, owner=owner)
         removeSecurityProxy(specification.target)._ensurePolicies(
-             [InformationType.EMBARGOED])
+             [InformationType.PROPRIETARY])
         with person_logged_in(owner):
             specification.transitionToInformationType(
-                InformationType.EMBARGOED, owner)
+                InformationType.PROPRIETARY, owner)
         self._assert_ensureAccessGrants(owner, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):

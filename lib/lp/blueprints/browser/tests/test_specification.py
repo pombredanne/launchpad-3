@@ -284,8 +284,13 @@ class TestSpecificationInformationType(BrowserTestCase):
     def test_view_banner(self):
         """The privacy banner should reflect the information_type."""
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         spec = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            product=product)
 
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
                 attrs={'class': 'banner-text'},
