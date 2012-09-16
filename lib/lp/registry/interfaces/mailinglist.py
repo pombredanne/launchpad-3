@@ -402,27 +402,11 @@ class IMailingList(Interface):
             not own the given email address.
         """
 
-    def getSubscribedAddresses():
-        """Return the set of subscribed email addresses for members.
-
-        :return: a list of email addresses (as strings) for all
-            subscribed members of the mailing list.
-        """
-
     def getSubscribers():
         """Return the set of subscribers.
 
         :return: a result set of the subscribers sorted by full name.  These
         are the people who will receive messages posted to the mailing list.
-        """
-
-    def getSenderAddresses():
-        """Return the set of all email addresses for members.
-
-        :return: a list of the registered and validated email addresses
-            (as strings) for all members of the mailing list's team, in no
-            particular order.  These represent all the addresses which are
-            allowed to post to the mailing list.
         """
 
     def holdMessage(message):
