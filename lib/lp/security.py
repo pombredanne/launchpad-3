@@ -642,7 +642,7 @@ class Sprint(AuthorizationBase):
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.Admin'
     usedfor = ISpecificationSubscription
 
     def checkAuthenticated(self, user):
