@@ -66,6 +66,9 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -121,9 +124,6 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import CommercialSubscribersOnly

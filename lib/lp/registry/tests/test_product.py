@@ -15,7 +15,13 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    FREE_INFORMATION_TYPES,
+    INCLUSIVE_TEAM_POLICY,
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -30,10 +36,6 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    EXCLUSIVE_TEAM_POLICY,
-    FREE_INFORMATION_TYPES,
-    INCLUSIVE_TEAM_POLICY,
-    InformationType,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (

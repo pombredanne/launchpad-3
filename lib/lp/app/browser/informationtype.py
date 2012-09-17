@@ -8,8 +8,8 @@ __all__ = [
 
 from lazr.restful.interfaces import IJSONRequestCache
 
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
-from lp.registry.utils import json_dump_information_types
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.utilities import json_dump_information_types
 
 
 class InformationTypePortletMixin:
