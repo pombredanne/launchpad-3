@@ -621,6 +621,20 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             pocket=PackagePublishingPocket.PROPOSED,
             distroseries=distroseries)
 
+    def test_checkUpload_backports_development(self):
+        # It should be possible to upload to the BACKPORTS pocket while the
+        # distroseries is in the DEVELOPMENT status.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, sourcepackagename)
+        self.assertCanUpload(
+            archive, person, sourcepackagename,
+            pocket=PackagePublishingPocket.BACKPORTS,
+            distroseries=distroseries)
+
     def test_checkUpload_disabled_archive(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(
             purpose=ArchivePurpose.PRIMARY)
