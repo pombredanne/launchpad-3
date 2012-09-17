@@ -3025,6 +3025,7 @@ class TestBranchSetTarget(TestCaseWithFactory):
                 BranchTargetError, branch.setTarget, branch.owner,
                 commercial_product)
 
+
 def make_proposal_and_branch_revision(factory, revno, revision_id,
                                       userdata_target=False):
     if userdata_target:
