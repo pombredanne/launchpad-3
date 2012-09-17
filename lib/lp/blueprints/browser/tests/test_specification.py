@@ -386,8 +386,12 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
 
     layer = DatabaseFunctionalLayer
 
+    expected_keys = set(['PROPRIETARY', 'EMBARGOED'])
+
     def createInitializedView(self):
-        product = self.factory.makeProduct()
+        policy = SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY
+        product = self.factory.makeProduct(
+            specification_sharing_policy=policy)
         return create_initialized_view(product, '+addspec')
 
 
