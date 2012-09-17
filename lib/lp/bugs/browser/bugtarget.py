@@ -116,7 +116,6 @@ from lp.registry.browser.product import (
     ProductPrivateBugsMixin,
     )
 from lp.registry.enums import (
-    json_dump_information_types,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -136,6 +135,7 @@ from lp.registry.vocabularies import (
     InformationTypeVocabulary,
     ValidPersonOrTeamVocabulary,
     )
+from lp.registry.utils import json_dump_information_types
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias

@@ -158,10 +158,7 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.enums import (
-    json_dump_information_types,
-    InformationType,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -177,6 +174,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.utils import json_dump_information_types
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.feeds.browser import FeedsMixin
