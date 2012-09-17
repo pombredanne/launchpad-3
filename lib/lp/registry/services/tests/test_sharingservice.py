@@ -1313,6 +1313,23 @@ class TestSharingService(TestCaseWithFactory):
             product, grantee, user)
         self.assertContentEqual(branches[:9], shared_branches)
 
+    def test_getSharedSpecifications(self):
+        # Test the getSharedSpecifications method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=(
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        login_person(owner)
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+        ignored, ignored, specifications = self.create_shared_artifacts(
+            product, grantee, user)
+
+        # Check the results.
+        shared_specifications = self.service.getSharedSpecifications(
+            product, grantee, user)
+        self.assertContentEqual(specifications[:9], shared_specifications)
+
     def test_getPeopleWithAccessBugs(self):
         # Test the getPeopleWithoutAccess method with bugs.
         owner = self.factory.makePerson()
@@ -1651,13 +1668,22 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         self.assertEqual(bugtasks[0].title, self.bug.default_bugtask.title)
 
     def test_getSharedBranches(self):
-        # Test the exported getSharedArtifacts() method.
+        # Test the exported getSharedBranches() method.
         ws_pillar = ws_object(self.launchpad, self.pillar)
         ws_grantee = ws_object(self.launchpad, self.grantee)
         branches = self.service.getSharedBranches(
             pillar=ws_pillar, person=ws_grantee)
         self.assertEqual(1, len(branches))
         self.assertEqual(branches[0].unique_name, self.branch.unique_name)
+
+    def test_getSharedSpecifications(self):
+        # Test the exported getSharedSpecifications() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        specifications = self.service.getSharedSpecifications(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(specifications))
+        self.assertEqual(specifications[0].name, self.spec.name)
 
     def test_getSharedArtifacts(self):
         # Test the exported getSharedArtifacts() method.

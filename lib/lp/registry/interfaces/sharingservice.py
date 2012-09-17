@@ -116,6 +116,21 @@ class ISharingService(IService):
         :return: a collection of branches
         """
 
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBranch)
+    @operation_for_version('devel')
+    def getSharedSpecifications(pillar, person, user):
+        """Return the specifications shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of branches
+        """
+
     def getVisibleArtifacts(person, branches=None, bugs=None):
         """Return the artifacts shared with person.
 

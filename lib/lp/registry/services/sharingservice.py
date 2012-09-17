@@ -156,7 +156,7 @@ class SharingService:
         """See `ISharingService`."""
         bugtasks, ignore, ignore = self.getSharedArtifacts(
             pillar, person, user, include_branches=False,
-            include_specifications=True)
+            include_specifications=False)
         return bugtasks
 
     @available_with_permission('launchpad.Driver', 'pillar')
@@ -164,8 +164,16 @@ class SharingService:
         """See `ISharingService`."""
         ignore, branches, ignore = self.getSharedArtifacts(
             pillar, person, user, include_bugs=False,
-            include_specifications=True)
+            include_specifications=False)
         return branches
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedSpecifications(self, pillar, person, user):
+        """See `ISharingService`."""
+        ignore, ignore, specifications = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False,
+            include_branches=False)
+        return specifications
 
     def getVisibleArtifacts(self, person, branches=None, bugs=None,
                             ignore_permissions=False):
