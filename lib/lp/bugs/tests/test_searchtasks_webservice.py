@@ -41,17 +41,20 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
         self.assertEqual(response['total_size'], 1)
 
 
-class TestLinkedBlueprintsParameter(TestCaseWithFactory):
-    """Tests for the linked_blueprints parameter."""
+class TestProductSearchTasks(TestCaseWithFactory):
+    """Tests for the information_type, linked_blueprints and order_by
+    parameters."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestLinkedBlueprintsParameter, self).setUp()
+        super(TestProductSearchTasks, self).setUp()
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
-        self.bug = self.factory.makeBugTask(target=self.product)
+        self.bug = self.factory.makeBug(
+            target=self.product,
+            information_type=InformationType.PRIVATESECURITY)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
@@ -83,28 +86,6 @@ class TestLinkedBlueprintsParameter(TestCaseWithFactory):
         # thus no error is returned when we pass rubbish.
         self.search("beta", linked_blueprints="Teabags!")
 
-
-class TestSearchByInformationType(TestCaseWithFactory):
-    """Tests for the information_type parameter."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSearchByInformationType, self).setUp()
-        self.owner = self.factory.makePerson()
-        with person_logged_in(self.owner):
-            self.product = self.factory.makeProduct()
-        self.bug = self.factory.makeBug(
-            target=self.product,
-            information_type=InformationType.PRIVATESECURITY)
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-
-    def search(self, api_version, **kwargs):
-        return self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
-            api_version=api_version, **kwargs).jsonBody()
-
     def test_search_returns_results(self):
         # A matching search returns results.
         response = self.search(
@@ -115,6 +96,16 @@ class TestSearchByInformationType(TestCaseWithFactory):
         # A non-matching search returns no results.
         response = self.search("devel", information_type="Private")
         self.assertEqual(response['total_size'], 0)
+
+    def test_search_with_wrong_orderby(self):
+        # Calling searchTasks() with a wrong order_by is a Bad Request.
+        response = self.webservice.named_get(
+            '/%s' % self.product.name, 'searchTasks',
+            api_version='devel', order_by='date_created')
+        self.assertEqual(400, response.status)
+        self.assertRaisesWithContent(
+            ValueError, "Unrecognized order_by: u'date_created'",
+            response.jsonBody)
 
 
 class TestGetBugData(TestCaseWithFactory):
@@ -148,26 +139,3 @@ class TestGetBugData(TestCaseWithFactory):
         # A non-matching search returns no results.
         response = self.search("devel", bug_id=0)
         self.assertEqual(len(response), 0)
-
-
-class TestOrderingSearchResults(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestOrderingSearchResults, self).setUp()
-        self.owner = self.factory.makePerson()
-        with person_logged_in(self.owner):
-            self.product = self.factory.makeProduct()
-        self.bug = self.factory.makeBugTask(target=self.product)
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-
-    def test_search_with_wrong_orderby(self):
-        response = self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
-            api_version='devel', order_by='date_created')
-        self.assertEqual(400, response.status)
-        self.assertRaisesWithContent(
-            ValueError, "Unrecognized order_by: u'date_created'",
-            response.jsonBody)
