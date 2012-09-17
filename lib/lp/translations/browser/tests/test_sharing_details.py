@@ -557,7 +557,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             text='Set upstream link', visible=False)
         self.assertEqual(expected, self.view.set_packaging_link.escapedtext)
 
-    def test_set_packaging_link__no_packaging_probationary_user(self):
+    def test_set_packaging_link__no_packaging_any_user(self):
         # If packaging is not configured, any user sees the "set packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -571,7 +571,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 expected, self.view.set_packaging_link.escapedtext)
 
     def test_set_packaging_link__with_packaging_probationary_user(self):
-        # If packaging is configured, arbitrary users do no see
+        # If packaging is configured, probationary users do no see
         # the "set packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -608,7 +608,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertEqual(
             expected, self.view.change_packaging_link.escapedtext)
 
-    def test_change_packaging_link__no_packaging_probationary_user(self):
+    def test_change_packaging_link__no_packaging_any_user(self):
         # If packaging is not configured, any user sees the "change packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -622,7 +622,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 expected, self.view.change_packaging_link.escapedtext)
 
     def test_change_packaging_link__with_packaging_probationary_user(self):
-        # If packaging is configured, arbitrary users do no see
+        # If packaging is configured, probationary users do no see
         # the "change packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -659,7 +659,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertEqual(
             expected, self.view.remove_packaging_link.escapedtext)
 
-    def test_remove_packaging_link__no_packaging_probationary_user(self):
+    def test_remove_packaging_link__no_packaging_any_user(self):
         # If packaging is not configured, any user sees the "remove packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -673,7 +673,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 expected, self.view.remove_packaging_link.escapedtext)
 
     def test_remove_packaging_link__with_packaging_probationary_user(self):
-        # If packaging is configured, arbitrary users do no see
+        # If packaging is configured, probationary users do no see
         # the "remove packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
