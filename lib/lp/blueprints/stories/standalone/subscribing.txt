@@ -25,7 +25,7 @@ If I try to go to the subscription page I will be told to login.
 And let's make sure we can see the subscription page. We will log in as
 Carlos.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open(
     ...     "http://blueprints.launchpad.dev/firefox/+spec/e4x/+subscribe")
     >>> print browser.title
@@ -81,7 +81,7 @@ email.
     '...stuart.bishop@canonical.com...'
 
     >>> last_email['From']
-    '...test@canonical.com...'
+    '...carlos@canonical.com...'
 
     >>> last_email['Subject']
     '...[Blueprint e4x]...'
