@@ -286,6 +286,22 @@ class TestDistribution(TestCaseWithFactory):
             InformationType.PUBLIC,
             self.factory.makeDistribution().getDefaultBugInformationType())
 
+    def test_getAllowedSpecificationInformationTypes(self):
+        # All distros currently support only public specifications.
+        distro = self.factory.makeDistribution()
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            distro.getAllowedSpecificationInformationTypes()
+            )
+
+    def test_getDefaultSpecificationInformtationType(self):
+        # All distros currently support only Public by default
+        # specifications.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            distro.getDefaultSpecificationInformationType())
+
 
 class TestDistributionCurrentSourceReleases(
     CurrentSourceReleasesMixin, TestCase):

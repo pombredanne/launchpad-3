@@ -25,6 +25,7 @@ __all__ = [
     'ProductJobType',
     'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
+    'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
     'TeamMembershipRenewalPolicy',
     ]
@@ -213,6 +214,44 @@ class BugSharingPolicy(DBEnumeratedType):
         Proprietary
 
         Bugs are always proprietary.
+        """)
+
+
+class SpecificationSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Specifications are public.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New specifications are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New specifications are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new specifications.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Specifications are always proprietary. Only people who can see the
+        project's proprietary information can create new specifications.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New specifications are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new specifications.
         """)
 
 
