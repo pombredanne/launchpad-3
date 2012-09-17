@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugSearchError',
     'InvalidDuplicateValue',
 ]
 
@@ -13,6 +14,11 @@ import httplib
 from lazr.restful.declarations import error_status
 
 from lp.app.validators import LaunchpadValidationError
+
+
+@error_status(httplib.BAD_REQUEST)
+class BugSearchError(ValueError):
+    """An error occured during searching for bugs."""
 
 
 @error_status(httplib.EXPECTATION_FAILED)

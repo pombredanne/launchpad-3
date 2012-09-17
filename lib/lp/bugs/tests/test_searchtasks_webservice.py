@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -148,3 +148,26 @@ class TestGetBugData(TestCaseWithFactory):
         # A non-matching search returns no results.
         response = self.search("devel", bug_id=0)
         self.assertEqual(len(response), 0)
+
+
+class TestOrderingSearchResults(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestOrderingSearchResults, self).setUp()
+        self.owner = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.product = self.factory.makeProduct()
+        self.bug = self.factory.makeBugTask(target=self.product)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def test_search_with_wrong_orderby(self):
+        response = self.webservice.named_get(
+            '/%s' % self.product.name, 'searchTasks',
+            api_version='devel', order_by='date_created')
+        self.assertEqual(400, response.status)
+        self.assertRaisesWithContent(
+            ValueError, "Unrecognized order_by: u'date_created'",
+            response.jsonBody)
