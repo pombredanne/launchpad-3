@@ -654,7 +654,7 @@ class EditSpecificationSubscription(AuthorizationBase):
                 return True
         return user.isOneOf(
                     self.obj.specification,
-                    ['owner', 'drafter', 'assignee', 'approver']) or
+                    ['owner', 'drafter', 'assignee', 'approver'] or
                 user.in_admin)
 
 
