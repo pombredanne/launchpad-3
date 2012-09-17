@@ -41,7 +41,7 @@ from zope.security.proxy import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
-from lp.bugs.errors import BugSearchError
+from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
@@ -384,7 +384,7 @@ def _build_query(params):
                 'Excluding conjoined tasks is not currently supported '
                 'for milestone tags')
         if not params.milestone:
-            raise BugSearchError(
+            raise InvalidSearchParameters(
                 "BugTaskSearchParam.exclude_conjoined cannot be True if "
                 "BugTaskSearchParam.milestone is not set")
 
@@ -579,7 +579,7 @@ def _build_query(params):
         elif params.distroseries:
             distroseries = params.distroseries
         if distroseries is None:
-            raise BugSearchError(
+            raise InvalidSearchParameters(
                 "Search by component requires a context with a "
                 "distribution or distroseries.")
 
@@ -833,7 +833,8 @@ def _process_order_by(params):
             orderby_col = orderby_col[1:]
             desc_search = True
         if orderby_col not in orderby_expression:
-            raise BugSearchError("Unrecognized order_by: %r" % (orderby_col,))
+            raise InvalidSearchParameters(
+                "Unrecognized order_by: %r" % (orderby_col,))
         col, sort_joins = orderby_expression[orderby_col]
         extra_joins.extend(sort_joins)
         if desc_search:
@@ -911,7 +912,8 @@ def _build_status_clause(col, status):
             status = any(*DB_INCOMPLETE_BUGTASK_STATUSES)
         return search_value_to_storm_where_condition(col, status)
     else:
-        raise BugSearchError('Unrecognized status value: %r' % (status,))
+        raise InvalidSearchParameters(
+            'Unrecognized status value: %r' % (status,))
 
 
 def _build_exclude_conjoined_clause(milestone):
