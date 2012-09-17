@@ -137,7 +137,11 @@ from lp.app.browser.tales import (
     PersonFormatterAPI,
     )
 from lp.app.browser.vocabulary import vocabulary_filters
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -222,10 +226,6 @@ from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
-from lp.registry.enums import (
-    InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,

@@ -79,7 +79,13 @@ from zope.security.proxy import (
     )
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import ServiceUsage
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     SubscriptionPrivacyViolation,
@@ -154,12 +160,6 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PROPRIETARY_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,

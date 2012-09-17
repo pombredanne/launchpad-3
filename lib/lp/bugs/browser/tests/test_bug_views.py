@@ -27,11 +27,9 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import BugAttachmentChange
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
