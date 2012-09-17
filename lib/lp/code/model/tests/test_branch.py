@@ -3009,6 +3009,21 @@ class TestBranchSetTarget(TestCaseWithFactory):
         self.assertEqual(
             owner, get_policies_for_artifact(branch)[0].person)
 
+    def test_public_branch_to_proprietary_only_project(self):
+        # A branch cannot be moved to a target where the sharing policy does
+        # not allow it.
+        owner = self.factory.makePerson()
+        commercial_product = self.factory.makeProduct(
+            owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeProductBranch(
+            owner=owner,
+            product=commercial_product,
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner,
+                commercial_product)
 
 def make_proposal_and_branch_revision(factory, revno, revision_id,
                                       userdata_target=False):
