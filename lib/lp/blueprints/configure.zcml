@@ -103,7 +103,7 @@
     <allow
         interface="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription"/>
     <require
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         set_attributes="essential"/>
   </class>
   <subscriber
