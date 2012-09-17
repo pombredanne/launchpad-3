@@ -44,6 +44,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from lazr.restful.fields import Reference
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -100,6 +101,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.browser.widgets.branchtarget import BranchTargetWidget
 from lp.code.enums import (
     BranchType,
     CodeImportResultStatus,
@@ -121,6 +123,7 @@ from lp.code.interfaces.branch import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
@@ -790,6 +793,12 @@ class BranchEditFormView(LaunchpadEditFormView):
                 vocabulary=InformationTypeVocabulary(types=info_types))
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
+            target = Reference(
+                title=_('Branch target'), required=True,
+                schema=IBranchTarget,
+                description=_('The project (if any) this branch pertains to. '
+                    'If no project is specified, then it is a personal '
+                    'branch'))
         return BranchEditSchema
 
     @property
@@ -824,6 +833,23 @@ class BranchEditFormView(LaunchpadEditFormView):
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
+        if 'target' in data:
+            target = data.pop('target')
+            if target == '+junk':
+                target = None
+            if (target is None and self.context.target is not None
+                or target is not None and self.context.target is None
+                or target != self.context.target):
+                self.context.setTarget(self.user, project=target)
+                changed = True
+                if target:
+                    self.request.response.addNotification(
+                        "The branch target has been changed to %s (%s)"
+                        % (target.displayname, target.name))
+                else:
+                    self.request.response.addNotification(
+                        "This branch is now a personal branch for %s"
+                        % self.context.owner.displayname)
         if 'private' in data:
             # Read only for display.
             data.pop('private')
@@ -1080,10 +1106,15 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     @property
     def field_names(self):
-        return [
-            'owner', 'name', 'information_type', 'url', 'description',
-            'lifecycle_status']
+        field_names = ['owner', 'name']
+        if not self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
 
+    custom_widget('target', BranchTargetWidget)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
