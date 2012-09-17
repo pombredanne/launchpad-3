@@ -5,7 +5,6 @@ __metaclass__ = type
 
 
 import re
-
 from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,
@@ -13,6 +12,7 @@ from soupmatchers import (
     )
 
 from lp.app.enums import ServiceUsage
+from lp.registry.model.karma import KarmaTotalCache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -27,6 +27,7 @@ from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationSharingDetailsView,
     )
@@ -107,6 +108,9 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.upstream_only_template = self.factory.makePOTemplate(
             productseries=self.productseries, name='upstream-only')
         self.view = make_initialized_view(self.sourcepackage)
+        self.privileged_user = self.productseries.owner
+        with dbuser('karma'):
+            KarmaTotalCache(person=self.privileged_user.id, karma_total=200)
 
     def configureSharing(self,
             set_upstream_branch=False,
@@ -553,7 +557,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             text='Set upstream link', visible=False)
         self.assertEqual(expected, self.view.set_packaging_link.escapedtext)
 
-    def test_set_packaging_link__no_packaging_any_user(self):
+    def test_set_packaging_link__no_packaging_probationary_user(self):
         # If packaging is not configured, any user sees the "set packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -566,7 +570,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.set_packaging_link.escapedtext)
 
-    def test_set_packaging_link__with_packaging_any_user(self):
+    def test_set_packaging_link__with_packaging_probationary_user(self):
         # If packaging is configured, arbitrary users do no see
         # the "set packaging" link.
         self.configureSharing()
@@ -588,7 +592,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='set-packaging', url='+edit-packaging', icon='add',
             text='Set upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -604,7 +608,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertEqual(
             expected, self.view.change_packaging_link.escapedtext)
 
-    def test_change_packaging_link__no_packaging_any_user(self):
+    def test_change_packaging_link__no_packaging_probationary_user(self):
         # If packaging is not configured, any user sees the "change packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -617,7 +621,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.change_packaging_link.escapedtext)
 
-    def test_change_packaging_link__with_packaging_any_user(self):
+    def test_change_packaging_link__with_packaging_probationary_user(self):
         # If packaging is configured, arbitrary users do no see
         # the "change packaging" link.
         self.configureSharing()
@@ -639,7 +643,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='change-packaging', url='+edit-packaging', icon='edit',
             text='Change upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -655,7 +659,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertEqual(
             expected, self.view.remove_packaging_link.escapedtext)
 
-    def test_remove_packaging_link__no_packaging_any_user(self):
+    def test_remove_packaging_link__no_packaging_probationary_user(self):
         # If packaging is not configured, any user sees the "remove packaging"
         # link.
         expected = self._getExpectedPackagingLink(
@@ -668,7 +672,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.remove_packaging_link.escapedtext)
 
-    def test_remove_packaging_link__with_packaging_any_user(self):
+    def test_remove_packaging_link__with_packaging_probationary_user(self):
         # If packaging is configured, arbitrary users do no see
         # the "remove packaging" link.
         self.configureSharing()
@@ -690,7 +694,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
             text='Remove upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()

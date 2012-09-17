@@ -16,7 +16,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -71,15 +70,9 @@ class Packaging(SQLBase):
     def userCanDelete(self):
         """See `IPackaging`."""
         user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        admin = getUtility(ILaunchpadCelebrities).admin
-        registry_experts = (
-            getUtility(ILaunchpadCelebrities).registry_experts)
-        return (
-            user.inTeam(self.owner) or
-            user.canAccess(self.sourcepackage, 'setBranch') or
-            user.inTeam(registry_experts) or user.inTeam(admin))
+        if user is not None and not user.is_probationary:
+            return True
+        return False
 
     def destroySelf(self):
         if not self.userCanDelete():
