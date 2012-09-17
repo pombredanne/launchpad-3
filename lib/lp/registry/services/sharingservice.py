@@ -26,6 +26,7 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -58,6 +59,7 @@ from lp.registry.model.accesspolicy import (
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
 from lp.services.searchbuilder import any
@@ -115,17 +117,20 @@ class SharingService:
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
-                           include_branches=True):
+                           include_branches=True, include_specifications=True):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
         bug_ids = set()
         branch_ids = set()
+        specification_ids = set()
         for artifact in flat_source.findArtifactsByGrantee(person, policies):
             if artifact.bug_id and include_bugs:
                 bug_ids.add(artifact.bug_id)
             elif artifact.branch_id and include_branches:
                 branch_ids.add(artifact.branch_id)
+            elif artifact.specification_id and include_specifications:
+                specification_ids.add(artifact.specification_id)
 
         # Load the bugs.
         bugtasks = []
@@ -140,21 +145,26 @@ class SharingService:
             wanted_branches = all_branches.visibleByUser(user).withIds(
                 *branch_ids)
             branches = list(wanted_branches.getBranches())
+        specifications = []
+        if specification_ids:
+            specifications = load(Specification, specification_ids)
 
-        return bugtasks, branches
+        return bugtasks, branches, specifications
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
         """See `ISharingService`."""
-        bugtasks, ignore = self.getSharedArtifacts(
-            pillar, person, user, include_branches=False)
+        bugtasks, ignore, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_branches=False,
+            include_specifications=True)
         return bugtasks
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBranches(self, pillar, person, user):
         """See `ISharingService`."""
-        ignore, branches = self.getSharedArtifacts(
-            pillar, person, user, include_bugs=False)
+        ignore, branches, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False,
+            include_specifications=True)
         return branches
 
     def getVisibleArtifacts(self, person, branches=None, bugs=None,

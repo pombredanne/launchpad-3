@@ -79,7 +79,7 @@ class ISharingService(IService):
 
         :param user: the user making the request. Only artifacts visible to the
              user will be included in the result.
-        :return: a (bugtasks, branches) tuple
+        :return: a (bugtasks, branches, specifications) tuple
         """
 
     @export_read_operation()
