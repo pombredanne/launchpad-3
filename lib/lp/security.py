@@ -640,8 +640,8 @@ class Sprint(AuthorizationBase):
 
 
 class EditSpecificationSubscription(AuthorizationBase):
-    """The subscriber, and people related to the spec or the target of the
-    spec can determine who is essential."""
+    """The people related to the spec or the target of the
+    spec who can determine who is essential."""
     permission = 'launchpad.Admin'
     usedfor = ISpecificationSubscription
 
@@ -652,8 +652,7 @@ class EditSpecificationSubscription(AuthorizationBase):
         else:
             if user.isOneOfDrivers(self.obj.specification.target):
                 return True
-        return (user.inTeam(self.obj.person) or
-                user.isOneOf(
+        return user.isOneOf(
                     self.obj.specification,
                     ['owner', 'drafter', 'assignee', 'approver']) or
                 user.in_admin)
