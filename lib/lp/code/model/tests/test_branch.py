@@ -3016,9 +3016,8 @@ class TestBranchSetTarget(TestCaseWithFactory):
         commercial_product = self.factory.makeProduct(
             owner=owner,
             branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
-        branch = self.factory.makeProductBranch(
+        branch = self.factory.makeBranch(
             owner=owner,
-            product=commercial_product,
             information_type=InformationType.PUBLIC)
         with admin_logged_in():
             self.assertRaises(
