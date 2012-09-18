@@ -223,7 +223,9 @@ class NewSpecificationView(LaunchpadFormView):
         """Registers a new specification."""
         self.transform(data)
         information_type = data.get('information_type')
-        if information_type is None:
+        if (information_type is None
+            and (IProduct.providedBy(self.context) or
+            IDistribution.providedBy(self.context))):
             information_type = (
                 self.context.getDefaultSpecificationInformationType())
         spec = getUtility(ISpecificationSet).new(
@@ -284,9 +286,12 @@ class NewSpecificationView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set initial values to honor sharing policy default value."""
-        values = {
-            'information_type':
-                self.context.getDefaultSpecificationInformationType()}
+        information_type = None
+        if (IProduct.providedBy(self.context) or
+            IDistribution.providedBy(self.context)):
+            information_type = (
+                self.context.getDefaultSpecificationInformationType())
+        values = {'information_type': information_type}
         return values
 
 class NewSpecificationFromTargetView(NewSpecificationView):
