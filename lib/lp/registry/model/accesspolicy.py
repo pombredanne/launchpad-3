@@ -263,12 +263,6 @@ class AccessPolicy(StormBase):
             cls,
             Or(*(cls.person == team for team in teams)))
 
-    @classmethod
-    def findByPillarAndGrantee(cls, pillars):
-        """See `IAccessPolicySource`."""
-        return IStore(cls).find(
-            cls,
-            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
     def delete(cls, pillars_and_types):
