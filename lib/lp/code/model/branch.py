@@ -1255,10 +1255,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Find BuildFarmJobs to delete.
         bfjs = store.find(
-            BuildFarmJob,
+            (BuildFarmJob.id,),
             TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
             TranslationTemplatesBuild.branch == self)
-        bfj_ids = [bfj.id for bfj in bfjs]
+        bfj_ids = [bfj[0] for bfj in bfjs]
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
