@@ -92,6 +92,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
+        bmp.commit_message = 'commit message'
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
         update_trigger_modified_fields(bmp.source_branch)
@@ -112,6 +113,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         expected = dedent("""\
         Baz Qux has proposed merging %(source)s into %(target)s.
 
+        Commit message:
+        %(commit_message)s
+
         Requested reviews:
           %(reviewer)s
 
@@ -123,6 +127,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """) % {
             'source': bmp.source_branch.bzr_identity,
             'target': bmp.target_branch.bzr_identity,
+            'commit_message': bmp.commit_message,
             'reviewer': reviewer.unique_displayname,
             'bmp': canonical_url(bmp),
             'reason': reason.getReason()}
@@ -142,6 +147,17 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
+
+    def test_forCreation_without_commit_message(self):
+        """If there are related bugs, include 'Related bugs'."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bmp.commit_message = None
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        expected = (
+            'Commit message:\n'
+            'None specified.\n')
+        self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_bugs(self):
         """If there are related bugs, include 'Related bugs'."""

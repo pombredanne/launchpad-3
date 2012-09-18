@@ -141,6 +141,7 @@ class BMPMailer(BranchMailer):
             'proposal_registrant': proposal.registrant.displayname,
             'source_branch': proposal.source_branch.bzr_identity,
             'target_branch': proposal.target_branch.bzr_identity,
+            'commit_message': proposal.commit_message or 'None specified.',
             'prerequisite': '',
             'proposal_title': proposal.title,
             'proposal_url': canonical_url(proposal),
