@@ -652,10 +652,9 @@ class EditSpecificationSubscription(AuthorizationBase):
         else:
             if user.isOneOfDrivers(self.obj.specification.target):
                 return True
-        return user.isOneOf(
-                    self.obj.specification,
-                    ['owner', 'drafter', 'assignee', 'approver'] or
-                user.in_admin)
+        spec_roles = ['owner', 'drafter', 'assignee', 'approver']
+        return (user.isOneOf(self.obj.specification, spec_roles)
+                or user.in_admin)
 
 
 class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
