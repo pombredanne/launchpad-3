@@ -154,10 +154,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.commit_message = None
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
-        expected = (
-            'Commit message:\n'
-            'None specified.\n')
-        self.assertIn(expected, ctrl.body)
+        self.assertNotIn('Commit message:', ctrl.body)
 
     def test_forCreation_with_bugs(self):
         """If there are related bugs, include 'Related bugs'."""
