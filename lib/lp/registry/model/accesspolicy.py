@@ -263,7 +263,6 @@ class AccessPolicy(StormBase):
             cls,
             Or(*(cls.person == team for team in teams)))
 
-
     @classmethod
     def delete(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
