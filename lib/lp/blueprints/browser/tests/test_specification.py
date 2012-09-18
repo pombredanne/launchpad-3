@@ -408,6 +408,16 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         spec = product.getSpecification(self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.PUBLIC)
 
+    def test_from_product_proprietary(self):
+        """Creating from a proprietary product defaults to PROPRIETARY."""
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        browser = self.getViewBrowser(product, view_name='+addspec')
+        self.assertThat(browser.contents, self.match_it)
+        spec = product.getSpecification(self.submitSpec(browser))
+        self.assertEqual(spec.information_type, InformationType.PROPRIETARY)
+
     def test_supplied_information_types(self):
         """Creating honours information types."""
         spec = self.createSpec(
