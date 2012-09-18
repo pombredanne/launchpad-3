@@ -277,6 +277,13 @@ class NewSpecificationView(LaunchpadFormView):
         """
         return self._next_url
 
+    @property
+    def initial_values(self):
+        """Set initial values to honor sharing policy default value."""
+        values = {
+            'information_type':
+                self.context.getDefaultSpecificationInformationType()}
+        return values
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a target context.
