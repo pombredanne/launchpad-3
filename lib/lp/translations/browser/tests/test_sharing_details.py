@@ -12,7 +12,6 @@ from soupmatchers import (
     )
 
 from lp.app.enums import ServiceUsage
-from lp.registry.model.karma import KarmaTotalCache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -27,7 +26,6 @@ from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
-from lp.testing.dbuser import dbuser
 from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationSharingDetailsView,
     )
@@ -102,16 +100,14 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             sourcepackage=self.sourcepackage, name='ubuntu-only')
         self.shared_template_ubuntu_side = self.factory.makePOTemplate(
             sourcepackage=self.sourcepackage, name='shared-template')
-        self.productseries = self.factory.makeProductSeries()
+        self.privileged_user = self.factory.makePerson(karma=200)
+        product = self.factory.makeProduct(owner=self.privileged_user)
+        self.productseries = self.factory.makeProductSeries(product=product)
         self.shared_template_upstream_side = self.factory.makePOTemplate(
             productseries=self.productseries, name='shared-template')
         self.upstream_only_template = self.factory.makePOTemplate(
             productseries=self.productseries, name='upstream-only')
         self.view = make_initialized_view(self.sourcepackage)
-        self.privileged_user = self.productseries.owner
-        with dbuser('karma'):
-            # Give the user karma (experience) to make the user privileged.
-            KarmaTotalCache(person=self.privileged_user.id, karma_total=200)
 
     def configureSharing(self,
             set_upstream_branch=False,
