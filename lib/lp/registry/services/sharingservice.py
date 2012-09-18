@@ -17,9 +17,11 @@ from storm.expr import (
     Count,
     In,
     Join,
+    LeftJoin,
     Or,
     Select,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -52,10 +54,12 @@ from lp.registry.interfaces.sharingjob import (
     )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
+    AccessArtifact,
     AccessArtifactGrant,
     AccessPolicy,
     AccessPolicyArtifact,
     AccessPolicyGrant,
+    AccessPolicyGrantFlat,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
@@ -175,8 +179,42 @@ class SharingService:
             include_branches=False)
         return specifications
 
+    def _getVisiblePrivateSpecificationIDs(self, person, specifications):
+        store = Store.of(specifications[0])
+        tables = (
+            Specification,
+            Join(
+                AccessPolicy,
+                And(
+                    Or(
+                        Specification.distributionID ==
+                            AccessPolicy.distribution_id,
+                        Specification.productID ==
+                            AccessPolicy.product_id),
+                    AccessPolicy.type == Specification.information_type)),
+            Join(
+                AccessPolicyGrantFlat,
+                AccessPolicy.id == AccessPolicyGrantFlat.policy_id
+                ),
+            LeftJoin(
+                AccessArtifact,
+                AccessArtifact.id ==
+                    AccessPolicyGrantFlat.abstract_artifact_id),
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID ==
+                    AccessPolicyGrantFlat.grantee_id))
+        spec_ids = [spec.id for spec in specifications]
+        return set(store.using(*tables).find(
+            Specification.id,
+            Or(
+                AccessPolicyGrantFlat.abstract_artifact_id == None,
+                AccessArtifact.specification == Specification.id),
+            TeamParticipation.personID == person.id,
+            In(Specification.id, spec_ids)))
+
     def getVisibleArtifacts(self, person, branches=None, bugs=None,
-                            ignore_permissions=False):
+                            specifications=None, ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
@@ -190,6 +228,10 @@ class SharingService:
                 and not check_permission('launchpad.View', branch)):
                 raise Unauthorized
             branches_by_id[branch.id] = branch
+        for spec in specifications or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', spec)):
+                raise Unauthorized
 
         # Load the bugs.
         visible_bug_ids = []
@@ -207,7 +249,15 @@ class SharingService:
                 *branches_by_id.keys())
             visible_branches = list(wanted_branches.getBranches())
 
-        return visible_bugs, visible_branches
+        visible_specs = []
+        if specifications:
+            visible_private_spec_ids = self._getVisiblePrivateSpecificationIDs(
+                person, specifications)
+            visible_specs = [
+                spec for spec in specifications
+                if spec.id in visible_private_spec_ids or not spec.private]
+
+        return visible_bugs, visible_branches, visible_specs
 
     def getInvisibleArtifacts(self, person, branches=None, bugs=None):
         """See `ISharingService`."""

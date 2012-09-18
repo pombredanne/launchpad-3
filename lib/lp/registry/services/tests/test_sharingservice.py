@@ -980,8 +980,8 @@ class TestSharingService(TestCaseWithFactory):
 
         # Check that grantees have expected access grants and subscriptions.
         for person in [team_grantee, person_grantee]:
-            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
-                person, branches, bugs)
+            visible_bugs, visible_branches, visible_specs = (
+                self.service.getVisibleArtifacts(person, branches, bugs))
             self.assertContentEqual(bugs or [], visible_bugs)
             self.assertContentEqual(branches or [], visible_branches)
         for person in [team_grantee, person_grantee]:
@@ -1004,8 +1004,8 @@ class TestSharingService(TestCaseWithFactory):
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
                 self.assertNotIn(person, bug.getDirectSubscribers())
-            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
-                person, branches, bugs)
+            visible_bugs, visible_branches, visible_specs = (
+                self.service.getVisibleArtifacts(person, branches, bugs))
             self.assertContentEqual([], visible_bugs)
             self.assertContentEqual([], visible_branches)
 
@@ -1386,7 +1386,10 @@ class TestSharingService(TestCaseWithFactory):
     def _make_Artifacts(self):
         # Make artifacts for test (in)visible artifact methods.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
         grantee = self.factory.makePerson()
         login_person(owner)
 
@@ -1403,6 +1406,13 @@ class TestSharingService(TestCaseWithFactory):
                 information_type=InformationType.USERDATA)
             branches.append(branch)
 
+        specifications = []
+        for x in range(0, 10):
+            spec = self.factory.makeSpecification(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            specifications.append(spec)
+
         def grant_access(artifact):
             access_artifact = self.factory.makeAccessArtifact(
                 concrete=artifact)
@@ -1415,20 +1425,33 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug)
         for branch in branches[:5]:
             grant_access(branch)
-        return grantee, branches, bugs
+        for spec in specifications[:5]:
+            grant_access(spec)
+        return grantee, owner, branches, bugs, specifications
 
     def test_getVisibleArtifacts(self):
         # Test the getVisibleArtifacts method.
-        grantee, branches, bugs = self._make_Artifacts()
+        grantee, ignore, branches, bugs, specs = self._make_Artifacts()
         # Check the results.
-        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
-            grantee, branches, bugs)
+        shared_bugs, shared_branches, shared_specs = (
+            self.service.getVisibleArtifacts(grantee, branches, bugs, specs))
         self.assertContentEqual(bugs[:5], shared_bugs)
         self.assertContentEqual(branches[:5], shared_branches)
+        self.assertContentEqual(specs[:5], shared_specs)
+
+    def test_getVisibleArtifacts_grant_on_pillar(self):
+        # getVisibleArtifacts() returns private specifications if
+        # user has a policy grant for the pillar of the specification.
+        ignore, owner, branches, bugs, specs = self._make_Artifacts()
+        shared_bugs, shared_branches, shared_specs = (
+            self.service.getVisibleArtifacts(owner, branches, bugs, specs))
+        self.assertContentEqual(bugs, shared_bugs)
+        self.assertContentEqual(branches, shared_branches)
+        self.assertContentEqual(specs, shared_specs)
 
     def test_getInvisibleArtifacts(self):
         # Test the getInvisibleArtifacts method.
-        grantee, branches, bugs = self._make_Artifacts()
+        grantee, ignore, branches, bugs, specs = self._make_Artifacts()
         # Check the results.
         not_shared_bugs, not_shared_branches = (
             self.service.getInvisibleArtifacts(grantee, branches, bugs))
@@ -1455,16 +1478,16 @@ class TestSharingService(TestCaseWithFactory):
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
 
-        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
-            grantee, bugs=bugs)
+        shared_bugs, shared_branches, shared_specs = (
+            self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs, shared_bugs)
 
         # Change some bugs.
         for x in range(0, 5):
             change_callback(bugs[x], owner)
         # Check the results.
-        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
-            grantee, bugs=bugs)
+        shared_bugs, shared_branches, shared_specs = (
+            self.service.getVisibleArtifacts(grantee, bugs=bugs))
         self.assertContentEqual(bugs[5:], shared_bugs)
 
     def test_getVisibleArtifacts_bug_policy_change(self):
