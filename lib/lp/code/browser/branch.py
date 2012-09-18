@@ -111,6 +111,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
+    BranchTargetError,
     CannotUpgradeBranch,
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
@@ -840,7 +841,12 @@ class BranchEditFormView(LaunchpadEditFormView):
             if (target is None and self.context.target is not None
                 or target is not None and self.context.target is None
                 or target != self.context.target):
-                self.context.setTarget(self.user, project=target)
+                try:
+                    self.context.setTarget(self.user, project=target)
+                except BranchTargetError, e:
+                    self.setFieldError('target', e.message)
+                    return
+
                 changed = True
                 if target:
                     self.request.response.addNotification(
@@ -887,11 +893,13 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
-        if not self.request.is_ajax:
-            return canonical_url(self.context)
+        if not self.request.is_ajax and not self.errors:
+            return self.cancel_url
         return None
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class BranchEditWhiteboardView(BranchEditFormView):

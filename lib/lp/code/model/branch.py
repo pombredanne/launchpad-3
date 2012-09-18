@@ -371,8 +371,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         namespace = target.getNamespace(self.owner)
         if self.information_type not in namespace.getAllowedInformationTypes():
             raise BranchTargetError(
-                '%s branches are not allowed for target %s' % (
-                    self.information_type.title, self.target.displayname))
+                '%s branches are not allowed for target %s.' % (
+                    self.information_type.title, target.displayname))
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()
 
