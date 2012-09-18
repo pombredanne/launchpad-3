@@ -78,8 +78,7 @@ class DatabasePreflight:
         self.lpmain_nodes = self.nodes
         self.lpmain_master_node = node
 
-        # Add streaming replication standbys, which unfortunately cannot be
-        # detected reliably and has to be passed in via the command line.
+        # Add streaming replication standbys.
         self._num_standbys = len(standbys)
         for standby in standbys:
             standby_node = Node(None, None, standby, False)
