@@ -307,3 +307,10 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
         self.assertThat(
             view.render(),
             MatchesAll(private_build_matcher, private_build_icon_matcher))
+        
+    def test_build_history_with_ttbj_on_deleted_branch(self):
+        build = self.createTranslationTemplateBuildWithBuilder(
+            builder=self.builder)
+        removeSecurityProxy(build.branch)._deleteJobs()
+        view = create_initialized_view(self.builder, '+history')
+        self.assertIn('No build records.', view.render())
