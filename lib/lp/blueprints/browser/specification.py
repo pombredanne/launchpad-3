@@ -222,6 +222,10 @@ class NewSpecificationView(LaunchpadFormView):
     def register(self, action, data):
         """Registers a new specification."""
         self.transform(data)
+        information_type = data.get('information_type')
+        if information_type is None:
+            information_type = (
+                self.context.getDefaultSpecificationInformationType())
         spec = getUtility(ISpecificationSet).new(
             owner=self.user,
             name=data.get('name'),
@@ -234,7 +238,7 @@ class NewSpecificationView(LaunchpadFormView):
             approver=data.get('approver'),
             distribution=data.get('distribution'),
             definition_status=data.get('definition_status'),
-            information_type=data.get('information_type'))
+            information_type=information_type)
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
