@@ -13,6 +13,7 @@ import transaction
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -30,7 +31,6 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp import canonical_url
 from lp.testing import (

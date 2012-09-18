@@ -17,6 +17,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.bugs.errors import InvalidSearchParameters
@@ -47,10 +48,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enums import (
-    InformationType,
-    SharingPermission,
-    )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
