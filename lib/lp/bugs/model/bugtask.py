@@ -70,7 +70,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import (
     PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
-    ServiceUsage,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
