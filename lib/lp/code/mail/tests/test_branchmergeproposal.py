@@ -149,7 +149,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer.sendAll()
 
     def test_forCreation_without_commit_message(self):
-        """If there are related bugs, include 'Related bugs'."""
+        """If there is no commit message, email should say 'None Specified.'"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         bmp.commit_message = None
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
