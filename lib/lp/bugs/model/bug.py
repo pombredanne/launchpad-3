@@ -1587,10 +1587,13 @@ class Bug(SQLBase):
 
     def getNominationFor(self, target):
         """See `IBug`."""
+               
         if IDistroSeries.providedBy(target):
             filter_args = dict(distroseriesID=target.id)
         elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        elif ISourcePackage.providedBy(target):
+            filter_args = dict(distroseriesID=target.series.id)
         else:
             return None
 
