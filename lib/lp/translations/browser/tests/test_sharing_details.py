@@ -110,6 +110,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.view = make_initialized_view(self.sourcepackage)
         self.privileged_user = self.productseries.owner
         with dbuser('karma'):
+            # Give the user karma (experience) to make the user privileged.
             KarmaTotalCache(person=self.privileged_user.id, karma_total=200)
 
     def configureSharing(self,
