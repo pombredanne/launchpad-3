@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -1803,13 +1804,13 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
     def test_all_query(self):
         # Since status is single-valued, asking for "all" statuses in a set
         # doesn't make any sense.
-        with ExpectedException(ValueError):
+        with ExpectedException(InvalidSearchParameters):
             self.searchClause(
                 all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
 
     def test_bad_value(self):
         # If an unrecognized status is provided then an error is raised.
-        with ExpectedException(ValueError):
+        with ExpectedException(InvalidSearchParameters):
             self.searchClause('this-is-not-a-status')
 
 
