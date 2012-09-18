@@ -63,7 +63,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
@@ -141,9 +145,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
-    InformationType,
     SpecificationSharingPolicy,
-    PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (

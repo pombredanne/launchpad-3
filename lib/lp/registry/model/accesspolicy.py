@@ -34,11 +34,11 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import (
+from lp.app.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
-    SharingPermission,
     )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,

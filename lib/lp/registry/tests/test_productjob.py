@@ -21,11 +21,9 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import (
-    InformationType,
-    ProductJobType,
-    )
+from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productjob import (

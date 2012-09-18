@@ -19,11 +19,11 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson

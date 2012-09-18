@@ -25,6 +25,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -32,7 +33,6 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    PRIVATE_INFORMATION_TYPES,
     SharingPermission,
     SpecificationSharingPolicy,
     )

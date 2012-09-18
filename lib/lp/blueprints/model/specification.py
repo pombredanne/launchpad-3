@@ -49,6 +49,7 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.informationtype import IInformationType
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -84,7 +85,6 @@ from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
