@@ -34,6 +34,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     PRIVATE_INFORMATION_TYPES,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -113,16 +114,17 @@ class SharingService:
         )
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getSharedArtifacts(self, pillar, person, user):
+    def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
+                           include_branches=True):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
         bug_ids = set()
         branch_ids = set()
         for artifact in flat_source.findArtifactsByGrantee(person, policies):
-            if artifact.bug_id:
+            if artifact.bug_id and include_bugs:
                 bug_ids.add(artifact.bug_id)
-            elif artifact.branch_id:
+            elif artifact.branch_id and include_branches:
                 branch_ids.add(artifact.branch_id)
 
         # Load the bugs.
@@ -140,6 +142,20 @@ class SharingService:
             branches = list(wanted_branches.getBranches())
 
         return bugtasks, branches
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBugs(self, pillar, person, user):
+        """See `ISharingService`."""
+        bugtasks, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_branches=False)
+        return bugtasks
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBranches(self, pillar, person, user):
+        """See `ISharingService`."""
+        ignore, branches = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False)
+        return branches
 
     def getVisibleArtifacts(self, person, branches=None, bugs=None,
                             ignore_permissions=False):
@@ -302,6 +318,24 @@ class SharingService:
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 BugSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
+
+    def getSpecificationSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have specification sharing policies. Distributions just
+        # default to Public.
+        allowed_policies = [SpecificationSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary specifications.
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
+            allowed_policies.extend([
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                SpecificationSharingPolicy.PROPRIETARY])
+        if (pillar.specification_sharing_policy and
+            not pillar.specification_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.specification_sharing_policy)
 
         return self._makeEnumData(allowed_policies)
 
@@ -556,8 +590,10 @@ class SharingService:
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
-                                    bug_sharing_policy=None):
-        if not branch_sharing_policy and not bug_sharing_policy:
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
+        if (not branch_sharing_policy and not bug_sharing_policy and not
+            specification_sharing_policy):
             return None
         # Only Products have sharing policies.
         if not IProduct.providedBy(pillar):
@@ -567,3 +603,5 @@ class SharingService:
             pillar.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
             pillar.setBugSharingPolicy(bug_sharing_policy)
+        if specification_sharing_policy:
+            pillar.setSpecificationSharingPolicy(specification_sharing_policy)

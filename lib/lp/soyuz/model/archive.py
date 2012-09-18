@@ -1267,6 +1267,7 @@ class Archive(SQLBase):
         pre_release_pockets = (
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
             )
         if (pocket not in pre_release_pockets and
             distroseries.status not in stable_states):
@@ -1593,14 +1594,15 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
             BinaryPackageRelease,
-            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagename == name,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
             BinaryPackageRelease.version == version,
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
             DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
             DistroArchSeries.architecturetag == archtag,
-            BinaryPackagePublishingHistory.archive == self,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True)
+            ).config(distinct=True)
         if results.count() > 1:
             return None
         return results.one()

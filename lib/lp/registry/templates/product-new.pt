@@ -14,9 +14,9 @@
        * details widgets until the user states that the project they are
        * registering is not a duplicate.
        */
-      LPJS.use('lp.registry.product.new',  function(Y) {
+      LPJS.use('views.registry_product',  function(Y) {
           Y.on('domready', function() {
-              var view = new Y.lp.registry.product.new.View();
+              var view = new Y.views.registry.NewProduct();
               view.render();
           });
       });

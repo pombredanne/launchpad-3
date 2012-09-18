@@ -9,6 +9,8 @@ __all__ = [
     'recursive_blocked_query',
     'recursive_dependent_query',
     'Specification',
+    'SPECIFICATION_POLICY_ALLOWED_TYPES',
+    'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     ]
 
@@ -77,10 +79,12 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -127,10 +131,33 @@ def recursive_dependent_query(spec):
         )""" % spec.id
 
 
+SPECIFICATION_POLICY_ALLOWED_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: [InformationType.PUBLIC],
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
+
+SPECIFICATION_POLICY_DEFAULT_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        InformationType.PUBLIC),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        InformationType.PROPRIETARY),
+    SpecificationSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY: (
+        InformationType.EMBARGOED),
+    }
+
+
 class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification, IBugLinkTarget)
+    implements(ISpecification, IBugLinkTarget, IInformationType)
 
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
@@ -1086,10 +1113,11 @@ class SpecificationSet(HasSpecificationsMixin):
         #
 
         # filter out specs on inactive products
-        base = """(Specification.product IS NULL OR
+        base = """((Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
+                   AND Specification.information_type = 1)
                 """
         query = base
         # look for informational specs
@@ -1161,12 +1189,13 @@ class SpecificationSet(HasSpecificationsMixin):
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
         definition_status = SpecificationDefinitionStatus.items[status_name]
-        return Specification(name=name, title=title, specurl=specurl,
+        spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
-            information_type=information_type)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+        spec.transitionToInformationType(information_type, None)
+        return spec
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
