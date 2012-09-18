@@ -198,6 +198,7 @@ class BMPMailer(BranchMailer):
             return '%s\n%s' % (heading, info)
 
     def _getCommitMessage(self):
+        """Return a string describing the commit message, if any."""
         if not self.merge_proposal.commit_message:
             return '\n'
         else:
