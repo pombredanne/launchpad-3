@@ -65,6 +65,7 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -1252,12 +1253,20 @@ class Branch(SQLBase, BzrIdentityMixin):
         # the affected Jobs in the database otherwise.
         store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
 
+        # Find BuildFarmJobs to delete.
+        bfjs = store.find(
+            (BuildFarmJob.id,),
+            TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
+            TranslationTemplatesBuild.branch == self)
+        bfj_ids = [bfj[0] for bfj in bfjs]
+
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
 
         store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == self).remove()
+        store.find(BuildFarmJob, BuildFarmJob.id.is_in(bfj_ids)).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

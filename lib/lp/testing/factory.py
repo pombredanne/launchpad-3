@@ -142,6 +142,8 @@ from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
+    SpecificationSharingPolicy,
+    PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -957,7 +959,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None):
+        branch_sharing_policy=None, specification_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -1001,12 +1003,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if ((branch_sharing_policy and
             branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
             (bug_sharing_policy and
-            bug_sharing_policy != BugSharingPolicy.PUBLIC)):
+            bug_sharing_policy != BugSharingPolicy.PUBLIC) or
+            (specification_sharing_policy and
+            specification_sharing_policy !=
+                SpecificationSharingPolicy.PUBLIC)):
             self.makeCommercialSubscription(product)
         if branch_sharing_policy:
             naked_product.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
             naked_product.setBugSharingPolicy(bug_sharing_policy)
+        if specification_sharing_policy:
+            naked_product.setSpecificationSharingPolicy(
+                specification_sharing_policy)
 
         return product
 
@@ -2110,6 +2118,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
         if information_type is not None:
+            if information_type not in PUBLIC_INFORMATION_TYPES:
+                naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
                 information_type, spec.target.owner)
         if status.name not in status_names:

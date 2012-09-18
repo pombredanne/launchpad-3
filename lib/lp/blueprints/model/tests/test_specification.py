@@ -26,8 +26,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.registry.enums import (
     InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
@@ -618,14 +617,18 @@ class TestSpecificationInformationType(TestCaseWithFactory):
 
     def test_transitionToInformationType(self):
         """Ensure transitionToInformationType works."""
-        spec = self.factory.makeSpecification()
+        product = self.factory.makeProduct(
+            specification_sharing_policy=
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        spec = self.factory.makeSpecification(product=product)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         removeSecurityProxy(spec.target)._ensurePolicies(
-            [InformationType.EMBARGOED])
+            [InformationType.PROPRIETARY])
         with person_logged_in(spec.owner):
             result = spec.transitionToInformationType(
-                InformationType.EMBARGOED, spec.owner)
-            self.assertEqual(InformationType.EMBARGOED, spec.information_type)
+                InformationType.PROPRIETARY, spec.owner)
+            self.assertEqual(
+                InformationType.PROPRIETARY, spec.information_type)
         self.assertTrue(result)
 
     def test_transitionToInformationType_no_change(self):
@@ -642,18 +645,3 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         with person_logged_in(spec.owner):
             with ExpectedException(CannotChangeInformationType, '.*'):
                 spec.transitionToInformationType(None, spec.owner)
-
-    def test_getAllowedInformationTypesJustProprietary(self):
-        """Allowed types should include proprietary types and PUBLIC.
-
-        We do not want to introduce support for Private/Userdata or Security
-        blueprints.
-        """
-        spec = self.factory.makeSpecification()
-        allowed = spec.getAllowedInformationTypes(spec.owner)
-        self.assertIn(InformationType.PUBLIC, allowed)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            self.assertIn(info_type, allowed)
-        self.assertNotIn(InformationType.USERDATA, allowed)
-        for info_type in SECURITY_INFORMATION_TYPES:
-            self.assertNotIn(info_type, allowed)

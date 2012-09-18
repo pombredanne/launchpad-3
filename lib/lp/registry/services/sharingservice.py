@@ -34,6 +34,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     PRIVATE_INFORMATION_TYPES,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -320,6 +321,24 @@ class SharingService:
 
         return self._makeEnumData(allowed_policies)
 
+    def getSpecificationSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have specification sharing policies. Distributions just
+        # default to Public.
+        allowed_policies = [SpecificationSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary specifications.
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
+            allowed_policies.extend([
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                SpecificationSharingPolicy.PROPRIETARY])
+        if (pillar.specification_sharing_policy and
+            not pillar.specification_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.specification_sharing_policy)
+
+        return self._makeEnumData(allowed_policies)
+
     def getSharingPermissions(self):
         """See `ISharingService`."""
         # We want the permissions displayed in the following order.
@@ -571,8 +590,10 @@ class SharingService:
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
-                                    bug_sharing_policy=None):
-        if not branch_sharing_policy and not bug_sharing_policy:
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
+        if (not branch_sharing_policy and not bug_sharing_policy and not
+            specification_sharing_policy):
             return None
         # Only Products have sharing policies.
         if not IProduct.providedBy(pillar):
@@ -582,3 +603,5 @@ class SharingService:
             pillar.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
             pillar.setBugSharingPolicy(bug_sharing_policy)
+        if specification_sharing_policy:
+            pillar.setSpecificationSharingPolicy(specification_sharing_policy)
