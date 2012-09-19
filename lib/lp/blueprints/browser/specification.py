@@ -120,7 +120,10 @@ from lp.registry.enums import (
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSeries,
+    )
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
@@ -223,7 +226,9 @@ class NewSpecificationView(LaunchpadFormView):
         """Registers a new specification."""
         self.transform(data)
         information_type = data.get('information_type')
-        if information_type is None and IProduct.providedBy(self.context):
+        if information_type is None and (
+            IProduct.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
             information_type = (
                 self.context.getDefaultSpecificationInformationType())
         spec = getUtility(ISpecificationSet).new(
@@ -285,7 +290,8 @@ class NewSpecificationView(LaunchpadFormView):
     def initial_values(self):
         """Set initial values to honor sharing policy default value."""
         information_type = None
-        if IProduct.providedBy(self.context):
+        if (IProduct.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
             information_type = (
                 self.context.getDefaultSpecificationInformationType())
         values = {'information_type': information_type}
