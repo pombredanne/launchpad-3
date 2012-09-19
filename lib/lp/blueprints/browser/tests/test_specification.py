@@ -36,6 +36,10 @@ from lp.registry.enums import (
     SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSeries,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
@@ -463,6 +467,28 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
     def makeTarget(self, policy, owner=None):
         raise NotImplementedError('makeTarget')
 
+    def ensurePolicy(self, target, information_type):
+        """Helper to call _ensurePolicies
+
+        Useful because we need to follow to product from
+        ProductSeries to get to _ensurePolicies.
+        """
+        if IProduct.providedBy(target):
+            removeSecurityProxy(target)._ensurePolicies(information_type)
+        elif IProductSeries.providedBy(target):
+            removeSecurityProxy(target.product)._ensurePolicies(
+                information_type)
+
+    def getSpecification(self, target, name):
+        """Helper to get the specification.
+
+        Useful because we need to follow to product from a
+        ProductSeries.
+        """
+        if IProductSeries.providedBy(target):
+            return target.product.getSpecification(name)
+        return target.getSpecification(name)
+
     def submitSpec(self, browser):
         """Submit a Specification via a browser."""
         name = self.factory.getUniqueString()
@@ -470,6 +496,7 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         browser.getControl('Title').value = self.factory.getUniqueString()
         browser.getControl('Summary').value = self.factory.getUniqueString()
         browser.getControl('Register Blueprint').click()
+        import pdb;pdb.set_trace()
         return name
 
     def test_public(self):
@@ -478,7 +505,7 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         target = self.makeTarget(policy)
         browser = self.getViewBrowser(target, view_name='+addspec')
         self.assertThat(browser.contents, Not(self.match_it))
-        spec = target.getSpecification(self.submitSpec(browser))
+        spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.PUBLIC)
 
     def test_public_or_proprietary(self):
@@ -487,7 +514,7 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         target = self.makeTarget(policy)
         browser = self.getViewBrowser(target, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
-        spec = target.getSpecification(self.submitSpec(browser))
+        spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.PUBLIC)
 
     def test_proprietary_or_public(self):
@@ -495,12 +522,11 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         policy = SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC
         owner = self.factory.makePerson()
         target = self.makeTarget(policy, owner=owner)
-        removeSecurityProxy(target)._ensurePolicies(
-            [InformationType.PROPRIETARY])
+        self.ensurePolicy(target, [InformationType.PROPRIETARY])
         browser = self.getViewBrowser(
             target, view_name='+addspec', user=owner)
         self.assertThat(browser.contents, self.match_it)
-        spec = target.getSpecification(self.submitSpec(browser))
+        spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.PROPRIETARY)
 
     def test_proprietary(self):
@@ -508,12 +534,11 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         policy = SpecificationSharingPolicy.PROPRIETARY
         owner = self.factory.makePerson()
         target = self.makeTarget(policy, owner=owner)
-        removeSecurityProxy(target)._ensurePolicies(
-            [InformationType.PROPRIETARY])
+        self.ensurePolicy(target, [InformationType.PROPRIETARY])
         browser = self.getViewBrowser(
             target, view_name='+addspec', user=owner)
         self.assertThat(browser.contents, Not(self.match_it))
-        spec = target.getSpecification(self.submitSpec(browser))
+        spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.PROPRIETARY)
 
     def test_embargoed_or_proprietary(self):
@@ -521,12 +546,11 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         policy = SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY
         owner = self.factory.makePerson()
         target = self.makeTarget(policy, owner=owner)
-        removeSecurityProxy(target)._ensurePolicies(
-            [InformationType.EMBARGOED])
+        self.ensurePolicy(target, [InformationType.EMBARGOED])
         browser = self.getViewBrowser(
             target, view_name='+addspec', user=owner)
         self.assertThat(browser.contents, self.match_it)
-        spec = target.getSpecification(self.submitSpec(browser))
+        spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.EMBARGOED)
 
 
@@ -539,6 +563,17 @@ class TestNewSpecificationDefaultInformationTypeProduct(
             owner = self.factory.makePerson()
         return self.factory.makeProduct(
             owner=owner, specification_sharing_policy=policy)
+
+
+class TestNewSpecificationDefaultInformationTypeProductSeries(
+    BaseNewSpecificationInformationTypeDefaultTest):
+
+    def makeTarget(self, policy, owner=None):
+        if owner is None:
+            owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=policy)
+        return self.factory.makeProductSeries(product=product)
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
