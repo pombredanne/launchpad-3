@@ -56,13 +56,8 @@ def get_bug_ids_from_changes_file(changes_file):
     separated by a space character. Nonexistent bug ids are ignored.
     """
     tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
-    bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
-    bug_ids = []
-    for bug_id in bugs_fixed_line.split():
-        if not bug_id.isdigit():
-            continue
-        bug_ids.append(int(bug_id))
-    return bug_ids
+    bugs_fixed = tags.get('Launchpad-bugs-fixed', '').split()
+    return [int(bug_id) for bug_id in bugs_fixed if bug_id.isdigit()]
 
 
 def get_bug_ids_from_changelog_entry(sourcepackagerelease, since_version):
