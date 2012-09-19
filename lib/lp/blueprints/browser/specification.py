@@ -53,6 +53,7 @@ from lazr.restful.interface import (
     )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 from zope import component
@@ -104,6 +105,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
@@ -218,6 +220,26 @@ class NewSpecificationView(LaunchpadFormView):
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
+    def append_info_type(self, fields):
+        """Append an InformationType field for creating a Specification.
+
+        Does nothing if the user cannot select different information types or
+        the feature flag is not enabled.
+        """
+        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
+            return fields
+        if len(self.info_types) < 2:
+            return fields
+        info_type_field = copy_field(ISpecification['information_type'],
+            readonly=False,
+            vocabulary=InformationTypeVocabulary(types=self.info_types))
+        return fields + Fields(info_type_field)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache, self.info_types)
+        super(NewSpecificationView, self).initialize()
+
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
@@ -285,26 +307,13 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     """
 
     @property
-    def info_type_field(self):
-        """An info_type_field for creating a Specification.
-
-        None if the user cannot select different information types or the
-        feature flag is not enabled.
-        """
-        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
-            return None
-        info_types = self.context.getAllowedSpecificationInformationTypes()
-        if len(info_types) < 2:
-            return None
-        return copy_field(ISpecification['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(types=info_types))
+    def info_types(self):
+        return self.context.getAllowedSpecificationInformationTypes()
 
     @property
     def schema(self):
         fields = Fields(INewSpecification, INewSpecificationSprint)
-        if self.info_type_field is not None:
-            fields = fields + Fields(self.info_type_field)
-        return fields
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -329,9 +338,7 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
         fields = Fields(INewSpecification,
                         INewSpecificationSprint,
                         INewSpecificationSeriesGoal)
-        if self.info_type_field is not None:
-            fields = fields + Fields(self.info_type_field)
-        return fields
+        return self.append_info_type(fields)
 
     def transform(self, data):
         if data['goal']:
@@ -354,17 +361,14 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
         data['product'] = self.context.product
 
 
-all_info_type_field = copy_field(ISpecification['information_type'],
-    readonly=False, vocabulary=InformationTypeVocabulary(
-        types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
-
-
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for creating a specification outside a target context.
 
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+    info_types = PUBLIC_PROPRIETARY_INFORMATION_TYPES
+
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)
@@ -385,10 +389,12 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a project."""
 
-    schema = Fields(INewSpecificationProjectTarget,
-                    INewSpecification,
-                    INewSpecificationSprint,
-                    all_info_type_field,)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationProjectTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
@@ -399,9 +405,7 @@ class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
         fields = Fields(INewSpecificationTarget,
                         INewSpecification,
                         INewSpecificationSprint)
-        if getFeatureFlag(INFORMATION_TYPE_FLAG):
-            fields = fields + Fields(all_info_type_field)
-        return fields
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
@@ -410,9 +414,7 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     @property
     def schema(self):
         fields = Fields(INewSpecificationTarget, INewSpecification)
-        if getFeatureFlag(INFORMATION_TYPE_FLAG):
-            fields = fields + Fields(all_info_type_field)
-        return fields
+        return self.append_info_type(fields)
 
     def transform(self, data):
         super(NewSpecificationFromSprintView, self).transform(data)
