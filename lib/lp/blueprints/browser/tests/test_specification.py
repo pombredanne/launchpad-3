@@ -496,7 +496,6 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
         browser.getControl('Title').value = self.factory.getUniqueString()
         browser.getControl('Summary').value = self.factory.getUniqueString()
         browser.getControl('Register Blueprint').click()
-        import pdb;pdb.set_trace()
         return name
 
     def test_public(self):
