@@ -12,7 +12,9 @@ __all__ = [
     ]
 
 from itertools import chain
+import httplib
 
+from lazr.restful.declarations import error_status
 import pytz
 from storm.locals import (
     Bool,
@@ -44,6 +46,7 @@ from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 
 
+@error_status(httplib.BAD_REQUEST)
 class MuteNotAllowed(Exception):
     """Raised when someone tries to mute a filter that can't be muted."""
 
@@ -252,6 +255,10 @@ class BugSubscriptionFilter(StormBase):
 
     def mute(self, person):
         """See `IBugSubscriptionFilter`."""
+        subscriber = self.structural_subscription.subscriber
+        if subscriber.is_team and subscriber.preferredemail:
+            raise MuteNotAllowed(
+                "Can not mute, team has a contact address.")
         if not self.isMuteAllowed(person):
             raise MuteNotAllowed(
                 "This subscription cannot be muted for %s" % person.name)
