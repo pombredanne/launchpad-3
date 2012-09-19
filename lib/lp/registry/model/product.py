@@ -409,6 +409,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         pass
 
     @property
+    def security_contact(self):
+        return None
+
+    @property
     def pillar(self):
         """See `IBugTarget`."""
         return self
