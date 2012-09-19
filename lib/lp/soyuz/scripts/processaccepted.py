@@ -23,6 +23,7 @@ from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features import getFeatureFlag
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -179,8 +180,10 @@ def close_bugs_for_sourcepackagerelease(distroseries, source_release,
     if not bug_ids_to_close:
         return
 
-    if getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy:
-        # We're already running in a script, so we can just close the bugs
+    if (getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy or
+        not getFeatureFlag("soyuz.processacceptedbugsjob.enabled")):
+        # We're already running in a script (or the feature flag to allow
+        # use of the job is disabled), so we can just close the bugs
         # directly.
         close_bug_ids_for_sourcepackagerelease(
             distroseries, source_release, bug_ids_to_close)

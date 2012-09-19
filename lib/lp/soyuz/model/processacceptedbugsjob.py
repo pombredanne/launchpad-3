@@ -21,6 +21,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
@@ -54,6 +55,15 @@ def close_bug_ids_for_sourcepackagerelease(distroseries, spr, bug_ids):
         "\n\n---------------\n%s" % (spr.title, spr.changelog_entry))
 
     for bug in bugs:
+        # We need to remove the security proxy here because the bug might be
+        # private and if this code is called via someone using the +queue
+        # page they will get an OOPS.  BE CAREFUL with the unproxied bug
+        # object and look at what you're doing with it that might violate
+        # security.
+        # XXX cjwatson 2012-09-19: This can be removed once the
+        # soyuz.processacceptedbugsjob.enabled feature flag is switched on
+        # everywhere and the code to support disabling it is removed.
+        bug = removeSecurityProxy(bug)
         edited_task = bug.setStatus(
             target=target, status=BugTaskStatus.FIXRELEASED, user=janitor)
         if edited_task is not None:

@@ -35,6 +35,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import filechunks
@@ -1079,10 +1080,7 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
-        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
-        # should work with private bugs where the person using the queue
-        # page doesn't have access to it.
+    def closeBugWithUpload(self):
         changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
         # changelog_entry is required for an assertion inside the function
         # we're testing.
@@ -1099,6 +1097,28 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             self.assertRaises(ForbiddenAttribute, bug, 'status')
             # But the bug closure should work.
             close_bugs_for_sourcepackagerelease(series, spr, changes)
+
+        return spr, series, bug
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug_script(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it, if the feature flag to use a job
+        # is disabled.
+        spr, series, bug = self.closeBugWithUpload()
+
+        # Verify it was closed.
+        with celebrity_logged_in("admin"):
+            self.assertEqual(
+                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug_job(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it, if the feature flag to use a job
+        # is enabled.
+        with FeatureFixture({"soyuz.processacceptedbugsjob.enabled": "on"}):
+            spr, series, bug = self.closeBugWithUpload()
 
         # Rather than closing the bugs immediately, this creates a
         # ProcessAcceptedBugsJob.
