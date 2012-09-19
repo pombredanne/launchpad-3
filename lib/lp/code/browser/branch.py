@@ -834,6 +834,15 @@ class BranchEditFormView(LaunchpadEditFormView):
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
+        if 'private' in data:
+            # Read only for display.
+            data.pop('private')
+        # We must process information type before target so that the any new
+        # information type is valid for the target.
+        if 'information_type' in data:
+            information_type = data.pop('information_type')
+            self.context.transitionToInformationType(
+                information_type, self.user)
         if 'target' in data:
             target = data.pop('target')
             if target == '+junk':
@@ -856,13 +865,6 @@ class BranchEditFormView(LaunchpadEditFormView):
                     self.request.response.addNotification(
                         "This branch is now a personal branch for %s"
                         % self.context.owner.displayname)
-        if 'private' in data:
-            # Read only for display.
-            data.pop('private')
-        if 'information_type' in data:
-            information_type = data.pop('information_type')
-            self.context.transitionToInformationType(
-                information_type, self.user)
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
