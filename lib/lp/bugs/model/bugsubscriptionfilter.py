@@ -258,7 +258,8 @@ class BugSubscriptionFilter(StormBase):
         subscriber = self.structural_subscription.subscriber
         if subscriber.is_team and subscriber.preferredemail:
             raise MuteNotAllowed(
-                "Can not mute, team has a contact address.")
+                "This subscription cannot be muted because team %s has a "
+                "contact address." % subscriber.name)
         if not self.isMuteAllowed(person):
             raise MuteNotAllowed(
                 "This subscription cannot be muted for %s" % person.name)

@@ -948,6 +948,7 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
         with person_logged_in(person):
             ss = self.target.addBugSubscription(team, person)
         filter = ss.bug_filters.one()
+        expected = ("This subscription cannot be muted because team %s has a "
+            "contact address." % team.name)
         self.assertRaisesWithContent(
-            MuteNotAllowed, "Can not mute, team has a contact address.",
-            filter.mute, person)
+            MuteNotAllowed, expected, filter.mute, person)
