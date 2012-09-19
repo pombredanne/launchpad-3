@@ -24,9 +24,7 @@ class IPersonProduct(IHasMergeProposals):
     """A person's view on a product."""
 
     person = Reference(IPerson)
-
     product = Reference(IProduct)
-
     displayname = TextLine()
 
 
