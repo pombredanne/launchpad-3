@@ -784,7 +784,7 @@ class IProductPublic(
     security_contact = exported(
         TextLine(
             title=_('Security contact'), required=False, readonly=True,
-            description=_('Obsolete field for security contact')),
+            description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
     def checkPrivateBugsTransitionAllowed(private_bugs, user):

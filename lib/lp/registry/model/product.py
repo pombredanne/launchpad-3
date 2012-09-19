@@ -408,9 +408,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
-    @property
-    def security_contact(self):
-        return None
+    security_contact = None
 
     @property
     def pillar(self):

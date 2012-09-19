@@ -114,7 +114,7 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         webservice = webservice_for_person(product.owner)
         api_prod = self.fetch_product(webservice, product, '1.0')
-        self.assertEqual(None, api_prod['security_contact'])
+        self.assertIs(None, api_prod['security_contact'])
         for api_version in ('beta', 'devel'):
             api_prod = self.fetch_product(webservice, product, api_version)
-            self.assertFalse(api_prod.has_key('security_contact'))
+            self.assertNotIn('security_contact', api_prod)
