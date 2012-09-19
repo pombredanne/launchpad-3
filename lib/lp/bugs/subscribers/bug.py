@@ -41,11 +41,7 @@ from lp.services.webapp.publisher import canonical_url
 
 @block_implicit_flushes
 def notify_bug_modified(bug, event):
-    """Handle bug change events.
-
-    Subscribe the security contacts for a bug when it becomes
-    security-related, and add notifications for the changes.
-    """
+    """Handle bug change events."""
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
         new_bug=event.object, user=IPerson(event.user))

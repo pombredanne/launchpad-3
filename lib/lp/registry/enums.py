@@ -14,15 +14,18 @@ __all__ = [
     'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
+    'json_dump_information_types',
     'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
     'PRIVATE_INFORMATION_TYPES',
     'PROPRIETARY_INFORMATION_TYPES',
     'PUBLIC_INFORMATION_TYPES',
+    'PUBLIC_PROPRIETARY_INFORMATION_TYPES',
     'ProductJobType',
     'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
+    'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
     'TeamMembershipRenewalPolicy',
     ]
@@ -101,6 +104,26 @@ FREE_INFORMATION_TYPES = (
 PROPRIETARY_INFORMATION_TYPES = (
     InformationType.PROPRIETARY, InformationType.EMBARGOED)
 
+# The information types unrelated to user data or security
+PUBLIC_PROPRIETARY_INFORMATION_TYPES = (
+    (InformationType.PUBLIC,) + PROPRIETARY_INFORMATION_TYPES
+)
+
+
+def json_dump_information_types(cache, information_types):
+    """Dump a dict of the data in the types requested."""
+    dump = {}
+    order = list(InformationType.sort_order)
+    for term in information_types:
+        dump[term.name] = {
+            'value': term.name,
+            'description': term.description,
+            'name': term.title,
+            'order': order.index(term.name),
+            'is_private': (term not in PUBLIC_INFORMATION_TYPES), 'description_css_class': 'choice-description',
+        }
+
+    cache.objects['information_type_data'] = dump
 
 class SharingPermission(DBEnumeratedType):
     """Sharing permission.
@@ -191,6 +214,44 @@ class BugSharingPolicy(DBEnumeratedType):
         Proprietary
 
         Bugs are always proprietary.
+        """)
+
+
+class SpecificationSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Specifications are public.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New specifications are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New specifications are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new specifications.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Specifications are always proprietary. Only people who can see the
+        project's proprietary information can create new specifications.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New specifications are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new specifications.
         """)
 
 

@@ -81,7 +81,10 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.pillar import (
+    IHasSharingPolicies,
+    IPillar,
+    )
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
     IHasDrivers,
@@ -131,7 +134,7 @@ class IDistributionDriverRestricted(Interface):
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-    IHasBuildRecords, IHasDrivers, IHasMilestones,
+    IHasBuildRecords, IHasDrivers, IHasMilestones, IHasSharingPolicies,
     IHasOOPSReferences, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
@@ -626,12 +629,6 @@ class IDistributionPublic(
         """Get the default information type of a new bug in this distro.
 
         :return: The `InformationType`.
-        """
-
-    def getAllowedBranchInformationTypes():
-        """Get the information types that a branch in this distro can have.
-
-        :return: A sequence of `InformationType`s.
         """
 
     def userCanEdit(user):

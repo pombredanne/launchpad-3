@@ -27,6 +27,8 @@ from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
@@ -76,6 +78,14 @@ class TestDistribution(TestCaseWithFactory):
         # The pillar category is correct.
         distro = self.factory.makeDistribution()
         self.assertEqual("Distribution", distro.pillar_category)
+
+    def test_sharing_policies(self):
+        # The sharing policies are PUBLIC.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, distro.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PUBLIC, distro.bug_sharing_policy)
 
     def test_owner_cannot_be_open_team(self):
         """Distro owners cannot be open teams."""
@@ -276,13 +286,21 @@ class TestDistribution(TestCaseWithFactory):
             InformationType.PUBLIC,
             self.factory.makeDistribution().getDefaultBugInformationType())
 
-    def test_getAllowedBranchInformationTypes(self):
-        # All distros currently support just the non-proprietary
-        # information types.
+    def test_getAllowedSpecificationInformationTypes(self):
+        # All distros currently support only public specifications.
+        distro = self.factory.makeDistribution()
         self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            self.factory.makeDistribution().getAllowedBranchInformationTypes())
+            [InformationType.PUBLIC],
+            distro.getAllowedSpecificationInformationTypes()
+            )
+
+    def test_getDefaultSpecificationInformtationType(self):
+        # All distros currently support only Public by default
+        # specifications.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            distro.getDefaultSpecificationInformationType())
 
 
 class TestDistributionCurrentSourceReleases(

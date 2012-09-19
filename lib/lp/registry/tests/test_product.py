@@ -34,6 +34,7 @@ from lp.registry.enums import (
     FREE_INFORMATION_TYPES,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
@@ -459,48 +460,84 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
             product.getDefaultBugInformationType())
 
 
-class TestProductBranchInformationTypes(TestCaseWithFactory):
+class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def makeProductWithPolicy(self, specification_sharing_policy):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setSpecificationSharingPolicy(
+                specification_sharing_policy)
+        return product
+
     def test_no_policy(self):
-        # New projects can only use the non-proprietary information
-        # types.
+        # Projects that have not specified a policy can use the PUBLIC
+        # information type.
         product = self.factory.makeProduct()
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBranchInformationTypes())
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_public(self):
+        # Projects with a purely public policy should use PUBLIC
+        # information type.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC)
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
 
     def test_sharing_policy_public_or_proprietary(self):
-        # branch_sharing_policy can enable Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        # specification_sharing_policy can enable Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
-            product.getAllowedBranchInformationTypes())
+            [InformationType.PUBLIC, InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
 
     def test_sharing_policy_proprietary_or_public(self):
-        # branch_sharing_policy can enable Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        # specification_sharing_policy can enable and default to Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
-            product.getAllowedBranchInformationTypes())
+            [InformationType.PUBLIC, InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultSpecificationInformationType())
 
     def test_sharing_policy_proprietary(self):
-        # branch_sharing_policy can enable only Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        # specification_sharing_policy can enable only Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PROPRIETARY)
         self.assertContentEqual(
             [InformationType.PROPRIETARY],
-            product.getAllowedBranchInformationTypes())
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultSpecificationInformationType())
 
     def test_sharing_policy_embargoed_or_proprietary(self):
-        # branch_sharing_policy can enable Embargoed or Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        # specification_sharing_policy can be embargoed and then proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self.assertContentEqual(
             [InformationType.PROPRIETARY, InformationType.EMBARGOED],
-            product.getAllowedBranchInformationTypes())
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            product.getDefaultSpecificationInformationType())
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):
@@ -875,6 +912,42 @@ class BaseSharingPolicyTests:
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
                 self.product, InformationType.PROPRIETARY, self.product.owner))
+
+    def test_unused_policies_are_pruned(self):
+        # When a sharing policy is changed, the allowed information types may
+        # become more restricted. If this case, any existing access polices
+        # for the now defunct information type(s) should be removed so long as
+        # there are no corresponding policy artifacts.
+
+        # We create a product with and ensure there's an APA.
+        ap_source = getUtility(IAccessPolicySource)
+        product = self.factory.makeProduct()
+        [ap] = ap_source.find([(product, InformationType.PRIVATESECURITY)])
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+
+        def getAccessPolicyTypes(pillar):
+            return [
+                ap.type
+                for ap in ap_source.findByPillar([pillar])]
+
+        # Now change the sharing policies to PROPRIETARY
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            # Just bug sharing policy has been changed so all previous policy
+            # types are still valid.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+                 InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
+
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+            # Proprietary is permitted by the sharing policy, and there's a
+            # Private Security artifact. But Private isn't in use or allowed
+            # by a sharing policy, so it's now gone.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
 
 
 class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,

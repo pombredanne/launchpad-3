@@ -35,6 +35,7 @@ class IAccessArtifact(Interface):
     concrete_artifact = Attribute("Concrete artifact")
     bug_id = Attribute("bug_id")
     branch_id = Attribute("branch_id")
+    specification_id = Attribute("specification_id")
 
 
 class IAccessArtifactGrant(Interface):
@@ -212,6 +213,13 @@ class IAccessPolicySource(Interface):
 
     def findByTeam(teams):
         """Return a `ResultSet` of all `IAccessPolicy`s for the teams."""
+
+    def delete(pillars_and_types):
+        """Delete the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs delete.
+        """
 
 
 class IAccessPolicyGrantSource(Interface):

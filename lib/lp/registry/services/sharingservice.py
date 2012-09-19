@@ -17,15 +17,18 @@ from storm.expr import (
     Count,
     In,
     Join,
+    LeftJoin,
     Or,
     Select,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -34,6 +37,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     PRIVATE_INFORMATION_TYPES,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -50,13 +54,16 @@ from lp.registry.interfaces.sharingjob import (
     )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
+    AccessArtifact,
     AccessArtifactGrant,
     AccessPolicy,
     AccessPolicyArtifact,
     AccessPolicyGrant,
+    AccessPolicyGrantFlat,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
 from lp.services.searchbuilder import any
@@ -112,17 +119,22 @@ class SharingService:
             AccessPolicy.id.is_in(ids)
         )
 
-    def getSharedArtifacts(self, pillar, person, user):
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
+                           include_branches=True, include_specifications=True):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
         bug_ids = set()
         branch_ids = set()
+        specification_ids = set()
         for artifact in flat_source.findArtifactsByGrantee(person, policies):
-            if artifact.bug_id:
+            if artifact.bug_id and include_bugs:
                 bug_ids.add(artifact.bug_id)
-            elif artifact.branch_id:
+            elif artifact.branch_id and include_branches:
                 branch_ids.add(artifact.branch_id)
+            elif artifact.specification_id and include_specifications:
+                specification_ids.add(artifact.specification_id)
 
         # Load the bugs.
         bugtasks = []
@@ -137,17 +149,89 @@ class SharingService:
             wanted_branches = all_branches.visibleByUser(user).withIds(
                 *branch_ids)
             branches = list(wanted_branches.getBranches())
+        specifications = []
+        if specification_ids:
+            specifications = load(Specification, specification_ids)
 
-        return bugtasks, branches
+        return bugtasks, branches, specifications
 
-    def getVisibleArtifacts(self, person, branches=None, bugs=None):
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBugs(self, pillar, person, user):
+        """See `ISharingService`."""
+        bugtasks, ignore, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_branches=False,
+            include_specifications=False)
+        return bugtasks
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedBranches(self, pillar, person, user):
+        """See `ISharingService`."""
+        ignore, branches, ignore = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False,
+            include_specifications=False)
+        return branches
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getSharedSpecifications(self, pillar, person, user):
+        """See `ISharingService`."""
+        ignore, ignore, specifications = self.getSharedArtifacts(
+            pillar, person, user, include_bugs=False,
+            include_branches=False)
+        return specifications
+
+    def _getVisiblePrivateSpecificationIDs(self, person, specifications):
+        store = Store.of(specifications[0])
+        tables = (
+            Specification,
+            Join(
+                AccessPolicy,
+                And(
+                    Or(
+                        Specification.distributionID ==
+                            AccessPolicy.distribution_id,
+                        Specification.productID ==
+                            AccessPolicy.product_id),
+                    AccessPolicy.type == Specification.information_type)),
+            Join(
+                AccessPolicyGrantFlat,
+                AccessPolicy.id == AccessPolicyGrantFlat.policy_id
+                ),
+            LeftJoin(
+                AccessArtifact,
+                AccessArtifact.id ==
+                    AccessPolicyGrantFlat.abstract_artifact_id),
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID ==
+                    AccessPolicyGrantFlat.grantee_id))
+        spec_ids = [spec.id for spec in specifications]
+        return set(store.using(*tables).find(
+            Specification.id,
+            Or(
+                AccessPolicyGrantFlat.abstract_artifact_id == None,
+                AccessArtifact.specification == Specification.id),
+            TeamParticipation.personID == person.id,
+            In(Specification.id, spec_ids)))
+
+    def getVisibleArtifacts(self, person, branches=None, bugs=None,
+                            specifications=None, ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
         for bug in bugs or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', bug)):
+                raise Unauthorized
             bugs_by_id[bug.id] = bug
         for branch in branches or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', branch)):
+                raise Unauthorized
             branches_by_id[branch.id] = branch
+        for spec in specifications or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', spec)):
+                raise Unauthorized
 
         # Load the bugs.
         visible_bug_ids = []
@@ -165,7 +249,15 @@ class SharingService:
                 *branches_by_id.keys())
             visible_branches = list(wanted_branches.getBranches())
 
-        return visible_bugs, visible_branches
+        visible_specs = []
+        if specifications:
+            visible_private_spec_ids = self._getVisiblePrivateSpecificationIDs(
+                person, specifications)
+            visible_specs = [
+                spec for spec in specifications
+                if spec.id in visible_private_spec_ids or not spec.private]
+
+        return visible_bugs, visible_branches, visible_specs
 
     def getInvisibleArtifacts(self, person, branches=None, bugs=None):
         """See `ISharingService`."""
@@ -253,22 +345,25 @@ class SharingService:
             result_data.append(item)
         return result_data
 
-    def getInformationTypes(self, pillar):
+    def getAllowedInformationTypes(self, pillar):
         """See `ISharingService`."""
-        allowed_types = set(pillar.getAllowedBugInformationTypes()).union(
-            pillar.getAllowedBranchInformationTypes())
-        allowed_private_types = allowed_types.intersection(
-            PRIVATE_INFORMATION_TYPES)
-        return self._makeEnumData(allowed_private_types)
+        allowed_private_types = [
+            policy.type
+            for policy in getUtility(IAccessPolicySource).findByPillar(
+                [pillar])]
+        # We want the types in a specific order.
+        return self._makeEnumData([
+            type for type in PRIVATE_INFORMATION_TYPES
+            if type in allowed_private_types])
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have branch sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have branch sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BranchSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary branches.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
@@ -281,16 +376,34 @@ class SharingService:
 
     def getBugSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have bug sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have bug sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BugSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary bugs.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 BugSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
+
+    def getSpecificationSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have specification sharing policies. Distributions just
+        # default to Public.
+        allowed_policies = [SpecificationSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary specifications.
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
+            allowed_policies.extend([
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                SpecificationSharingPolicy.PROPRIETARY])
+        if (pillar.specification_sharing_policy and
+            not pillar.specification_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.specification_sharing_policy)
 
         return self._makeEnumData(allowed_policies)
 
@@ -459,25 +572,26 @@ class SharingService:
         # First delete any access policy grants.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, grantee) for policy in pillar_policies]
-        grants = [
+        grants_to_revoke = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
-        if len(grants) > 0:
-            policy_grant_source.revoke(grants)
+        if len(grants_to_revoke) > 0:
+            policy_grant_source.revoke(grants_to_revoke)
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+        artifacts_to_revoke = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
-        if len(to_delete) > 0:
+        if len(artifacts_to_revoke) > 0:
             getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                to_delete, [grantee])
+                artifacts_to_revoke, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, artifacts=None, grantee=grantee, pillar=pillar,
-            information_types=information_types)
+        if grants_to_revoke or artifacts_to_revoke:
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, artifacts=None, grantee=grantee, pillar=pillar,
+                information_types=information_types)
 
         grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
         invisible_types = [
@@ -511,7 +625,7 @@ class SharingService:
             user, artifacts, grantee=grantee, pillar=pillar)
 
     def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
-                           ignore_permissions=False):
+                           specifications=None, ignore_permissions=False):
         """See `ISharingService`."""
 
         artifacts = []
@@ -519,6 +633,8 @@ class SharingService:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if specifications:
+            artifacts.extend(specifications)
         if not ignore_permissions:
             # The user needs to have launchpad.Edit permission on all supplied
             # bugs and branches or else we raise an Unauthorized exception.
@@ -539,3 +655,21 @@ class SharingService:
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
             list(product(missing_artifacts, grantees, [user])))
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
+        if (not branch_sharing_policy and not bug_sharing_policy and not
+            specification_sharing_policy):
+            return None
+        # Only Products have sharing policies.
+        if not IProduct.providedBy(pillar):
+            raise ValueError(
+                "Sharing policies are only supported for products.")
+        if branch_sharing_policy:
+            pillar.setBranchSharingPolicy(branch_sharing_policy)
+        if bug_sharing_policy:
+            pillar.setBugSharingPolicy(bug_sharing_policy)
+        if specification_sharing_policy:
+            pillar.setSpecificationSharingPolicy(specification_sharing_policy)

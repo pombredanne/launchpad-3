@@ -91,10 +91,13 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -278,6 +281,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def pillar_category(self):
         """See `IPillar`."""
         return "Distribution"
+
+    @property
+    def branch_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return BranchSharingPolicy.PUBLIC
+
+    @property
+    def bug_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return BugSharingPolicy.PUBLIC
+
+    @property
+    def specification_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return SpecificationSharingPolicy.PUBLIC
 
     @property
     def uploaders(self):
@@ -961,6 +982,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `ISpecificationTarget`."""
         return Specification.selectOneBy(distribution=self, name=name)
 
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        return (InformationType.PUBLIC,)
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        return InformationType.PUBLIC
+
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
@@ -1580,10 +1609,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
         return InformationType.PUBLIC
-
-    def getAllowedBranchInformationTypes(self):
-        """See `IDistribution.`"""
-        return FREE_INFORMATION_TYPES
 
     def userCanEdit(self, user):
         """See `IDistribution`."""

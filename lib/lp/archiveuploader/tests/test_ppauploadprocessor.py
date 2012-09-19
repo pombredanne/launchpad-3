@@ -1250,6 +1250,17 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             "if you need more space."]
         self.assertEmail(contents)
 
+    def testPPASizeNoQuota(self):
+        self.name16.archive.authorized_size = None
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)"]
+        self.assertEmail(contents)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
     def testPPASizeQuotaSourceWarning(self):
         """Verify the size quota warning for PPA near size limit.
 

@@ -138,6 +138,9 @@ class LaunchpadFormView(LaunchpadView):
                 self.request.response.redirect(self.next_url)
         if self.request.is_ajax:
             self._processNotifications(self.request)
+        if self.errors:
+            self.form_result = form_action.failure(data, self.errors)
+            self._abort()
         self.action_taken = form_action
 
     def _processNotifications(self, request):

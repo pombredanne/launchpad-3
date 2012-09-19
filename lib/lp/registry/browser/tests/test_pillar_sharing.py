@@ -29,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -86,7 +87,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
                 product=self.pillar, owner=self.pillar.owner,
-                information_type=InformationType.USERDATA)
+                information_type=InformationType.PRIVATESECURITY)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -95,24 +96,15 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.factory.makePerson()
             else:
                 owner = self.pillar.owner
-            if self.pillar_type == 'product':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
-            elif self.pillar_type == 'distribution':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
+            bug = self.factory.makeBug(
+                target=self.pillar, owner=owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
 
         for artifact in artifacts:
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=self.access_policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact,
-                grantee=grantee,
-                grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
         return grantee
 
     def setupSharing(self, grantees):
@@ -207,7 +199,7 @@ class PillarSharingDetailsMixin:
             self.assertEqual({
                 'branch_id': branch.id,
                 'branch_name': branch.unique_name,
-                'information_type': InformationType.USERDATA.title,
+                'information_type': branch.information_type.title,
                 'web_link': canonical_url(branch, path_only_if_possible=True),
                 'self_link': absoluteURL(branch, request),
             }, cache.objects.get('branches')[0])
@@ -223,7 +215,7 @@ class PillarSharingDetailsMixin:
         IStore(self.pillar).invalidate()
         with StormStatementRecorder() as recorder:
             create_initialized_view(pillarperson, '+index')
-        self.assertThat(recorder, HasQueryCount(LessThan(12)))
+        self.assertThat(recorder, HasQueryCount(LessThan(13)))
 
 
 class TestProductSharingDetailsView(
@@ -277,6 +269,9 @@ class PillarSharingViewTestMixin:
         self.assertIsNotNone(cache.objects.get('branch_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+        # Ensure we don't set specification_sharing_policies without the
+        # feature flag enabled.
+        self.assertIsNone(cache.objects.get('specification_sharing_policies'))
         batch_size = config.launchpad.default_batch_size
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
         grantees = apgfs.findGranteePermissionsByPolicy(
@@ -285,6 +280,18 @@ class PillarSharingViewTestMixin:
         grantee_data = sharing_service.jsonGranteeData(grantees)
         self.assertContentEqual(
             grantee_data, cache.objects.get('grantee_data'))
+
+    def test_view_date_model_adds_specification(self):
+        # This test can move up to the above test when not feature flagged,
+        # but for now, ensure specification_sharing_policies is added to
+        # the cache if the flag is set.
+        feature_flag = {
+           'blueprints.information_type.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertIsNotNone(
+                cache.objects.get('specification_sharing_policies'))
 
     def test_view_batch_data(self):
         # Test the expected batching data is in the json request cache.
@@ -313,7 +320,7 @@ class PillarSharingViewTestMixin:
         view = create_view(self.pillar, name='+sharing')
         with StormStatementRecorder() as recorder:
             view.initialize()
-        self.assertThat(recorder, HasQueryCount(LessThan(9)))
+        self.assertThat(recorder, HasQueryCount(LessThan(10)))
 
     def test_view_invisible_information_types(self):
         # Test the expected invisible information type  data is in the
@@ -342,6 +349,31 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         # printed to stdout while browsing pages.
         self.useFixture(FakeLogger())
 
+    def test_view_contents_non_commercial_project(self):
+        # Non commercial projects are rendered with the correct text.
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNone(commercial_text)
+        self.assertIsNotNone(non_commercial_text)
+
+    def test_view_contents_commercial_project(self):
+        # Commercial projects are rendered with the correct text.
+        self.factory.makeCommercialSubscription(self.pillar)
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNotNone(commercial_text)
+        self.assertIsNone(non_commercial_text)
+
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
                                       SharingBaseTestCase):
@@ -353,3 +385,15 @@ class TestDistributionSharingView(PillarSharingViewTestMixin,
         super(TestDistributionSharingView, self).setUp()
         self.setupSharing(self.grantees)
         login_person(self.driver)
+
+    def test_view_contents(self):
+        # Distributions are rendered with the correct text.
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNone(commercial_text)
+        self.assertIsNone(non_commercial_text)

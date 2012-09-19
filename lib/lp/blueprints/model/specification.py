@@ -9,6 +9,8 @@ __all__ = [
     'recursive_blocked_query',
     'recursive_dependent_query',
     'Specification',
+    'SPECIFICATION_POLICY_ALLOWED_TYPES',
+    'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     ]
 
@@ -24,6 +26,13 @@ from sqlobject import (
     SQLMultipleJoin,
     SQLRelatedJoin,
     StringCol,
+    )
+from storm.expr import (
+    And,
+    In,
+    Join,
+    Or,
+    Select,
     )
 from storm.locals import (
     Desc,
@@ -70,12 +79,16 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -118,10 +131,33 @@ def recursive_dependent_query(spec):
         )""" % spec.id
 
 
+SPECIFICATION_POLICY_ALLOWED_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: [InformationType.PUBLIC],
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
+
+SPECIFICATION_POLICY_DEFAULT_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        InformationType.PUBLIC),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        InformationType.PROPRIETARY),
+    SpecificationSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY: (
+        InformationType.EMBARGOED),
+    }
+
+
 class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification, IBugLinkTarget)
+    implements(ISpecification, IBugLinkTarget, IInformationType)
 
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
@@ -815,25 +851,84 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
 
+    def getAllowedInformationTypes(self, who):
+        """See `ISpecification`."""
+        return self.target.getAllowedSpecificationInformationTypes()
+
+    def transitionToInformationType(self, information_type, who):
+        """See ISpecification."""
+        # avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            reconcile_access_for_artifact,
+            )
+        if self.information_type == information_type:
+            return False
+        if information_type not in self.getAllowedInformationTypes(who):
+            raise CannotChangeInformationType("Forbidden by project policy.")
+        self.information_type = information_type
+        reconcile_access_for_artifact(self, information_type, [self.target])
+        return True
+
     @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view the specifcation."""
+        return set()
+
     def userCanView(self, user):
         """See `ISpecification`."""
+        # Avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            AccessArtifact,
+            AccessPolicy,
+            AccessPolicyGrantFlat,
+            )
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
             return False
-        # Temporary: we should access the grant tables instead of
-        # checking if a given user has special roles.
-        # The following is basically copied from
-        # EditSpecificationByRelatedPeople.checkAuthenticated()
-        return (user.in_admin or
-                user.isOwner(self.target) or
-                user.isOneOfDrivers(self.target) or
-                user.isOneOf(
-                    self, ['owner', 'drafter', 'assignee', 'approver']))
+        if user.id in self._known_viewers:
+            return True
+
+        # Check if access has been granted to the user for either
+        # the pillar of this specification or the specification
+        # itself.
+        #
+        # A DB constraint ensures that either Specification.product or
+        # Specification.distribution is not null.
+        if self.product is not None:
+            pillar_clause = AccessPolicy.product == self.productID
+        else:
+            pillar_clause = AccessPolicy.distribution == self.distributionID
+        tables = (
+            AccessPolicyGrantFlat,
+            Join(
+                AccessPolicy,
+                AccessPolicyGrantFlat.policy_id == AccessPolicy.id),
+            Join(
+                TeamParticipation,
+                AccessPolicyGrantFlat.grantee == TeamParticipation.teamID)
+            )
+        grants = Store.of(self).using(*tables).find(
+            AccessPolicyGrantFlat,
+            pillar_clause,
+            Or(
+                And(
+                    AccessPolicyGrantFlat.abstract_artifact == None,
+                    AccessPolicy.type == self.information_type),
+                In(
+                    AccessPolicyGrantFlat.abstract_artifact_id,
+                    Select(
+                        AccessArtifact.id,
+                        AccessArtifact.specification_id == self.id))),
+            TeamParticipation.personID == user.id)
+        if grants.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
 
 
 class HasSpecificationsMixin:
@@ -1018,10 +1113,11 @@ class SpecificationSet(HasSpecificationsMixin):
         #
 
         # filter out specs on inactive products
-        base = """(Specification.product IS NULL OR
+        base = """((Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
+                   AND Specification.information_type = 1)
                 """
         query = base
         # look for informational specs
@@ -1080,10 +1176,12 @@ class SpecificationSet(HasSpecificationsMixin):
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None, workitems_text=None,
-        priority=SpecificationPriority.UNDEFINED):
+        priority=SpecificationPriority.UNDEFINED, information_type=None):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
         # SpecificationDefinitionStatus item.
+        if information_type is None:
+            information_type = InformationType.PUBLIC
         status_name = definition_status.name
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status_name not in status_names:
@@ -1091,11 +1189,13 @@ class SpecificationSet(HasSpecificationsMixin):
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
         definition_status = SpecificationDefinitionStatus.items[status_name]
-        return Specification(name=name, title=title, specurl=specurl,
+        spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
             assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+        spec.transitionToInformationType(information_type, None)
+        return spec
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

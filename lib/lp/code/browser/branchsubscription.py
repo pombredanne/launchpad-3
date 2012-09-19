@@ -294,8 +294,8 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         url = canonical_url(self.branch)
         # If the subscriber can no longer see the branch, redirect them away.
         service = getUtility(IService, 'sharing')
-        ignored, branches = service.getVisibleArtifacts(
-            self.person, branches=[self.branch])
+        ignored, branches, ignored = service.getVisibleArtifacts(
+            self.person, branches=[self.branch], ignore_permissions=True)
         if not branches:
             url = canonical_url(self.branch.target)
         return url

@@ -18,7 +18,7 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     REQUEST_USER,
-    )
+    operation_returns_collection_of)
 from lazr.restful.fields import Reference
 from zope.schema import (
     Choice,
@@ -28,11 +28,15 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
@@ -60,6 +64,12 @@ class ISharingService(IService):
         information type.
         """
 
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_for_version('devel')
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
@@ -70,7 +80,56 @@ class ISharingService(IService):
 
         :param user: the user making the request. Only artifacts visible to the
              user will be included in the result.
-        :return: a (bugtasks, branches) tuple
+        :return: a (bugtasks, branches, specifications) tuple
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBug)
+    @operation_for_version('devel')
+    def getSharedBugs(pillar, person, user):
+        """Return the bugs shared between the pillar and person.
+
+        The result includes bugtasks rather than bugs since this is what the
+        pillar filtering is applied to. The shared bug can be obtained simply
+        by reading the bugtask.bug attribute.
+
+        :param user: the user making the request. Only bugs visible to the
+             user will be included in the result.
+        :return: a collection of bug tasks.
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBranch)
+    @operation_for_version('devel')
+    def getSharedBranches(pillar, person, user):
+        """Return the branches shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of branches
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(ISpecification)
+    @operation_for_version('devel')
+    def getSharedSpecifications(pillar, person, user):
+        """Return the specifications shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of specifications.
         """
 
     def getVisibleArtifacts(person, branches=None, bugs=None):
@@ -111,13 +170,19 @@ class ISharingService(IService):
         :return: a collection of people without access to the artifact.
         """
 
-    def getInformationTypes(pillar):
-        """Return the allowed information types for the given pillar.
+    def getAllowedInformationTypes(pillar):
+        """Return the allowed private information types for the given pillar.
 
         The allowed information types are those for which bugs and branches
         may be created. This does not mean that there will necessarily be bugs
         and branches of these types; the result is used to populate the allowed
         choices in the grantee sharing pillar and other similar things.
+
+        The allowed information types are determined by the pillar's bug and
+        branch sharing policies. It is possible that there are bugs or branches
+        of a given information type which is now nominally not allowed with a
+        change in policy. Such information types are also included in the
+        result.
         """
 
     def getBugSharingPolicies(pillar):
@@ -125,6 +190,9 @@ class ISharingService(IService):
 
     def getBranchSharingPolicies(pillar):
         """Return the allowed branch sharing policies for the given pillar."""
+
+    def getSpecificationSharingPolicies(pillar):
+        """Return specification sharing policies for a given pillar."""
 
     def getSharingPermissions():
         """Return the information sharing permissions."""
@@ -225,11 +293,32 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def ensureAccessGrants(grantees, user, branches=None, bugs=None):
+    def ensureAccessGrants(grantees, user, branches=None, bugs=None,
+                           specifications=None):
         """Ensure a grantee has an access grant to the specified artifacts.
 
         :param grantees: the people or teams for whom to grant access
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
+        :param specifications: the specifications for which to grant access
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        branch_sharing_policy=Choice(vocabulary=BranchSharingPolicy),
+        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy),
+        specification_sharing_policy=Choice(
+            vocabulary=SpecificationSharingPolicy))
+    @operation_for_version('devel')
+    def updatePillarSharingPolicies(pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
+        """Update the sharing policies for a pillar.
+
+        :param pillar: the pillar to update
+        :param branch_sharing_policy: the new branch sharing policy
+        :param bug_sharing_policy: the new bug sharing policy
+        :param specification_sharing_policy: new specification sharing policy
         """

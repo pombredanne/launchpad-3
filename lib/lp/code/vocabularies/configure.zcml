@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -6,10 +6,14 @@
 
   <securedutility
      name="BuildableDistroSeries"
-     component=".sourcepackagerecipe.buildable_distroseries_vocabulary"
+     component=".sourcepackagerecipe.BuildableDistroSeries"
      provides="zope.schema.interfaces.IVocabularyFactory">
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
+
+  <class class=".sourcepackagerecipe.BuildableDistroSeries">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
      name="TargetPPAs"

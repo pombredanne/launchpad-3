@@ -19,7 +19,7 @@ from storm.expr import (
     In,
     Min,
     Not,
-    Or,
+    Update,
     SQL,
     )
 from storm.locals import (
@@ -44,10 +44,7 @@ from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import (
-    BranchVisibilityRule,
-    CodeImportResultStatus,
-    )
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
@@ -114,10 +111,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1031,62 +1025,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
-    def test_PopulateProjectSharingPolicies(self):
-        # Non commercial projects have their bug and branch sharing policies
-        # set.
-        with dbuser('testadmin'):
-            non_commercial_products = [
-                self.factory.makeLegacyProduct()
-                for i in range(10)]
-            commercial_project = self.factory.makeLegacyProduct()
-            self.factory.makeCommercialSubscription(commercial_project)
-            configured_project = self.factory.makeProduct(
-                bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
-            removeSecurityProxy(
-                configured_project).branch_sharing_policy = None
-            private_project = self.factory.makeLegacyProduct(private_bugs=True)
-            project_with_bvp = self.factory.makeLegacyProduct()
-            project_with_bvp.setBranchVisibilityTeamPolicy(
-                None, BranchVisibilityRule.FORBIDDEN)
-
-
-        def get_non_migrated_products():
-            return IMasterStore(Product).find(
-                Product,
-                Or(
-                    Product.bug_sharing_policy == None,
-                    Product.branch_sharing_policy == None))
-
-        self.runHourly()
-
-        # Check only the expected projects have been migrated.
-        # landscape and launchpad are projects in the test database which have
-        # non public branch visibility policies so are also not migrated.
-        product_set = getUtility(IProductSet)
-        landscape = product_set.getByName('landscape')
-        launchpad = product_set.getByName('launchpad')
-        self.assertContentEqual(
-            [commercial_project, configured_project, private_project,
-             project_with_bvp, landscape, launchpad],
-            get_non_migrated_products())
-        # The non migrated projects still have their original policies.
-        self.assertIsNone(commercial_project.bug_sharing_policy)
-        self.assertIsNone(commercial_project.branch_sharing_policy)
-        self.assertIsNone(private_project.bug_sharing_policy)
-        self.assertIsNone(private_project.branch_sharing_policy)
-        self.assertIsNone(project_with_bvp.bug_sharing_policy)
-        self.assertIsNone(project_with_bvp.branch_sharing_policy)
-        self.assertIsNone(configured_project.branch_sharing_policy)
-        self.assertEquals(
-            BugSharingPolicy.PROPRIETARY,
-            configured_project.bug_sharing_policy)
-        # The migrated projects have the expected policies.
-        for product in non_commercial_products:
-            self.assertEqual(
-                BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
-            self.assertEqual(
-                BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
-
     def getAccessPolicyTypes(self, pillar):
         return [
             ap.type
@@ -1098,9 +1036,10 @@ class TestGarbo(TestCaseWithFactory):
         switch_dbuser('testadmin')
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
-        with person_logged_in(product.owner):
-            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
-            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+        self.factory.makeAccessPolicy(product, InformationType.PROPRIETARY)
+        naked_product = removeSecurityProxy(product)
+        naked_product.bug_sharing_policy = BugSharingPolicy.PROPRIETARY
+        naked_product.branch_sharing_policy = BranchSharingPolicy.PROPRIETARY
         [ap] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.PRIVATESECURITY)])
         self.factory.makeAccessPolicyArtifact(policy=ap)
@@ -1120,6 +1059,23 @@ class TestGarbo(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
+
+    def test_SpecificationSharingPolicyDefault(self):
+        switch_dbuser('testadmin')
+        # Set all existing projects to something other than None or 1.
+        store = IMasterStore(Product)
+        store.execute(Update(
+            {Product.specification_sharing_policy: 2}))
+        store.flush()
+        # Make a new product without a specification_sharing_policy.
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).specification_sharing_policy = None
+        store.flush()
+        self.assertEqual(1, store.find(Product,
+            Product.specification_sharing_policy == None).count())
+        self.runDaily()
+        self.assertEqual(0, store.find(Product,
+            Product.specification_sharing_policy == None).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

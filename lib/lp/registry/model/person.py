@@ -1117,7 +1117,7 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getOwnedOrDrivenPillars(self):
+    def getAffiliatedPillars(self):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
         origin = SQL("""
@@ -1128,7 +1128,8 @@ class Person(
                 WHERE
                     active = True AND
                     (driver = %(person)s
-                    OR owner = %(person)s)
+                    OR owner = %(person)s
+                    OR bug_supervisor = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1142,6 +1143,7 @@ class Person(
                 WHERE
                     driver = %(person)s
                     OR owner = %(person)s
+                    OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
             """ % sqlvalues(person=self))
@@ -2223,7 +2225,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getOwnedOrDrivenPillars():
+        for pillar_name in self.getAffiliatedPillars():
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
@@ -3779,6 +3781,11 @@ class PersonSet:
             naked_recipe.owner = to_person
             naked_recipe.name = new_name
 
+    def _mergeLoginTokens(self, cur, from_id, to_id):
+        # Remove all LoginTokens.
+        cur.execute('''
+            DELETE FROM LoginToken WHERE requester=%(from_id)d''' % vars())
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -4378,6 +4385,9 @@ class PersonSet:
         skip.append(('karmatotalcache', 'person'))
 
         self._mergeDateCreated(cur, from_id, to_id)
+
+        self._mergeLoginTokens(cur, from_id, to_id)
+        skip.append(('logintoken', 'requester'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

@@ -811,7 +811,8 @@ class Bug(SQLBase):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            bugs, ignored, ignored = service.getVisibleArtifacts(
+                person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
                     [person], subscribed_by, bugs=[self],
@@ -1590,6 +1591,8 @@ class Bug(SQLBase):
             filter_args = dict(distroseriesID=target.id)
         elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        elif ISourcePackage.providedBy(target):
+            filter_args = dict(distroseriesID=target.series.id)
         else:
             return None
 
@@ -2054,9 +2057,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
-        # actually a composite of bug contacts, structural subscribers
-        # and assignees. As such, it's not possible to get them all with
-        # one query.
+        # actually a composite of bug structural subscribers and assignees.
+        # As such, it's not possible to get them all with one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
         if person in also_notified_subscribers:
             return True
@@ -2629,6 +2631,7 @@ class BugSet:
         # non-security bugs, this test might be simplified to checking
         # params.private.
         if (IProduct.providedBy(params.target) and params.target.private_bugs
+            and params.target.bug_sharing_policy is None
             and params.information_type not in SECURITY_INFORMATION_TYPES):
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default

@@ -148,7 +148,8 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertEqual('subordinate', disclaim_widget.cssClass)
         self.assertEqual(
             ['displayname', 'name', 'title', 'summary', 'description',
-             'homepageurl', 'licenses', 'license_info', 'owner',
+             'homepageurl', 'information_type', 'licenses', 'license_info',
+             'driver', 'bug_supervisor', 'owner',
              '__visited_steps__'],
             view.view.field_names)
         self.assertEqual(
