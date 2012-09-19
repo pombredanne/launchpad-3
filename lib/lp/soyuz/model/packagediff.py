@@ -145,8 +145,9 @@ class PackageDiff(SQLBase):
     @property
     def private(self):
         """See `IPackageDiff`."""
-        return all(
-            archive.private for archive in self.to_source.published_archives)
+        to_source = self.to_source
+        archives = [to_source.upload_archive] + to_source.published_archives
+        return all(archive.private for archive in archives)
 
     def _countDeletedLFAs(self):
         """How many files associated with either source package have been

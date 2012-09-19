@@ -32,14 +32,6 @@ Let's specify two valid tags.
     >>> user_browser.getControl('Change').click()
 
 
-Since they are new tags, we have to confirm them.
-
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-    >>> user_browser.getControl('Create the new tag', index=0).click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1'
-
 Now the tags will be displayed on the bug page:
 
     >>> 'Tags:' in user_browser.contents
@@ -87,27 +79,3 @@ to the list of all bugs having that tag in this context.
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
       &mdash; Medium New
-
-Using official tags for the first time does not require confirmation.
-
-    >>> import transaction
-    >>> from zope.component import getUtility
-    >>> from lp.testing import login, logout
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> login('foo.bar@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> u'an-official-tag' in firefox.getUsedBugTags()
-    False
-    >>> firefox.official_bug_tags = [u'an-official-tag']
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
-    >>> user_browser.getControl('Tags').value = 'an-official-tag'
-    >>> user_browser.getControl('Change').click()
-    >>> user_browser.getControl('Create the new tag')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Create the new tag'
-    >>> print user_browser.url
-    http://bugs.launchpad.dev/firefox/+bug/1

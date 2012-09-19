@@ -32,6 +32,7 @@ from lp.services.osutils import (
     write_file,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
@@ -171,8 +172,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             source_index = RepositoryIndexFile(
                 source_index_root, script.config.temproot, "Sources")
             for spp in distroseries.getSourcePackagePublishing(
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingPocket.RELEASE, component=component):
+                    PackagePublishingPocket.RELEASE, component,
+                    distroseries.main_archive):
                 stanza = spp.getIndexStanza().encode("utf-8") + "\n\n"
                 source_index.write(stanza)
             source_index.close()
@@ -183,9 +184,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 package_index = RepositoryIndexFile(
                     package_index_root, script.config.temproot, "Packages")
                 for bpp in distroseries.getBinaryPackagePublishing(
-                    archtag=arch.architecturetag,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    component=component):
+                        arch.architecturetag, PackagePublishingPocket.RELEASE,
+                        component, distroseries.main_archive):
                     stanza = bpp.getIndexStanza().encode("utf-8") + "\n\n"
                     package_index.write(stanza)
                 package_index.close()
@@ -651,7 +651,6 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from lp.services.scripts.tests import run_script
         distro = self.makeDistro()
         self.factory.makeDistroSeries(distro)
         transaction.commit()

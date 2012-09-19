@@ -86,15 +86,6 @@ list of emails to send:
     <BLANKLINE>
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    From: Sample Person <1@bugs.launchpad.net>
-    Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
@@ -159,11 +150,9 @@ subject, though, which is often the case when someone replies via email.
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: Re: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -199,11 +188,9 @@ Let's add a few changes and see how it looks like:
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     ** Summary changed:
     - Old summary
@@ -247,11 +234,9 @@ in the order they were added:
     To: foo.bar@canonical.com
     ...
     To: mark@example.com
-    ...
-    To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -341,7 +326,6 @@ notification will be sent to all members individually.
     foo.bar@canonical.com
     mark@example.com
     owner@example.com
-    support@ubuntu.com
     test@canonical.com
 
     >>> flush_notifications()
@@ -383,15 +367,6 @@ top of the email:
     ...     get_email_notifications(notifications)):
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
-    From: Sample Person <16@bugs.launchpad.net>
-    Subject: [Bug 16] subject
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    *** This bug is a duplicate of bug 1 ***
-        http://bugs.launchpad.dev/bugs/1
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
     Subject: [Bug 16] subject
@@ -419,7 +394,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         information_type=InformationType.EMBARGOEDSECURITY))
+    ...         information_type=InformationType.PRIVATESECURITY))
 
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
@@ -427,10 +402,10 @@ inserted at the top of the message body.
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a security vulnerability ***
     <BLANKLINE>
@@ -451,10 +426,10 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a comment.
     <BLANKLINE>
@@ -528,8 +503,6 @@ makes it write out the emails it sends.
     0
     >>> print err
     DEBUG   ...
-    INFO    Notifying support@ubuntu.com about bug 2.
-    ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <...@bugs.launchpad.net>
@@ -553,8 +526,6 @@ makes it write out the emails it sends.
     INFO    Notifying mark@example.com about bug 1.
     ...
     INFO    Notifying owner@example.com about bug 1.
-    ...
-    INFO    Notifying support@ubuntu.com about bug 1.
     ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
@@ -584,8 +555,6 @@ makes it write out the emails it sends.
     INFO    Notifying mark@example.com about bug 1.
     ...
     INFO    Notifying owner@example.com about bug 1.
-    ...
-    INFO    Notifying support@ubuntu.com about bug 1.
     ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
@@ -756,28 +725,28 @@ Predictably, private bugs are sent with a slightly different header:
     ...         InformationType.USERDATA, sample_person)
     True
     >>> print bug_three.information_type.title
-    User Data
+    Private
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['no'] ['User Data']
-    mark@example.com ['yes'] ['no']  ['User Data']
-    test@canonical.com ['yes'] ['no']  ['User Data']
+    foo.bar@canonical.com ['yes'] ['no'] ['Private']
+    mark@example.com ['yes'] ['no']  ['Private']
+    test@canonical.com ['yes'] ['no']  ['Private']
 
-Now transition the bug to embargoed security:
+Now transition the bug to private security:
 
     >>> with lp_dbuser():
     ...     bug_three.transitionToInformationType(
-    ...         InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
+    ...         InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
     >>> print bug_three.information_type.title
-    Embargoed Security
+    Private Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['yes'] ['Embargoed Security']
-    mark@example.com ['yes'] ['yes']  ['Embargoed Security']
-    test@canonical.com ['yes'] ['yes']  ['Embargoed Security']
+    foo.bar@canonical.com ['yes'] ['yes'] ['Private Security']
+    mark@example.com ['yes'] ['yes']  ['Private Security']
+    test@canonical.com ['yes'] ['yes']  ['Private Security']
 
 
 The X-Launchpad-Bug-Commenters header
@@ -841,7 +810,7 @@ with different verbose_bugnotifications settings.
 
     >>> with lp_dbuser():
     ...     bug = factory.makeBug(
-    ...         product=factory.makeProduct(title='Foo'),
+    ...         target=factory.makeProduct(title='Foo'),
     ...         title='In the beginning, the universe was created. This '
     ...             'has made a lot of people very angry and has been '
     ...             'widely regarded as a bad move',
@@ -1157,12 +1126,6 @@ notifications.
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are subscribed to the bug
@@ -1221,12 +1184,6 @@ COMMENTS, he also receives these notifications.
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are subscribed to the bug
@@ -1272,12 +1229,6 @@ no comment notifications.
     --
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -1338,12 +1289,6 @@ receives these notifications.
     Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    ...
-    ----------------------------------------------------------------------
     To: test@canonical.com
     ...
     You received this bug notification because you are subscribed to the bug
@@ -1392,12 +1337,6 @@ no notifications created by addChange().
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/1
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -1458,12 +1397,6 @@ after all.
     ...
     You received this bug notification because you are a member of
     Addressless Team, which is subscribed to the bug report.
-    ...
-    ----------------------------------------------------------------------
-    To: support@ubuntu.com
-    ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: test@canonical.com

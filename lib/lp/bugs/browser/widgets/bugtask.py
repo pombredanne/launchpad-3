@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -586,7 +586,7 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.displayname)))
         else:
-            if bugtask.target_uses_malone:
+            if bugtask.pillar.official_malone:
                 return renderElement('i', contents='not assigned')
             else:
                 return renderElement('i', contents='unknown')

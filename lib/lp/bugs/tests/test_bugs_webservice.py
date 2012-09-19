@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import re
 
 from BeautifulSoup import BeautifulSoup
@@ -13,6 +17,7 @@ from lazr.restfulclient.errors import (
     BadRequest,
     HTTPError,
     )
+import pytz
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import (
@@ -20,11 +25,17 @@ from testtools.matchers import (
     LessThan,
     )
 from zope.component import getMultiAdapter
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
+from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     api_url,
@@ -32,6 +43,7 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -40,7 +52,10 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,
@@ -55,7 +70,7 @@ class TestBugConstraints(TestCaseWithFactory):
     def setUp(self):
         super(TestBugConstraints, self).setUp()
         product = self.factory.makeProduct(name='foo')
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         lp = launchpadlib_for('testing', product.owner)
         self.bug = lp.bugs[bug.id]
 
@@ -337,7 +352,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
 
 class TestErrorHandling(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
         bug = self.factory.makeBug()
@@ -354,12 +369,117 @@ class TestErrorHandling(TestCaseWithFactory):
         # a proprietary bug. In this case, we cannot mark a proprietary bug
         # as affecting more than one project.
         owner = self.factory.makePerson()
+        product1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        product2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
-            owner=owner, information_type=InformationType.PROPRIETARY)
-        product = self.factory.makeProduct()
+            target=product1, owner=owner,
+            information_type=InformationType.PROPRIETARY)
 
         login_person(owner)
         launchpad = launchpadlib_for('test', owner)
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
-            BadRequest, lp_bug.addTask, target=api_url(product))
+            BadRequest, lp_bug.addTask, target=api_url(product2))
+
+    def test_add_attachment_with_bad_filename_raises_exception(self):
+        # Test that addAttachment raises BadRequest when the filename given
+        # contains slashes.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        login_person(owner)
+        launchpad = launchpadlib_for('test', owner)
+        lp_bug = launchpad.load(api_url(bug))
+        self.assertRaises(
+            BadRequest, lp_bug.addAttachment, comment='foo', data='foo',
+            filename='/home/foo/bar.txt')
+
+
+class BugSetTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_private_bugs_true(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug according
+        # to the project's bugs are private by default rule.
+        project = self.factory.makeLegacyProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setPrivateBugs(True, project.owner)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc')
+        self.assertEqual('Private', bug.information_type)
+
+    def test_explicit_private_private_bugs_true(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug because the
+        # user commands it.
+        project = self.factory.makeLegacyProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setPrivateBugs(True, project.owner)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc',
+            private=True)
+        self.assertEqual('Private', bug.information_type)
+
+    def test_default_sharing_policy_proprietary(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug according
+        # to the project's bug sharing policy.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc')
+        self.assertEqual('Proprietary', bug.information_type)
+
+
+class TestBugDateLastUpdated(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def make_old_bug(self):
+        bug = self.factory.makeBug()
+        one_year_ago = datetime.now(pytz.UTC) - timedelta(days=365)
+        removeSecurityProxy(bug).date_last_updated = one_year_ago
+        owner = bug.owner
+        with person_logged_in(owner):
+            webservice = webservice_for_person(
+                owner, permission=OAuthPermission.WRITE_PUBLIC)
+        return (bug, owner, webservice)
+
+    def test_subscribe_does_not_update(self):
+        # Calling subscribe over the API does not update date_last_updated.
+        (bug, owner, webservice)  = self.make_old_bug()
+        subscriber = self.factory.makePerson()
+        date_last_updated = bug.date_last_updated
+        api_sub = api_url(subscriber)
+        bug_url = api_url(bug)
+        logout()
+        response = webservice.named_post(bug_url, 'subscribe', person=api_sub)
+        self.assertEqual(200, response.status)
+        with person_logged_in(owner):
+            self.assertEqual(date_last_updated, bug.date_last_updated)
+
+    def test_change_status_does_update(self):
+        # Changing the status of a bugtask does change date_last_updated.
+        (bug, owner, webservice) = self.make_old_bug()
+        task_url = api_url(bug.default_bugtask)
+        date_last_updated = bug.date_last_updated
+        logout()
+        response = webservice.patch(
+            task_url, 'application/json', dumps(dict(status='Invalid')))
+        self.assertEqual(209, response.status)
+        with person_logged_in(owner):
+            self.assertNotEqual(date_last_updated, bug.date_last_updated)

@@ -86,7 +86,7 @@ Nor can an ordinary user:
 And the bug supervisor can't see the widgets either.
 
     >>> login("foo.bar@canonical.com")
-    >>> gnome_terminal.setBugSupervisor(no_priv, no_priv)
+    >>> gnome_terminal.bug_supervisor = no_priv
     >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'
@@ -149,7 +149,7 @@ the importance of a bugtask in Alsa Utils.
 A bug supervisor can see both.
 
     >>> login("foo.bar@canonical.com")
-    >>> alsa_utils.setBugSupervisor(no_priv, no_priv)
+    >>> alsa_utils.bug_supervisor = no_priv
     >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'

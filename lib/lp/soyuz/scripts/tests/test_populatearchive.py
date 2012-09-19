@@ -43,7 +43,7 @@ def get_spn(build):
 
 
 class TestPopulateArchiveScript(TestCaseWithFactory):
-    """Test the copy-package.py script."""
+    """Test the populate-archive.py script."""
 
     layer = LaunchpadZopelessLayer
     expected_build_spns = [

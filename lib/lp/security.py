@@ -45,6 +45,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
+    ISpecificationView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
@@ -107,6 +108,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
@@ -137,7 +139,6 @@ from lp.registry.interfaces.person import (
     IPersonLimitedView,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
@@ -240,6 +241,11 @@ from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
     )
+
+
+def is_commercial_case(obj, user):
+    """Is this a commercial project and the user is a commercial admin?"""
+    return obj.has_current_commercial_subscription and user.in_commercial_admin
 
 
 class ViewByLoggedInUser(AuthorizationBase):
@@ -359,7 +365,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
     permission = 'launchpad.Driver'
 
     def checkAuthenticated(self, user):
-        """The Admins & Commercial Admins can see inactive pillars."""
+        """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
                 user.isOneOfDrivers(self.obj.pillar))
@@ -426,6 +432,13 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(EditProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class EditPackaging(EditByOwnersOrAdmins):
@@ -517,6 +530,27 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
 
     permission = 'launchpad.View'
     usedfor = ISpecificationPublic
+
+
+class ViewSpecification(AuthorizationBase):
+
+    permission = 'launchpad.LimitedView'
+    usedfor = ISpecificationView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class EditWhiteboardSpecification(ViewSpecification):
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = ISpecificationView
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
@@ -1039,8 +1073,8 @@ class AdminDistribution(AdminByAdminsTeam):
 
 class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its
-    information; it is mainly administrative data, such as bug
-    contacts. Note that creation of new distributions and distribution
+    information; it is mainly administrative data, such as bug supervisors.
+    Note that creation of new distributions and distribution
     series is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution
@@ -1220,6 +1254,19 @@ class SeriesDrivers(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return self.obj.personHasDriverRights(user)
+
+
+class DriveProduct(SeriesDrivers):
+
+    permission = 'launchpad.Driver'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(DriveProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class ViewProductSeries(AnonymousAuthorization):
@@ -1659,10 +1706,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
             return True
 
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return not permissions.is_empty()
+        if not component_permissions.is_empty():
+            return True
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
+        for permission in pocket_permissions:
+            if permission.distroseries in (None, self.obj.distroseries):
+                return True
+        return False
 
 
 class EditPlainPackageCopyJob(AuthorizationBase):
@@ -1730,19 +1785,9 @@ class EditPackageUpload(AdminByAdminsTeam):
             archive_append = AppendArchive(self.obj.archive)
             return archive_append.checkAuthenticated(user)
 
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
-            self.obj.archive, user.person)
-        if permissions.count() == 0:
-            return False
-        allowed_components = set(
-            permission.component for permission in permissions)
-        existing_components = self.obj.components
-        # The intersection of allowed_components and
-        # existing_components must be equal to existing_components
-        # to allow the operation to go ahead.
-        return (allowed_components.intersection(existing_components)
-                == existing_components)
+        return self.obj.archive.canAdministerQueue(
+            user.person, self.obj.components, self.obj.pocket,
+            self.obj.distroseries)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -1842,8 +1887,8 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         # If the permission check on the sourcepackagerelease for this
         # build passes then it means the build can be released from
         # privacy since the source package is published publicly.
-        # This happens when copy-package is used to re-publish a private
-        # package in the primary archive.
+        # This happens when Archive.copyPackage is used to re-publish a
+        # private package in the primary archive.
         auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
@@ -2095,6 +2140,19 @@ class EditBranch(AuthorizationBase):
             user.in_vcs_imports
             or (self.obj.owner == vcs_imports
                 and user.inTeam(code_import.registrant)))
+
+
+class ModerateBranch(EditBranch):
+    """The owners, product owners, and admins can moderate branches."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateBranch, self).checkAuthenticated(user):
+            return True
+        branch = self.obj
+        if branch.product is not None and user.inTeam(branch.product.owner):
+            return True
+        return user.in_commercial_admin
 
 
 def can_upload_linked_package(person_role, branch):
@@ -2432,9 +2490,6 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
-
-    Appending to ubuntu main archives can also be done by the
-    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -2447,12 +2502,6 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (self.obj.is_main and
-            self.obj.distribution == celebrities.ubuntu and
-            user.in_ubuntu_security):
             return True
 
         return False

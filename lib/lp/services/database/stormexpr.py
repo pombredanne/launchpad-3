@@ -8,12 +8,14 @@ __all__ = [
     'ArrayAgg',
     'ArrayContains',
     'ArrayIntersects',
+    'ColumnSelect',
     'Concatenate',
     'CountDistinct',
     'Greatest',
     'get_where_for_reference',
     'NullCount',
     'TryAdvisoryLock',
+    'Unnest',
     ]
 
 from storm.exceptions import ClassInfoError
@@ -29,6 +31,23 @@ from storm.expr import (
     Or,
     )
 from storm.info import get_obj_info
+
+
+class ColumnSelect(Expr):
+    # Wrap a select statement in braces so that it can be used as a column
+    # expression in another query.
+    __slots__ = ("select")
+
+    def __init__(self, select):
+        self.select = select
+
+
+@compile.when(ColumnSelect)
+def compile_columnselect(compile, expr, state):
+    state.push("context", EXPR)
+    select = compile(expr.select)
+    state.pop()
+    return "(%s)" % select
 
 
 class Greatest(NamedFunc):
@@ -99,19 +118,25 @@ def compile_array(compile, array, state):
 
 
 class ArrayAgg(NamedFunc):
-    "Aggregate values (within a GROUP BY) into an array."
+    """Aggregate values (within a GROUP BY) into an array."""
     __slots__ = ()
     name = "ARRAY_AGG"
 
 
+class Unnest(NamedFunc):
+    """Expand an array to a set of rows."""
+    __slots__ = ()
+    name = "unnest"
+
+
 class ArrayContains(CompoundOper):
-    "True iff the left side is a superset of the right side."
+    """True iff the left side is a superset of the right side."""
     __slots__ = ()
     oper = "@>"
 
 
 class ArrayIntersects(CompoundOper):
-    "True iff the left side shares at least one element with the right side."
+    """True iff the arrays have at least one element in common."""
     __slots__ = ()
     oper = "&&"
 

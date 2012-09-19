@@ -1,14 +1,25 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import datetime
+
 from testtools import TestCase
 from testtools.matchers import Contains
 
+from lp.services.webapp.login import (
+    isFreshLogin,
+    OpenIDCallbackView,
+    )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.session import (
     get_cookie_domain,
     LaunchpadCookieClientIdManager,
     )
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class GetCookieDomainTestCase(TestCase):
@@ -55,3 +66,34 @@ class TestLaunchpadCookieClientIdManager(TestCase):
         self.assertThat(
             dict(request.response.getHeaders())['Set-Cookie'],
             Contains('; httponly;'))
+
+
+class TestSessionRelatedFunctions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setupLoggedInRequest(self, user, request, when=None):
+        """Test helper to login a user for a request."""
+        with person_logged_in(user):
+            view = OpenIDCallbackView(user, request)
+            view.login(user, when)
+
+    def test_isFreshLogin_returns_false_for_anonymous(self):
+        """isFreshLogin should return False for anonymous views."""
+        request = LaunchpadTestRequest()
+        self.assertFalse(isFreshLogin(request))
+
+    def test_isFreshLogin_returns_true(self):
+        """isFreshLogin should return True with a fresh logged in user."""
+        user = self.factory.makePerson()
+        request = LaunchpadTestRequest()
+        self.setupLoggedInRequest(user, request)
+        self.assertTrue(isFreshLogin(request))
+
+    def test_isFreshLogin_returns_false(self):
+        """isFreshLogin should be False for users logged in over 2 minutes."""
+        user = self.factory.makePerson()
+        request = LaunchpadTestRequest()
+        when = datetime.datetime.utcnow() - datetime.timedelta(seconds=180)
+        self.setupLoggedInRequest(user, request, when)
+        self.assertFalse(isFreshLogin(request))

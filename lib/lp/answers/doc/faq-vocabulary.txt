@@ -82,7 +82,5 @@ are similar to the query:
     2
     >>> for term in terms:
     ...     print term.title
-    How do I troubleshoot problems with extensions/themes?
     How do I install Extensions?
-
-
+    How do I troubleshoot problems with extensions/themes?

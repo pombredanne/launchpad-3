@@ -1,12 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'BugSubscriptionFilter',
+    'BugSubscriptionFilterInformationType',
+    'BugSubscriptionFilterImportance',
     'BugSubscriptionFilterMute',
+    'BugSubscriptionFilterStatus',
+    'BugSubscriptionFilterTag',
     ]
 
 from itertools import chain
@@ -32,13 +34,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.model.bugsubscriptionfilterimportance import (
-    BugSubscriptionFilterImportance,
-    )
-from lp.bugs.model.bugsubscriptionfilterstatus import (
-    BugSubscriptionFilterStatus,
-    )
-from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
@@ -78,83 +74,50 @@ class BugSubscriptionFilter(StormBase):
 
     description = Unicode('description')
 
-    def _get_statuses(self):
-        """Return a frozenset of statuses to filter on."""
+    def _get_collection(self, cls, attribute):
+        kind = getattr(cls, attribute)
         return frozenset(
-            IStore(BugSubscriptionFilterStatus).find(
-                BugSubscriptionFilterStatus,
-                BugSubscriptionFilterStatus.filter == self).values(
-                BugSubscriptionFilterStatus.status))
+            IStore(cls).find(cls, cls.filter == self).values(kind))
 
-    def _set_statuses(self, statuses):
-        """Update the statuses to filter on.
-
-        The statuses must be from the `BugTaskStatus` enum, but can be
-        bundled in any iterable.
-
-        Setting all statuses is equivalent to setting no statuses, and
-        is normalized that way.
-        """
-        statuses = frozenset(statuses)
-        if statuses == frozenset(BugTaskStatus.items):
+    def _set_collection(self, cls, enum, attribute, current_set, desired_set):
+        desired_set = frozenset(desired_set)
+        if desired_set == frozenset(enum.items):
             # Setting all is the same as setting none, and setting none is
             # cheaper for reading and storage.
-            statuses = frozenset()
-        current_statuses = self.statuses
-        store = IStore(BugSubscriptionFilterStatus)
-        # Add additional statuses.
-        for status in statuses.difference(current_statuses):
-            status_filter = BugSubscriptionFilterStatus()
-            status_filter.filter = self
-            status_filter.status = status
-            store.add(status_filter)
-        # Delete unused ones.
+            desired_set = frozenset()
+        # Add missing.
+        store = IStore(cls)
+        for kind in desired_set.difference(current_set):
+            bsf = cls()
+            bsf.filter = self
+            setattr(bsf, attribute, kind)
+            store.add(bsf)
+        # Remove unused.
+        kind = getattr(cls, attribute)
         store.find(
-            BugSubscriptionFilterStatus,
-            BugSubscriptionFilterStatus.filter == self,
-            BugSubscriptionFilterStatus.status.is_in(
-                current_statuses.difference(statuses))).remove()
+            cls, cls.filter == self, kind.is_in(
+                current_set.difference(desired_set))).remove()
+
+    def _get_statuses(self):
+        return self._get_collection(BugSubscriptionFilterStatus, 'status')
+
+    def _set_statuses(self, statuses):
+        self._set_collection(
+            BugSubscriptionFilterStatus, BugTaskStatus, 'status',
+            self.statuses, statuses)
 
     statuses = property(
         _get_statuses, _set_statuses, doc=(
             "A frozenset of statuses filtered on."))
 
     def _get_importances(self):
-        """Return a frozenset of importances to filter on."""
-        return frozenset(
-            IStore(BugSubscriptionFilterImportance).find(
-                BugSubscriptionFilterImportance,
-                BugSubscriptionFilterImportance.filter == self).values(
-                BugSubscriptionFilterImportance.importance))
+        return self._get_collection(
+            BugSubscriptionFilterImportance, 'importance')
 
     def _set_importances(self, importances):
-        """Update the importances to filter on.
-
-        The importances must be from the `BugTaskImportance` enum, but can be
-        bundled in any iterable.
-
-        Setting all importances is equivalent to setting no importances, and
-        is normalized that way.
-        """
-        importances = frozenset(importances)
-        if importances == frozenset(BugTaskImportance.items):
-            # Setting all is the same as setting none, and setting none is
-            # cheaper for reading and storage.
-            importances = frozenset()
-        current_importances = self.importances
-        store = IStore(BugSubscriptionFilterImportance)
-        # Add additional importances.
-        for importance in importances.difference(current_importances):
-            importance_filter = BugSubscriptionFilterImportance()
-            importance_filter.filter = self
-            importance_filter.importance = importance
-            store.add(importance_filter)
-        # Delete unused ones.
-        store.find(
-            BugSubscriptionFilterImportance,
-            BugSubscriptionFilterImportance.filter == self,
-            BugSubscriptionFilterImportance.importance.is_in(
-                current_importances.difference(importances))).remove()
+        self._set_collection(
+            BugSubscriptionFilterImportance, BugTaskImportance, 'importance',
+            self.importances, importances)
 
     importances = property(
         _get_importances, _set_importances, doc=(
@@ -224,6 +187,19 @@ class BugSubscriptionFilter(StormBase):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def _get_information_types(self):
+        return self._get_collection(
+            BugSubscriptionFilterInformationType, 'information_type')
+
+    def _set_information_types(self, information_types):
+        self._set_collection(
+            BugSubscriptionFilterInformationType, InformationType,
+            'information_type', self.information_types, information_types)
+
+    information_types = property(
+        _get_information_types, _set_information_types, doc=(
+            "A frozenset of information_types filtered on."))
+
     def _has_other_filters(self):
         """Are there other filters for parent `StructuralSubscription`?"""
         store = Store.of(self)
@@ -244,6 +220,7 @@ class BugSubscriptionFilter(StormBase):
         # This clears up all of the linked sub-records in the associated
         # tables.
         self.importances = self.statuses = self.tags = ()
+        self.information_types = ()
 
         if self._has_other_filters():
             Store.of(self).remove(self)
@@ -324,3 +301,61 @@ class BugSubscriptionFilterMute(StormBase):
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
+
+
+class BugSubscriptionFilterStatus(StormBase):
+    """Statuses to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterStatus"
+    __storm_primary__ = ('filter_id', 'status')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    status = DBEnum(enum=BugTaskStatus, allow_none=False)
+
+
+class BugSubscriptionFilterImportance(StormBase):
+    """Importances to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterImportance"
+    __storm_primary__ = ('filter_id', 'importance')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    importance = DBEnum(enum=BugTaskImportance, allow_none=False)
+
+
+class BugSubscriptionFilterTag(StormBase):
+    """Tags to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterTag"
+
+    id = Int(primary=True)
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    include = Bool(allow_none=False)
+    tag = Unicode(allow_none=False)
+
+    @property
+    def qualified_tag(self):
+        """The tag qualified with a hyphen if it is to be omitted."""
+        if self.include:
+            return self.tag
+        else:
+            return u"-" + self.tag
+
+
+class BugSubscriptionFilterInformationType(StormBase):
+    """Information types to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterInformationType"
+    __storm_primary__ = ('filter_id', 'information_type')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    information_type = DBEnum(enum=InformationType, allow_none=False)

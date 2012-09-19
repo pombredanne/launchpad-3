@@ -43,7 +43,7 @@ The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Moderated Team
 
     >>> print extract_text(

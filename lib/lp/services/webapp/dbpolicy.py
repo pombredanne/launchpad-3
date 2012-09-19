@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -9,7 +9,6 @@ __all__ = [
     'DatabaseBlockedPolicy',
     'LaunchpadDatabasePolicy',
     'MasterDatabasePolicy',
-    'ReadOnlyLaunchpadDatabasePolicy',
     'SlaveDatabasePolicy',
     'SlaveOnlyDatabasePolicy',
     ]
@@ -18,13 +17,14 @@ from datetime import (
     datetime,
     timedelta,
     )
-import logging
 from textwrap import dedent
 
+import psycopg2
 from storm.cache import (
     Cache,
     GenerationalCache,
     )
+from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -45,7 +45,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import StupidCache
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.interfaces import (
@@ -55,7 +54,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR,
     )
 
@@ -84,6 +82,31 @@ def storm_cache_factory():
         assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
+def get_connected_store(name, flavor):
+    """Retrieve a store from the IZStorm Utility and ensure it is connected.
+
+    :raises storm.exceptions.DisconnectionError: On failures.
+    """
+    store_name = '%s-%s' % (name, flavor)
+    try:
+        store = getUtility(IZStorm).get(
+            store_name, 'launchpad:%s' % store_name)
+        store._connection._ensure_connected()
+        return store
+    except DisconnectionError:
+        # If the Store is in a disconnected state, ensure it is
+        # registered with the transaction manager. Otherwise, if
+        # _ensure_connected() caused the disconnected state it may not
+        # be put into reconnect state at the end of the transaction.
+        store._connection._event.emit('register-transaction')
+        raise
+    except psycopg2.OperationalError, exc:
+        # Per Bug #1025264, Storm emits psycopg2 errors when we
+        # want DisconnonnectionErrors, eg. attempting to open a
+        # new connection to a non-existent database.
+        raise DisconnectionError(str(exc))
+
+
 class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
@@ -99,9 +122,34 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
-        store_name = '%s-%s' % (name, flavor)
-        store = getUtility(IZStorm).get(
-            store_name, 'launchpad:%s' % store_name)
+        try:
+            store = get_connected_store(name, flavor)
+        except DisconnectionError:
+
+            # A request for a master database connection was made
+            # and failed. Nothing we can do so reraise the exception.
+            if flavor != SLAVE_FLAVOR:
+                raise
+
+            # A request for a slave database connection was made
+            # and failed. Try to return a master connection, this
+            # will be good enough. Note we don't call self.getStore()
+            # recursively because we want to make this attempt even if
+            # the DatabasePolicy normally disallows master database
+            # connections. All this behavior allows read-only requests
+            # to keep working when slave databases are being rebuilt or
+            # updated.
+            try:
+                flavor = MASTER_FLAVOR
+                store = get_connected_store(name, flavor)
+            except DisconnectionError:
+                store = None
+
+            # If we still haven't connected to a suitable database,
+            # reraise the original attempt's exception.
+            if store is None:
+                raise
+
         if not getattr(store, '_lp_store_initialized', False):
             # No existing Store. Create a new one and tweak its defaults.
 
@@ -195,8 +243,6 @@ def LaunchpadDatabasePolicyFactory(request):
     # of test requests in our automated tests.
     if request.get('PATH_INFO') in [u'/+opstats', u'/+haproxy']:
         return DatabaseBlockedPolicy(request)
-    elif is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
 
@@ -305,9 +351,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     session_data['last_write'] = now
 
     def getReplicationLag(self):
-        """Return the replication lag on the MAIN_STORE slave.
-
-        Lag to other replication sets is currently ignored.
+        """Return the replication lag between the primary and our hot standby.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
@@ -328,70 +372,23 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             # Return the lag.
             return streaming_lag
 
-        # Slave might be a Slony-I slave. We need to ask our slave what
-        # node it is. We can't cache this, as we might have reconnect to
-        # a different slave between requests.
-        slave_node_id = slave_store.execute(
-            "SELECT getlocalnodeid()").get_one()[0]
-        if slave_node_id is None:
-            # Unreplicated. This might be a dev system, or a production
-            # system running on a single database for some reason.
-            return None
-
-        # sl_status gives meaningful results only on the origin node.
-        master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-
-        # Retrieve the cached lag.
-        lag = master_store.execute("""
-            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
-            FROM DatabaseReplicationLag WHERE node=%d
-            """ % slave_node_id).get_one()
-        if lag is None:
-            logging.error(
-                "No data in DatabaseReplicationLag for node %d"
-                % slave_node_id)
-            return timedelta(days=999)
-        return lag[0]
+        # Unreplicated. This might be a dev system, or a production
+        # system running on a single database for some reason.
+        return None
 
 
 def WebServiceDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
-    else:
-        # If a session cookie was sent with the request, use the
-        # standard Launchpad database policy for load balancing to
-        # the slave databases. The javascript web service libraries
-        # send the session cookie for authenticated users.
-        cookie_name = getUtility(IClientIdManager).namespace
-        if cookie_name in request.cookies:
-            return LaunchpadDatabasePolicy(request)
-        # Otherwise, use the master only web service database policy.
-        return MasterDatabasePolicy(request)
-
-
-class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
-    """Policy for Launchpad web requests when running in read-only mode.
-
-    Access to all master Stores is blocked.
-    """
-
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`.
-
-        Access to all master Stores is blocked. The default Store is
-        the slave.
-
-        Note that we even have to block access to the authdb master
-        Store, as it allows access to tables replicated from the
-        lpmain replication set. These tables will be locked during
-        a lpmain replication set database upgrade.
-        """
-        if flavor == MASTER_FLAVOR:
-            raise ReadOnlyModeDisallowedStore(name, flavor)
-        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
-            name, SLAVE_FLAVOR)
+    # If a session cookie was sent with the request, use the
+    # standard Launchpad database policy for load balancing to
+    # the slave databases. The javascript web service libraries
+    # send the session cookie for authenticated users.
+    cookie_name = getUtility(IClientIdManager).namespace
+    if cookie_name in request.cookies:
+        return LaunchpadDatabasePolicy(request)
+    # Otherwise, use the master only web service database policy.
+    return MasterDatabasePolicy(request)
 
 
 class WhichDbView(LaunchpadView):

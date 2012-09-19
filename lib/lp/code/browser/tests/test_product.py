@@ -22,7 +22,6 @@ from lp.code.enums import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
 from lp.registry.enums import InformationType
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -355,18 +354,16 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
     def test_is_private(self):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
-        product = self.factory.makeProduct(owner=team_owner)
+        product = self.factory.makeLegacyProduct(owner=team_owner)
         branch = self.factory.makeProductBranch(product=product)
         login_person(product.owner)
         product.development_focus.branch = branch
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        with FeatureFixture(
-                {'disclosure.display_userdata_as_private.enabled': 'true'}):
-            view = create_initialized_view(
-                product, '+code-index', rootsite='code',
-                principal=product.owner)
-            text = extract_text(find_tag_by_id(view.render(), 'privacy'))
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code',
+            principal=product.owner)
+        text = extract_text(find_tag_by_id(view.render(), 'privacy'))
         expected = (
             "New branches for %(name)s are Private.*"
             % dict(name=product.displayname))

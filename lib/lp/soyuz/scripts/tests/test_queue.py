@@ -1085,10 +1085,10 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
+        dsp = spr.upload_distroseries.distribution.getSourcePackage(
+            spr.sourcepackagename)
         bug = self.factory.makeBug(
-            sourcepackagename=spr.sourcepackagename,
-            distribution=spr.upload_distroseries.distribution,
-            information_type=InformationType.USERDATA)
+            target=dsp, information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
 
         with person_logged_in(archive_admin):

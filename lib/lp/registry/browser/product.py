@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -52,6 +52,8 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
+
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
@@ -142,6 +144,7 @@ from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
     )
+from lp.services.features import getFeatureFlag
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -155,6 +158,10 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.enums import (
+    json_dump_information_types,
+    InformationType,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -172,7 +179,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -205,7 +211,7 @@ from lp.translations.browser.customlanguagecode import (
     )
 
 
-OR = '|'
+OR = ' OR '
 SPACE = ' '
 
 
@@ -501,12 +507,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
-        text = 'Sharing'
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
-        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
-            or bool(getFeatureFlag(enabled_writable_flag)))
-        return Link('+sharing', text, icon='edit', enabled=enabled)
+        return Link('+sharing', 'Sharing', icon='edit')
 
 
 class IProductEditMenu(Interface):
@@ -612,8 +613,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(PillarBugsMenu,
-                      ProductEditLinksMixin):
+class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -621,12 +621,7 @@ class ProductBugsMenu(PillarBugsMenu,
 
     @cachedproperty
     def links(self):
-        links = [
-            'filebug',
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            ]
+        links = ['filebug', 'bugsupervisor', 'cve']
         add_subscribe_link(links)
         links.append('configure_bugtracker')
         return links
@@ -960,7 +955,8 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         title_field = IProduct['title']
         title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title, 'h1')
+            product, title_field, title, 'h1', max_width='95%',
+            truncate_lines=2)
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
         additional_arguments = {
@@ -1542,10 +1538,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         else:
             return canonical_url(getUtility(IProductSet))
 
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
+    cancel_url = next_url
 
 
 class ProductValidationMixin:
@@ -1574,9 +1567,6 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         "private_bugs",
         ]
 
-    custom_widget(
-        'branch_sharing_policy', LaunchpadRadioWidgetWithDescription)
-
     @property
     def page_title(self):
         """The HTML page title."""
@@ -1594,8 +1584,6 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         if not admin:
             self.field_names.remove('owner')
             self.field_names.remove('autoupdate')
-        if getFeatureFlag('disclosure.branch_sharing_policy.show_to_admin'):
-            self.field_names.append('branch_sharing_policy')
         super(ProductAdminView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:
@@ -2006,8 +1994,9 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'homepageurl', 'licenses', 'license_info',
+    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+                    'homepageurl', 'information_type', 'licenses',
+                    'license_info', 'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2021,6 +2010,30 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    custom_widget(
+        'owner', PersonPickerWidget, header="Select the maintainer",
+        show_create_team_link=True)
+    custom_widget(
+        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'driver', PersonPickerWidget, header="Set a driver",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invokved.
+        if IProductSet.providedBy(self.context):
+            cache = IJSONRequestCache(self.request)
+            json_dump_information_types(
+                cache,
+                self.context.getAllowedProductInformationTypes())
+        super(ProjectAddStepTwo, self).initialize()
 
     @property
     def main_action_label(self):
@@ -2048,12 +2061,31 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
+    @property
+    def initial_values(self):
+        return {
+            'driver': self.user.name,
+            'bug_supervisor': self.user.name,
+            'owner': self.user.name,
+        }
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        self.form_fields = (self.form_fields +
+        hidden_names = ['__visited_steps__', 'license_info']
+        hidden_fields = self.form_fields.select(*hidden_names)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects or not IProductSet.providedBy(self.context):
+            hidden_names.extend([
+                'information_type', 'bug_supervisor', 'driver'])
+
+        visible_fields = self.form_fields.omit(*hidden_names)
+        self.form_fields = (visible_fields +
                             self._createDisclaimMaintainerField() +
-                            create_source_package_fields())
+                            create_source_package_fields() +
+                            hidden_fields)
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -2062,7 +2094,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2085,9 +2116,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].hint = ('When published, '
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
-
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+
+        if private_projects and IProductSet.providedBy(self.context):
+            self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
@@ -2150,6 +2186,21 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def validateStep(self, data):
         """See `MultiStepView`."""
         ProductLicenseMixin.validate(self, data)
+        if data.get('disclaim_maintainer') and self.errors:
+            # The checkbox supersedes the owner text input.
+            errors = [error for error in self.errors if error[0] == 'owner']
+            for error in errors:
+                self.errors.remove(error)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if private_projects:
+            if data.get('information_type') != InformationType.PUBLIC:
+                for required_field in ('bug_supervisor', 'driver'):
+                    if data.get(required_field) is None:
+                        self.setFieldError(
+                            required_field,
+                            'Select a user or team.')
 
     @property
     def label(self):
@@ -2167,9 +2218,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         if disclaim_maintainer:
             owner = getUtility(ILaunchpadCelebrities).registry_experts
         else:
-            owner = self.user
+            owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
+            bug_supervisor=data.get('bug_supervisor', None),
+            driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
@@ -2204,7 +2257,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             self.next_url = self._return_url
 
 
-class ProductAddView(MultiStepView):
+class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title

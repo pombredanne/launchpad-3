@@ -26,7 +26,7 @@ from lp.app.browser.vocabulary import (
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.vocabulary import (
@@ -135,40 +135,35 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_user(self):
-        # The enhanced person picker provides more information for users.
+    def test_PersonPickerEntrySourceAdapter_user(self):
+        # The person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
-        entry = get_picker_entry(
-            person, None, enhanced_picker_enabled=True,
-            picker_expander_enabled=True)
+        entry = get_picker_entry(person, None, picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
             entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
-        # The enhanced person picker provides more information for teams.
+    def test_PersonPickerEntrySourceAdapter_team(self):
+        # The person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
-        entry = get_picker_entry(
-            team, None, enhanced_picker_enabled=True,
-            picker_expander_enabled=True)
+        entry = get_picker_entry(team, None, picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
-        # The enhanced person picker provides affiliation information.
+    def test_PersonPickerEntryAdapter_badges(self):
+        # The person picker provides affiliation information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         project = self.factory.makeProduct(
             name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
         entry = get_picker_entry(
-            person, bugtask, enhanced_picker_enabled=True,
-            picker_expander_enabled=True,
+            person, bugtask, picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
@@ -182,13 +177,12 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('bug supervisor', entry.badges[2]['role'])
 
     def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
-        # The enhanced person picker handles objects that do not support
+        # The person picker handles objects that do not support
         # IHasAffilliation.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         thing = object()
         entry = get_picker_entry(
-            person, thing, enhanced_picker_enabled=True,
-            picker_expander_enabled=True,
+            person, thing, picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertIsNot(None, entry)
 
@@ -539,7 +533,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The results are JSON encoded.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -590,7 +584,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The vocab filter is used to filter results.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

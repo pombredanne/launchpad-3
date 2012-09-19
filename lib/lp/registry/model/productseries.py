@@ -14,6 +14,7 @@ __all__ = [
 
 import datetime
 
+from lazr.delegates import delegates
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -45,6 +46,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -52,7 +54,6 @@ from lp.blueprints.model.specification import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -124,6 +125,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         IBugSummaryDimension, IProductSeries, IServiceUsage,
         ISeriesBugTarget)
 
+    delegates(ISpecificationTarget, 'product')
+
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -162,6 +165,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def pillar(self):
         """See `IBugTarget`."""
         return self.product
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
 
     @property
     def answers_usage(self):
@@ -441,23 +449,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IHasBugs`."""
         return self.product.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         return BugSummary.productseries_id == self.id
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.product.getSpecification(name)
 
     def getLatestRelease(self):
         """See `IProductRelease.`"""

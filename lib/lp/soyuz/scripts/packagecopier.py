@@ -1,25 +1,21 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""PackageCopier utilities."""
+"""Package copying utilities."""
 
 __metaclass__ = type
 
 __all__ = [
-    'PackageCopier',
     'CopyChecker',
     'check_copy_permissions',
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
-    're_upload_file',
     'update_files_privacy',
     ]
 
 from itertools import repeat
 from operator import attrgetter
-import os
-import tempfile
 
 import apt_pkg
 from lazr.delegates import delegates
@@ -29,12 +25,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.services.database.bulk import load_related
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
-from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
-    ArchivePurpose,
     BinaryPackageFileType,
     SourcePackageFormat,
     )
@@ -52,46 +44,6 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript,
-    SoyuzScriptError,
-    )
-
-
-def re_upload_file(libraryfile, restricted=False):
-    """Re-upload a librarian file to the public server.
-
-    :param libraryfile: a `LibraryFileAlias`.
-    :param restricted: whether or not the new file should be restricted.
-
-    :return: A new `LibraryFileAlias`.
-    """
-    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
-    # I just don't see a clear benefit in doing that right now.
-
-    # Open the libraryfile for reading.
-    libraryfile.open()
-
-    # Make a temporary file to hold the download.  It's annoying
-    # having to download to a temp file but there are no guarantees
-    # how large the files are, so using StringIO would be dangerous.
-    fd, filepath = tempfile.mkstemp()
-    temp_file = os.fdopen(fd, 'wb')
-
-    # Read the old library file into the temp file.
-    copy_and_close(libraryfile, temp_file)
-
-    # Upload the file to the unrestricted librarian and make
-    # sure the publishing record points to it.
-    new_lfa = getUtility(ILibraryFileAliasSet).create(
-        libraryfile.filename, libraryfile.content.filesize,
-        open(filepath, "rb"), libraryfile.mimetype, restricted=restricted)
-
-    # Junk the temporary file.
-    os.remove(filepath)
-
-    return new_lfa
-
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -101,40 +53,40 @@ def update_files_privacy(pub_record):
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
 
-    :return: a list of re-uploaded `LibraryFileAlias` objects.
+    :return: a list of changed `LibraryFileAlias` objects.
     """
     package_files = []
     archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
         archive = pub_record.archive
-        # Re-upload the package files files if necessary.
+        # Unrestrict the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
             [(source_file, 'libraryfile')
              for source_file in sourcepackagerelease.files])
-        # Re-upload the package diff files if necessary.
+        # Unrestrict the package diff files if necessary.
         package_files.extend(
             [(diff, 'diff_content')
              for diff in sourcepackagerelease.package_diffs])
-        # Re-upload the source upload changesfile if necessary.
+        # Unrestrict the source upload changesfile if necessary.
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
         package_files.append((sourcepackagerelease, 'changelog'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
         archive = pub_record.archive
-        # Re-upload the binary files if necessary.
+        # Unrestrict the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
             [(binary_file, 'libraryfile')
              for binary_file in binarypackagerelease.files])
-        # Re-upload the upload changesfile file as necessary.
+        # Unrestrict the upload changesfile file as necessary.
         build = binarypackagerelease.build
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
-        # Re-upload the buildlog file as necessary.
+        # Unrestrict the buildlog file as necessary.
         package_files.append((build, 'log'))
     elif IPackageUploadCustom.providedBy(pub_record):
-        # Re-upload the custom files included
+        # Unrestrict the custom files included
         package_files.append((pub_record, 'libraryfilealias'))
         # And set archive to the right attribute for PUCs
         archive = pub_record.packageupload.archive
@@ -143,26 +95,22 @@ def update_files_privacy(pub_record):
             "pub_record is not one of SourcePackagePublishingHistory, "
             "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
-    re_uploaded_files = []
+    changed_files = []
     for obj, attr_name in package_files:
-        old_lfa = getattr(obj, attr_name, None)
-        # Only reupload restricted files published in public archives,
+        lfa = getattr(obj, attr_name, None)
+        # Only unrestrict restricted files published in public archives,
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
-        if (old_lfa is None or
-            old_lfa.restricted == archive.private or
-            old_lfa.restricted == False):
+        if (lfa is None or
+            lfa.restricted == archive.private or
+            lfa.restricted == False):
             continue
-        new_lfa = re_upload_file(old_lfa, restricted=archive.private)
-        # Most of the attributes set here are not normally editable.
-        # However, since we've just created all the publication records
-        # here, and since we know that the calling user must have access to
-        # the private source archive, we can get away with removing the
-        # security proxy.
-        setattr(removeSecurityProxy(obj), attr_name, new_lfa)
-        re_uploaded_files.append(new_lfa)
+        # LibraryFileAlias.restricted is normally read-only, but we have a
+        # good excuse here.
+        removeSecurityProxy(lfa).restricted = archive.private
+        changed_files.append(lfa)
 
-    return re_uploaded_files
+    return changed_files
 
 
 # XXX cprov 2009-07-01: should be part of `ISourcePackagePublishingHistory`.
@@ -256,16 +204,23 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         except IndexError:
             destination_component = None
 
+        # Is the destination pocket open at all?
+        reason = archive.checkUploadToPocket(dest_series, pocket)
+        if reason is not None:
+            raise CannotCopy(reason)
+
         # If destination_component is not None, make sure the person
         # has upload permission for this component.  Otherwise, any
         # upload permission on this archive will do.
         strict_component = destination_component is not None
-        reason = archive.checkUpload(
-            person, dest_series, spn, destination_component, pocket,
-            strict_component=strict_component)
-
+        reason = archive.verifyUpload(
+            person, spn, destination_component, dest_series,
+            strict_component=strict_component, pocket=pocket)
         if reason is not None:
-            raise CannotCopy(reason)
+            # Queue admins are allowed to copy even if they can't upload.
+            if not archive.canAdministerQueue(
+                person, destination_component, pocket, dest_series):
+                raise CannotCopy(reason)
 
 
 class CopyChecker:
@@ -621,8 +576,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
     :param unembargo: If True, allow copying restricted files from a private
-        archive to a public archive, and re-upload them to the public
-        librarian when doing so.
+        archive to a public archive, and unrestrict their library files when
+        doing so.
     :param logger: An optional logger.
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -714,18 +669,17 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                     previous_version=old_version)
             if not archive.private and has_restricted_files(source):
                 # Fix copies by overriding them according to the current
-                # ancestry and re-upload files with privacy mismatch.  We
+                # ancestry and unrestrict files with privacy mismatch.  We
                 # must do this *after* calling notify (which only actually
                 # sends mail on commit), because otherwise the new changelog
                 # LFA won't be visible without a commit, which may not be
                 # safe here.
                 for pub_record in sub_copies:
                     pub_record.overrideFromAncestry()
-                    for new_file in update_files_privacy(pub_record):
+                    for changed_file in update_files_privacy(pub_record):
                         if logger is not None:
                             logger.info(
-                                "Re-uploaded %s to librarian" %
-                                new_file.filename)
+                                "Made %s public" % changed_file.filename)
 
         overrides_index += 1
         copies.extend(sub_copies)
@@ -921,192 +875,3 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     delayed_copy.acceptFromCopy()
 
     return DelayedCopy(delayed_copy)
-
-
-class PackageCopier(SoyuzScript):
-    """SoyuzScript that copies published packages between locations.
-
-    Possible exceptions raised are:
-    * PackageLocationError: specified package or distro does not exist
-    * PackageCopyError: the copy operation itself has failed
-    * LaunchpadScriptFailure: only raised if entering via main(), ie this
-        code is running as a genuine script.  In this case, this is
-        also the _only_ exception to be raised.
-
-    The test harness doesn't enter via main(), it calls doCopy(), so
-    it only sees the first two exceptions.
-    """
-
-    usage = '%prog -s warty mozilla-firefox --to-suite hoary'
-    description = 'MOVE or COPY a published package to another suite.'
-
-    def add_my_options(self):
-
-        SoyuzScript.add_my_options(self)
-
-        self.parser.add_option(
-            "-b", "--include-binaries", dest="include_binaries",
-            default=False, action="store_true",
-            help='Whether to copy related binaries or not.')
-
-        self.parser.add_option(
-            '--to-distribution', dest='to_distribution',
-            default='ubuntu', action='store',
-            help='Destination distribution name.')
-
-        self.parser.add_option(
-            '--to-suite', dest='to_suite', default=None,
-            action='store', help='Destination suite name.')
-
-        self.parser.add_option(
-            '--to-ppa', dest='to_ppa', default=None,
-            action='store', help='Destination PPA owner name.')
-
-        self.parser.add_option(
-            '--to-ppa-name', dest='to_ppa_name', default='ppa',
-            action='store', help='Destination PPA name.')
-
-        self.parser.add_option(
-            '--to-partner', dest='to_partner', default=False,
-            action='store_true', help='Destination set to PARTNER archive.')
-
-        self.parser.add_option(
-            '--unembargo', dest='unembargo', default=False,
-            action='store_true',
-            help='Allow copying from a private archive to a public archive.')
-
-    def checkCopyOptions(self):
-        """Check if the locations options are sane.
-
-         * Catch Cross-PARTNER copies, they are not allowed.
-         * Catch simulataneous PPA and PARTNER locations or destinations,
-           results are unpredictable (in fact, the code will ignore PPA and
-           operate only in PARTNER, but that's odd)
-        """
-        if ((self.options.partner_archive and not self.options.to_partner)
-            or (self.options.to_partner and not
-                self.options.partner_archive)):
-            raise SoyuzScriptError(
-                "Cross-PARTNER copies are not allowed.")
-
-        if self.options.archive_owner_name and self.options.partner_archive:
-            raise SoyuzScriptError(
-                "Cannot operate with location PARTNER and PPA "
-                "simultaneously.")
-
-        if self.options.to_ppa and self.options.to_partner:
-            raise SoyuzScriptError(
-                "Cannot operate with destination PARTNER and PPA "
-                "simultaneously.")
-
-    def checkPrivacyOptions(self):
-        """Check privacy-related location options.
-
-        We can copy from a private archive to a public archive, but only
-        with the --unembargo option (to avoid accidents).  Unembargoing into
-        the release pocket of a distribution is not permitted.
-        """
-        if (self.location.archive.private and
-            not self.destination.archive.private):
-            if not self.options.unembargo:
-                raise SoyuzScriptError(
-                    "Copying from a private archive to a public archive "
-                    "requires the --unembargo option.")
-
-            if not self.destination.archive.canModifySuite(
-                self.destination.distroseries, self.destination.pocket):
-                raise SoyuzScriptError(
-                    "Can't unembargo into suite '%s' of a distribution." %
-                    self.destination.distroseries.getSuite(
-                        self.destination.pocket))
-
-    def mainTask(self):
-        """Execute package copy procedure.
-
-        Copy source publication and optionally also copy its binaries by
-        passing '-b' (include_binary) option.
-
-        Modules using this class outside of its normal usage in the
-        copy-package.py script can call this method to start the copy.
-
-        In this case the caller can override test_args on __init__
-        to set the command line arguments.
-
-        Can raise SoyuzScriptError.
-        """
-        assert self.location, (
-            "location is not available, call PackageCopier.setupLocation() "
-            "before dealing with mainTask.")
-
-        self.checkCopyOptions()
-
-        sourcename = self.args[0]
-
-        self.setupDestination()
-
-        self.checkPrivacyOptions()
-
-        self.logger.info("FROM: %s" % (self.location))
-        self.logger.info("TO: %s" % (self.destination))
-
-        to_copy = []
-        source_pub = self.findLatestPublishedSource(sourcename)
-        to_copy.append(source_pub)
-        if self.options.include_binaries:
-            to_copy.extend(source_pub.getPublishedBinaries())
-
-        self.logger.info("Copy candidates:")
-        for candidate in to_copy:
-            self.logger.info('\t%s' % candidate.displayname)
-
-        sources = [source_pub]
-        try:
-            copies = do_copy(
-                sources, self.destination.archive,
-                self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, allow_delayed_copies=False,
-                check_permissions=False, unembargo=self.options.unembargo,
-                logger=self.logger)
-        except CannotCopy as error:
-            self.logger.error(str(error))
-            return []
-
-        self.logger.info("Copied:")
-        for copy in copies:
-            self.logger.info('\t%s' % copy.displayname)
-
-        if len(copies) == 1:
-            self.logger.info(
-                "%s package successfully copied." % len(copies))
-        elif len(copies) > 1:
-            self.logger.info(
-                "%s packages successfully copied." % len(copies))
-        else:
-            self.logger.info("No packages copied.")
-
-        # Information returned mainly for the benefit of the test harness.
-        return copies
-
-    def setupDestination(self):
-        """Build PackageLocation for the destination context."""
-        if self.options.to_partner:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PARTNER)
-        elif self.options.to_ppa:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PPA,
-                self.options.to_ppa,
-                self.options.to_ppa_name)
-        else:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite)
-
-        if self.location == self.destination:
-            raise SoyuzScriptError(
-                "Can not sync between the same locations: '%s' to '%s'" % (
-                self.location, self.destination))

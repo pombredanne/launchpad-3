@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 
-import datetime
+from datetime import datetime
 
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
@@ -16,17 +17,16 @@ from lp.bugs.interfaces.hasbug import IHasBug
 
 def update_bug_date_last_updated(object, event):
     """Update IBug.date_last_updated to the current date."""
+    # If no fields on the bug have changed, do nothing.
+    if IObjectModifiedEvent.providedBy(event) and not event.edited_fields:
+        return
     if IBug.providedBy(object):
-        current_bug = object
+        bug = object
     elif IHasBug.providedBy(object):
-        current_bug = object.bug
+        bug = object.bug
     else:
         raise AssertionError(
             "Unable to retrieve current bug to update 'date last updated'. "
             "Event handler expects object implementing IBug or IHasBug. "
             "Got: %s" % repr(object))
-
-    UTC = pytz.timezone('UTC')
-    now = datetime.datetime.now(UTC)
-
-    removeSecurityProxy(current_bug).date_last_updated = now
+    removeSecurityProxy(bug).date_last_updated = datetime.now(pytz.UTC)

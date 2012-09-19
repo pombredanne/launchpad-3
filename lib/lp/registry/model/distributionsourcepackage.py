@@ -482,10 +482,6 @@ class DistributionSourcePackage(BugTargetBase,
         """Customize `search_params` for this distribution source package."""
         search_params.setSourcePackage(self)
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return self.distribution.getUsedBugTags()
-
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()
 
@@ -493,13 +489,6 @@ class DistributionSourcePackage(BugTargetBase,
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-        return BugSet().createBug(bug_params)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""

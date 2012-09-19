@@ -29,7 +29,7 @@
       <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs and
       <tal:branches replace="view/shared_branches_count">0</tal:branches>
       branches shared with <tal:name replace="view/person/displayname">
-      sharee</tal:name>.<br />
+      grantee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
         <tal:members>3</tal:members> team members can view these bugs and
@@ -39,14 +39,12 @@
     </div>
 
     <table id="shared-table" class="listing sortable">
+      <col width="auto"/>
       <col width="20px"/>
-      <col width="auto"/>
-      <col width="auto"/>
-      <col width="auto"/>
       <col width="auto"/>
       <thead>
         <tr>
-          <th colspan="4" width="">
+          <th colspan="2" width="">
             Subscribed Bug Report or Branch
           </th>
           <th>
@@ -56,7 +54,7 @@
       </thead>
       <tbody id="sharing-table-body">
           <tr>
-              <td colspan="5">
+              <td colspan="3">
                   There are no shared bugs or branches.
               </td>
           </tr>

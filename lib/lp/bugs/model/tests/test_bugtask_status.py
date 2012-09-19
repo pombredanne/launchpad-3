@@ -15,7 +15,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearchDisplay,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -374,7 +374,7 @@ class TestBugTaskStatusTransitionOwnerTeam(
         self.person = self.factory.makePerson()
         self.team = self.factory.makeTeam(
             members=[self.person],
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         self.product = self.factory.makeProduct(owner=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
 
@@ -386,10 +386,9 @@ class TestBugTaskStatusTransitionBugSupervisorPerson(
     def makePersonAndTask(self):
         self.owner = self.factory.makePerson()
         self.person = self.factory.makePerson()
-        self.product = self.factory.makeProduct(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            owner=self.owner, bug_supervisor=self.person)
         self.task = self.factory.makeBugTask(target=self.product)
-        with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.person, self.person)
 
 
 class TestBugTaskStatusTransitionBugSupervisorTeamMember(
@@ -400,10 +399,9 @@ class TestBugTaskStatusTransitionBugSupervisorTeamMember(
         self.owner = self.factory.makePerson()
         self.person = self.factory.makePerson()
         self.team = self.factory.makeTeam(members=[self.person])
-        self.product = self.factory.makeProduct(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            owner=self.owner, bug_supervisor=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
-        with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.team, self.team)
 
 
 class TestBugTaskStatusTransitionBugWatchUpdater(

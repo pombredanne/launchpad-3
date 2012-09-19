@@ -224,7 +224,7 @@ DECLARE
 BEGIN
     -- If the bug is private, grab the access control information.
     -- If the bug is public, access_policies and access_grants are NULL.
-    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    -- 3 == PRIVATESECURITY, 4 == USERDATA, 5 == PROPRIETARY
     IF information_type IN (3, 4, 5) THEN
         SELECT id INTO _access_artifact
             FROM accessartifact

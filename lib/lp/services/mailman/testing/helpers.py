@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
     'ensure_addresses_are_disabled',
@@ -15,7 +14,6 @@ __all__ = [
     'get_size',
     'pending_hold_ids',
     'print_mailman_hold',
-    'review_list',
     'run_mailman',
     'subscribe',
     'unsubscribe',
@@ -80,18 +78,6 @@ def get_size(path):
         raise
 
 
-def review_list(list_name, status='approve'):
-    """Helper for approving a mailing list."""
-    result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
-    if result is not None:
-        # The watch timed out.
-        print result
-        return None
-    with celebrity_logged_in('admin'):
-        mailing_list = getUtility(IMailingListSet).get(list_name)
-    return mailing_list
-
-
 def create_list(team_name):
     """Do everything you need to do to make the team's list live."""
     displayname = SPACE.join(
@@ -101,13 +87,14 @@ def create_list(team_name):
     browser.open('%s/people/+newteam' % MailmanLayer.appserver_root_url())
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
-    browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    browser.getControl(name='field.membership_policy').displayValue = [
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
     browser.getLink('Create a mailing list').click()
     browser.getControl('Create new Mailing List').click()
-    mailing_list = review_list(team_name)
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(team_name)
     # pylint: disable-msg=F0401
     assert team_name in list_names(), (
         'Mailing list was not created: %s (found: %s)' %
@@ -235,13 +222,6 @@ def collect_archive_message_ids(team_name):
                 message_ids.append(mo.group('id'))
                 break
     return sorted(message_ids)
-
-
-def apply_for_list(browser, team_name):
-    """Like mailinglists_helper.apply_for_list() but with the right rooturl.
-    """
-    mailinglists_helper.apply_for_list(
-        browser, team_name, MailmanLayer.appserver_root_url(ensureSlash=True))
 
 
 def _membership_test(team_name, people, predicate):

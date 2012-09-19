@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.views import create_initialized_view
 
 
 class TestCanonicalUrl(TestCaseWithFactory):
@@ -22,3 +26,19 @@ class TestCanonicalUrl(TestCaseWithFactory):
             '%s/+gpg-keys/%s' % (
                 canonical_url(person, rootsite='api'), gpgkey.keyid),
             canonical_url(gpgkey))
+
+
+class TestPersonGPGView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_edit_pgp_keys_login_redirect(self):
+        """+editpgpkeys should redirect to force you to re-authenticate."""
+        person = self.factory.makePerson()
+        login_person(person)
+        view = create_initialized_view(person, "+editpgpkeys")
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        expected_url = (
+            '%s/+editpgpkeys/+login?reauth=1' % canonical_url(person))
+        self.assertEqual(expected_url, response.getHeader('location'))

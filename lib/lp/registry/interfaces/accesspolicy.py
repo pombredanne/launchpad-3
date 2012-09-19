@@ -35,12 +35,13 @@ class IAccessArtifact(Interface):
     concrete_artifact = Attribute("Concrete artifact")
     bug_id = Attribute("bug_id")
     branch_id = Attribute("branch_id")
+    specification_id = Attribute("specification_id")
 
 
 class IAccessArtifactGrant(Interface):
     """A grant for a person or team to access an artifact.
 
-    For example, the reporter of an embargoed security bug has a grant for
+    For example, the reporter of an private security bug has a grant for
     that bug.
     """
 
@@ -62,6 +63,7 @@ class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
+    person = Attribute("Person")
 
 
 class IAccessPolicyArtifact(Interface):
@@ -79,7 +81,7 @@ class IAccessPolicyGrant(Interface):
     """A grant for a person or team to access all of a policy's artifacts.
 
     For example, the Canonical security team has a grant for Ubuntu's
-    security policy so they can see embargoed security bugs.
+    security policy so they can see private security bugs.
     """
 
     grantee = Attribute("Grantee")
@@ -187,6 +189,14 @@ class IAccessPolicySource(Interface):
         :return: a collection of the created `IAccessPolicy` objects.
         """
 
+    def createForTeams(teams):
+        """Create an `IAccessPolicy` for the given teams.
+
+        :param teams: a collection of teams to create `IAccessPolicy`
+            objects for.
+        :return: a collection of the created `IAccessPolicy` objects.
+        """
+
     def find(pillars_and_types):
         """Return the `IAccessPolicy`s for the given pillars and types.
 
@@ -200,6 +210,16 @@ class IAccessPolicySource(Interface):
 
     def findByPillar(pillars):
         """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""
+
+    def findByTeam(teams):
+        """Return a `ResultSet` of all `IAccessPolicy`s for the teams."""
+
+    def delete(pillars_and_types):
+        """Delete the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs delete.
+        """
 
 
 class IAccessPolicyGrantSource(Interface):
@@ -228,6 +248,9 @@ class IAccessPolicyGrantSource(Interface):
         :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
             pairs.
         """
+
+    def revokeByPolicy(policies):
+        """Revoke all `IAccessPolicyGrant` for the policies."""
 
 
 class IAccessPolicyGrantFlatSource(Interface):

@@ -5,11 +5,13 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
+    'CannotChangeInformationType',
     'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
+    'InvalidFilename',
     'InvalidName',
     'JoinNotAllowed',
     'MirrorNotOfficial',
@@ -18,11 +20,11 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
-    'OpenTeamLinkageError',
+    'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
-    'TeamSubscriptionPolicyError',
+    'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
     ]
@@ -42,7 +44,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @error_status(httplib.FORBIDDEN)
-class OpenTeamLinkageError(ValueError):
+class InclusiveTeamLinkageError(ValueError):
     """An attempt was made to link an open team to something."""
 
 
@@ -53,6 +55,11 @@ class NameAlreadyTaken(Exception):
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class InvalidFilename(Exception):
+    """An invalid filename was used as an attachment filename."""
 
 
 class NoSuchDistroSeries(NameLookupFailed):
@@ -155,15 +162,15 @@ class TeamMembershipTransitionError(ValueError):
 
 
 @error_status(httplib.BAD_REQUEST)
-class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
-    """The team cannot have the specified TeamSubscriptionPolicy.
+class TeamMembershipPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamMembershipPolicy.
 
     The error can be raised because a super team or member team prevents
     this team from setting a specific policy. The error can also be
     raised if the team has an active PPA.
     """
 
-    _default_message = "Team Subscription Policy Error"
+    _default_message = "Team Membership Policy Error"
 
     def __init__(self, message=None):
         if message is None:
@@ -190,3 +197,8 @@ class PPACreationError(Exception):
 
 class CannotDeleteCommercialSubscription(Exception):
     """Raised when a commercial subscription cannot be deleted."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotChangeInformationType(Exception):
+    """The information type cannot be changed."""

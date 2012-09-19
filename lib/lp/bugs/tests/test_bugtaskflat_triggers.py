@@ -309,7 +309,7 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         task = self.makeLoggedInTask()
         with self.bugtaskflat_is_updated(task, ['information_type']):
             removeSecurityProxy(task.bug).information_type = (
-                InformationType.UNEMBARGOEDSECURITY)
+                InformationType.PUBLICSECURITY)
 
     def test_bug_make_private(self):
         # Triggers maintain BugTaskFlat when a bug is made private.

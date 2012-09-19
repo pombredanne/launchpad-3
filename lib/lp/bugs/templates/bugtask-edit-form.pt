@@ -204,7 +204,7 @@
           colspan="2" style="white-space: nowrap" />
       </tr>
     </table>
-    <table tal:condition="not:context/target_uses_malone">
+    <table tal:condition="not:context/pillar/official_malone">
       <tr>
         <td>
           <label

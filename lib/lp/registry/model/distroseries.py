@@ -17,6 +17,7 @@ from cStringIO import StringIO
 import logging
 
 import apt_pkg
+from lazr.delegates import delegates
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -48,6 +49,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -55,7 +57,6 @@ from lp.blueprints.model.specification import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -202,6 +203,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         IHasBuildRecords, IHasQueueItems, IServiceUsage,
         ISeriesBugTarget)
 
+    delegates(ISpecificationTarget, 'distribution')
+
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
 
@@ -256,6 +259,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def pillar(self):
         """See `IBugTarget`."""
         return self.distribution
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
 
     @property
     def named_version(self):
@@ -780,10 +788,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See `IHasBugs`."""
-        return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
-
     @property
     def has_any_specifications(self):
         """See IHasSpecifications."""
@@ -907,10 +911,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.distribution.getSpecification(name)
 
     def getDistroSeriesLanguage(self, language):
         """See `IDistroSeries`."""
@@ -1141,91 +1141,30 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return SourcePackagePublishingHistory.select(
             query, clauseTables=['Archive'], orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket, component=None,
-                                   archive=None):
+    def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""
-        archives = self.distribution.getArchiveIDList(archive)
+        return Store.of(self).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == archive,
+            SourcePackagePublishingHistory.distroseries == self,
+            SourcePackagePublishingHistory.pocket == pocket,
+            SourcePackagePublishingHistory.component == component,
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
 
-        clause = """
-            SourcePackagePublishingHistory.sourcepackagename=
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.distroseries=%s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status=%s AND
-            SourcePackagePublishingHistory.pocket=%s
-            """ % sqlvalues(self, archives, status, pocket)
-
-        if component:
-            clause += (
-                " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component))
-
-        orderBy = ['SourcePackageName.name']
-        clauseTables = ['SourcePackageName']
-
-        return SourcePackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables)
-
-    def getBinaryPackagePublishing(
-        self, name=None, version=None, archtag=None, sourcename=None,
-        orderBy=None, pocket=None, component=None, archive=None):
+    def getBinaryPackagePublishing(self, archtag, pocket, component, archive):
         """See `IDistroSeries`."""
-        archives = self.distribution.getArchiveIDList(archive)
-
-        query = ["""
-        BinaryPackagePublishingHistory.binarypackagerelease =
-            BinaryPackageRelease.id AND
-        BinaryPackagePublishingHistory.distroarchseries =
-            DistroArchSeries.id AND
-        BinaryPackageRelease.binarypackagename =
-            BinaryPackageName.id AND
-        BinaryPackageRelease.build =
-            BinaryPackageBuild.id AND
-        BinaryPackageBuild.source_package_release =
-            SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename =
-            SourcePackageName.id AND
-        DistroArchSeries.distroseries = %s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self, archives, PackagePublishingStatus.PUBLISHED)]
-
-        if name:
-            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
-
-        if version:
-            query.append('BinaryPackageRelease.version = %s'
-                      % sqlvalues(version))
-
-        if archtag:
-            query.append('DistroArchSeries.architecturetag = %s'
-                      % sqlvalues(archtag))
-
-        if sourcename:
-            query.append(
-                'SourcePackageName.name = %s' % sqlvalues(sourcename))
-
-        if pocket:
-            query.append(
-                'BinaryPackagePublishingHistory.pocket = %s'
-                % sqlvalues(pocket))
-
-        if component:
-            query.append(
-                'BinaryPackagePublishingHistory.component = %s'
-                % sqlvalues(component))
-
-        query = " AND ".join(query)
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName',
-                        'BinaryPackageBuild', 'SourcePackageRelease',
-                        'SourcePackageName']
-
-        result = BinaryPackagePublishingHistory.select(
-            query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
-
-        return result
+        return Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.component == component,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
@@ -1464,20 +1403,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
             name=name, version=version, exact_match=exact_match)
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        # We don't currently support opening a new bug on an IDistroSeries,
-        # because internally bugs are reported against IDistroSeries only when
-        # targeted to be fixed in that series, which is rarely the case for a
-        # brand new bug report.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a distribution series, "
-            "because series are meant for \"targeting\" a fix to a specific "
-            "version. It's possible that we may change this behaviour to "
-            "allow filing a bug on a distribution series in the "
-            "not-too-distant future. For now, you probably meant to file "
-            "the bug on the distribution instead.")
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""

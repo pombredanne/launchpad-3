@@ -99,10 +99,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -770,9 +767,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         information_type = self.default_information_type
         if information_type is None:
             return None
-        if (information_type == InformationType.USERDATA and
-            getFeatureFlag('disclosure.display_userdata_as_private.enabled')):
-            return 'Private'
         return information_type.title
 
     @property

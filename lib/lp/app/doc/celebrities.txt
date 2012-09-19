@@ -182,18 +182,6 @@ There is a 'PPA key guard' celebrity which owns all PPA 'signing_keys'.
     True
 
 
-Ubuntu security team
---------------------
-
-There is a celebrity representing the 'ubuntu-security' team, which is
-mainly used for granting special permissions on the ubuntu primary
-archive.
-
-    >>> ubuntu_security = personset.getByName('ubuntu-security')
-    >>> celebs.ubuntu_security == ubuntu_security
-    True
-
-
 Ubuntu technical board
 ----------------------
 

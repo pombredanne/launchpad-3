@@ -608,7 +608,7 @@ a private bug:
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+secrecy')
-    >>> admin_browser.getControl('User Data').selected = True
+    >>> admin_browser.getControl('Private', index=1).selected = True
     >>> admin_browser.getControl('Change').click()
 
     >>> anon_browser.open(
@@ -687,43 +687,6 @@ Then we can see how logged-in users and anonymous users see the page:
     #12:
     Copy, Cut and Delete operations should work on selections
       --> &mdash;: None
-
-
-Related projects portlet
-------------------------
-
-Related projects and project groups are shown in a portlet on the bug
-tracker page.
-
-First we need to change a project group and a project to use our new bug
-tracker:
-
-    >>> admin_browser.open('http://launchpad.dev/mozilla/+edit')
-    >>> admin_browser.getControl('Bug Tracker:').value = 'testbugzilla'
-    >>> admin_browser.getControl('Change Details').click()
-
-    >>> admin_browser.open(
-    ...     'http://launchpad.dev/jokosher/+configure-bugtracker')
-    >>> admin_browser.getControl(name='field.bugtracker'
-    ...     ).displayValue = ['In a registered bug tracker:']
-    >>> admin_browser.getControl(name='field.bugtracker.bugtracker'
-    ...     ).value = 'testbugzilla'
-    >>> admin_browser.getControl('Change').click()
-
-Now the Mozilla Project and Jokosher will appear in the Related projects
-portlet on the bug tracker page:
-
-    >>> admin_browser.open(
-    ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla')
-    >>> print extract_text(find_portlet(
-    ...     admin_browser.contents, 'Related projects'))
-    Related projects
-    You can link a registered project to a
-    registered bug tracker in the project's &ldquo;Change
-    details&rdquo; page.
-    The Mozilla Project
-    Jokosher
-
 
 Info portlet
 ------------

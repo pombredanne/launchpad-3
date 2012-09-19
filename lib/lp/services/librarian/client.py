@@ -237,12 +237,7 @@ class FileUploadClient:
             name = name.encode('utf-8')
         self._connect()
         try:
-            # Use dbconfig.rw_main_master directly here because it doesn't
-            # make sense to try and use ro_main_master (which might be
-            # returned if we use dbconfig.main_master). Note we can't
-            # use database introspection, as not all clients using this
-            # method have database access.
-            database_name = ConnectionString(dbconfig.rw_main_master).dbname
+            database_name = ConnectionString(dbconfig.main_master).dbname
             self._sendLine('STORE %d %s' % (size, name))
             self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))

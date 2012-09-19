@@ -36,7 +36,6 @@ from lp.services.database.lpstorm import IStore
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
@@ -241,23 +240,21 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             return []
         already_published = DecoratedResultSet(
             store.find(
-                (BinaryPackageRelease.binarypackagenameID,
+                (BinaryPackagePublishingHistory.binarypackagenameID,
                  BinaryPackagePublishingHistory.distroarchseriesID,
                  BinaryPackagePublishingHistory.componentID,
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority),
                 BinaryPackagePublishingHistory.status.is_in(
                     active_publishing_status),
-                BinaryPackageRelease.id ==
-                    BinaryPackagePublishingHistory.binarypackagereleaseID,
                 Or(*candidates)).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
-                    BinaryPackageRelease.binarypackagenameID,
+                    BinaryPackagePublishingHistory.binarypackagenameID,
                     Desc(BinaryPackagePublishingHistory.datecreated),
                     Desc(BinaryPackagePublishingHistory.id),
                 ).config(distinct=(
                     BinaryPackagePublishingHistory.distroarchseriesID,
-                    BinaryPackageRelease.binarypackagenameID,
+                    BinaryPackagePublishingHistory.binarypackagenameID,
                     )
                 ),
             id_resolver(
@@ -383,7 +380,7 @@ def make_package_condition(archive, das, bpn):
     return And(
         BinaryPackagePublishingHistory.archiveID == archive.id,
         BinaryPackagePublishingHistory.distroarchseriesID == das.id,
-        BinaryPackageRelease.binarypackagenameID == bpn.id)
+        BinaryPackagePublishingHistory.binarypackagenameID == bpn.id)
 
 
 def id_resolver(lookups):

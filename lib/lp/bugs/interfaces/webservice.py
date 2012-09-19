@@ -63,13 +63,13 @@ from lp.bugs.interfaces.bugtarget import (
     )
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
-    IllegalRelatedBugTasksParams,
     IllegalTarget,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtasksearch import IllegalRelatedBugTasksParams
 from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerComponent,

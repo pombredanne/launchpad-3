@@ -64,7 +64,7 @@ class TestBugAddNominationProductSeries(
             official_malone=True, bug_supervisor=self.bug_supervisor,
             owner=self.owner)
         self.series = self.factory.makeProductSeries(product=self.product)
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         self.milestone = self.factory.makeMilestone(productseries=self.series)
 
 

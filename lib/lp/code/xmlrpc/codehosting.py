@@ -65,9 +65,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
     )
-from lp.registry.interfaces.product import (
-    NoSuchProduct,
-    )
+from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.webapp import LaunchpadXMLRPCView

@@ -271,8 +271,6 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
@@ -305,7 +303,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
 Use can explicitly select 'published' filter and will get the same result.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['published']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -315,7 +314,8 @@ Use can explicitly select 'published' filter and will get the same result.
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build

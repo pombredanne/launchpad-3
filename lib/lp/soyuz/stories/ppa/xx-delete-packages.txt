@@ -104,10 +104,8 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     >>> admin_browser.getControl('Deletion comment').value
     ''
 
-    >>> admin_browser.getControl(
-    ...     name='field.name_filter').value = ''
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['31']
+    >>> admin_browser.getControl(name='field.name_filter').value = ''
+    >>> admin_browser.getControl(name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -147,8 +145,7 @@ automaticaly quote the text entered by the user resulting in an
 entirely readable content.
 
     >>> admin_browser.getControl("Filter").click()
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl(name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl(
     ...     "Deletion comment").value = "DO <where is my XSS ?> IT"
     >>> admin_browser.getControl("Request Deletion").click()
@@ -170,8 +167,7 @@ invalid data.
 
 An already deleted source:
 
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl(name='field.selected_sources').value = ['27']
     Traceback (most recent call last):
     ...
     ItemNotFoundError: insufficient items with name '27'
@@ -236,8 +232,7 @@ Multiple packages can be deleted in one single batch.
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
-    >>> admin_browser.getControl(
-    ...    "Deletion comment").value = "DO IT AGAIN !"
+    >>> admin_browser.getControl("Deletion comment").value = "DO IT AGAIN !"
     >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
@@ -262,8 +257,7 @@ previous state to check if the bug 185922 is really fixed.
 
     >>> re_post_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
-    >>> re_post_browser.getControl(
-    ...    "Deletion comment").value = "DO IT AGAIN !"
+    >>> re_post_browser.getControl("Deletion comment").value = "DO IT AGAIN !"
     >>> re_post_browser.getControl("Request Deletion").click()
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
@@ -326,13 +320,11 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
     >>> from zope.component import getUtility
 
     >>> from lp.services.database.constants import UTC_NOW
-    >>> from lp.testing import login, logout
     >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
     >>> login('foo.bar@canonical.com')
 
@@ -454,8 +446,7 @@ source and binaries are marked as DELETED and the corresponding
     ...     "divisible by three will lead to a frameshift mutation.")
     >>> user_browser.getControl(
     ...    name='field.selected_sources').value = [str(foo_pub_src.id)]
-    >>> user_browser.getControl(
-    ...    "Deletion comment").value = deletion_comment
+    >>> user_browser.getControl("Deletion comment").value = deletion_comment
     >>> user_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(user_browser.contents)

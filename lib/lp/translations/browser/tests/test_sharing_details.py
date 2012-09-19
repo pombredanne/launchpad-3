@@ -13,7 +13,6 @@ from soupmatchers import (
     )
 
 from lp.app.enums import ServiceUsage
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -95,8 +94,6 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
         distroseries = self.factory.makeUbuntuDistroSeries()
         self.sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
@@ -707,11 +704,6 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestSourcePackageSharingDetailsPage, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
-
     def _makeSourcePackage(self):
         """Make a source package in Ubuntu."""
         distroseries = self.factory.makeUbuntuDistroSeries()
@@ -1128,11 +1120,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
     """Tests for Notifications in SourcePackageTranslationSharingView."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTranslationSharingDetailsViewNotifications, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
 
     def _getNotifications(self, view):
         notifications = view.request.response.notifications

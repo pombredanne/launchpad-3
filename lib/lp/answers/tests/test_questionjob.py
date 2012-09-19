@@ -309,7 +309,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             self.factory, QuestionRecipientSet.ASKER_SUBSCRIBER)
         question = job.question
         with person_logged_in(question.target.owner):
-            question.linkBug(self.factory.makeBug(product=question.target))
+            question.linkBug(self.factory.makeBug(target=question.target))
             question.linkFAQ(
                 question.target.owner,
                 self.factory.makeFAQ(target=question.target),

@@ -10,11 +10,17 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+if [ -z "$2" ]; then
+    echo "$0: Need yui build version to use as default as second argument"
+    exit 1
+fi
+
 BUILD_DIR=$1
+YUI_VERSION=$2
 
 # Populate YUI.
 if [ ! -h $BUILD_DIR/yui ]; then
-    ln -sf yui-${versions:yui} $BUILD_DIR/yui
+    ln -sf `basename $YUI_VERSION` $BUILD_DIR/yui
 fi
 
 # And YUI 2, for now.

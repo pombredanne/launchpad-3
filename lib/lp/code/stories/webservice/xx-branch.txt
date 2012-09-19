@@ -84,7 +84,7 @@ time goes on.
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch',
     ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
-    >>> feature_branch_bug = factory.makeBug(product=fooix,
+    >>> feature_branch_bug = factory.makeBug(target=fooix,
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
     ...     title='Super Feature X')
@@ -263,7 +263,7 @@ the named operation 'setPrivate'.
     ...     branch_url, 'setPrivate', api_version='beta', private=True)
     >>> branch = webservice.get(branch_url).jsonBody()
     >>> print branch['information_type']
-    User Data
+    Private
 
 In subsequent versions, 'setPrivate' is gone; you have to use the
 'transitionToInformationType' method.

@@ -393,6 +393,30 @@ p.update-failure-message {
     color: #666;
 }
 
+a.action-icon.standalone.update-in-progress-message {
+    display: inline-block;
+    margin-left: inherit;
+    margin-top: -10px;
+    width: 1px;
+    height: 16px;
+    vertical-align: text-top;
+    text-indent: 3px;
+    overflow: hidden;
+}
+
+button.update-in-progress-message {
+    background: buttonface none;
+    padding-left: inherit;
+    color: inherit;
+}
+
+button.update-in-progress-message:after {
+    background: url("/@@/spinner") center left no-repeat;
+    content: "\00A0";
+    margin-left: 6px;
+    padding-right: 12px;
+}
+
 a.update-retry {
     padding-left: 1em;
 }

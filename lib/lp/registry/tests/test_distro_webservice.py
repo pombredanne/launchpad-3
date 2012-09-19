@@ -21,7 +21,7 @@ from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     api_url,
@@ -200,7 +200,7 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         branch, distro = self.makeBranch()
         person = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             members=[person])
         removeSecurityProxy(branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,

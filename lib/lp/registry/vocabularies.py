@@ -42,7 +42,7 @@ __all__ = [
     'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
-    'NewPillarShareeVocabulary',
+    'NewPillarGranteeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -101,12 +101,13 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -128,11 +129,9 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     IPerson,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
@@ -144,6 +143,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
@@ -177,7 +177,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -304,8 +303,9 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -354,8 +354,9 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -379,6 +380,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     INCLUDE_PRIVATE_TEAM = False
 
+    EXCLUSIVE_TEAMS_ONLY = False
+
     def toTerm(self, obj):
         """See `IVocabulary`."""
         return SimpleTerm(obj, obj.name, obj.unique_displayname)
@@ -391,8 +394,10 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if (team.visibility == PersonVisibility.PUBLIC
-                    or self.INCLUDE_PRIVATE_TEAM):
+                if ((team.visibility == PersonVisibility.PUBLIC
+                    or self.INCLUDE_PRIVATE_TEAM) and
+                    (team.membership_policy in EXCLUSIVE_TEAM_POLICY
+                    or not self.EXCLUSIVE_TEAMS_ONLY)):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -435,7 +440,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(ensure_unicode(text).lower())
+        return self._select(ensure_unicode(text))
 
 
 class PersonAccountToMergeVocabulary(
@@ -469,7 +474,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._select(text)
 
 
@@ -571,10 +576,10 @@ class ValidPersonOrTeamVocabulary(
         tables = []
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            if logged_in_user.inTeam(celebrities.admin):
-                # If the user is a LP admin we allow all private teams to be
-                # visible.
+            roles = IPersonRoles(logged_in_user)
+            if roles.in_admin or roles.in_commercial_admin:
+                # If the user is a LP admin or commercial admin we allow
+                # all private teams to be visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
                     Person.visibility == PersonVisibility.PRIVATE)
@@ -649,14 +654,15 @@ class ValidPersonOrTeamVocabulary(
                 FROM (
                     SELECT Person.id,
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE Person.name LIKE ? || '%%'
-                    or lower(Person.displayname) LIKE ? || '%%'
+                    WHERE Person.name LIKE lower(?) || '%%'
+                    or lower(Person.displayname) LIKE lower(?) || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
                     SELECT Person.id, 0.8 AS rank
@@ -667,7 +673,7 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id, 0.4 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
-                        AND LOWER(EmailAddress.email) LIKE ? || '%%'
+                        AND LOWER(EmailAddress.email) LIKE lower(?) || '%%'
                         AND status IN (?, ?)
                 ) AS person_match
                 GROUP BY id, is_private_team
@@ -680,9 +686,10 @@ class ValidPersonOrTeamVocabulary(
                 private_tables = [Person] + private_tables
                 private_ranking_sql = SQL("""
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
@@ -696,8 +703,8 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            Person.name LIKE ? || '%%'
-                            OR lower(Person.displayname) LIKE ? || '%%'
+                            Person.name LIKE lower(?) || '%%'
+                            OR lower(Person.displayname) LIKE lower(?) || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
                         private_query))
@@ -792,7 +799,7 @@ class ValidPersonOrTeamVocabulary(
             else:
                 return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._doSearch(text=text, vocab_filter=vocab_filter)
 
     def searchForTerms(self, query=None, vocab_filter=None):
@@ -838,8 +845,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             result = self.store.using(*tables).find(Person, query)
         else:
             name_match_query = SQL("""
-                Person.name LIKE ? || '%%'
-                OR lower(Person.displayname) LIKE ? || '%%'
+                Person.name LIKE lower(?) || '%%'
+                OR lower(Person.displayname) LIKE lower(?) || '%%'
                 OR Person.fti @@ ftq(?)
                 """, [text, text, text]),
 
@@ -893,7 +900,7 @@ class TeamVocabularyMixin:
 
     @property
     def is_closed_team(self):
-        return self.team.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.team.membership_policy in EXCLUSIVE_TEAM_POLICY
 
     @property
     def step_title(self):
@@ -905,11 +912,11 @@ class TeamVocabularyMixin:
             return 'Search'
 
 
-class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+class ValidPersonOrExclusiveTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
-    """The set of people and closed teams in Launchpad.
+    """The set of people and exclusive teams in Launchpad.
 
-    A closed team is one for which the subscription policy is either
+    A exclusive team is one for which the membership policy is either
     RESTRICTED or MODERATED.
     """
 
@@ -919,7 +926,7 @@ class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
 
     @property
     def extra_clause(self):
-        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
+        return Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
@@ -954,7 +961,7 @@ class ValidTeamMemberVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -992,7 +999,7 @@ class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -1059,11 +1066,11 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
-    existing sharee for the pillar.
+    existing grantee for the pillar.
     """
 
     displayname = 'Share project information'
@@ -1071,7 +1078,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(NewPillarShareeVocabulary, self).__init__(context)
+        super(NewPillarGranteeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1086,7 +1093,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
             """ % sqlvalues(self.policy_ids))
         return And(
             clause,
-            super(NewPillarShareeVocabulary, self).extra_clause)
+            super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
@@ -1222,6 +1229,13 @@ class AllUserTeamsParticipationPlusSelfVocabulary(
     """
 
     INCLUDE_PRIVATE_TEAM = True
+
+    def __init__(self, context=None):
+        super_class = super(AllUserTeamsParticipationPlusSelfVocabulary, self)
+        super_class.__init__(context)
+        if IBranch.providedBy(context):
+            self.EXCLUSIVE_TEAMS_ONLY = (
+                len(list(context.associatedProductSeries())) > 0)
 
 
 class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
@@ -2244,60 +2258,11 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None, public_only=False, private_only=False):
-        types = []
-        if not public_only:
-            types = [
-                InformationType.EMBARGOEDSECURITY,
-                InformationType.USERDATA]
-            show_userdata_as_private = bool(getFeatureFlag(
-                'disclosure.display_userdata_as_private.enabled'))
-            # So long as not disabled by the feature flag, Proprietary is
-            # allowed for:
-            # - single pillar bugs where the target has a current commercial
-            #   subscription
-            # - branches for a project with a current commercial subscription
-            # - projects with current commercial subscriptions
-            # - contexts which already have an information type set to
-            #   proprietary
-            proprietary_disabled = bool(getFeatureFlag(
-                'disclosure.proprietary_information_type.disabled'))
-            if not proprietary_disabled:
-                subscription_context = context
-                if (IBug.providedBy(context)
-                    and len(context.affected_pillars) == 1):
-                    subscription_context = context.affected_pillars[0]
-                elif (IBugTask.providedBy(context)
-                    and len(context.bug.affected_pillars) == 1):
-                    subscription_context = context.pillar
-                elif IBranch.providedBy(context):
-                    subscription_context = context.target.context
-                has_commercial_subscription = (
-                    IProduct.providedBy(subscription_context) and
-                    subscription_context.has_current_commercial_subscription)
-                already_proprietary = (
-                    safe_hasattr(context, 'information_type') and
-                    context.information_type == InformationType.PROPRIETARY)
-                if has_commercial_subscription or already_proprietary:
-                    types.append(InformationType.PROPRIETARY)
-        # Disallow public items for projects with private bugs.
-        if (not private_only and (context is None or
-            not IProduct.providedBy(context) or
-            not context.private_bugs)):
-            types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
-
+    def __init__(self, types):
         terms = []
         for type in types:
-            title = type.title
-            description = type.description
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
-            term.description = description
+            term.description = type.description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)
