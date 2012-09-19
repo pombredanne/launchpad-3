@@ -1589,12 +1589,6 @@ class ProductSet:
             results = results.limit(num_products)
         return results
 
-    def getAllowedProductInformationTypes(self):
-        """See `IProductSet`."""
-        return (InformationType.PUBLIC,
-                InformationType.EMBARGOED,
-                InformationType.PROPRIETARY)
-
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,

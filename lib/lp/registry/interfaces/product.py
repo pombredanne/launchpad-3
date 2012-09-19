@@ -998,12 +998,6 @@ class IProductSet(Interface):
         returned.
         """
 
-    def getAllowedProductInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
-        """
-
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', project='project_group',
