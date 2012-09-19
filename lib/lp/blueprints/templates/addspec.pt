@@ -10,7 +10,7 @@
       LPJS.use('lp.blueprints.addspec',
       function(Y) {
         Y.on('domready', function() {
-          Y.lp.blueprints.addspec.dom_ready();
+          Y.lp.blueprints.addspec.set_up();
         });
       });
     </script>
