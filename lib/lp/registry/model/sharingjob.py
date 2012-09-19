@@ -45,6 +45,7 @@ from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
     )
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
@@ -265,18 +266,25 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
         bug_ids = []
         branch_ids = []
+        specification_ids = []
         if artifacts:
             for artifact in artifacts:
                 if IBug.providedBy(artifact):
                     bug_ids.append(artifact.id)
                 elif IBranch.providedBy(artifact):
                     branch_ids.append(artifact.id)
+                elif ISpecification.providedBy(artifact):
+                    specification_ids.append(artifact.id)
+                else:
+                    raise ValueError(
+                        'Unsupported artifact: %r' % artifact)
         information_types = [
             info_type.value for info_type in information_types or []
         ]
         metadata = {
             'bug_ids': bug_ids,
             'branch_ids': branch_ids,
+            'specification_ids': specification_ids,
             'information_types': information_types,
             'requestor.id': requestor.id
         }
@@ -308,6 +316,10 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
         return [getUtility(IBranchLookup).get(id) for id in self.branch_ids]
 
     @property
+    def specification_ids(self):
+        return self.metadata.get('specification_ids', [])
+
+    @property
     def information_types(self):
         if not 'information_types' in self.metadata:
             return []
@@ -332,6 +344,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             'requestor': self.requestor.name,
             'bug_ids': self.bug_ids,
             'branch_ids': self.branch_ids,
+            'specification_ids': self.specification_ids,
             'pillar': getattr(self.pillar, 'name', None),
             'grantee': getattr(self.grantee, 'name', None)
             }

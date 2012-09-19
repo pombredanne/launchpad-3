@@ -117,6 +117,16 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             'for branch_ids=[%d], requestor=%s>'
             % (branch.id, requestor.name), repr(job))
 
+    def test_repr_specifications(self):
+        requestor = self.factory.makePerson()
+        specification = self.factory.makeSpecification()
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            requestor, artifacts=[specification])
+        self.assertEqual(
+            '<REMOVE_ARTIFACT_SUBSCRIPTIONS job reconciling subscriptions '
+            'for requestor=%s, specification_ids=[%d]>'
+            % (requestor.name, specification.id), repr(job))
+
     def test_create_success(self):
         # Create an instance of SharingJobDerived that delegates to SharingJob.
         self.assertIs(True, ISharingJobSource.providedBy(SharingJobDerived))
