@@ -94,8 +94,8 @@ class TestClosingBugs(TestCaseWithFactory):
         bugs = self.makeChangelogWithBugs(spr)
 
         # Call the method and test it's closed the bugs.
-        close_bugs_for_sourcepackagerelease(spr, changesfile_object=None,
-                                            since_version="1.0-1")
+        close_bugs_for_sourcepackagerelease(
+            spr.upload_distroseries, spr, None, since_version="1.0-1")
         for bug, bugtask in bugs:
             if bug.id != bugs[5][0].id:
                 self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
