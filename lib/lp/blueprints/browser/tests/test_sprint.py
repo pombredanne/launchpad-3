@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Sprint pages and views."""
@@ -7,12 +7,13 @@ __metaclass__ = type
 
 from storm.locals import Store
 
-from lp.testing import TestCaseWithFactory
+from lp.registry.enums import InformationType
+from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit
 
 
-class TestSprintIndex(TestCaseWithFactory):
+class TestSprintIndex(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -27,3 +28,12 @@ class TestSprintIndex(TestCaseWithFactory):
         Store.of(sprint).flush()
         Store.of(sprint).invalidate()
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
+
+    def test_proprietary_blueprint(self):
+        sprint = self.factory.makeSprint()
+        blueprint = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        link = blueprint.linkSprint(sprint, blueprint.owner)
+        link.acceptBy(sprint.owner)
+        # getViewBrowser should not raise an exception
+        self.getViewBrowser(sprint)
