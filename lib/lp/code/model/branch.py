@@ -370,6 +370,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchTargetError(
                     'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
+        if self.information_type not in namespace.getAllowedInformationTypes():
+            raise BranchTargetError(
+                '%s branches are not allowed for target %s.' % (
+                    self.information_type.title, target.displayname))
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()
 
@@ -896,7 +900,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
-        ignored, branches = service.getVisibleArtifacts(
+        ignored, branches, ignored = service.getVisibleArtifacts(
             person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(

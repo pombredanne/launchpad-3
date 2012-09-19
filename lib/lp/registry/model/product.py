@@ -408,6 +408,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
+    security_contact = None
+
     @property
     def pillar(self):
         """See `IBugTarget`."""
