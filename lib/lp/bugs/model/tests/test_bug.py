@@ -59,6 +59,15 @@ class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_getNominationFor_sourcepackage(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        series = sourcepackage.distroseries
+        bug = self.factory.makeBug(target=series.distribution)
+        with person_logged_in(series.owner):
+            bug.addNomination(series.owner, series)
+        nomination = bug.getNominationFor(sourcepackage)
+        self.assertEqual(series, nomination.target)
+
     def test_markAsDuplicate_None(self):
         # Calling markAsDuplicate(None) on a bug that is not currently a
         # duplicate works correctly, and does not raise an AttributeError.

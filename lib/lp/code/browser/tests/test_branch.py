@@ -1017,6 +1017,28 @@ class TestBranchEditView(TestCaseWithFactory):
                 % (product.displayname, product.name),
             view.request.response.notifications[0].message)
 
+    def test_forbidden_target_is_error(self):
+        # An error is displayed if a branch is saved with a target that is not
+        # allowed by the sharing policy.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        self.factory.makeProduct(
+            name="commercial", owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeProductBranch(
+            owner=owner, product=initial_target,
+            information_type=InformationType.PUBLIC)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=owner)
+        browser.getControl(name="field.target.product").value = "commercial"
+        browser.getControl("Change Branch").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Public branches are not allowed for target Commercial.'))
+        with person_logged_in(owner):
+            self.assertEquals(initial_target, branch.target.context)
+
     def test_information_type_in_ui(self):
         # The information_type of a branch can be changed via the UI by an
         # authorised user.
