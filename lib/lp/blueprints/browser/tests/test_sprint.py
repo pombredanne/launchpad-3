@@ -6,11 +6,13 @@
 __metaclass__ = type
 
 from storm.locals import Store
+from testtools.matchers import Equals
 
 from lp.registry.enums import InformationType
 from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.matchers import BrowsesWithQueryLimit, HasQueryCount
+from lp.testing._webservice import QueryCollector
 
 
 class TestSprintIndex(BrowserTestCase):
@@ -31,9 +33,12 @@ class TestSprintIndex(BrowserTestCase):
 
     def test_proprietary_blueprint(self):
         sprint = self.factory.makeSprint()
-        blueprint = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY)
+        for count in range(10):
+            blueprint = self.factory.makeSpecification(
+                information_type=InformationType.PROPRIETARY)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         link.acceptBy(sprint.owner)
-        # getViewBrowser should not raise an exception
-        self.getViewBrowser(sprint)
+        with QueryCollector() as recorder:
+            # getViewBrowser should not raise an exception
+            self.getViewBrowser(sprint)
+        self.assertThat(recorder, HasQueryCount(Equals(29)))
