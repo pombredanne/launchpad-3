@@ -726,9 +726,9 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
         self.assertEqual(
-            BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+            BranchSharingPolicy.FORBIDDEN, product.branch_sharing_policy)
         self.assertEqual(
-            BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+            BugSharingPolicy.FORBIDDEN, product.bug_sharing_policy)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
         self.assertIs(None, product.commercial_subscription)

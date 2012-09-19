@@ -482,6 +482,10 @@ class FileBugViewBase(LaunchpadFormView):
         bug_tracking_usage = self.getMainContext().bug_tracking_usage
         return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
+    def contextAllowsNewBugs(self):
+        return (self.contextUsesMalone() and
+                self.getMainContext().getAllowedBugInformationTypes())
+
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
         return (
@@ -1050,7 +1054,8 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     def products_using_malone(self):
         return [
             product for product in self.context.products
-            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
+            if (product.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+                and product.getAllowedBugInformationTypes())]
 
     @property
     def default_product(self):

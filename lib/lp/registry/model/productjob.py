@@ -474,8 +474,8 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         else:
             naked_product = removeSecurityProxy(self.product)
             naked_product.private_bugs = False
-            naked_product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
-            naked_product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
+            naked_product.setBranchSharingPolicy(BranchSharingPolicy.FORBIDDEN)
+            naked_product.setBugSharingPolicy(BugSharingPolicy.FORBIDDEN)
             for series in self.product.series:
                 if series.branch is not None and series.branch.private:
                     removeSecurityProxy(series).branch = None

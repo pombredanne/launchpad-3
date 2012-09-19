@@ -210,6 +210,7 @@ BUG_POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
+    BugSharingPolicy.FORBIDDEN: [],
     }
 
 BUG_POLICY_DEFAULT_TYPES = {
@@ -217,6 +218,7 @@ BUG_POLICY_DEFAULT_TYPES = {
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BugSharingPolicy.FORBIDDEN: None,
     }
 
 

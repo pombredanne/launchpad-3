@@ -240,7 +240,7 @@
          condition="not: context/required:launchpad.Edit">
         There are no projects registered for <span
         tal:replace="context/displayname">project displayname</span>
-        that use Launchpad to track bugs.
+        that either use Launchpad to track bugs or allow new bugs to be filed.
       </p>
       <tal:not-has-products tal:condition="not: context/products">
         <tal:admin-warning condition="context/required:launchpad.Edit">
@@ -261,12 +261,15 @@
           <p id="product-list-summary">
             There are <tal:count replace="context/products/count" /> projects
             registered as part of <tal:project replace="context/displayname" />
-            but none of them use Launchpad as their bug tracker.
+            but either none of them use Launchpad as their bug tracker or none
+            allow new bugs to be filed.
           </p>
           <p>
             However, it may be possible for you to file a bug against a
             specific project in a source package with which it is registered
-            or in an external bug tracker.
+            or in an external bug tracker. Project maintainers may also
+            update the project's bug sharing policy to allow new bugs to be
+            filed.
           </p>
           <p>
             The projects that are part of
@@ -282,7 +285,8 @@
           <p id="product-list-summary">
             There is 1 project registered as part of
             <tal:project replace="context/displayname" /> but it
-            does not use Launchpad as its bug tracker.
+            does not use Launchpad as its bug tracker or does not allow new
+            bugs to be filed.
           </p>
           <p>
             The details of the project are shown below, along with any
@@ -291,12 +295,26 @@
             appropriate place to file your bug, please contact the
             administrator of <tal:project
             replace="context/displayname">Project</tal:project>.
+            The project maintainer may also update the project's bug sharing
+            policy to allow new bugs to be filed.
           </p>
         </tal:singular>
         <ul class="product-bug-options" tal:repeat="product context/products">
           <li condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
             <tal:link replace="structure product/fmt:link" />
             <ul class="bulleted">
+              <tal:new-bugs-forbidden condition="not: product/getAllowedBugInformationTypes">
+                <li>
+                  You can't create new bugs for
+                  <tal:name replace="product/displayname"/>.
+                  <tal:sharing-link condition="product/required:launchpad.Edit">
+                  <br>Sharing policies may be changed on the
+                  <a tal:attributes="href string:${product/fmt:url:mainsite}/+sharing"
+                      >sharing page</a>.
+                  </tal:sharing-link>
+                </li>
+              </tal:new-bugs-forbidden>
+              <tal:new-bugs-allowed condition="product/getAllowedBugInformationTypes">
               <tal:external-tracker
                   define="bugtracker product/getExternalBugTracker">
                 <li tal:condition="bugtracker">
@@ -336,6 +354,7 @@
                   them for us.</a>
                 </li>
               </tal:packages>
+              </tal:new-bugs-allowed>
             </ul>
           </li>
         </ul>

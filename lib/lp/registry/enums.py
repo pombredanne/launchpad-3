@@ -120,10 +120,12 @@ def json_dump_information_types(cache, information_types):
             'description': term.description,
             'name': term.title,
             'order': order.index(term.name),
-            'is_private': (term not in PUBLIC_INFORMATION_TYPES), 'description_css_class': 'choice-description',
+            'is_private': (term not in PUBLIC_INFORMATION_TYPES),
+            'description_css_class': 'choice-description',
         }
 
     cache.objects['information_type_data'] = dump
+
 
 class SharingPermission(DBEnumeratedType):
     """Sharing permission.
@@ -188,6 +190,13 @@ class BranchSharingPolicy(DBEnumeratedType):
         new branches.
         """)
 
+    FORBIDDEN = DBItem(6, """
+        New branches are forbidden
+
+        No new branches may be created but existing branches may still be
+        updated.
+        """)
+
 
 class BugSharingPolicy(DBEnumeratedType):
 
@@ -214,6 +223,12 @@ class BugSharingPolicy(DBEnumeratedType):
         Proprietary
 
         Bugs are always proprietary.
+        """)
+
+    FORBIDDEN = DBItem(5, """
+        New bugs are forbidden
+
+        No new bugs may be filed but existing bugs may still be updated.
         """)
 
 
