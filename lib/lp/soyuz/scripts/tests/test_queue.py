@@ -1080,7 +1080,15 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def closeBugWithUpload(self):
+    def assertBugChanges(self, series, spr, bug):
+        with celebrity_logged_in("admin"):
+            self.assertEqual(
+                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
+        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
+        # should work with private bugs where the person using the queue
+        # page doesn't have access to it.
         changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
         # changelog_entry is required for an assertion inside the function
         # we're testing.
@@ -1098,30 +1106,22 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             # But the bug closure should work.
             close_bugs_for_sourcepackagerelease(series, spr, changes)
 
-        return spr, series, bug
-
-    def test_close_bugs_for_sourcepackagerelease_with_private_bug_script(self):
-        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
-        # should work with private bugs where the person using the queue
-        # page doesn't have access to it, if the feature flag to use a job
-        # is disabled.
-        spr, series, bug = self.closeBugWithUpload()
-
         # Verify it was closed.
-        with celebrity_logged_in("admin"):
-            self.assertEqual(
-                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
+        self.assertBugChanges(series, spr, bug)
 
-    def test_close_bugs_for_sourcepackagerelease_with_private_bug_job(self):
-        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
-        # should work with private bugs where the person using the queue
-        # page doesn't have access to it, if the feature flag to use a job
-        # is enabled.
-        with FeatureFixture({"soyuz.processacceptedbugsjob.enabled": "on"}):
-            spr, series, bug = self.closeBugWithUpload()
 
-        # Rather than closing the bugs immediately, this creates a
-        # ProcessAcceptedBugsJob.
+class TestQueuePageClosingBugsJob(TestQueuePageClosingBugs):
+    # Repeat TestQueuePageClosingBugs, but with the feature flag set to
+    # cause close_bugs_for_sourcepackagerelease to create a job rather than
+    # closing bugs immediately.
+
+    def setUp(self):
+        super(TestQueuePageClosingBugsJob, self).setUp()
+        self.useFixture(FeatureFixture(
+            {"soyuz.processacceptedbugsjob.enabled": "on"},
+            ))
+
+    def assertBugChanges(self, series, spr, bug):
         with celebrity_logged_in("admin"):
             self.assertEqual(BugTaskStatus.NEW, bug.default_bugtask.status)
         job_source = getUtility(IProcessAcceptedBugsJobSource)
