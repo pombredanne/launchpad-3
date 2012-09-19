@@ -53,7 +53,7 @@ from lp.services.mailman.config import configure_prefix
 from lp.services.scripts.base import LaunchpadScript
 
 
-RSYNC_OPTIONS = ('-avz', '--delete')
+RSYNC_OPTIONS = ('-az', '--delete')
 RSYNC_COMMAND = '/usr/bin/rsync'
 RSYNC_SUBDIRECTORIES = ('archives', 'backups', 'lists', 'mhonarc')
 SPACE = ' '
@@ -107,6 +107,8 @@ class MailingListSyncScript(LaunchpadScript):
         # Do one rsync for all subdirectories.
         rsync_command = [RSYNC_COMMAND]
         rsync_command.extend(RSYNC_OPTIONS)
+        if self.options.loglevel <= logging.DEBUG:
+            rsync_command.append('-v')
         rsync_command.append('--exclude=%s' % mm_cfg.MAILMAN_SITE_LIST)
         rsync_command.append('--exclude=%s.mbox' % mm_cfg.MAILMAN_SITE_LIST)
         rsync_command.extend(os.path.join(source_url, subdirectory)
