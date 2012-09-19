@@ -78,14 +78,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.registry.enums import (
+from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     ServiceUsage,
     )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import (
     NotFoundError,
     SubscriptionPrivacyViolation,

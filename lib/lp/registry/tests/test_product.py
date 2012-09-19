@@ -16,9 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import (
-    EXCLUSIVE_TEAM_POLICY,
     FREE_INFORMATION_TYPES,
-    INCLUSIVE_TEAM_POLICY,
     InformationType,
     ServiceUsage,
     )
@@ -34,6 +32,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,

@@ -47,6 +47,7 @@ from zope.traversing.interfaces import (
     )
 
 from lp import _
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.badge import IHasBadges
 from lp.app.browser.stringformatter import (
     escape,
@@ -64,7 +65,6 @@ from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -76,6 +76,7 @@ from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
+
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter

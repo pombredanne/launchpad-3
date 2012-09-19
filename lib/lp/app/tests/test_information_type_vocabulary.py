@@ -8,7 +8,7 @@ __metaclass__ = type
 from testtools.matchers import MatchesStructure
 
 from lp.app.enums import InformationType
-from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.testing import TestCase
 
 

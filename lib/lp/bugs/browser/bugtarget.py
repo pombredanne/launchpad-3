@@ -75,6 +75,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
@@ -135,7 +136,6 @@ from lp.registry.vocabularies import (
     InformationTypeVocabulary,
     ValidPersonOrTeamVocabulary,
     )
-from lp.registry.utils import json_dump_information_types
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
