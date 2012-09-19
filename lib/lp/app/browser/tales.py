@@ -76,7 +76,6 @@ from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
-
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
