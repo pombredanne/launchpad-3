@@ -288,7 +288,8 @@ class TestTranslationSplitJob(TestCaseWithFactory):
             packaging.productseries, packaging.sourcepackage,
             TranslationSplitJob)
         self.assertEqual([], finder.find())
-        with person_logged_in(packaging.owner):
+        user = self.factory.makePerson(karma=200)
+        with person_logged_in(user):
             getUtility(IPackagingUtil).deletePackaging(
                 packaging.productseries, packaging.sourcepackagename,
                 packaging.distroseries)
