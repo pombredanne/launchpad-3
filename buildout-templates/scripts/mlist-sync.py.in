@@ -118,7 +118,7 @@ class MailingListSyncScript(LaunchpadScript):
                                    stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode == 0:
-            self.logger.info('%s', stdout)
+            self.logger.debug('%s', stdout)
         else:
             self.logger.error('rsync command failed with exit status: %s',
                               process.returncode)
