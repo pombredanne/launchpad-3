@@ -23,6 +23,11 @@ from zope.component import (
     )
 from zope.interface import implementer
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import valid_name
 from lp.code.bzr import (
@@ -50,11 +55,6 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW

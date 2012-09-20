@@ -13,6 +13,7 @@ from storm.store import (
 from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -30,7 +31,6 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import InformationType
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,

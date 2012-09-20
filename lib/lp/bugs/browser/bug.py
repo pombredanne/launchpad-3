@@ -71,6 +71,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.services import IService
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -103,7 +104,6 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.fields import DuplicateBug

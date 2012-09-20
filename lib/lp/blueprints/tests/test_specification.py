@@ -17,6 +17,11 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.security import IAuthorization
 from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
@@ -26,12 +31,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SharingPermission,
-    )
+from lp.registry.enums import SharingPermission
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,

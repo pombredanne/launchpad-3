@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.model.branch import Branch
-from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer

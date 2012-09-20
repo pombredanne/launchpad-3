@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -28,7 +29,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

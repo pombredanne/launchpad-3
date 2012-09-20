@@ -60,7 +60,13 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -69,6 +75,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
@@ -114,13 +121,6 @@ from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import (
     ProductConfigureBase,
     ProductPrivateBugsMixin,
-    )
-from lp.registry.enums import (
-    json_dump_information_types,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (

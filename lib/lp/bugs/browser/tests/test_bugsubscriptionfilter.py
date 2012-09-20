@@ -14,6 +14,7 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import StartsWith
 import transaction
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
@@ -22,7 +23,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.enums import InformationType
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
