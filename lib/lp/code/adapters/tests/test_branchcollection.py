@@ -24,7 +24,7 @@ class TestPersonProduct(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         person = self.factory.makePerson()
-        Person_product = PersonProduct(person, product)
+        person_product = PersonProduct(person, product)
         self.factory.makeBranch()
         self.factory.makeProductBranch(product=product)
         self.factory.makeBranch(owner=person)

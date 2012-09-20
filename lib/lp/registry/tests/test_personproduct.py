@@ -8,7 +8,6 @@ __metaclass__ = type
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.webapp.interfaces import IBreadcrumb
 from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.url import urlappend
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -32,5 +31,5 @@ class TestPersonProduct(TestCaseWithFactory):
     def test_breadcrumb(self):
         # Person products give the product as their breadcrumb url.
         pp = self._makePersonProduct()
-        breadcrumb = IBreadcrumb(pp, None) 
-        self.assertEqual(canonical_url(product), breadcrumb.url)
+        breadcrumb = IBreadcrumb(pp, None)
+        self.assertEqual(canonical_url(pp.product), breadcrumb.url)
