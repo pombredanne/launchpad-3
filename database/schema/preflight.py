@@ -25,7 +25,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.scripts import (
-    db_options,
     logger,
     logger_options,
     )
