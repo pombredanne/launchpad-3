@@ -509,16 +509,12 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
         # It's probably big and it's probably mostly binary, so trim it pretty
         # aggressively.
         send_process_error_notification(
-            mail['From'],
-            'Mail to Launchpad was too large',
-            complaint,
-            mail,
-            max_return_size=8192)
+            mail['From'], 'Mail to Launchpad was too large', complaint,
+            mail, max_return_size=8192)
         return
 
     try:
-        principal = authenticateEmail(
-            mail, signature_timestamp_checker)
+        principal = authenticateEmail(mail, signature_timestamp_checker)
     except (InvalidSignature, IncomingEmailError) as error:
         send_process_error_notification(
             mail['From'], 'Submit Request Failure', str(error), mail)
