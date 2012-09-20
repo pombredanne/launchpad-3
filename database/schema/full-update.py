@@ -11,7 +11,6 @@ from optparse import OptionParser
 import psycopg2
 import sys
 
-from lp.services.database.postgresql import ConnectionString
 from lp.services.scripts import (
     logger,
     logger_options,
