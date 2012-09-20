@@ -32,14 +32,14 @@ from replication.helpers import Node
 import upgrade
 
 # Ignore connections by these users.
-SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
+SYSTEM_USERS = set(['postgres', 'slony', 'nagios', 'lagmon'])
 
 # Fail checks if these users are connected. If a process should not be
 # interrupted by a rollout, the database user it connects as should be
 # added here. The preflight check will fail if any of these users are
 # connected, so these systems will need to be shut down manually before
 # a database update.
-FRAGILE_USERS = frozenset([
+FRAGILE_USERS = set([
     'buildd_manager',
     # process_accepted is fragile, but also fast so we likely shouldn't
     # need to ever manually shut it down.
@@ -52,7 +52,7 @@ FRAGILE_USERS = frozenset([
 # If these users have long running transactions, just kill 'em. Entries
 # added here must come with a bug number, a if part of Launchpad holds
 # open a long running transaction it is a bug we need to fix.
-BAD_USERS = frozenset([
+BAD_USERS = set([
     'karma',  # Bug #863109
     'rosettaadmin',  # Bug #863122
     'update-pkg-cache',  # Bug #912144
@@ -68,10 +68,12 @@ MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
-    def __init__(self, log, standbys):
+    def __init__(self, log, standbys, replication_paused=False):
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
+        self.replication_paused = replication_paused
+
         node = Node(None, None, None, True)
         node.con = master_con
         self.nodes = set([node])
@@ -100,7 +102,7 @@ class DatabasePreflight:
                 % (required_standbys, self._num_standbys))
             return False
         else:
-            self.log.info(
+            self.log.debug(
                 "%d streaming standby servers streaming", required_standbys)
             return True
 
@@ -180,7 +182,7 @@ class DatabasePreflight:
                     usename, datname, num_connections)
                 success = False
         if success:
-            self.log.info(
+            self.log.debug(
                 "No fragile systems connected to the cluster (%s)"
                 % ', '.join(FRAGILE_USERS))
         return success
@@ -220,7 +222,7 @@ class DatabasePreflight:
                         datname, usename, age)
                     success = False
         if success:
-            self.log.info("No long running transactions detected.")
+            self.log.debug("No long running transactions detected.")
         return success
 
     def check_replication_lag(self):
@@ -299,9 +301,9 @@ class DatabasePreflight:
         success = True
         if not self.check_standby_count():
             success = False
-        if not self.check_replication_lag():
+        if not self.replication_paused and not self.check_replication_lag():
             success = False
-        if not self.check_can_sync():
+        if not self.replication_paused and not self.check_can_sync():
             success = False
         # Do checks on open transactions last to minimize race
         # conditions.
@@ -351,14 +353,16 @@ class KillConnectionsPreflight(DatabasePreflight):
                     all_clear = False
                     if loop_count == num_tries - 1:
                         self.log.fatal(
-                            "Unable to kill %s [%s] on %s",
+                            "Unable to kill %s [%s] on %s.",
                             usename, procpid, datname)
                     elif usename in BAD_USERS:
                         self.log.info(
-                            "Killed %s [%s] on %s", usename, procpid, datname)
+                            "Killed %s [%s] on %s.",
+                            usename, procpid, datname)
                     else:
                         self.log.warning(
-                            "Killed %s [%s] on %s", usename, procpid, datname)
+                            "Killed %s [%s] on %s.",
+                            usename, procpid, datname)
             if all_clear:
                 break
 

@@ -21,26 +21,37 @@ from lp.services.scripts import (
 from preflight import (
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,
-    streaming_sync
+    streaming_sync,
+    SYSTEM_USERS
     )
 import security  # security.py script
 import upgrade  # upgrade.py script
 
 
-def run_upgrade(options, log):
+# Increase this timeout once we are confident in the
+# implementation. We don't want to block rollouts
+# unnecessarily with slow timeouts and a flaky sync
+# detection implementation.
+STREAMING_SYNC_TIMEOUT = 60
+
+
+def run_upgrade(options, log, master_con):
     """Invoke upgrade.py in-process.
 
     It would be easier to just invoke the script, but this way we save
     several seconds of overhead as the component architecture loads up.
     """
     # Fake expected command line arguments and global log
-    options.commit = True
-    options.partial = False
     upgrade.options = options
     upgrade.log = log
+    # upgrade.py doesn't commit, because we are sharing the transaction
+    # with security.py. We want schema updates and security changes
+    # applied in the same transaction.
+    options.commit = False
+    options.partial = False
     # Invoke the database schema upgrade process.
     try:
-        return upgrade.main()
+        return upgrade.main(master_con)
     except Exception:
         log.exception('Unhandled exception')
         return 1
@@ -48,7 +59,7 @@ def run_upgrade(options, log):
         log.fatal("upgrade.py failed [%s]", x)
 
 
-def run_security(options, log):
+def run_security(options, log, master_con):
     """Invoke security.py in-process.
 
     It would be easier to just invoke the script, but this way we save
@@ -62,7 +73,7 @@ def run_security(options, log):
     security.log = log
     # Invoke the database security reset process.
     try:
-        return security.main(options)
+        return security.main(options, master_con)
     except Exception:
         log.exception('Unhandled exception')
         return 1
@@ -78,7 +89,7 @@ def pg_connect(conn_str):
 
 
 class DBController:
-    def __init__(self, log, pgbouncer_conn_str, dbname):
+    def __init__(self, log, pgbouncer_conn_str, dbname, dbuser):
         self.log = log
         self.pgbouncer_con = pg_connect(pgbouncer_conn_str)
 
@@ -86,11 +97,11 @@ class DBController:
         self.master = None
         self.slaves = {}
 
-        for db in self.pgbouncer_cmd('show databases'):
+        for db in self.pgbouncer_cmd('show databases', results=True):
             if db.database != dbname:
                 continue
 
-            conn_str = 'dbname=%s port=%s' % (dbname, db.port)
+            conn_str = 'dbname=%s port=%s user=%s' % (dbname, db.port, dbuser)
             if db.host:
                 conn_str += ' host=%s' % db.host
             con = pg_connect(conn_str)
@@ -103,16 +114,18 @@ class DBController:
                 self.master = conn_str
 
         if self.master_name is None:
-            log.fatal('No master detected')
+            log.fatal('No master detected.')
             raise SystemExit(98)
 
-    def pgbouncer_cmd(self, cmd):
+    def pgbouncer_cmd(self, cmd, results):
         cur = self.pgbouncer_con.cursor()
         cur.execute(cmd)
-        return cur.fetchall()
+        if results:
+            return cur.fetchall()
 
     def pause_replication(self):
-        self.log.info('Pausing replication')
+        names = self.slaves.keys()
+        self.log.info("Pausing replication to %s.", ', '.join(names))
         for name, conn_str in self.slaves.items():
             try:
                 con = pg_connect(conn_str)
@@ -120,63 +133,108 @@ class DBController:
                 cur.execute('select pg_xlog_replay_pause()')
             except psycopg2.Error, x:
                 self.log.error(
-                    'Unable to pause replication of %s (%s)'
+                    'Unable to pause replication to %s (%s).'
                     % (name, str(x)))
                 return False
         return True
 
     def resume_replication(self):
-        self.log.info('Resuming replication')
+        names = self.slaves.keys()
+        self.log.info("Resuming replication to %s.", ', '.join(names))
         success = True
         for name, conn_str in self.slaves.items():
             try:
                 con = pg_connect(conn_str)
                 cur = con.cursor()
-                cur.execute('select pg_xlog_replay_pause()')
+                cur.execute('select pg_xlog_replay_resume()')
             except psycopg2.Error, x:
                 success = False
                 self.log.error(
-                    'Failed to resume replication on %s (%s)'
+                    'Failed to resume replication to %s (%s).'
                     % (name, str(x)))
+        return success
+
+    def ensure_replication_enabled(self):
+        """Force replication back on.
+
+        It may have been disabled if a previous run failed horribly,
+        or just admin error. Either way, we are trying to make the
+        scheduled downtime window so automate this.
+        """
+        success = True
+        wait_for_sync = False
+        for name, conn_str in self.slaves.items():
+            try:
+                con = pg_connect(conn_str)
+                cur = con.cursor()
+                cur.execute("SELECT pg_is_xlog_replay_paused()")
+                replication_paused = cur.fetchone()[0]
+                if replication_paused:
+                    self.log.warn("Replication paused on %s. Resuming.", name)
+                    cur.execute("SELECT pg_xlog_replay_resume()")
+                    wait_for_sync = True
+            except psycopg2.Error, x:
+                success = False
+                self.log.error(
+                    "Failed to resume replication on %s (%s)", name, str(x))
+        if success and wait_for_sync:
+            self.sync()
         return success
 
     def disable(self, name):
         try:
-            self.pgbouncer_cmd("DISABLE %s" % name)
-            self.pgbouncer_cmd("KILL %s" % name)
+            self.pgbouncer_cmd("DISABLE %s" % name, results=False)
+            self.pgbouncer_cmd("KILL %s" % name, results=False)
             return True
         except psycopg2.Error, x:
             self.log.error("Unable to disable %s (%s)", name, str(x))
+            return False
 
     def enable(self, name):
         try:
-            self.pgbouncer_cmd("RESUME %s" % name)
-            self.pgbouncer_cmd("ENABLE %s" % name)
+            self.pgbouncer_cmd("RESUME %s" % name, results=False)
+            self.pgbouncer_cmd("ENABLE %s" % name, results=False)
             return True
         except psycopg2.Error, x:
             self.log.error("Unable to enable %s (%s)", name, str(x))
+            return False
 
     def disable_master(self):
+        self.log.info("Disabling access to %s.", self.master_name)
         return self.disable(self.master_name)
 
     def enable_master(self):
+        self.log.info("Reenabling access to %s.", self.master_name)
         return self.enable(self.master_name)
 
     def disable_slaves(self):
+        names = self.slaves.keys()
+        self.log.info(
+            "Disabling access to %s.", ', '.join(names))
         for name in self.slaves.keys():
             if not self.disable(name):
                 return False  # Don't do further damage if we failed.
         return True
 
     def enable_slaves(self):
+        names = self.slaves.keys()
+        self.log.info(
+            "Reenabling access to %s.", ', '.join(names))
         success = True
         for name in self.slaves.keys():
             if not self.enable(name):
                 success = False
         return success
 
-    def sync(self, timeout):
-        return streaming_sync(pg_connect(self.master), timeout)
+    def sync(self):
+        sync = streaming_sync(pg_connect(self.master), STREAMING_SYNC_TIMEOUT)
+        if sync:
+            self.log.debug('Slaves in sync.')
+        else:
+            self.log.error(
+                'Slaves failed to sync after %d seconds.',
+                STREAMING_SYNC_TIMEOUT)
+        return sync
 
 
 def main():
@@ -192,10 +250,18 @@ def main():
         '--dbname', dest='dbname', default='launchpad_prod', metavar='DBNAME',
         help='Database name we are updating.')
 
+    parser.add_option(
+        '--dbuser', dest='dbuser', default='postgres', metavar='USERNAME',
+        help='Connect as USERNAME to databases')
+
     logger_options(parser)
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
+
+    # In case we are connected as a non-standard superuser, ensure we
+    # don't kill our own connections.
+    SYSTEM_USERS.add(options.dbuser)
 
     log = logger(options)
 
@@ -206,15 +272,22 @@ def main():
     if pgbouncer_conn_str.dbname != 'pgbouncer':
         log.warn("pgbouncer administrative database not named 'pgbouncer'")
 
-    controller = DBController(log, pgbouncer_conn_str, options.dbname)
+    controller = DBController(
+        log, pgbouncer_conn_str, options.dbname, options.dbuser)
     slaves = controller.slaves.values()
-    #
-    # Preflight checks. Confirm as best we can that the upgrade will
-    # work unattended.
-    #
 
-    # We initially ignore open connections, as they will shortly be
-    # killed.
+    try:
+        # Master connection, not running in autocommit to allow us to
+        # rollback changes on failure.
+        master_con = psycopg2.connect(controller.master)
+    except Exception, x:
+        log.fatal("Unable to open connection to master db (%s)", str(x))
+        return 94
+
+    # Preflight checks. Confirm as best we can that the upgrade will
+    # work unattended. Here we ignore open connections, as they
+    # will shortly be killed.
+    controller.ensure_replication_enabled()
     if not NoConnectionCheckPreflight(log, slaves).check_all():
         return 99
 
@@ -229,69 +302,68 @@ def main():
     replication_paused = False
     master_disabled = False
     slaves_disabled = False
+    outage_start = None
 
     try:
-        # Stop replication on slaves
+        # Pause replication.
         replication_paused = controller.pause_replication()
         if not replication_paused:
-            return 94
+            return 93
+
+        # Start the outage clock.
+        log.info("Outage starts.")
+        outage_start = datetime.now()
 
         # Disable access and kill connections to the master database.
-        log.info("Outage starts. Disabling access to master db.")
-        outage_start = datetime.now()
         master_disabled = controller.disable_master()
         if not master_disabled:
             return 95
 
-        if not KillConnectionsPreflight(log, slaves).check_all():
+        if not KillConnectionsPreflight(
+            log, slaves, replication_paused=replication_paused).check_all():
             return 100
 
         log.info("Preflight check succeeded. Starting upgrade.")
-        upgrade_rc = run_upgrade(options, log)
-        if upgrade_rc != 0:
+        # Does not commit master_con, even on success.
+        upgrade_rc = run_upgrade(options, log, master_con)
+        upgrade_run = (upgrade_rc == 0)
+        if not upgrade_run:
             return upgrade_rc
-        upgrade_run = True
         log.info("Database patches applied. Stored procedures updated.")
 
-        security_rc = run_security(options, log)
-        if security_rc != 0:
+        # Commits master_con on success.
+        security_rc = run_security(options, log, master_con)
+        security_run = (security_rc == 0)
+        if not security_run:
             return security_rc
-        security_run = True
 
         log.info("Master database updated. Reenabling.")
         master_disabled = not controller.enable_master()
         if master_disabled:
-            log.warn("Outage ongoing until pgbouncer bounced!")
+            log.warn("Outage ongoing until pgbouncer bounced.")
             return 96
         else:
             log.info("Outage complete. %s", datetime.now() - outage_start)
 
-        log.info("Disabling slaves")
         slaves_disabled = controller.disable_slaves()
-        if not slaves_disabled:
-            return 97
 
-        log.info("Resuming replication")
+        # Resume replication.
+        log.info("Resuming replication.")
         replication_paused = not controller.resume_replication()
         if replication_paused:
-            return 98
-
-        # Increase this timeout once we are confident in the implementation.
-        # We don't want to block rollouts unnecessarily with slow
-        # timeouts and a flaky sync detection implementation.
-        streaming_sync_timeout = 120
-
-        sync = controller.wait_for_sync(streaming_sync_timeout)
-
-        if sync:
-            log.debug('Streaming replicas in sync.')
-        else:
             log.error(
-                'Streaming replicas failed to sync after %d seconds.',
-                streaming_sync_timeout)
+                "Failed to resume replication. Run pg_xlog_replay_pause() "
+                "on all slaves to manually resume.")
+        else:
+            controller.sync()
 
-        log.info("Enabling slaves")
-        slaves_disabled = not controller.enable_slaves()
+        if slaves_disabled:
+            log.info("Enabling slave database connections.")
+            slaves_disabled = not controller.enable_slaves()
+            if slaves_disabled:
+                log.warn(
+                    "Failed to enable slave databases in pgbouncer. "
+                    "Now running in master-only mode.")
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
@@ -302,32 +374,28 @@ def main():
         return 0
 
     finally:
+        if not security_run:
+            log.warning("Rolling back all schema and security changes.")
+            master_con.rollback()
+
         # Recovery if necessary.
+        if master_disabled:
+            if controller.enable_master():
+                log.warning(
+                    "Master reenabled despite earlier failures. "
+                    "Outage over %s, but we have problems"
+                    % str(datetime.now() - outage_start))
+            else:
+                log.warning(
+                    "Master is still disabled in pgbouncer. Outage ongoing.")
+
         if replication_paused:
             if controller.resume_replication():
                 log.info("Replication resumed despite earlier failures")
-            else:
-                log.warning(
-                    "Replication disabled. Run pg_xlog_replay_resume() "
-                    "on slaves")
-
-        if master_disabled:
-            if controller.enable_master():
-                log.info("Master reenabled despite earlier failures")
-            else:
-                log.warning("Master is still disabled in pgbouncer")
 
         if slaves_disabled:
             if controller.enable_slaves():
-                log.info("Slaves reenabled despite earlier failures")
-            else:
-                log.warning("Slaves are still disabled in pgbouncer")
-
-        if not upgrade_run:
-            log.warning("upgrade.py still needs to be run")
-
-        if not security_run:
-            log.warning("security.py still needs to be run")
+                log.info("Slave database connections reenabled.")
 
 
 if __name__ == '__main__':
