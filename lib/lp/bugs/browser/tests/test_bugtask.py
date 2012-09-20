@@ -41,6 +41,7 @@ from lp.bugs.browser.bugtask import (
     BugTaskListingItem,
     BugTasksAndNominationsView,
     )
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.feed.bug import (
     BugTargetBugsFeed,
     PersonBugsFeed,
@@ -277,6 +278,30 @@ class TestBugTaskView(TestCaseWithFactory):
             self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
 
+    def test_changing_milestone_and_assignee_with_lifecycle(self):
+        # Changing the milestone and assignee of a bugtask when the milestone
+        # has a LIFECYCLE structsub is fine. Also see bug 1036882.
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct(official_malone=True)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(subscriber):
+            structsub = milestone.addBugSubscription(subscriber, subscriber)
+            structsub.bug_filters[0].bug_notification_level = (
+                BugNotificationLevel.LIFECYCLE)
+        bug = self.factory.makeBug(target=product)
+        with person_logged_in(product.owner):
+            form_data = {
+                '%s.milestone' % product.name: milestone.id,
+                '%s.assignee.option' % product.name:
+                    '%s.assignee.assign_to_me' % product.name,
+                '%s.assignee' % product.name: product.owner.name,
+                '%s.actions.save' % product.name: 'Save Changes',
+                }
+            create_initialized_view(
+                bug.default_bugtask, name='+editstatus', form=form_data)
+            self.assertEqual(product.owner, bug.default_bugtask.assignee)
+            self.assertEqual(milestone, bug.default_bugtask.milestone)
+
     def test_bugtag_urls_are_encoded(self):
         # The link to bug tags are encoded to protect against special chars.
         product = self.factory.makeProduct(name='foobar')
@@ -294,8 +319,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_information_type(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner,
-            information_type=InformationType.USERDATA)
+            owner=owner, information_type=InformationType.USERDATA)
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")

@@ -160,6 +160,13 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         elif (isinstance(change, BugTaskAssigneeChange) and
               new_subscribers is not None):
             for person in new_subscribers:
+                # If this change involves multiple changes, other structural
+                # subscribers will leak into new_subscribers, and they may
+                # not be in the recipients list (due to level or so), and we
+                # are only interested in dropping the assignee out, since we
+                # send assignment notifications separately.
+                if person not in recipients:
+                    continue
                 reason, rationale = recipients.getReason(person)
                 if 'Assignee' in rationale:
                     recipients.remove(person)
