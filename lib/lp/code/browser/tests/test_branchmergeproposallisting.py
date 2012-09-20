@@ -199,8 +199,7 @@ class TestMerges(BrowserTestCase):
         """The merges view should be enabled for PersonProduct."""
         personproduct = PersonProduct(
             self.factory.makePerson(), self.factory.makeProduct())
-        self.getViewBrowser(personproduct, '+merges',
-                rootsite='code')
+        self.getViewBrowser(personproduct, '+merges', rootsite='code')
 
     def test_DistributionSourcePackage(self):
         """The merges view should be enabled for DistributionSourcePackage."""
