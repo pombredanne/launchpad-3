@@ -3,8 +3,6 @@
 
 """Functions dealing with mails coming into Launchpad."""
 
-# pylint: disable-msg=W0631
-
 __metaclass__ = type
 
 from cStringIO import StringIO as cStringIO
@@ -42,6 +40,7 @@ from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,
     get_error_message,
+    IncomingEmailError,
     save_mail_to_librarian,
     )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
@@ -238,8 +237,7 @@ def _getPrincipalByDkim(mail):
     return (dkim_principal, dkim_trusted_address)
 
 
-def authenticateEmail(mail,
-    signature_timestamp_checker=None):
+def authenticateEmail(mail, signature_timestamp_checker=None):
     """Authenticates an email by verifying the PGP signature.
 
     The mail is expected to be an ISignedMessage.
@@ -521,7 +519,7 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
     try:
         principal = authenticateEmail(
             mail, signature_timestamp_checker)
-    except InvalidSignature as error:
+    except (InvalidSignature, IncomingEmailError) as error:
         send_process_error_notification(
             mail['From'], 'Submit Request Failure', str(error), mail)
         return
