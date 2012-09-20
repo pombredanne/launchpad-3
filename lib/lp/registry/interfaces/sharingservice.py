@@ -28,6 +28,7 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
@@ -79,7 +80,7 @@ class ISharingService(IService):
 
         :param user: the user making the request. Only artifacts visible to the
              user will be included in the result.
-        :return: a (bugtasks, branches) tuple
+        :return: a (bugtasks, branches, specifications) tuple
         """
 
     @export_read_operation()
@@ -114,6 +115,21 @@ class ISharingService(IService):
         :param user: the user making the request. Only branches visible to the
              user will be included in the result.
         :return: a collection of branches
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(ISpecification)
+    @operation_for_version('devel')
+    def getSharedSpecifications(pillar, person, user):
+        """Return the specifications shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of specifications.
         """
 
     def getVisibleArtifacts(person, branches=None, bugs=None):

@@ -39,6 +39,7 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.model.bugbranch import BugBranch
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -165,6 +166,9 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
+    )
+from lp.translations.model.translationtemplatesbuild import (
+    TranslationTemplatesBuild,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -1374,17 +1378,25 @@ class TestBranchDeletion(TestCaseWithFactory):
         job = source.create(branch)
         other_job = source.create(other_branch)
         store = Store.of(branch)
+        bfj = store.find(
+            BuildFarmJob,
+            BuildFarmJob.id == TranslationTemplatesBuild.build_farm_job_id,
+            TranslationTemplatesBuild.branch == branch).one().id
 
         branch.destroySelf(break_references=True)
 
         # The BuildQueue for the job whose branch we deleted is gone.
         buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
-        self.assertEqual([], list(buildqueue))
+        self.assertEqual(0, buildqueue.count())
+
+        # The BuildFarmJob for the TTB is gone.
+        bfjs = store.find(BuildFarmJob, BuildFarmJob.id == bfj)
+        self.assertEqual(0, bfjs.count())
 
         # The other job's BuildQueue entry is still there.
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
-        self.assertNotEqual([], list(other_buildqueue))
+        self.assertEqual(1, other_buildqueue.count())
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -3008,6 +3020,21 @@ class TestBranchSetTarget(TestCaseWithFactory):
             branch.setTarget(user=branch.owner)
         self.assertEqual(
             owner, get_policies_for_artifact(branch)[0].person)
+
+    def test_public_branch_to_proprietary_only_project(self):
+        # A branch cannot be moved to a target where the sharing policy does
+        # not allow it.
+        owner = self.factory.makePerson()
+        commercial_product = self.factory.makeProduct(
+            owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner,
+                commercial_product)
 
 
 def make_proposal_and_branch_revision(factory, revno, revision_id,
