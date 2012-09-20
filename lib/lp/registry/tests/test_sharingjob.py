@@ -254,6 +254,17 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertEqual(requestor.id, naked_job.requestor_id)
         self.assertContentEqual([bug.id], naked_job.bug_ids)
 
+    def test_create__bad_artifact_class(self):
+        # A ValueError is raised if an object of an unsupported type
+        # is passed as an artifact to
+        # IRemoveArtifactSubscriptionsJob.create().
+        requestor = self.factory.makePerson()
+        wrong_object = self.factory.makePerson()
+        self.assertRaises(
+            ValueError,
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create,
+            requestor, [wrong_object])
+
     def test_getErrorRecipients(self):
         # The pillar owner and job requestor are the error recipients.
         requestor = self.factory.makePerson()
