@@ -18,19 +18,19 @@ class TestPersonProduct(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def _makePersonProduct(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        return PersonProduct(person, product)
+
     def test_canonical_url(self):
         # The canonical_url of a person product is ~person/product.
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        pp = PersonProduct(person, product)
+        pp = self._makePersonProduct()
         self.assertEqual(
-            urlappend(canonical_url(person),
-                      product.name),
-            canonical_url(pp))
+                '~%s/%s' % person.name, product.name, canonical_url(pp)
 
     def test_breadcrumb(self):
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        pp = PersonProduct(person, product)
+        # Person products give the product as their breadcrumb url.
+        pp = self._makePersonProduct()
         breadcrumb = IBreadcrumb(pp, None) 
         self.assertEqual(canonical_url(product), breadcrumb.url)
