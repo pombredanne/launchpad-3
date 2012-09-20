@@ -110,6 +110,7 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -2027,12 +2028,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def initialize(self):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
-        # when an action is invokved.
+        # when an action is invoked.
         if IProductSet.providedBy(self.context):
             cache = IJSONRequestCache(self.request)
-            json_dump_information_types(
-                cache,
-                self.context.getAllowedProductInformationTypes())
+            json_dump_information_types(cache,
+                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
