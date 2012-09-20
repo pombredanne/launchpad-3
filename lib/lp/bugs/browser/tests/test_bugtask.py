@@ -1153,8 +1153,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
     def getWidgetOptionTitles(self, widget):
         """Return the titles of options of the given choice widget."""
-        return [
-            item.value.title for item in widget.field.vocabulary]
+        return [item.value.title for item in widget.field.vocabulary]
 
     def test_status_field_items_for_anonymous(self):
         # Anonymous users see only the current value.
@@ -1615,8 +1614,8 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
         self.owner = self.factory.makePerson(name='bob')
-        self.target = self.factory.makeProject(name='container',
-                                                     owner=self.owner)
+        self.target = self.factory.makeProject(
+            name='container', owner=self.owner)
 
     def makeSubordinateProduct(self, tracks_bugs_in_lp):
         """Create a new product and add it to the project group."""
@@ -1837,8 +1836,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
 
     def _assertThatUnbatchedAndBatchedActivityMatch(self, unbatched_activity,
                                                     batched_activity):
-        zipped_activity = zip(
-            unbatched_activity, batched_activity)
+        zipped_activity = zip(unbatched_activity, batched_activity)
         for index, items in enumerate(zipped_activity):
             unbatched_item, batched_item = items
             self.assertEqual(
@@ -1870,8 +1868,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
         self.assertEqual(
-            config.malone.comments_list_default_batch_size,
-            view.batch_size)
+            config.malone.comments_list_default_batch_size, view.batch_size)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'batch_size': 20})
         self.assertEqual(20, view.batch_size)
