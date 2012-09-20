@@ -877,7 +877,7 @@ class TestBugPrivacy(TestCaseWithFactory):
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeBug().getAllowedInformationTypes(None))
 
-    def test_getAllowedInformationTypesIncludesCurrent(self):
+    def test_getAllowedInformationTypes_includes_current(self):
         # A bug's allowed information types must include its current
         # information type even if said type is not in the allowed types.
         product = self.factory.makeProduct()

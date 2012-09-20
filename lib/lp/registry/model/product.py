@@ -580,7 +580,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.private_bugs = private_bugs
 
     def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
-        if var != enum.PUBLIC and not self.has_current_commercial_subscription:
+        if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
+            not self.has_current_commercial_subscription):
             raise CommercialSubscribersOnly(
                 "A current commercial subscription is required to use "
                 "proprietary %s." % kind)

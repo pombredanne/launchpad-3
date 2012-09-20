@@ -191,9 +191,9 @@ class BranchSharingPolicy(DBEnumeratedType):
         """)
 
     FORBIDDEN = DBItem(6, """
-        New branches are forbidden
+        Forbidden
 
-        No new branches may be created but existing branches may still be
+        No new branches may be created, but existing branches may still be
         updated.
         """)
 
@@ -226,9 +226,9 @@ class BugSharingPolicy(DBEnumeratedType):
         """)
 
     FORBIDDEN = DBItem(5, """
-        New bugs are forbidden
+        Forbidden
 
-        No new bugs may be filed but existing bugs may still be updated.
+        No new bugs may be reported, but existing bugs may still be updated.
         """)
 
 

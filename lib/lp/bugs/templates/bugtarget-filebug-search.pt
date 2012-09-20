@@ -33,10 +33,10 @@
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
       <tal:no-new-bugs tal:condition="not: view/contextAllowsNewBugs">
-          You can't create new bugs for
-          <tal:name replace="context/displayname"/>.
+          Reporting new bugs for
+          <tal:name replace="context/displayname"/> is not allowed.
           <tal:sharing-link condition="context/required:launchpad.Edit">
-          <br>Sharing policies may be changed on the
+          <br>This can be fixed by changing the bug sharing policy on the
           <a tal:attributes="href string:${context/fmt:url:mainsite}/+sharing">sharing page</a>.
           </tal:sharing-link>
       </tal:no-new-bugs>

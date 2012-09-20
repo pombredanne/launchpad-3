@@ -1067,8 +1067,7 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
         return self.default_product is not None
 
     def contextAllowsNewBugs(self):
-        product = self.default_product
-        return product is not None and product.getAllowedBugInformationTypes()
+        return True
 
     def contextIsProduct(self):
         return False

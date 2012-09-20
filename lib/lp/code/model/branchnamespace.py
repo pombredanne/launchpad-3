@@ -147,8 +147,7 @@ class _BaseNamespace:
 
         information_type = self.getDefaultInformationType()
         if information_type is None:
-            raise ValueError(
-                'Branches cannot be created without an information type')
+            raise BranchCreationForbidden()
 
         branch = Branch(
             registrant=registrant, name=name, owner=self.owner,

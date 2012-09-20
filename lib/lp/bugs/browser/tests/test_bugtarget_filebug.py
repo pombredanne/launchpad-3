@@ -487,8 +487,8 @@ class TestFileBugViewBase(TestCaseWithFactory):
             view = create_initialized_view(
                 product, '+filebug', principal=product.owner)
             html = view.render()
-        self.assertIn("You can't create new bugs for", html)
-        self.assertIn("Sharing policies may be changed", html)
+        self.assertIn("Reporting new bugs for", html)
+        self.assertIn("This can be fixed by changing", html)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
