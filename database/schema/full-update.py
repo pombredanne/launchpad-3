@@ -209,8 +209,8 @@ def main():
             if controller.enable_master():
                 log.warning(
                     "Master reenabled despite earlier failures. "
-                    "Outage over %s, but we have problems"
-                    % str(datetime.now() - outage_start))
+                    "Outage over %s, but we have problems",
+                    str(datetime.now() - outage_start))
             else:
                 log.warning(
                     "Master is still disabled in pgbouncer. Outage ongoing.")
