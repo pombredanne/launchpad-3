@@ -31,7 +31,4 @@ class TestPersonProduct(TestCaseWithFactory):
         person_product_branch = self.factory.makeProductBranch(
             owner=person, product=product)
         branches = IBranchCollection(person_product).getBranches()
-        self.assertNotIn(random_branch, branches)
-        self.assertNotIn(product_branch, branches)
-        self.assertNotIn(person_branch, branches)
-        self.assertIn(person_product_branch, branches)
+        self.assertEqual([person_product_branch], [b for b in branches])
