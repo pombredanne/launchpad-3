@@ -31,6 +31,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript" src="../../../../../build/js/lp/app/expander.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/errors.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/anim/anim.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/extras/extras.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
@@ -54,5 +55,78 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <li>registry.product-views.test</li>
         </ul>
         <div id="testdom"></div>
+
+        <script id="tpl_information_type" type="text/template">
+        <div>
+            <label for="field.information_type">Information Type:</label>
+        <div>
+        <table class="radio-button-widget">
+            <tbody>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.0" name="field.information_type" type="radio" value="PUBLIC">
+                    </td>
+                    <td>
+                        <label for="field.information_type.0">Public</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Everyone can see this information.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.1" name="field.information_type" type="radio" value="PUBLICSECURITY">
+                    </td>
+                    <td>
+                        <label for="field.information_type.1">Public Security</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Everyone can see this security related information.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.2" name="field.information_type" type="radio" value="PRIVATESECURITY">
+                    </td>
+                    <td>
+                        <label for="field.information_type.2">Private Security</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Only the security group can see this information.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.3" name="field.information_type" type="radio" value="USERDATA">
+                    </td>
+                    <td><label for="field.information_type.3">Private</label></td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Only shared with users permitted to see private user information.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.4" name="field.information_type" type="radio" value="PROPRIETARY">
+                    </td>
+                    <td><label for="field.information_type.4">Proprietary</label></td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Only shared with users permitted to see proprietary information.</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">
+                        <input class="radioType" id="field.information_type.5" name="field.information_type" type="radio" value="EMBARGOED">
+                    </td>
+                    <td><label for="field.information_type.5">Embargoed</label></td>
+                </tr>
+                <tr>
+                    <td class="formHelp">Only shared with users permitted to see embargoed information.</td>
+                </tr>
+            </tbody>
+         </table>
+        <input name="field.information_type-empty-marker" type="hidden" value="1">
+        </div>
+        <p class="formHelp">The type of of data contained in this project.</p>
+        </script>
     </body>
 </html>
