@@ -18,8 +18,9 @@ from optparse import OptionParser
 import os.path
 import time
 
+import psycopg2
+
 from lp.services.database.sqlbase import (
-    connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
     )
@@ -68,8 +69,9 @@ MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
-    def __init__(self, log, standbys, replication_paused=False):
-        master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    def __init__(self, log, controller, replication_paused=False):
+        master_con = psycopg2.connect(str(controller.master))
+        master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
         self.replication_paused = replication_paused
@@ -81,6 +83,7 @@ class DatabasePreflight:
         self.lpmain_master_node = node
 
         # Add streaming replication standbys.
+        standbys = controller.slaves.values()
         self._num_standbys = len(standbys)
         for standby in standbys:
             standby_node = Node(None, None, standby, False)

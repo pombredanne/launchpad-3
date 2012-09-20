@@ -101,9 +101,10 @@ class DBController:
             if db.database != dbname:
                 continue
 
-            conn_str = 'dbname=%s port=%s user=%s' % (dbname, db.port, dbuser)
+            conn_str = ConnectionString(
+                'dbname=%s port=%s user=%s' % (dbname, db.port, dbuser))
             if db.host:
-                conn_str += ' host=%s' % db.host
+                conn_str.host = db.host
             con = pg_connect(conn_str)
             cur = con.cursor()
             cur.execute('select pg_is_in_recovery()')
@@ -279,7 +280,7 @@ def main():
     try:
         # Master connection, not running in autocommit to allow us to
         # rollback changes on failure.
-        master_con = psycopg2.connect(controller.master)
+        master_con = psycopg2.connect(str(controller.master))
     except Exception, x:
         log.fatal("Unable to open connection to master db (%s)", str(x))
         return 94
@@ -288,7 +289,7 @@ def main():
     # work unattended. Here we ignore open connections, as they
     # will shortly be killed.
     controller.ensure_replication_enabled()
-    if not NoConnectionCheckPreflight(log, slaves).check_all():
+    if not NoConnectionCheckPreflight(log, controller).check_all():
         return 99
 
     #
@@ -320,7 +321,8 @@ def main():
             return 95
 
         if not KillConnectionsPreflight(
-            log, slaves, replication_paused=replication_paused).check_all():
+            log, controller,
+            replication_paused=replication_paused).check_all():
             return 100
 
         log.info("Preflight check succeeded. Starting upgrade.")
@@ -367,7 +369,7 @@ def main():
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
-        if not NoConnectionCheckPreflight(log, slaves).check_all():
+        if not NoConnectionCheckPreflight(log, controller).check_all():
             return 101
 
         log.info("All good. All done.")
