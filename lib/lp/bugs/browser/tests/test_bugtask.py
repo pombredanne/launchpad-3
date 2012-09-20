@@ -456,17 +456,13 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'bugs.affected_count_includes_dupes.disabled': ''}))
         self.makeDuplicate()
-        self.assertEqual(
-            3, self.view.total_users_affected_count)
+        self.assertEqual(3, self.view.total_users_affected_count)
         self.assertEqual(
             "This bug affects 3 people. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 3 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 3 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_duplicate(self):
         self.useFixture(FeatureFixture(
@@ -479,11 +475,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 3 people. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 4 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 4 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_master(self):
         self.useFixture(FeatureFixture(
@@ -496,11 +489,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects you and 3 other people",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 4 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 4 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_duplicate_not_by_master(self):
         self.useFixture(FeatureFixture(
@@ -517,11 +507,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # either 3 or 4 people.  However at the moment the "No" answer on the
         # master is more authoritative than the "Yes" on the dupe.
         self.assertEqual(
-            "This bug affects 3 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 3 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_total_users_affected_count_without_dupes(self):
         self.useFixture(FeatureFixture(
@@ -529,25 +516,20 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.makeDuplicate()
         self.refresh()
         # Does not count the two users of bug2, so just 1.
-        self.assertEqual(
-            1, self.view.total_users_affected_count)
+        self.assertEqual(1, self.view.total_users_affected_count)
         self.assertEqual(
             "This bug affects 1 person. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 1 person",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            1,
-            self.view.other_users_affected_count)
+            "This bug affects 1 person", self.view.anon_affected_statement)
+        self.assertEqual(1, self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "Does this bug affect you?",
-            self.view.affected_statement)
+            "Does this bug affect you?", self.view.affected_statement)
 
     def test_affected_statement_only_you(self):
         self.view.context.markUserAffected(self.view.user, True)
@@ -556,8 +538,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug affects you",
-            self.view.affected_statement)
+            "This bug affects you", self.view.affected_statement)
 
     def test_affected_statement_only_not_you(self):
         self.view.context.markUserAffected(self.view.user, False)
@@ -566,8 +547,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug doesn't affect you",
-            self.view.affected_statement)
+            "This bug doesn't affect you", self.view.affected_statement)
 
     def test_affected_statement_1_person_not_you(self):
         self.assertIs(None, self.bug.isUserAffected(self.view.user))
@@ -589,8 +569,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
     def test_affected_statement_1_person_and_not_you(self):
         self.view.context.markUserAffected(self.view.user, False)
         self.failIf(self.bug.isUserAffected(self.view.user))
-        self.failUnlessEqual(
-            1, self.view.other_users_affected_count)
+        self.failUnlessEqual(1, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 1 person, but not you",
             self.view.affected_statement)
@@ -599,8 +578,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.assertIs(None, self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 2 people. Does this bug affect you?",
             self.view.affected_statement)
@@ -610,8 +588,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnless(self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects you and 2 other people",
             self.view.affected_statement)
@@ -621,8 +598,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failIf(self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 2 people, but not you",
             self.view.affected_statement)
@@ -635,15 +611,13 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
     def test_anon_affected_statement_1_user_affected(self):
         self.failUnlessEqual(1, self.bug.users_affected_count)
         self.failUnlessEqual(
-            "This bug affects 1 person",
-            self.view.anon_affected_statement)
+            "This bug affects 1 person", self.view.anon_affected_statement)
 
     def test_anon_affected_statement_2_users_affected(self):
         self.view.context.markUserAffected(self.view.user, True)
         self.failUnlessEqual(2, self.bug.users_affected_count)
         self.failUnlessEqual(
-            "This bug affects 2 people",
-            self.view.anon_affected_statement)
+            "This bug affects 2 people", self.view.anon_affected_statement)
 
     def test_getTargetLinkTitle_product(self):
         # The target link title is always none for products.
@@ -714,8 +688,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
-        self.assertTrue(
-            target in self.view.target_releases.keys())
+        self.assertTrue(target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -738,8 +711,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
-        self.assertTrue(
-            target in self.view.target_releases.keys())
+        self.assertTrue(target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -827,8 +799,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_foo = self.factory.makeProduct(name="foo")
         foo_bug = self.factory.makeBug(target=product_foo)
         assignee = self.factory.makeTeam(
-            name="assignee",
-            visibility=PersonVisibility.PRIVATE)
+            name="assignee", visibility=PersonVisibility.PRIVATE)
         foo_bug.default_bugtask.transitionToAssignee(assignee)
 
         # Render the view.
@@ -1154,7 +1125,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
             target=distro, owner=owner,
             information_type=InformationType.PRIVATESECURITY)
         # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
-        # sharing policies yet, so it isn't possible legitimately create
+        # sharing policies yet, so it isn't possible to legitimately create
         # a Proprietary distro bug.
         removeSecurityProxy(bug).information_type = (
             InformationType.PROPRIETARY)
@@ -1176,10 +1147,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskEditViewStatusField, self).setUp()
-        product_owner = self.factory.makePerson(name='product-owner')
         bug_supervisor = self.factory.makePerson(name='bug-supervisor')
-        product = self.factory.makeProduct(
-            owner=product_owner, bug_supervisor=bug_supervisor)
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         self.bug = self.factory.makeBug(target=product)
 
     def getWidgetOptionTitles(self, widget):
