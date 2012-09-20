@@ -59,7 +59,7 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def assertCollection(self, target):
-        collection = self.assertIsNot(None, IBranchCollection(target, None))
+        self.assertIsNot(None, IBranchCollection(target, None))
 
     def test_product(self):
         # A product can be adapted to a branch collection.

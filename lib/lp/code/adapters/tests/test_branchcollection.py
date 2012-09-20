@@ -24,10 +24,10 @@ class TestPersonProduct(TestCaseWithFactory):
         """
         product = self.factory.makeProduct()
         person = self.factory.makePerson()
-        person_product = PersonProduct(person, product)
-        random_branch = self.factory.makeBranch()
-        product_branch = self.factory.makeProductBranch(product=product)
-        person_branch = self.factory.makeBranch(owner=person)
+        Person_product = PersonProduct(person, product)
+        self.factory.makeBranch()
+        self.factory.makeProductBranch(product=product)
+        self.factory.makeBranch(owner=person)
         person_product_branch = self.factory.makeProductBranch(
             owner=person, product=product)
         branches = IBranchCollection(person_product).getBranches()

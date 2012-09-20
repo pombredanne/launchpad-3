@@ -27,7 +27,7 @@ class TestPersonProduct(TestCaseWithFactory):
         # The canonical_url of a person product is ~person/product.
         pp = self._makePersonProduct()
         self.assertEqual(
-                '~%s/%s' % person.name, product.name, canonical_url(pp))
+                '~%s/%s' % pp.person.name, pp.product.name, canonical_url(pp))
 
     def test_breadcrumb(self):
         # Person products give the product as their breadcrumb url.
