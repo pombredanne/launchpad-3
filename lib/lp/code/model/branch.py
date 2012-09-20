@@ -53,6 +53,11 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
@@ -132,12 +137,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

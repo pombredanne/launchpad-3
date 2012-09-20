@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergequeuecollection import (
     IAllBranchMergeQueues,
@@ -18,7 +19,6 @@ from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.code.model.branchmergequeuecollection import (
     GenericBranchMergeQueueCollection,
     )
-from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer

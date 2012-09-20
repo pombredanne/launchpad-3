@@ -23,6 +23,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -63,7 +64,6 @@ from lp.bugs.scripts.bugnotification import (
     notification_comment_batches,
     process_deferred_notifications,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config

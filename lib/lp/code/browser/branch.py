@@ -74,6 +74,7 @@ from zope.schema.vocabulary import (
 from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
@@ -85,6 +86,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -126,13 +128,9 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    UserTeamsParticipationPlusSelfVocabulary,
-    )
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW

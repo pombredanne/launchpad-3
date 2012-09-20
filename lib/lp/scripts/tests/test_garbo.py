@@ -35,6 +35,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -55,11 +56,9 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,

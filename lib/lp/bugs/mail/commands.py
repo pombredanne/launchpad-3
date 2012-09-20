@@ -28,6 +28,10 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -47,10 +51,6 @@ from lp.bugs.interfaces.bugtask import (
     IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.enums import (
-    InformationType,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
