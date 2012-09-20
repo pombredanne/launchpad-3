@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTaskSet,
     )
 from lp.bugs.interfaces.bugtasksearch import (
@@ -1773,6 +1774,13 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             'BugTask.status IN (13, 14)',
             self.searchClause(BugTaskStatus.INCOMPLETE))
 
+    def test_BugTaskStatusSearch_INCOMPLETE_query(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (13, 14)',
+            self.searchClause(BugTaskStatusSearch.INCOMPLETE))
+
     def test_negative_query(self):
         # If a negative is requested then the WHERE clause is simply wrapped
         # in a "NOT".
@@ -1800,6 +1808,14 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             'BugTask.status IN (10, 13, 14)',
             self.searchClause(
                 any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
+
+    def test_any_query_with_BugTaskStatusSearch_INCOMPLETE(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (10, 13, 14)',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatusSearch.INCOMPLETE)))
 
     def test_all_query(self):
         # Since status is single-valued, asking for "all" statuses in a set

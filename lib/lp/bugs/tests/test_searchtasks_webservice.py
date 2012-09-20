@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lp.bugs.interfaces.bugtask import BugTaskStatusSearch
 from lp.registry.enums import InformationType
 from lp.testing import (
     person_logged_in,
@@ -106,6 +107,19 @@ class TestProductSearchTasks(TestCaseWithFactory):
         self.assertRaisesWithContent(
             ValueError, "Unrecognized order_by: u'date_created'",
             response.jsonBody)
+
+    def test_search_incomplete_status_results(self):
+        # The Incomplete status matches Incomplete with response and
+        # Incomplete without response bug tasks.
+        with person_logged_in(self.owner):
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+        response = self.search("devel", status="Incomplete")
+        self.assertEqual(response['total_size'], 2)
 
 
 class TestGetBugData(TestCaseWithFactory):
