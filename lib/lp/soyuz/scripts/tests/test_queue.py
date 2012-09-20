@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """queue tool base class tests."""
@@ -35,6 +35,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import filechunks
@@ -47,6 +48,9 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.processacceptedbugsjob import (
+    IProcessAcceptedBugsJobSource,
+    )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
@@ -1076,6 +1080,11 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertBugChanges(self, series, spr, bug):
+        with celebrity_logged_in("admin"):
+            self.assertEqual(
+                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
+
     def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
         # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
         # should work with private bugs where the person using the queue
@@ -1085,8 +1094,8 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
-        dsp = spr.upload_distroseries.distribution.getSourcePackage(
-            spr.sourcepackagename)
+        series = spr.upload_distroseries
+        dsp = series.distribution.getSourcePackage(spr.sourcepackagename)
         bug = self.factory.makeBug(
             target=dsp, information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
@@ -1095,12 +1104,31 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             # The archive admin user can't normally see this bug.
             self.assertRaises(ForbiddenAttribute, bug, 'status')
             # But the bug closure should work.
-            close_bugs_for_sourcepackagerelease(spr, changes)
+            close_bugs_for_sourcepackagerelease(series, spr, changes)
 
         # Verify it was closed.
+        self.assertBugChanges(series, spr, bug)
+
+
+class TestQueuePageClosingBugsJob(TestQueuePageClosingBugs):
+    # Repeat TestQueuePageClosingBugs, but with the feature flag set to
+    # cause close_bugs_for_sourcepackagerelease to create a job rather than
+    # closing bugs immediately.
+
+    def setUp(self):
+        super(TestQueuePageClosingBugsJob, self).setUp()
+        self.useFixture(FeatureFixture(
+            {"soyuz.processacceptedbugsjob.enabled": "on"},
+            ))
+
+    def assertBugChanges(self, series, spr, bug):
         with celebrity_logged_in("admin"):
-            self.assertEqual(
-                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)
+            self.assertEqual(BugTaskStatus.NEW, bug.default_bugtask.status)
+        job_source = getUtility(IProcessAcceptedBugsJobSource)
+        [job] = list(job_source.iterReady())
+        self.assertEqual(series, job.distroseries)
+        self.assertEqual(spr, job.sourcepackagerelease)
+        self.assertEqual([bug.id], job.bug_ids)
 
 
 class TestQueueToolInJail(TestQueueBase, TestCase):
