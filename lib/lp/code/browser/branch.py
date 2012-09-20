@@ -845,11 +845,12 @@ class BranchEditFormView(LaunchpadEditFormView):
                 information_type, self.user)
         if 'target' in data:
             target = data.pop('target')
+            existing_junk = self.context.target.name == '+junk'
+            same_junk_status = target == '+junk' and existing_junk
             if target == '+junk':
                 target = None
-            if (target is None and self.context.target is not None
-                or target is not None and self.context.target is None
-                or target != self.context.target):
+            if not same_junk_status or (
+                target is not None and target != self.context.target):
                 try:
                     self.context.setTarget(self.user, project=target)
                 except BranchTargetError, e:
@@ -863,8 +864,9 @@ class BranchEditFormView(LaunchpadEditFormView):
                         % (target.displayname, target.name))
                 else:
                     self.request.response.addNotification(
-                        "This branch is now a personal branch for %s"
-                        % self.context.owner.displayname)
+                        "This branch is now a personal branch for %s (%s)"
+                        % (self.context.owner.displayname,
+                            self.context.owner.name))
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
