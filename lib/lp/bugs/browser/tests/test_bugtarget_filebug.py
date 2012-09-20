@@ -27,7 +27,6 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -477,6 +476,20 @@ class TestFileBugViewBase(TestCaseWithFactory):
             soup.find('input', attrs={'name': 'field.security_related'}))
         self.assertIsNotNone(
             soup.find('input', attrs={'name': 'field.information_type'}))
+
+    def test_filebug_when_no_bugs_allowed(self):
+        # Attempting to file a bug against a project with sharing policy
+        # forbidden results in a message saying it's not allowed.
+        product = self.factory.makeProduct(
+            official_malone=True,
+            bug_sharing_policy=BugSharingPolicy.FORBIDDEN)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+        self.assertIn(
+            "You can't create new bugs for %s." % product.displayname, html)
+        self.assertIn("Sharing policies may be changed", html)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):

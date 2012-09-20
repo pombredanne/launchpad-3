@@ -73,8 +73,8 @@ test it here.
     >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad to
-    track bugs.
+    There are no projects registered for Test Group that either use Launchpad
+    to track bugs or allow new bugs to be filed.
 
 If the project maintainer visits the filebug page they will see an
 additional message:
@@ -121,8 +121,8 @@ but will not be able to file a bug against it.
     >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad to
-    track bugs.
+    There are no projects registered for Test Group that either use Launchpad
+    to track bugs or allow new bugs to be filed.
 
 Testy Product doesn't use define an external bug tracker and isn't
 registered in any source packages and the user is told this.
@@ -130,7 +130,7 @@ registered in any source packages and the user is told this.
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'product-list-summary'))
     There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
+    Launchpad as its bug tracker or does not allow new bugs to be filed.
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'product-bug-options'):
@@ -147,10 +147,42 @@ page:
     >>> user_browser.getLink('Testy Product').url
     'http://launchpad.dev/testy'
 
+If Testy Product has a bug sharing policy of forbidden, then it is not possible
+to file new bugs and this will be reflected on Test Group's filebug page.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.enums import BugSharingPolicy
+    >>> login('admin@canonical.com')
+    >>> testy = getUtility(IProductSet).getByName('testy')
+    >>> removeSecurityProxy(testy).bug_sharing_policy = (
+    ...     BugSharingPolicy.FORBIDDEN)
+    >>> logout()
+
+    >>> user_browser.reload()
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'product-list-summary'))
+    There is 1 project registered as part of Test Group but it does not use
+    Launchpad as its bug tracker or does not allow new bugs to be filed.
+
+    >>> for tag in find_tags_by_class(
+    ...     user_browser.contents, 'product-bug-options'):
+    ...     print extract_text(tag)
+    Testy Product
+    You can't create new bugs for Testy Product.
+
+Reset the bug sharing policy back to public.
+
+    >>> login('admin@canonical.com')
+    >>> testy = getUtility(IProductSet).getByName('testy')
+    >>> removeSecurityProxy(testy).bug_sharing_policy = (
+    ...     BugSharingPolicy.PUBLIC)
+    >>> logout()
+
 If we set up an external bug tracker for Testy Product, this will be
 reflected in the Test Group's filebug page.
 
-    >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> login('admin@canonical.com')
@@ -173,7 +205,7 @@ And on the filebug page...
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'product-list-summary'))
     There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
+    Launchpad as its bug tracker or does not allow new bugs to be filed.
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'product-bug-options'):
@@ -196,7 +228,7 @@ And this is also shown on the filebug page:
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'product-list-summary'))
     There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
+    Launchpad as its bug tracker or does not allow new bugs to be filed.
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'product-bug-options'):

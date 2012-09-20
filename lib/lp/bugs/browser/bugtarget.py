@@ -1054,8 +1054,7 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     def products_using_malone(self):
         return [
             product for product in self.context.products
-            if (product.bug_tracking_usage == ServiceUsage.LAUNCHPAD
-                and product.getAllowedBugInformationTypes())]
+            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
 
     @property
     def default_product(self):
@@ -1066,6 +1065,10 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
 
     def contextUsesMalone(self):
         return self.default_product is not None
+
+    def contextAllowsNewBugs(self):
+        product = self.default_product
+        return product is not None and product.getAllowedBugInformationTypes()
 
     def contextIsProduct(self):
         return False

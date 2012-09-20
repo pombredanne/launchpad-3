@@ -111,6 +111,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 

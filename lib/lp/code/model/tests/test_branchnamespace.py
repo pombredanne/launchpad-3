@@ -473,6 +473,12 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
+    def test_forbidden_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.FORBIDDEN)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertEqual(None, namespace.getDefaultInformationType())
+
     def test_public_or_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
