@@ -150,6 +150,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IServiceUsage,
     )
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -246,10 +247,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    MilestoneVocabulary,
-    )
+from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (

@@ -77,6 +77,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
@@ -132,10 +133,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    ValidPersonOrTeamVocabulary,
-    )
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
