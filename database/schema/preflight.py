@@ -29,6 +29,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+from dbcontroller import DBController, streaming_sync
 from replication.helpers import Node
 import upgrade
 
@@ -375,35 +376,8 @@ class KillConnectionsPreflight(DatabasePreflight):
         return all_clear
 
 
-def streaming_sync(con, timeout=None):
-    """Wait for streaming replicas to synchronize with master as of now.
-
-    :param timeout: seconds to wait, None for no timeout.
-
-    :returns: True if sync happened or no streaming replicas
-              False if the timeout was passed.
-    """
-    cur = con.cursor()
-
-    # Force a WAL switch, returning the current position.
-    cur.execute('SELECT pg_switch_xlog()')
-    wal_point = cur.fetchone()[0]
-    start_time = time.time()
-    while timeout is None or time.time() < start_time + timeout:
-        cur.execute("""
-            SELECT FALSE FROM pg_stat_replication
-            WHERE replay_location < %s LIMIT 1
-            """, (wal_point,))
-        if cur.fetchone() is None:
-            # All slaves, possibly 0, are in sync.
-            return True
-        time.sleep(0.2)
-    return False
-
-
 def main():
     parser = OptionParser()
-    db_options(parser)
     logger_options(parser)
     parser.add_option(
         "--skip-connection-check", dest='skip_connection_check',
@@ -414,9 +388,17 @@ def main():
         default=False, action="store_true",
         help="Kill non-system connections instead of reporting an error.")
     parser.add_option(
-        '--standby', dest='standbys', default=[], action="append",
+        '--pgbouncer', dest='pgbouncer',
+        default='host=localhost port=6432 user=pgbouncer',
         metavar='CONN_STR',
-        help="libpq connection string to a hot standby database")
+        help="libpq connection string to administer pgbouncer")
+    parser.add_option(
+        '--dbname', dest='dbname', default='launchpad_prod', metavar='DBNAME',
+        help='Database name we are updating.')
+    parser.add_option(
+        '--dbuser', dest='dbuser', default='postgres', metavar='USERNAME',
+        help='Connect as USERNAME to databases')
+
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
@@ -427,12 +409,15 @@ def main():
 
     log = logger(options)
 
+    controller = DBController(
+        log, options.pgbouncer, options.dbname, options.dbuser)
+
     if options.kill_connections:
-        preflight_check = KillConnectionsPreflight(log, options.standbys)
+        preflight_check = KillConnectionsPreflight(log, controller)
     elif options.skip_connection_check:
-        preflight_check = NoConnectionCheckPreflight(log, options.standbys)
+        preflight_check = NoConnectionCheckPreflight(log, controller)
     else:
-        preflight_check = DatabasePreflight(log, options.standbys)
+        preflight_check = DatabasePreflight(log, controller)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
