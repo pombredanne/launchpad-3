@@ -154,7 +154,7 @@ def main():
         upgrade_run = (upgrade_rc == 0)
         if not upgrade_run:
             return upgrade_rc
-        log.info("Database patches applied. Stored procedures updated.")
+        log.info("Database patches applied.")
 
         # Commits master_con on success.
         security_rc = run_security(options, log, master_con)
@@ -178,7 +178,11 @@ def main():
                 "Failed to resume replication. Run pg_xlog_replay_pause() "
                 "on all slaves to manually resume.")
         else:
-            controller.sync()
+            if controller.sync():
+                log.info('Slaves in sync. Updates replicated.')
+            else:
+                log.error(
+                    'Slaves failed to sync. Updates may not be replicated.')
 
         if slaves_disabled:
             slaves_disabled = not controller.enable_slaves()
