@@ -26,7 +26,7 @@
           You can't create new branches for
           <tal:name replace="context/displayname"/>.
           <tal:sharing-link condition="context/required:launchpad.Edit">
-          <br>Sharing policies may be changed on the
+          <br/>This can be fixed by changing the bug sharing policy on the
           <a tal:attributes="href string:${context/fmt:url:mainsite}/+sharing">sharing page</a>.
           </tal:sharing-link>
         </span>
