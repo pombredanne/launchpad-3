@@ -10,8 +10,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture

@@ -66,6 +66,9 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -121,9 +124,6 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import CommercialSubscribersOnly
@@ -1588,12 +1588,6 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
-
-    def getAllowedProductInformationTypes(self):
-        """See `IProductSet`."""
-        return (InformationType.PUBLIC,
-                InformationType.EMBARGOED,
-                InformationType.PROPRIETARY)
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

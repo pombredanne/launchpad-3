@@ -12,6 +12,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -24,7 +25,6 @@ from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilterStatus,
     BugSubscriptionFilterTag,
     )
-from lp.registry.enums import InformationType
 from lp.services import searchbuilder
 from lp.services.database.lpstorm import IStore
 from lp.testing import (

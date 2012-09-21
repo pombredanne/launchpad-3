@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -24,7 +25,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
-from lp.registry.enums import InformationType
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import ILaunchBag

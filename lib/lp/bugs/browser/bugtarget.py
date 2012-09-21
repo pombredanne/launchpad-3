@@ -60,7 +60,13 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -69,7 +75,9 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
@@ -115,13 +123,6 @@ from lp.registry.browser.product import (
     ProductConfigureBase,
     ProductPrivateBugsMixin,
     )
-from lp.registry.enums import (
-    json_dump_information_types,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -132,10 +133,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    ValidPersonOrTeamVocabulary,
-    )
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias

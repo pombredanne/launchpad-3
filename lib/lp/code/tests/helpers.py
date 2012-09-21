@@ -30,6 +30,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import InformationType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -38,7 +39,6 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import cursor

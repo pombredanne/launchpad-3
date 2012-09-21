@@ -11,8 +11,8 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (

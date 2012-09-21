@@ -102,6 +102,11 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
+from lp.app.enums import (
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
+from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
@@ -117,13 +122,8 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.enums import (
-    json_dump_information_types,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText

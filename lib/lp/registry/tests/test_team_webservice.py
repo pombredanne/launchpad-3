@@ -11,8 +11,8 @@ from lazr.restfulclient.errors import (
     )
 import transaction
 
+from lp.app.enums import InformationType
 from lp.registry.enums import (
-    InformationType,
     PersonVisibility,
     TeamMembershipPolicy,
     )

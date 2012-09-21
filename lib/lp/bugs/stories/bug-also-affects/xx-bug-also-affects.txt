@@ -206,7 +206,8 @@ We cannot allow proprietary bugs to affect more than one pillar.
     >>> from lp.services.webapp import canonical_url
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import BugSharingPolicy, InformationType
+    >>> from lp.app.enums import InformationType
+    >>> from lp.registry.enums import BugSharingPolicy
 
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user

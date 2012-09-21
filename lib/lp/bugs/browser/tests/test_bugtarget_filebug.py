@@ -14,6 +14,10 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.bugs.browser.bugtarget import FileBugViewBase
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
@@ -24,12 +28,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
