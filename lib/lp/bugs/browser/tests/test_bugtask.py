@@ -32,6 +32,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
@@ -59,10 +60,7 @@ from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW

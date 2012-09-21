@@ -14,6 +14,7 @@ from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
@@ -23,7 +24,6 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.registry.enums import InformationType
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp.servers import LaunchpadTestRequest

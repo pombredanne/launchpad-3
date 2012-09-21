@@ -14,6 +14,10 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.bugs.browser.bugtarget import FileBugViewBase
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
@@ -24,12 +28,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -477,6 +476,19 @@ class TestFileBugViewBase(TestCaseWithFactory):
             soup.find('input', attrs={'name': 'field.security_related'}))
         self.assertIsNotNone(
             soup.find('input', attrs={'name': 'field.information_type'}))
+
+    def test_filebug_when_no_bugs_allowed(self):
+        # Attempting to file a bug against a project with sharing policy
+        # forbidden results in a message saying it's not allowed.
+        product = self.factory.makeProduct(
+            official_malone=True,
+            bug_sharing_policy=BugSharingPolicy.FORBIDDEN)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+        self.assertIn("Reporting new bugs for", html)
+        self.assertIn("This can be fixed by changing", html)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):

@@ -18,6 +18,7 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (
@@ -26,7 +27,6 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.role import IPersonRoles
 from lp.security import AccessBranch

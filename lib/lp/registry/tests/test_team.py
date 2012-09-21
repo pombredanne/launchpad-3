@@ -10,10 +10,10 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
-    InformationType,
     PersonTransferJobType,
     PersonVisibility,
     TeamMembershipPolicy,
