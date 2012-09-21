@@ -980,7 +980,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
-    def getAllowedInformationTypes(user):
+    def getAllowedInformationTypes(who):
         """Get a list of acceptable `InformationType`s for this branch.
 
         If the user is a Launchpad admin, any type is acceptable. Otherwise
