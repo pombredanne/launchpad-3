@@ -9,6 +9,22 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
+class TestSpecifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_specifications_quantity(self):
+        sprint = self.factory.makeSprint()
+        for count in range(10):
+            blueprint = self.factory.makeSpecification()
+            link = blueprint.linkSprint(sprint, blueprint.owner)
+            link.acceptBy(sprint.owner)
+        self.assertEqual(10, sprint.specifications().count())
+        self.assertEqual(10, sprint.specifications(quantity=None).count())
+        self.assertEqual(8, sprint.specifications(quantity=8).count())
+        self.assertEqual(10, sprint.specifications(quantity=11).count())
+
+
 class TestSprintAttendancesSort(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
