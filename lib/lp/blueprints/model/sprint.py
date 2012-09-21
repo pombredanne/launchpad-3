@@ -33,7 +33,6 @@ from lp.app.interfaces.launchpad import (
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
-    SpecificationSort,
     SprintSpecificationStatus,
     )
 from lp.blueprints.interfaces.sprint import (
@@ -117,88 +116,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         specifications() method because we want to reuse this query in the
         specificationLinks() method.
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a sprint is to show everything approved
-            filter = [SpecificationFilter.ACCEPTED]
-
-        # figure out what set of specifications we are interested in. for
-        # sprint, we need to be able to filter on the basis of:
-        #
-        #  - completeness.
-        #  - acceptance for sprint agenda.
-        #  - informational.
-        #
-        base = """SprintSpecification.sprint = %s AND
-                  SprintSpecification.specification = Specification.id AND
-                  (Specification.product IS NULL OR
-                   Specification.product NOT IN
-                    (SELECT Product.id FROM Product
-                     WHERE Product.active IS FALSE))
-                  """ % quote(self)
-        query = base
-
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # import here to avoid circular deps
-        from lp.blueprints.model.specification import Specification
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # look for specs that have a particular SprintSpecification
-        # status (proposed, accepted or declined)
-        if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.ACCEPTED))
-        elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.PROPOSED))
-        elif SpecificationFilter.DECLINED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.DECLINED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        return query
-
-    @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def _new_spec_filter_clause(self, filter=None):
-        """Figure out the appropriate query for specifications on a sprint.
-
-        We separate out the query generation from the normal
-        specifications() method because we want to reuse this query in the
-        specificationLinks() method.
-        """
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         from lp.registry.model.product import Product
@@ -228,71 +145,29 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             query.append(Or(*statuses))
         return query
 
-    def _new_specifications(self, sort=None, quantity=None, filter=None,
-                            prejoin_people=True):
-        query = self._new_spec_filter_clause(filter=filter)
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
+        """See IHasSpecifications."""
+        query = self.spec_filter_clause(filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
         return result
 
-    def specifications(self, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
-        """See IHasSpecifications."""
-
-        if True:
-            return self._new_specifications(sort, quantity, filter,
-                                            prejoin_people)
-        query = self.spec_filter_clause(filter=filter)
-        if filter == None:
-            filter = []
-
-        # import here to avoid circular deps
-        from lp.blueprints.model.specification import Specification
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
-        elif sort == SpecificationSort.DATE:
-            # we need to establish if the listing will show specs that have
-            # been decided only, or will include proposed specs.
-            show_proposed = set([
-                SpecificationFilter.ALL,
-                SpecificationFilter.PROPOSED,
-                ])
-            if len(show_proposed.intersection(set(filter))) > 0:
-                # we are showing proposed specs so use the date proposed
-                # because not all specs will have a date decided.
-                order = ['-SprintSpecification.date_created',
-                         'Specification.id']
-            else:
-                # this will show only decided specs so use the date the spec
-                # was accepted or declined for the sprint
-                order = ['-SprintSpecification.date_decided',
-                         '-SprintSpecification.date_created',
-                         'Specification.id']
-
-        results = Specification.select(query, orderBy=order, limit=quantity,
-            clauseTables=['SprintSpecification'])
-        if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
-
     def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See `ISprint`."""
-
         query = self.spec_filter_clause(filter=filter)
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
-        elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-
-        results = SprintSpecification.select(query,
-            clauseTables=['Specification'], orderBy=order, limit=quantity)
-        return results.prejoin(['specification'])
+        result = Store.of(self).find(SprintSpecification, *query)
+        return result
 
     def getSpecificationLink(self, speclink_id):
         """See `ISprint`.
