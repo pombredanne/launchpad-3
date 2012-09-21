@@ -36,9 +36,9 @@ class TestSprintIndex(BrowserTestCase):
         for count in range(10):
             blueprint = self.factory.makeSpecification(
                 information_type=InformationType.PROPRIETARY)
-        link = blueprint.linkSprint(sprint, blueprint.owner)
-        link.acceptBy(sprint.owner)
+            link = blueprint.linkSprint(sprint, blueprint.owner)
+            link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:
             # getViewBrowser should not raise an exception
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(29)))
+        self.assertThat(recorder, HasQueryCount(Equals(33)))
