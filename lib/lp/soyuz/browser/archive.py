@@ -2086,9 +2086,7 @@ class EnableRestrictedFamiliesMixin:
     """A mixin that provides enabled_restricted_families field support"""
 
     def createEnabledRestrictedFamilies(self, description=None):
-        """Creates the 'enabled_restricted_families' field.
-
-        """
+        """Creates the 'enabled_restricted_families' field."""
         terms = []
         for family in getUtility(IProcessorFamilySet).getRestricted():
             terms.append(SimpleTerm(
@@ -2102,22 +2100,6 @@ class EnableRestrictedFamiliesMixin:
                  description=old_field.description if description is None
                      else description),
                  render_context=self.render_context)
-
-    def validate_enabled_restricted_families(self, data, error_msg):
-        enabled_restricted_families = data['enabled_restricted_families']
-        require_virtualized = data.get('require_virtualized', False)
-        proc_family_set = getUtility(IProcessorFamilySet)
-        if (not require_virtualized and
-            set(enabled_restricted_families) !=
-                set(proc_family_set.getRestricted())):
-            self.setFieldError('enabled_restricted_families', error_msg)
-            self.setFieldError('require_virtualized', error_msg)
-
-
-ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
-    u'Main archives can not be restricted to certain '
-    'architectures unless they are set to build on '
-    'virtualized builders.')
 
 
 class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
@@ -2186,20 +2168,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
-
-        enabled_restricted_families = data.get('enabled_restricted_families')
-        require_virtualized = data.get('require_virtualized')
-        proc_family_set = getUtility(IProcessorFamilySet)
-        if (enabled_restricted_families and
-            not require_virtualized and
-            set(enabled_restricted_families) !=
-                set(proc_family_set.getRestricted())):
-            self.setFieldError(
-                'enabled_restricted_families',
-                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
-            self.setFieldError(
-                'require_virtualized',
-                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
 
     @property
     def owner_is_private_team(self):

@@ -125,7 +125,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
-    CannotRestrictArchitectures,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -168,7 +167,6 @@ from lp.soyuz.interfaces.component import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
@@ -2033,28 +2031,14 @@ class Archive(SQLBase):
     def _getEnabledRestrictedFamilies(self):
         """Retrieve the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted
-        # architectures if require_virtualized is False.
-        if self.is_main and not self.require_virtualized:
-            return getUtility(IProcessorFamilySet).getRestricted()
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        return [family for (family, archive_arch) in restricted_families
-                if archive_arch is not None]
+        families = getUtility(IArchiveArchSet).getRestrictedFamilies(self)
+        return [
+            family for (family, archive_arch) in families
+            if archive_arch is not None]
 
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are not allowed to build on restricted
-        # architectures unless they are set to build on virtualized
-        # builders.
-        if (self.is_main and not self.require_virtualized):
-            proc_family_set = getUtility(IProcessorFamilySet)
-            if set(value) != set(proc_family_set.getRestricted()):
-                raise CannotRestrictArchitectures(
-                    "Main archives can not be restricted to certain "
-                    "architectures unless they are set to build on "
-                    "virtualized builders")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
