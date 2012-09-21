@@ -14,14 +14,16 @@ from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
-from lp.registry.enums import InformationType
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,

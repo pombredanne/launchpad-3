@@ -12,11 +12,11 @@ from bzrlib import urlutils
 from lazr.uri import URI
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
-from lp.registry.enums import InformationType
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing import (
     person_logged_in,

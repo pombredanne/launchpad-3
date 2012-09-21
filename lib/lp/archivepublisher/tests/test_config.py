@@ -148,7 +148,9 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(self.ppa_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", self.ppa_config.temproot)
-        self.assertIsNone(self.ppa_config.uefiroot)
+        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+            self.ppa.owner.name, self.ppa.name)
+        self.assertEqual(uefiroot, self.ppa_config.uefiroot)
 
     def test_private_ppa_separate_root(self):
         # Private PPAs are published to a different location.
@@ -177,4 +179,8 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(p3a_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", p3a_config.temproot)
-        self.assertIsNone(p3a_config.uefiroot)
+        # It's OK for the signing keys to be in the same location as for
+        # public PPAs, as the owner/name namespace is shared.
+        uefiroot = "/var/tmp/ppa-signing-keys.test/uefi/%s/%s" % (
+            p3a.owner.name, p3a.name)
+        self.assertEqual(uefiroot, p3a_config.uefiroot)

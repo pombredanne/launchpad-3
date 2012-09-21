@@ -169,39 +169,13 @@ class TestDistroAddView(TestCaseWithFactory):
     def test_add_distro_enabled_restricted_families(self):
         creation_form = self.getDefaultAddDict()
         creation_form['field.enabled_restricted_families'] = []
-        creation_form['field.require_virtualized'] = 'on'
         create_initialized_view(
             self.distributionset, '+add', principal=self.admin,
             method='POST', form=creation_form)
 
         distribution = self.distributionset.getByName('newbuntu')
-        self.assertEqual(
-            True,
-            distribution.main_archive.require_virtualized)
         self.assertContentEqual(
-            [],
-            distribution.main_archive.enabled_restricted_families)
-
-    def test_add_distro_enabled_restricted_families_error(self):
-        # If require_virtualized is False, enabled_restricted_families
-        # cannot be changed.
-        creation_form = self.getDefaultAddDict()
-        creation_form['field.enabled_restricted_families'] = []
-        creation_form['field.require_virtualized'] = ''
-        view = create_initialized_view(
-            self.distributionset, '+add', principal=self.admin,
-            method='POST', form=creation_form)
-
-        error_msg = (
-            u"This distribution's main archive can not be restricted to "
-            "certain architectures unless the archive is also set to build "
-            "on virtualized builders.")
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('enabled_restricted_families'))
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('require_virtualized'))
+            [], distribution.main_archive.enabled_restricted_families)
 
 
 class TestDistroEditView(TestCaseWithFactory):
@@ -227,7 +201,8 @@ class TestDistroEditView(TestCaseWithFactory):
             widget._getCurrentValue())
 
     def test_edit_distro_init_value_enabled_restricted_families(self):
-        self.distribution.main_archive.require_virtualized = False
+        self.distribution.main_archive.enabled_restricted_families = (
+            self.restricted_families)
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='GET')
@@ -264,16 +239,11 @@ class TestDistroEditView(TestCaseWithFactory):
             self.distribution.main_archive.require_virtualized)
 
     def test_change_enabled_restricted_families(self):
-        # If require_virtualized is True, enabled_restricted_families
-        # can be changed.
         edit_form = self.getDefaultEditDict()
-        edit_form['field.require_virtualized'] = 'on'
         edit_form['field.enabled_restricted_families'] = []
 
-        self.distribution.main_archive.require_virtualized = False
-        self.assertContentEqual(
-            self.restricted_families,
-            self.distribution.main_archive.enabled_restricted_families)
+        self.distribution.main_archive.enabled_restricted_families = (
+            self.restricted_families)
         create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
@@ -281,27 +251,6 @@ class TestDistroEditView(TestCaseWithFactory):
         self.assertContentEqual(
             [],
             self.distribution.main_archive.enabled_restricted_families)
-
-    def test_cannot_change_enabled_restricted_families(self):
-        # If require_virtualized is False, enabled_restricted_families
-        # cannot be changed.
-        edit_form = self.getDefaultEditDict()
-        edit_form['field.require_virtualized'] = ''
-        edit_form['field.enabled_restricted_families'] = []
-
-        view = create_initialized_view(
-            self.distribution, '+edit', principal=self.admin,
-            method='POST', form=edit_form)
-        error_msg = (
-            u"This distribution's main archive can not be restricted to "
-            "certain architectures unless the archive is also set to build "
-            "on virtualized builders.")
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('enabled_restricted_families'))
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('require_virtualized'))
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email

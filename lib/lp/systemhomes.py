@@ -25,6 +25,7 @@ from storm.expr import Max
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -55,7 +56,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     ParameterError,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.product import IProductSet
