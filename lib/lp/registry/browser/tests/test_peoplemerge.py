@@ -7,10 +7,8 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import (
-    InformationType,
-    TeamMembershipPolicy,
-    )
+from lp.app.enums import InformationType
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus

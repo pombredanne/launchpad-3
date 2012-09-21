@@ -6,11 +6,11 @@ __metaclass__ = type
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bug import (
     BugInformationTypePortletView,
     BugView,
     )
-from lp.registry.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
