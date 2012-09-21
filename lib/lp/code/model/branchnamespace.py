@@ -20,6 +20,13 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -48,12 +55,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
-    PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -93,6 +95,7 @@ BRANCH_POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    BranchSharingPolicy.FORBIDDEN: [],
     }
 
 BRANCH_POLICY_DEFAULT_TYPES = {
@@ -101,6 +104,7 @@ BRANCH_POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 BRANCH_POLICY_REQUIRED_GRANTS = {
@@ -109,6 +113,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 
@@ -143,6 +148,8 @@ class _BaseNamespace:
             sourcepackagename = sourcepackage.sourcepackagename
 
         information_type = self.getDefaultInformationType()
+        if information_type is None:
+            raise BranchCreationForbidden()
 
         branch = Branch(
             registrant=registrant, name=name, owner=self.owner,

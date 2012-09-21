@@ -52,6 +52,7 @@ from zope.interface import (
 from zope.schema import Choice
 
 from lp import _
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
@@ -99,7 +100,6 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

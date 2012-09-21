@@ -11,6 +11,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.registry.browser.team import (
     TeamIndexMenu,
     TeamMailingListArchiveView,
@@ -19,7 +20,6 @@ from lp.registry.browser.team import (
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
-    InformationType,
     PersonVisibility,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,

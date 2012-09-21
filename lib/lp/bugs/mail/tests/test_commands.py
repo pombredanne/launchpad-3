@@ -6,6 +6,7 @@ from lazr.lifecycle.interfaces import (
     IObjectModifiedEvent,
     )
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
@@ -20,10 +21,7 @@ from lp.bugs.mail.commands import (
     TagEmailCommand,
     UnsubscribeEmailCommand,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,

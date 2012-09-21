@@ -544,10 +544,4 @@
             permission="zope.Public"
             attributes="name title description"/>
     </class>
-    <class
-        class="lp.registry.vocabularies.InformationTypeVocabulary">
-        <require
-            permission="zope.Public"
-            attributes="name title description"/>
-    </class>
 </configure>

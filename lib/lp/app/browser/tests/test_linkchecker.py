@@ -11,7 +11,7 @@ import simplejson
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.linkchecker import LinkCheckerAPI
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer

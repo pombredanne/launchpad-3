@@ -24,6 +24,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import format_link
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.browser import specification
 from lp.blueprints.browser.specification import INFORMATION_TYPE_FLAG
@@ -32,10 +33,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
-from lp.registry.enums import (
-    InformationType,
-    SpecificationSharingPolicy,
-    )
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
