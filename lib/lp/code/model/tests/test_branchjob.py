@@ -28,6 +28,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.bzr import (
     branch_revision_history,
     BranchFormat,
@@ -65,7 +66,6 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.model.revision import RevisionSet
 from lp.code.model.tests.test_branch import create_knit
 from lp.codehosting.vfs import branch_id_to_path
-from lp.registry.enums import InformationType
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW

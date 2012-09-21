@@ -27,15 +27,13 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import BugAttachmentChange
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url

@@ -74,12 +74,13 @@ class Packaging(SQLBase):
         if user is None:
             return False
         admin = getUtility(ILaunchpadCelebrities).admin
-        registry_experts = (
-            getUtility(ILaunchpadCelebrities).registry_experts)
-        return (
-            user.inTeam(self.owner) or
-            user.canAccess(self.sourcepackage, 'setBranch') or
-            user.inTeam(registry_experts) or user.inTeam(admin))
+        registry_experts = (getUtility(ILaunchpadCelebrities).registry_experts)
+        if (not user.is_probationary
+            or user.inTeam(self.productseries.product.owner)
+            or user.canAccess(self.sourcepackage, 'setBranch')
+            or user.inTeam(registry_experts) or user.inTeam(admin)):
+            return True
+        return False
 
     def destroySelf(self):
         if not self.userCanDelete():

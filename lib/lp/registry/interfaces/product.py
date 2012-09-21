@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -109,7 +110,6 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -781,6 +781,12 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
+    security_contact = exported(
+        TextLine(
+            title=_('Security contact'), required=False, readonly=True,
+            description=_('Security contact (obsolete; always None)')),
+            ('devel', dict(exported=False)), as_of='1.0')
+
     def checkPrivateBugsTransitionAllowed(private_bugs, user):
         """Can the private_bugs attribute be changed to the value by the user?
 
@@ -990,12 +996,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getAllowedProductInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
         """
 
     @call_with(owner=REQUEST_USER)

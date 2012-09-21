@@ -888,10 +888,6 @@ class DistributionAddView(LaunchpadFormView,
         """The page title."""
         return self.label
 
-    def validate(self, data):
-        self.validate_enabled_restricted_families(
-            data, ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
-
     @property
     def initial_values(self):
         proc_family_set = getUtility(IProcessorFamilySet)
@@ -935,12 +931,6 @@ class DistributionAddView(LaunchpadFormView,
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
-
-
-ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
-    u"This distribution's main archive can not be restricted to "
-    'certain architectures unless the archive is also set '
-    'to build on virtualized builders.')
 
 
 class DistributionEditView(RegistryEditFormView,
@@ -1003,11 +993,6 @@ class DistributionEditView(RegistryEditFormView,
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
-
-        # Validate enabled_restricted_families.
-        self.validate_enabled_restricted_families(
-            data,
-            ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
 
     def change_archive_fields(self, data):
         # Update context.main_archive.

@@ -69,6 +69,7 @@ from zope.schema import (
     TextLine,
     )
 
+from lp.app.enums import InformationType
 from lp import _
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
@@ -91,7 +92,6 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner

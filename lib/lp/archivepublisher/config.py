@@ -83,6 +83,10 @@ def getPubConfig(archive):
 
     if archive.is_main:
         pubconf.uefiroot = pubconf.archiveroot + '-uefi'
+    elif archive.is_ppa:
+        pubconf.uefiroot = os.path.join(
+            ppa_config.signing_keys_root, "uefi",
+            archive.owner.name, archive.name)
     else:
         pubconf.uefiroot = None
 

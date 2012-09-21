@@ -20,7 +20,7 @@ source package in each series of this distribution.
     >>> print extract_text(find_tag_by_id(content, 'packages_list'))
     The Hoary Hedgehog Release (active development)     Set upstream link
       1.0.9a-4ubuntu1 release (main) 2005-09-15
-    The Warty Warthog Release (current stable release)  alsa-utils trunk series
+    The Warty Warthog Release (current stable release) alsa-utils trunk series
       1.0.8-1ubuntu1  release (main) 2005-09-15
       1.0.9a-4        release (main) 2005-09-16
 
@@ -31,6 +31,7 @@ Delete Link Button
 A button is displayed to authenticated users to delete existing
 packaging links.
 
+    >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> link = user_browser.getLink(
     ...     url='/ubuntu/warty/+source/alsa-utils/+remove-packaging')

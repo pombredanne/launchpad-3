@@ -88,12 +88,8 @@ class TestIncoming(TestCaseWithFactory):
         self.assertEqual([], self.oopses)
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload(decode=True)
-        self.assertIn(
-            "The mail you sent to Launchpad is too long.",
-            body)
-        self.assertIn(
-            "was 55 MB and the limit is 10 MB.",
-            body)
+        self.assertIn("The mail you sent to Launchpad is too long.", body)
+        self.assertIn("was 55 MB and the limit is 10 MB.", body)
 
     def test_invalid_to_addresses(self):
         """Invalid To: header should not be handled as an OOPS."""
@@ -121,9 +117,8 @@ class TestIncoming(TestCaseWithFactory):
         def fail_all_timestamps(timestamp, context):
             raise helpers.IncomingEmailError("fail!")
         self.assertRaises(
-            helpers.IncomingEmailError,
-            authenticateEmail,
-            msg, fail_all_timestamps)
+            helpers.IncomingEmailError, authenticateEmail, msg,
+            fail_all_timestamps)
 
     def test_unknown_email(self):
         # An unknown email address returns no principal.
@@ -141,8 +136,7 @@ class TestExtractAddresses(TestCaseWithFactory):
         original_to = 'eric@vikings.example.com'
         mail[ORIGINAL_TO_HEADER] = original_to
         self.assertThat(
-            extract_addresses(mail, None, None),
-            Equals([original_to]))
+            extract_addresses(mail, None, None), Equals([original_to]))
 
     def test_original_to_in_body(self):
         header_to = 'eric@vikings-r-us.example.com'
