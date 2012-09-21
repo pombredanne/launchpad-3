@@ -125,7 +125,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
-    CannotRestrictArchitectures,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -168,7 +167,6 @@ from lp.soyuz.interfaces.component import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
