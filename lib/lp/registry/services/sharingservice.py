@@ -139,10 +139,8 @@ class SharingService:
             Product,
             Product.id.is_in(
                 Select(
-                    columns=AccessPolicy.product_id,
-                    tables=tables,
-                    where=(AccessPolicyGrantFlat.grantee_id == person.id)
-                )
+                    columns=AccessPolicy.product_id, tables=tables,
+                    where=(AccessPolicyGrantFlat.grantee_id == person.id))
             ), filter)
         return result_set
 
