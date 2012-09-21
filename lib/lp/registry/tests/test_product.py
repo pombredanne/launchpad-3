@@ -95,7 +95,6 @@ class TestProduct(TestCaseWithFactory):
 
     def test_pillar_category(self):
         # Products are really called Projects
-        raise Exception("Nothing to see here, move along.")
         product = self.factory.makeProduct()
         self.assertEqual("Project", product.pillar_category)
 
