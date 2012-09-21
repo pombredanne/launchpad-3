@@ -10,9 +10,9 @@ from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
@@ -309,7 +309,7 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         task = self.makeLoggedInTask()
         with self.bugtaskflat_is_updated(task, ['information_type']):
             removeSecurityProxy(task.bug).information_type = (
-                InformationType.UNEMBARGOEDSECURITY)
+                InformationType.PUBLICSECURITY)
 
     def test_bug_make_private(self):
         # Triggers maintain BugTaskFlat when a bug is made private.

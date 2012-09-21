@@ -52,7 +52,6 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.lpstorm import IStore
-from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import (
     flush_database_updates,
     quote,
@@ -153,17 +152,11 @@ class POFileMixIn(RosettaStats):
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        if is_read_only():
-            # Nothing can be edited in read-only mode.
-            return False
         policy = self.potemplate.getTranslationPolicy()
         return policy.allowsTranslationEdits(person, self.language)
 
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
-        if is_read_only():
-            # No data can be entered in read-only mode.
-            return False
         policy = self.potemplate.getTranslationPolicy()
         return policy.allowsTranslationSuggestions(person, self.language)
 

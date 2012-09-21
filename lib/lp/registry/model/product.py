@@ -1,6 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
@@ -67,6 +66,9 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -87,15 +89,17 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    SPECIFICATION_POLICY_DEFAULT_TYPES,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
+from lp.bugs.interfaces.bugtarget import (
+    BUG_POLICY_ALLOWED_TYPES,
+    BUG_POLICY_DEFAULT_TYPES,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -108,6 +112,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -116,11 +121,16 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    SpecificationSharingPolicy,
+    )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
@@ -339,10 +349,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_person,
         notNull=False,
         default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_person_or_closed_team, notNull=False,
-        default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_person,
@@ -391,6 +397,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
+
+    @property
+    def information_type(self):
+        """See `IProduct`
+
+        Place holder for a db column.
+        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
+        into place.
+        """
+        pass
+
+    security_contact = None
 
     @property
     def pillar(self):
@@ -469,6 +487,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
+    bug_sharing_policy = EnumCol(
+        enum=BugSharingPolicy, notNull=False, default=None)
+    branch_sharing_policy = EnumCol(
+        enum=BranchSharingPolicy, notNull=False, default=None)
+    specification_sharing_policy = EnumCol(
+        enum=SpecificationSharingPolicy, notNull=False, default=None)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -557,6 +581,69 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
+        if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
+            not self.has_current_commercial_subscription):
+            raise CommercialSubscribersOnly(
+                "A current commercial subscription is required to use "
+                "proprietary %s." % kind)
+        required_policies = set(allowed_types[var]).intersection(
+            set(PRIVATE_INFORMATION_TYPES))
+        self._ensurePolicies(required_policies)
+
+    def setBranchSharingPolicy(self, branch_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            branch_sharing_policy, BranchSharingPolicy, 'branches',
+            BRANCH_POLICY_ALLOWED_TYPES)
+        self.branch_sharing_policy = branch_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def setBugSharingPolicy(self, bug_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            bug_sharing_policy, BugSharingPolicy, 'bugs',
+            BUG_POLICY_ALLOWED_TYPES)
+        self.bug_sharing_policy = bug_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def setSpecificationSharingPolicy(self, specification_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            specification_sharing_policy, SpecificationSharingPolicy,
+            'specifications', SPECIFICATION_POLICY_ALLOWED_TYPES)
+        self.specification_sharing_policy = specification_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def getAllowedBugInformationTypes(self):
+        """See `IProduct.`"""
+        if self.bug_sharing_policy is not None:
+            return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+        return FREE_INFORMATION_TYPES
+
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        if self.bug_sharing_policy is not None:
+            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+        elif self.private_bugs:
+            return InformationType.USERDATA
+        else:
+            return InformationType.PUBLIC
+
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_ALLOWED_TYPES[
+                self.specification_sharing_policy]
+        return [InformationType.PUBLIC]
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_DEFAULT_TYPES[
+                self.specification_sharing_policy]
+        return InformationType.PUBLIC
+
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
         # information types.
@@ -574,6 +661,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for p in policies:
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def _pruneUnusedPolicies(self):
+        allowed_bug_types = set(
+            BUG_POLICY_ALLOWED_TYPES.get(
+                self.bug_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_branch_types = set(
+            BRANCH_POLICY_ALLOWED_TYPES.get(
+                self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_types = allowed_bug_types.union(allowed_branch_types)
+        # Fetch all APs, and after filtering out ones that are forbidden
+        # by the bug and branch policies, the APs that have no APAs are
+        # unused and can be deleted.
+        ap_source = getUtility(IAccessPolicySource)
+        access_policies = set(ap_source.findByPillar([self]))
+        apa_source = getUtility(IAccessPolicyArtifactSource)
+        unused_aps = [
+            ap for ap in access_policies
+            if ap.type not in allowed_types
+            and apa_source.findByPolicy([ap]).is_empty()]
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+        ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
 
     @cachedproperty
     def commercial_subscription(self):
@@ -644,10 +752,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
-
-        # The product now has a commercial subscription, so we need to ensure
-        # it has a Proprietary access policy.
-        self._ensurePolicies([InformationType.PROPRIETARY])
 
     @property
     def qualifies_for_free_hosting(self):
@@ -868,10 +972,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Customize `search_params` for this product.."""
         search_params.setProduct(self)
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
-
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
@@ -1017,11 +1117,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             name = %s
             """ % sqlvalues(self.id, name))
         return results
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(product=self)
-        return BugSet().createBug(bug_params)
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -1351,12 +1446,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
 
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
-
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""
         return CustomLanguageCode.product == self
@@ -1508,7 +1597,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1523,10 +1612,23 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
+            bug_supervisor=bug_supervisor, driver=driver)
 
+        # Set up the sharing policies and product licence.
+        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
+        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
+            # By default, new non-proprietary projects use public bugs and
+            # branches. Proprietary projects are given a complimentary 30 day
+            # commercial subscription and so may use proprietary sharing
+            # policies.
+            if License.OTHER_PROPRIETARY in licenses:
+                bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+                branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+        product.setBugSharingPolicy(bug_sharing_policy_to_use)
+        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1535,10 +1637,6 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
-
-        # Add default AccessPolicies.
-        product._ensurePolicies((InformationType.USERDATA,
-                InformationType.EMBARGOEDSECURITY))
         return product
 
     def forReview(self, search_text=None, active=None,
@@ -1699,8 +1797,7 @@ class ProductSet:
                 ['development_focusID'])
             # Only need the objects for canonical_url, no need for validity.
             bulk.load_related(Person, products.values(),
-                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID',
-                 'security_contactID'])
+                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def search_sqlobject(self, text):

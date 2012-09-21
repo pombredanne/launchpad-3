@@ -20,7 +20,7 @@
 
         <tal:no_preferredemail
           condition="view/email_address_visibility/are_none_available">
-          No contact email
+          None, members emailed directly
         </tal:no_preferredemail>
 
         <tal:emails repeat="email view/visible_email_addresses">
@@ -31,7 +31,7 @@
           </div>
         </tal:emails>
         <a tal:condition="not: view/visible_email_addresses"
-           tal:replace="structure overview_menu/editemail/fmt:link"></a>
+           tal:replace="structure overview_menu/editemail/fmt:icon"></a>
       </dd>
     </dl>
 
@@ -60,10 +60,10 @@
         </dd>
       </dl>
       <dl id="subscription-policy">
-        <dt>Subscription policy:</dt>
+        <dt>Membership policy:</dt>
         <dd
-          tal:attributes="title context/subscriptionpolicy/description">
-          <span tal:replace="context/subscriptionpolicy/title" />
+          tal:attributes="title context/membership_policy/description">
+          <span tal:replace="context/membership_policy/title" />
           <a class="sprite maybe action-icon" href="/+help-registry/team-subscription-policy.html"
             target="help"></a>
         </dd>

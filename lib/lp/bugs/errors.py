@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugCannotBePrivate',
-    'InvalidBugTargetType',
     'InvalidDuplicateValue',
+    'InvalidSearchParameters',
 ]
 
 import httplib
@@ -17,16 +16,11 @@ from lazr.restful.declarations import error_status
 from lp.app.validators import LaunchpadValidationError
 
 
-@error_status(httplib.BAD_REQUEST)
-class InvalidBugTargetType(Exception):
-    """Bug target's type is not valid."""
-
-
 @error_status(httplib.EXPECTATION_FAILED)
 class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
 
 
 @error_status(httplib.BAD_REQUEST)
-class BugCannotBePrivate(Exception):
-    """The bug is not allowed to be private."""
+class InvalidSearchParameters(ValueError):
+    """Invalid search parameters were passed to searchTasks."""

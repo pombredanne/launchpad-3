@@ -263,8 +263,10 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
-        # be wasting build-time, the former case already has a newer source
-        # and the latter could not be built in DAK.
+        # be wasting build-time.  In the former case, there is already a
+        # newer source; the latter case needs an overhaul of the way
+        # security builds are handled (by copying from a PPA) to avoid
+        # creating duplicate builds.
         build_set = getUtility(IBinaryPackageBuildSet)
 
         build = build_set.getByQueueEntry(job)

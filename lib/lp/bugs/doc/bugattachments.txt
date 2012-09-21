@@ -385,10 +385,8 @@ Search for attachments
 We can search for attachment of a specific types:
 
     >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskSearchParams,
-    ...     IBugTaskSet,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
@@ -615,7 +613,7 @@ Adding bug attachments to private bugs
 If an attachment is added to a private bug, the "restricted" flag of
 its Librarian file is set.
 
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> private_bug_owner = factory.makePerson()
     >>> ignored = login_person(private_bug_owner)
     >>> private_bug = factory.makeBug(

@@ -44,7 +44,7 @@ Bug.addChange().
     ...     owner=example_person, name="heart-of-gold",
     ...     displayname="Heart of Gold")
     >>> example_bug = factory.makeBug(
-    ...     product=example_product, owner=example_person,
+    ...     target=example_product, owner=example_person,
     ...     title="Reality is on the blink again",
     ...     description="I'm tired of thinking up funny strings for tests")
     >>> example_bug.addChange(base_instance)

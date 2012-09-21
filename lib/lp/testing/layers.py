@@ -707,44 +707,6 @@ class RabbitMQLayer(BaseLayer):
         pass
 
 
-class AuditorLayer(BaseLayer):
-
-    auditor = AuditorServer()
-
-    _is_setup = False
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        cls.auditor.setUp()
-        cls.config_fixture.add_section(
-            cls.auditor.config.service_config)
-        cls.appserver_config_fixture.add_section(
-            cls.auditor.config.service_config)
-        cls._is_setup = True
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        if not cls._is_setup:
-            return
-        cls.auditor.cleanUp()
-        cls._is_setup = False
-        # Can't pop the config above, so bail here and let the test runner
-        # start a sub-process.
-        raise NotImplementedError
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
 # We store a reference to the DB-API connect method here when we
 # put a proxy in its place.
 _org_connect = None
@@ -1387,6 +1349,42 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+class AuditorLayer(LaunchpadFunctionalLayer):
+
+    auditor = AuditorServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.auditor.setUp()
+        cls.config_fixture.add_section(cls.auditor.service_config)
+        cls.appserver_config_fixture.add_section(cls.auditor.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.auditor.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,

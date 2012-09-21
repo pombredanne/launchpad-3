@@ -20,7 +20,7 @@ DECLARE
 BEGIN
     -- If private, grab the access control information.
     -- If public, access_policies and access_grants are NULL.
-    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    -- 3 == PRIVATESECURITY, 4 == USERDATA, 5 == PROPRIETARY
     IF information_type IN (3, 4, 5) THEN
         SELECT COALESCE(array_agg(policy ORDER BY policy), ARRAY[]::integer[])
             INTO _policies FROM accesspolicyartifact WHERE artifact = art_id;

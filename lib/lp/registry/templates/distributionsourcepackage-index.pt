@@ -37,7 +37,7 @@
     <div id="structural-subscription-content-box"></div>
   </div>
   <div class="top-portlet" id="bugs-and-questions-summary"
-       tal:define="newbugs context/new_bugtasks/count;
+       tal:define="newbugs view/new_bugtasks_count;
                    open_questions view/open_questions/count">
     <div id="summary"
       tal:content="structure context/summary/fmt:text-to-html" />

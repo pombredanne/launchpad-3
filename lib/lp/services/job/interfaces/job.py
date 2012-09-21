@@ -156,6 +156,13 @@ class IRunnableJob(IJob):
         These vars should help determine why the jobs OOPsed.
         """
 
+    def getOperationDescription():
+        """Describe the operation being performed, for use in oops emails.
+
+        Should grammatically fit the phrase "error while FOO", e.g. "error
+        while sending mail."
+        """
+
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
 

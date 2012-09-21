@@ -313,8 +313,7 @@ def process_deferred_notifications(bug_notifications):
         # Construct the real notification with recipients.
         bug = notification.bug
         recipients = bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.LIFECYCLE,
-            include_master_dupe_subscribers=False)
+            level=BugNotificationLevel.LIFECYCLE)
         message = notification.message
         is_comment = notification.is_comment
         activity = notification.activity

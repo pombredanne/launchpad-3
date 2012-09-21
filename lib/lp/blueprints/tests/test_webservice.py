@@ -34,8 +34,12 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
 
     def getSpecOnWebservice(self, spec_object):
         launchpadlib = self.getLaunchpadlib()
-        return launchpadlib.load(
-            '/%s/+spec/%s' % (spec_object.target.name, spec_object.name))
+        # Ensure that there is an interaction so that the security
+        # checks for spec_object work.
+        with person_logged_in(ANONYMOUS):
+            url = '/%s/+spec/%s' % (spec_object.target.name, spec_object.name)
+        result = launchpadlib.load(url)
+        return result
 
     def getPillarOnWebservice(self, pillar_obj):
         launchpadlib = self.getLaunchpadlib()
@@ -53,52 +57,59 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         # it's ready for prime time.
         spec = self.factory.makeSpecification()
         user = self.factory.makePerson()
+        url = '/%s/+spec/%s' % (spec.product.name, spec.name)
         webservice = webservice_for_person(user)
-        response = webservice.get(
-            '/%s/+spec/%s' % (spec.product.name, spec.name))
+        response = webservice.get(url)
         expected_keys = [u'self_link', u'http_etag', u'resource_type_link',
-                         u'web_link']
+                         u'web_link', u'information_type']
         self.assertEqual(response.status, 200)
         self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
     def test_representation_contains_name(self):
         spec = self.factory.makeSpecification()
+        spec_name = spec.name
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.name, spec_webservice.name)
+        self.assertEqual(spec_name, spec_webservice.name)
 
     def test_representation_contains_target(self):
         spec = self.factory.makeSpecification(
             product=self.factory.makeProduct())
+        spec_target = spec.target
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.target.name, spec_webservice.target.name)
+        self.assertEqual(spec_target.name, spec_webservice.target.name)
 
     def test_representation_contains_title(self):
         spec = self.factory.makeSpecification(title='Foo')
+        spec_title = spec.title
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.title, spec_webservice.title)
+        self.assertEqual(spec_title, spec_webservice.title)
 
     def test_representation_contains_specification_url(self):
         spec = self.factory.makeSpecification(specurl='http://example.com')
+        spec_specurl = spec.specurl
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.specurl, spec_webservice.specification_url)
+        self.assertEqual(spec_specurl, spec_webservice.specification_url)
 
     def test_representation_contains_summary(self):
         spec = self.factory.makeSpecification(summary='Foo')
+        spec_summary = spec.summary
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.summary, spec_webservice.summary)
+        self.assertEqual(spec_summary, spec_webservice.summary)
 
     def test_representation_contains_implementation_status(self):
         spec = self.factory.makeSpecification()
+        spec_implementation_status = spec.implementation_status
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(
-            spec.implementation_status.title,
+            spec_implementation_status.title,
             spec_webservice.implementation_status)
 
     def test_representation_contains_definition_status(self):
         spec = self.factory.makeSpecification()
+        spec_definition_status = spec.definition_status
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(
-            spec.definition_status.title, spec_webservice.definition_status)
+            spec_definition_status.title, spec_webservice.definition_status)
 
     def test_representation_contains_assignee(self):
         # Hard-code the person's name or else we'd need to set up a zope
@@ -128,18 +139,21 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
 
     def test_representation_contains_priority(self):
         spec = self.factory.makeSpecification()
+        spec_priority = spec.priority
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.priority.title, spec_webservice.priority)
+        self.assertEqual(spec_priority.title, spec_webservice.priority)
 
     def test_representation_contains_date_created(self):
         spec = self.factory.makeSpecification()
+        spec_datecreated = spec.datecreated
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.datecreated, spec_webservice.date_created)
+        self.assertEqual(spec_datecreated, spec_webservice.date_created)
 
     def test_representation_contains_whiteboard(self):
         spec = self.factory.makeSpecification(whiteboard='Test')
+        spec_whiteboard = spec.whiteboard
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec.whiteboard, spec_webservice.whiteboard)
+        self.assertEqual(spec_whiteboard, spec_webservice.whiteboard)
 
     def test_representation_contains_workitems(self):
         work_item = self.factory.makeSpecificationWorkItem()
@@ -160,10 +174,11 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     def test_representation_contains_dependencies(self):
         spec = self.factory.makeSpecification()
         spec2 = self.factory.makeSpecification()
+        spec2_name = spec2.name
         spec.createDependency(spec2)
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(1, spec_webservice.dependencies.total_size)
-        self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+        self.assertEqual(spec2_name, spec_webservice.dependencies[0].name)
 
     def test_representation_contains_linked_branches(self):
         spec = self.factory.makeSpecification()

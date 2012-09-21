@@ -7,16 +7,17 @@ from storm.locals import (
     Bool,
     DateTime,
     Int,
+    List,
     Reference,
     Storm,
     )
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     BugTaskStatusSearch,
     )
-from lp.registry.enums import InformationType
 from lp.services.database.enumcol import EnumCol
 
 
@@ -58,3 +59,5 @@ class BugTaskFlat(Storm):
     owner_id = Int(name='owner')
     owner = Reference(owner_id, 'Person.id')
     active = Bool()
+    access_grants = List(type=Int())
+    access_policies = List(type=Int())

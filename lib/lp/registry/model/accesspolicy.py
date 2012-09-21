@@ -10,6 +10,7 @@ __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
+    'AccessPolicyGrantFlat',
     'reconcile_access_for_artifact',
     ]
 
@@ -33,11 +34,11 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import (
+from lp.app.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
-    SharingPermission,
     )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -58,21 +59,28 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 
 
-def reconcile_access_for_artifact(artifact, information_type, pillars):
+def reconcile_access_for_artifact(artifact, information_type, pillars,
+                                  wanted_links=None):
     if information_type in PUBLIC_INFORMATION_TYPES:
         # If it's public we can delete all the access information.
         # IAccessArtifactSource handles the cascade.
         getUtility(IAccessArtifactSource).delete([artifact])
         return
     [abstract_artifact] = getUtility(IAccessArtifactSource).ensure([artifact])
+    aps = getUtility(IAccessPolicySource).find(
+        (pillar, information_type) for pillar in pillars)
+    missing_pillars = set(pillars) - set([ap.pillar for ap in aps])
+    if len(missing_pillars):
+        pillar_str = ', '.join([p.name for p in missing_pillars])
+        raise AssertionError(
+            "Pillar(s) %s require an access policy for information type "
+            "%s." % (pillar_str, information_type.title))
 
     # Now determine the existing and desired links, and make them
-    # match.
+    # match. The caller may have provided the wanted_links.
     apasource = getUtility(IAccessPolicyArtifactSource)
-    wanted_links = set(
-        (abstract_artifact, policy) for policy in
-        getUtility(IAccessPolicySource).find(
-            (pillar, information_type) for pillar in pillars))
+    wanted_links = (wanted_links
+                    or set((abstract_artifact, policy) for policy in aps))
     existing_links = set([
         (apa.abstract_artifact, apa.policy)
         for apa in apasource.findByArtifact([abstract_artifact])])
@@ -90,20 +98,25 @@ class AccessArtifact(StormBase):
     bug = Reference(bug_id, 'Bug.id')
     branch_id = Int(name='branch')
     branch = Reference(branch_id, 'Branch.id')
+    specification_id = Int(name='specification')
+    specification = Reference(specification_id, 'Specification.id')
 
     @property
     def concrete_artifact(self):
-        artifact = self.bug or self.branch
+        artifact = self.bug or self.branch or self.specification
         return artifact
 
     @classmethod
     def _constraintForConcrete(cls, concrete_artifact):
+        from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
         if IBug.providedBy(concrete_artifact):
             col = cls.bug
         elif IBranch.providedBy(concrete_artifact):
             col = cls.branch
+        elif ISpecification.providedBy(concrete_artifact):
+            col = cls.specification
         else:
             raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
@@ -121,6 +134,7 @@ class AccessArtifact(StormBase):
     @classmethod
     def ensure(cls, concrete_artifacts):
         """See `IAccessArtifactSource`."""
+        from lp.blueprints.interfaces.specification import ISpecification
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
 
@@ -136,12 +150,16 @@ class AccessArtifact(StormBase):
         insert_values = []
         for concrete in needed:
             if IBug.providedBy(concrete):
-                insert_values.append((concrete, None))
+                insert_values.append((concrete, None, None))
             elif IBranch.providedBy(concrete):
-                insert_values.append((None, concrete))
+                insert_values.append((None, concrete, None))
+            elif ISpecification.providedBy(concrete):
+                insert_values.append((None, None, concrete))
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
-        new = create((cls.bug, cls.branch), insert_values, get_objects=True)
+        new = create(
+            (cls.bug, cls.branch, cls.specification),
+            insert_values, get_objects=True)
         return list(existing) + new
 
     @classmethod
@@ -167,6 +185,8 @@ class AccessPolicy(StormBase):
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
     type = DBEnum(allow_none=True, enum=InformationType)
+    person_id = Int(name='person')
+    person = Reference(person_id, 'Person.id')
 
     @property
     def pillar(self):
@@ -188,6 +208,17 @@ class AccessPolicy(StormBase):
         return create(
             (cls.product, cls.distribution, cls.type), insert_values,
             get_objects=True)
+
+    @classmethod
+    def createForTeams(cls, teams):
+        insert_values = []
+        for team in teams:
+            if team is None or not team.is_team:
+                raise ValueError("A team must be specified")
+            insert_values.append((None, None, None, team))
+        return create(
+            (cls.product, cls.distribution, cls.type, cls.person),
+            insert_values, get_objects=True)
 
     @classmethod
     def _constraintForPillar(cls, pillar):
@@ -226,11 +257,16 @@ class AccessPolicy(StormBase):
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
-    def findByPillarAndGrantee(cls, pillars):
+    def findByTeam(cls, teams):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
-            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
+            Or(*(cls.person == team for team in teams)))
+
+    @classmethod
+    def delete(cls, pillars_and_types):
+        """See `IAccessPolicySource`."""
+        cls.find(pillars_and_types).remove()
 
 
 class AccessPolicyArtifact(StormBase):
@@ -334,7 +370,7 @@ class AccessArtifactGrant(StormBase):
 
     @classmethod
     def revokeByArtifact(cls, artifacts, grantees=None):
-        """See `IAccessPolicyGrantSource`."""
+        """See `IAccessArtifactGrantSource`."""
         cls.findByArtifact(artifacts, grantees).remove()
 
 
@@ -377,6 +413,11 @@ class AccessPolicyGrant(StormBase):
     def revoke(cls, grants):
         """See `IAccessPolicyGrantSource`."""
         cls.find(grants).remove()
+
+    @classmethod
+    def revokeByPolicy(cls, policies):
+        """See `IAccessPolicyGrantSource`."""
+        cls.findByPolicy(policies).remove()
 
 
 class AccessPolicyGrantFlat(StormBase):

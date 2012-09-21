@@ -130,8 +130,8 @@
                   <tal:team
                     tal:condition="view/person_or_team/is_team" >
                     <div
-                      tal:content="view/person_or_team/teamdescription"
-                      tal:condition="view/person_or_team/teamdescription">
+                      tal:content="view/person_or_team/description"
+                      tal:condition="view/person_or_team/description">
                       The Launchpad team creates Launchpad. That's what they do.
                       They rock!
                     </div>

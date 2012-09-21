@@ -46,8 +46,7 @@
   </p>
 
   <tal:results condition="faqs">
-    <ul id="faqs-listing"
-        class="faq">
+    <ul id="faqs-listing">
       <li tal:repeat="faq faqs/batch"
           tal:attributes="title faq/content/fmt:shorten/320"
           ><a href="#"

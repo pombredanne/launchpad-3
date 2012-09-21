@@ -225,7 +225,7 @@ the target of the nomination and the status is set to APPROVED.
 For example, there are currently no bugtasks on the firefox_trunk
 productseries.
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 
     >>> params = BugTaskSearchParams(user=no_privs, bug=bug_one)
     >>> found_tasks = firefox_trunk.searchTasks(params)

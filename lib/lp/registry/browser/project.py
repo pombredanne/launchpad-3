@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
-from lp.registry.browser.pillar import PillarViewMixin
 
 __metaclass__ = type
 
@@ -79,6 +78,7 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.milestone import validate_tags
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.pillar import PillarViewMixin
 from lp.registry.browser.product import (
     ProductAddView,
     ProjectAddStepOne,

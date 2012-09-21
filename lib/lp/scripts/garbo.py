@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'DailyDatabaseGarbageCollector',
+    'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
     ]
 
@@ -26,7 +27,11 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    In,
+    Select,
+    Update,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -56,6 +61,7 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
@@ -904,6 +910,33 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
+class SpecificationSharingPolicyDefault(TunableLoop):
+    """Set all Product.specification_sharing_policy to Public."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SpecificationSharingPolicyDefault, self).__init__(
+            log, abort_time)
+        self.rows_updated = None
+        self.store = IMasterStore(Product)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.rows_updated == 0
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        subselect = Select(
+            Product.id, Product.specification_sharing_policy == None,
+            limit=chunk_size)
+        result = self.store.execute(
+            Update({Product.specification_sharing_policy: 1},
+            Product.id.is_in(subselect)))
+        transaction.commit()
+        self.rows_updated = result.rowcount
+
+
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -987,6 +1020,31 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         store.find(
             POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
         self.offset = self.offset + chunk_size
+        transaction.commit()
+
+
+class UnusedAccessPolicyPruner(TunableLoop):
+    """Deletes unused AccessPolicy and AccessPolicyGrants for products."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(UnusedAccessPolicyPruner, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product, Product.id >= self.start_at).order_by(Product.id)
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products = list(self.findProducts()[:chunk_size])
+        for product in products:
+            product._pruneUnusedPolicies()
+        self.start_at = products[-1].id + 1
         transaction.commit()
 
 
@@ -1273,10 +1331,12 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
+        SpecificationSharingPolicyDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
-        UnusedPOTMsgSetPruner,
         UnlinkedAccountPruner,
+        UnusedAccessPolicyPruner,
+        UnusedPOTMsgSetPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

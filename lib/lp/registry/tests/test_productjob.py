@@ -21,12 +21,14 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
-    InformationType,
+    BugSharingPolicy,
+    BranchSharingPolicy,
     ProductJobType,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productjob import (
     ICommercialExpiredJob,
@@ -326,7 +328,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
     def make_maintainer_team(self, product):
         team = self.factory.makeTeam(
             owner=product.owner,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team.teamowner):
             team.addMember(
@@ -577,7 +579,7 @@ class CommericialExpirationMixin(CommercialHelpers):
         # Create a proprietary project owned by a team which will have
         # different DB relations.
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         proprietary_product = self.factory.makeProduct(
             owner=team, licenses=[License.OTHER_PROPRIETARY])
         self.expire_commercial_subscription(proprietary_product)
@@ -723,6 +725,10 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         clear_property_cache(product)
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
+        self.assertEqual(
+            BranchSharingPolicy.FORBIDDEN, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.FORBIDDEN, product.bug_sharing_policy)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
         self.assertIs(None, product.commercial_subscription)

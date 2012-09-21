@@ -14,17 +14,17 @@
 
     <div id="candidates" condition="view/candidate_teams">
       <tal:can-propose
-        condition="not:context/subscriptionpolicy/enumvalue:RESTRICTED">
+        condition="not:context/membership_policy/enumvalue:RESTRICTED">
         <div metal:use-macro="context/@@launchpad_form/form">
           <p metal:fill-slot="extra_info"
-             tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
+             tal:condition="context/membership_policy/enumvalue:MODERATED">
              This is a moderated team, so one of its administrators will have
              to review any memberships you propose.
           </p>
         </div>
       </tal:can-propose>
 
-      <div tal:condition="context/subscriptionpolicy/enumvalue:RESTRICTED">
+      <div tal:condition="context/membership_policy/enumvalue:RESTRICTED">
         <h1>This is a restricted team</h1>
         <p>New members can not be proposed&mdash;they can only be added by one
         of the team's administrators.</p>

@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including and related to IProduct."""
 
 __metaclass__ = type
@@ -74,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -95,7 +94,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -108,6 +106,11 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    SpecificationSharingPolicy,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
@@ -376,10 +379,6 @@ class IProductDriverRestricted(Interface):
         """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
-
-
 class IProductModerateRestricted(Interface):
     """`IProduct` properties which require launchpad.Moderate."""
 
@@ -427,11 +426,10 @@ class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMergeProposals, IHasMilestones,
-    IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IHasOOPSReferences, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports, IServiceUsage):
+    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
@@ -451,6 +449,13 @@ class IProductPublic(
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True,
+            description=_(
+                'The type of of data contained in this project.')))
 
     owner = exported(
         PersonChoice(
@@ -634,6 +639,22 @@ class IProductPublic(
                         description=_(
                             "Whether or not bugs reported into this project "
                             "are private by default.")))
+    branch_sharing_policy = exported(Choice(
+        title=_('Branch sharing policy'),
+        description=_("Sharing policy for this project's branches."),
+        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        as_of='devel')
+    bug_sharing_policy = exported(Choice(
+        title=_('Bug sharing policy'),
+        description=_("Sharing policy for this project's bugs."),
+        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Specification sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        as_of='devel')
+
     licenses = exported(
         Set(title=_('Licences'),
             value_type=Choice(vocabulary=License)))
@@ -760,6 +781,12 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
+    security_contact = exported(
+        TextLine(
+            title=_('Security contact'), required=False, readonly=True,
+            description=_('Security contact (obsolete; always None)')),
+            ('devel', dict(exported=False)), as_of='1.0')
+
     def checkPrivateBugsTransitionAllowed(private_bugs, user):
         """Can the private_bugs attribute be changed to the value by the user?
 
@@ -777,6 +804,18 @@ class IProductPublic(
     @operation_for_version("devel")
     def setPrivateBugs(private_bugs, user):
         """Mutator for private_bugs that checks entitlement."""
+
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this project can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
+    def getDefaultBugInformationType():
+        """Get the default information type of a new bug in this project.
+
+        :return: The `InformationType`.
+        """
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
@@ -850,6 +889,45 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram.
 
         The number of milestones returned per series is limited.
+        """
+
+
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
+    """`IProduct` properties which require launchpad.Edit permission."""
+
+    @mutator_for(IProductPublic['bug_sharing_policy'])
+    @operation_parameters(bug_sharing_policy=copy_field(
+        IProductPublic['bug_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setBugSharingPolicy(bug_sharing_policy):
+        """Mutator for bug_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
+    @mutator_for(IProductPublic['branch_sharing_policy'])
+    @operation_parameters(
+        branch_sharing_policy=copy_field(
+            IProductPublic['branch_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setBranchSharingPolicy(branch_sharing_policy):
+        """Mutator for branch_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
+    @mutator_for(IProductPublic['specification_sharing_policy'])
+    @operation_parameters(
+        specification_sharing_policy=copy_field(
+            IProductPublic['specification_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setSpecificationSharingPolicy(specification_sharing_policy):
+        """Mutator for specification_sharing_policy.
+
+        Checks authorization and entitlement.
         """
 
 
@@ -934,7 +1012,7 @@ class IProductSet(Interface):
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
-                   'registrant'])
+                   'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -943,7 +1021,7 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """Create and return a brand new Product.
 
         See `IProduct` for a description of the parameters.

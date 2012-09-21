@@ -16,14 +16,16 @@ shown in the list of options.
     >>> user_browser.getControl('Project', index=0).options
     ['evolution']
 
-After we selected a product and entered a summary, we get presented with
-a list of possible duplicates.
+After we selected a product and entered a summary, we're sent to the
+product's +filebug page and presented with a list of possible duplicates.
 
     >>> user_browser.getControl('Project', index=0).value = ['evolution']
     >>> user_browser.getControl('Summary', index=0).value = (
     ...     'Evolution crashes')
     >>> user_browser.getControl('Continue').click()
 
+    >>> user_browser.url
+    'http://bugs...search=Continue&field.title=Evolution+crashes&field.tags='
     >>> print find_main_content(user_browser.contents).renderContents()
     <...
     No similar bug reports were found...
@@ -38,78 +40,6 @@ page.
 
     >>> user_browser.title
     'Bug #...Evolution crashes... : Bugs : Evolution'
-
-
-Subscribing to a similar bug
-----------------------------
-
-If our bug is described by one of the suggested similar bugs, we can
-subscribe to it instead of filing a new bug. This also loosely implies a
-"me too" vote.
-
-    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
-    >>> user_browser.getControl('Project', index=0).value = ['evolution']
-    >>> user_browser.getControl('Summary', index=0).value = (
-    ...     'Evolution crashes')
-    >>> user_browser.getControl('Continue').click()
-
-As before, we get a list of similar bugs to choose from, including the
-bugs we filed recently.
-
-    >>> from lp.bugs.tests.bug import print_bugs_list
-    >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #... Evolution crashes
-    New (0 comments) last updated ...
-
-This one matches, so we subscribe.
-
-    >>> user_browser.getControl(
-    ...     "Yes, this is the bug I'm trying to report").click()
-
-    >>> print user_browser.url
-    http://bugs.launchpad.dev/evolution/+bug/...
-
-But, of course, we're already subscribed because we created it.
-
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
-    This bug is already marked as affecting you.
-
-
-Filing a bug when there are none similar
-----------------------------------------
-
-When no similar bugs are found the form works the same but appears
-different in the user agent.
-
-    >>> user_browser.open("http://launchpad.dev/gnome/+filebug")
-
-Submitting some distinctive details...
-
-    >>> user_browser.getControl('Project', index=0).value = ['evolution']
-    >>> user_browser.getControl('Summary', index=0).value = (
-    ...     'Faznambutron dumps core unless clenching')
-    >>> user_browser.getControl('Continue').click()
-
-...yields no similar bugs. In fact, the similar bugs table is not even
-shown.
-
-    >>> similar_bugs_list = find_tag_by_id(
-    ...     user_browser.contents, "similar-bugs")
-    >>> print similar_bugs_list
-    None
-
-But, as before, entering a description and submitting the bug takes the
-user to the bug page.
-
-    >>> user_browser.getControl('Further information').value = (
-    ...     'Faznambutron is a plugin designed to ...')
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+bug/...'
-
-    >>> user_browser.title
-    'Bug #...Faznambutron dumps core... : Bugs : Evolution'
 
 
 Empty ProjectGroups
@@ -143,21 +73,8 @@ test it here.
     >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad to
-    track bugs.
-
-If the project registrant visits the filebug page they will see an
-additional message:
-
-    >>> admin_browser.open('http://launchpad.dev/test-group/+filebug')
-
-    >>> for message in find_tags_by_class(admin_browser.contents,
-    ...     'warning message'):
-    ...     print message.renderContents()
-    There are no projects registered for Test Group. <br /> You need
-    to <a href="/test-group/+newproduct">register another project that
-    is part of Test Group</a> or associate an existing project with
-    it.
+    There are no projects registered for Test Group that either use Launchpad
+    to track bugs or allow new bugs to be filed.
 
 
 ProjectGroups With no Products Using Launchpad Bugs
@@ -191,93 +108,5 @@ but will not be able to file a bug against it.
     >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad to
-    track bugs.
-
-Testy Product doesn't use define an external bug tracker and isn't
-registered in any source packages and the user is told this.
-
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...     'product-list-summary'))
-    There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
-
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'product-bug-options'):
-    ...     print extract_text(tag)
-    Testy Product
-    Testy Product does not use an external bug tracker or has not registered
-    it with launchpad.
-    Testy Product is not registered with any source packages. You can help by
-    linking them for us.
-
-The user will also be presented with a link to the product's overview
-page:
-
-    >>> user_browser.getLink('Testy Product').url
-    'http://launchpad.dev/testy'
-
-If we set up an external bug tracker for Testy Product, this will be
-reflected in the Test Group's filebug page.
-
-    >>> from zope.component import getUtility
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-
-    >>> login('admin@canonical.com')
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> hoary = ubuntu.getSeries('hoary')
-    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
-    >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
-    >>> logout()
-
-    >>> admin_browser.open('http://launchpad.dev/testy/+configure-bugtracker')
-    >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
-    >>> admin_browser.getControl(
-    ...     name='field.bugtracker.bugtracker').value = 'debbugs'
-    >>> admin_browser.getControl('Change').click()
-
-And on the filebug page...
-
-    >>> user_browser.reload()
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...     'product-list-summary'))
-    There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
-
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'product-bug-options'):
-    ...     print extract_text(tag)
-    Testy Product
-    External bug tracker: Debian Bug tracker.
-    Testy Product is not registered with any source packages. You can help by
-    linking them for us.
-
-Finally, we add Testy Product to a source package:
-
-    >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
-    >>> admin_browser.getControl('Update').click()
-
-And this is also shown on the filebug page:
-
-    >>> user_browser.reload()
-    >>> user_browser.reload()
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...     'product-list-summary'))
-    There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker.
-
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'product-bug-options'):
-    ...     print extract_text(tag)
-    Testy Product
-    External bug tracker: Debian Bug tracker.
-    Source package: Ubuntu thunderbird (File a bug here)
-
-We should be able to follow the link to the Ubuntu thunderbird source
-package to file a bug:
-
-    >>> user_browser.getLink('File a bug here').click()
-    >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/thunderbird/+filebug'
+    There are no projects registered for Test Group that either use Launchpad
+    to track bugs or allow new bugs to be filed.

@@ -113,9 +113,7 @@ class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):
         # This call is relatively expensive, hence a cached value is
         # used.
         view = create_initialized_view(self.person, name='+packagebugs')
-        self.factory.makeBug(
-            distribution=self.distribution, sourcepackagename=self.spn,
-            status=BugTaskStatus.INPROGRESS)
+        self.factory.makeBug(target=self.dsp, status=BugTaskStatus.INPROGRESS)
         with person_logged_in(self.person):
             self.dsp.addSubscription(self.person, subscribed_by=self.person)
         # Monkey-patch the version of canonical_url used by the registry

@@ -30,6 +30,7 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -53,10 +54,9 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -221,7 +221,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         public_person1 = self.factory.makePerson()
         private_team1 = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 

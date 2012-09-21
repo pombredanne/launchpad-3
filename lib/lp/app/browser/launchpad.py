@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -616,10 +616,9 @@ class LaunchpadRootNavigation(Navigation):
         target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchLookup).getByLPPath(path)
-            branch, trailing = branch_data
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
             target_url = canonical_url(branch)
-            if trailing is not None:
+            if trailing != '':
                 target_url = urlappend(target_url, trailing)
         except (NoLinkedBranch) as e:
             # A valid ICanHasLinkedBranch target exists but there's no

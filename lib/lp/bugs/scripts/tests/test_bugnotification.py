@@ -23,6 +23,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -63,7 +64,6 @@ from lp.bugs.scripts.bugnotification import (
     notification_comment_batches,
     process_deferred_notifications,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
@@ -648,7 +648,7 @@ class EmailNotificationTestBase(TestCaseWithFactory):
         self.bug_subscriber = self.factory.makePerson(name="bug-subscriber")
         self.bug_owner = self.factory.makePerson(name="bug-owner")
         self.bug = self.factory.makeBug(
-            product=self.product, owner=self.bug_owner,
+            target=self.product, owner=self.bug_owner,
             information_type=InformationType.USERDATA)
         self.reporter = self.bug.owner
         self.bug.subscribe(self.bug_subscriber, self.reporter)

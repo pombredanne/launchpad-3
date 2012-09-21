@@ -304,7 +304,7 @@ portion do.
     >>> milestone_two = productseries.newMilestone('0.2', code_name='two')
     >>> specification = factory.makeSpecification(product=product)
     >>> specification.milestone = milestone_one
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone_two
 

@@ -47,6 +47,7 @@ from zope.traversing.interfaces import (
     )
 
 from lp import _
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.badge import IHasBadges
 from lp.app.browser.stringformatter import (
     escape,
@@ -956,9 +957,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
         badges = []
-        if self._context.bug.private:
+        information_type = self._context.bug.information_type
+        if information_type in PRIVATE_INFORMATION_TYPES:
             badges.append(self.icon_template % (
-                "private", "Private", "sprite private"))
+                information_type.title, information_type.description,
+                "sprite private"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (

@@ -119,13 +119,12 @@
        tal:define="configure_codehosting view/configure_codehosting |
        nothing">
       <p>
-        <a class="sprite maybe action-icon"
+        <a class="sprite maybe"
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>
 
       <p tal:condition="context/required:launchpad.Edit"
-         id="no-code-edit"
-         >
+         id="no-code-edit">
         <a tal:condition="configure_codehosting"
            tal:replace="structure configure_codehosting/fmt:link"/>
       </p>

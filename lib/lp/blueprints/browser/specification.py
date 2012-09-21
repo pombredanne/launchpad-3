@@ -47,9 +47,13 @@ from subprocess import (
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 from zope import component
@@ -78,6 +82,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -97,6 +102,12 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
+from lp.app.enums import (
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
+from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -114,6 +125,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -130,6 +142,9 @@ from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
+
+
+INFORMATION_TYPE_FLAG = 'blueprints.information_type.enabled'
 
 
 class INewSpecification(Interface):
@@ -200,7 +215,30 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+
     custom_widget('specurl', TextWidget, displayWidth=60)
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    def append_info_type(self, fields):
+        """Append an InformationType field for creating a Specification.
+
+        Does nothing if the user cannot select different information types or
+        the feature flag is not enabled.
+        """
+        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
+            return fields
+        if len(self.info_types) < 2:
+            return fields
+        info_type_field = copy_field(ISpecification['information_type'],
+            readonly=False,
+            vocabulary=InformationTypeVocabulary(types=self.info_types))
+        return fields + Fields(info_type_field)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache, self.info_types)
+        super(NewSpecificationView, self).initialize()
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
@@ -217,7 +255,8 @@ class NewSpecificationView(LaunchpadFormView):
             assignee=data.get('assignee'),
             approver=data.get('approver'),
             distribution=data.get('distribution'),
-            definition_status=data.get('definition_status'))
+            definition_status=data.get('definition_status'),
+            information_type=data.get('information_type'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -267,8 +306,14 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     The context must correspond to a unique specification target.
     """
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def info_types(self):
+        return self.context.getAllowedSpecificationInformationTypes()
+
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification, INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -288,9 +333,12 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     """An abstract view for creating a specification from a series."""
 
-    schema = Fields(INewSpecification,
-                    INewSpecificationSprint,
-                    INewSpecificationSeriesGoal)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecification,
+                        INewSpecificationSprint,
+                        INewSpecificationSeriesGoal)
+        return self.append_info_type(fields)
 
     def transform(self, data):
         if data['goal']:
@@ -319,6 +367,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+    info_types = PUBLIC_PROPRIETARY_INFORMATION_TYPES
 
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
@@ -340,24 +389,32 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a project."""
 
-    schema = Fields(INewSpecificationProjectTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationProjectTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from the root of Launchpad."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget,
+                        INewSpecification,
+                        INewSpecificationSprint)
+        return self.append_info_type(fields)
 
 
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from a sprint."""
 
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification)
+    @property
+    def schema(self):
+        fields = Fields(INewSpecificationTarget, INewSpecification)
+        return self.append_info_type(fields)
 
     def transform(self, data):
         super(NewSpecificationFromSprintView, self).transform(data)
@@ -423,7 +480,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget']
+             'retarget', 'information_type']
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -528,8 +585,14 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def information_type(self):
+        """Return the 'Set privacy/security' Link."""
+        text = 'Change privacy/security'
+        return Link('#', text)
 
-class SpecificationSimpleView(LaunchpadView):
+
+class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
@@ -544,6 +607,13 @@ class SpecificationSimpleView(LaunchpadView):
     @cachedproperty
     def bug_links(self):
         return self.context.getLinkedBugTasks(self.user)
+
+    @cachedproperty
+    def privacy_portlet_css(self):
+        if self.context.private:
+            return 'portlet private'
+        else:
+            return 'portlet public'
 
 
 class SpecificationView(SpecificationSimpleView):
@@ -562,6 +632,7 @@ class SpecificationView(SpecificationSimpleView):
         return self.context.summary
 
     def initialize(self):
+        super(SpecificationView, self).initialize()
         # The review that the user requested on this spec, if any.
         self.notices = []
 
@@ -620,7 +691,9 @@ class SpecificationView(SpecificationSimpleView):
     def title_widget(self):
         field = ISpecification['title']
         title = "Edit the blueprint title"
-        return TextLineEditorWidget(self.context, field, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, field, title, 'h1', max_width='95%',
+            truncate_lines=2)
 
     @property
     def summary_widget(self):
@@ -745,6 +818,52 @@ class SpecificationEditPriorityView(SpecificationEditView):
 class SpecificationEditStatusView(SpecificationEditView):
     label = 'Change status'
     field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationInformationTypeEditView(LaunchpadFormView):
+    """Form for marking a bug as a private/public."""
+
+    @property
+    def label(self):
+        return 'Set information type'
+
+    page_title = label
+
+    field_names = ['information_type']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.getAllowedInformationTypes(self.user)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+        return information_type_schema
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        return None
+
+    cancel_url = next_url
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'information_type': self.context.information_type}
+
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        """Update the bug."""
+        data = dict(data)
+        information_type = data.pop('information_type')
+        self.context.transitionToInformationType(information_type, self.user)
+        return ''
 
 
 class SpecificationEditMilestoneView(SpecificationEditView):
@@ -967,8 +1086,10 @@ class SpecGraph:
 
         There can be at most one root node set.
         """
-        assert self.getNode(spec.name) is None, (
-            "A spec called %s is already in the graph" % spec.name)
+        if self.getNode(spec) is not None:
+            raise ValueError(
+            "A spec called %s/+spec/%s is already in the graph" %
+            (spec.target.name, spec.name))
         node = SpecGraphNode(spec, root=root,
                 url_pattern_for_testing=self.url_pattern_for_testing)
         self.nodes.add(node)
@@ -977,14 +1098,11 @@ class SpecGraph:
             self.root_node = node
         return node
 
-    def getNode(self, name):
-        """Return the node with the given name.
-
-        Return None if there is no such node.
-        """
-        # Efficiency: O(n)
+    def getNode(self, spec):
+        """Return the node with the given spec, or None if not matched."""
+        unique_name = '%s-%s' % (spec.target.name, spec.name)
         for node in self.nodes:
-            if node.name == name:
+            if node.name == unique_name:
                 return node
         return None
 
@@ -994,7 +1112,7 @@ class SpecGraph:
         If there is already a node for spec.name, return that node.
         Otherwise, create a new node for the spec, and return that.
         """
-        node = self.getNode(spec.name)
+        node = self.getNode(spec)
         if node is None:
             node = self.newNode(spec)
         return node
@@ -1148,9 +1266,9 @@ class SpecGraphNode:
     """
 
     def __init__(self, spec, root=False, url_pattern_for_testing=None):
-        self.name = spec.name
+        self.name = '%s-%s' % (spec.target.name, spec.name)
         if url_pattern_for_testing:
-            self.URL = url_pattern_for_testing % self.name
+            self.URL = url_pattern_for_testing % spec.name
         else:
             self.URL = canonical_url(spec)
         self.isRoot = root

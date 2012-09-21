@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
@@ -49,7 +48,13 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -81,10 +86,6 @@ from lp.bugs.interfaces.bugtask import (
     DB_UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
-    )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -96,9 +97,9 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
 from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -192,7 +193,6 @@ from lp.soyuz.model.publishing import (
     get_current_source_releases,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -241,10 +241,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_person_or_closed_team, notNull=False,
-        default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
@@ -287,6 +283,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def pillar_category(self):
         """See `IPillar`."""
         return "Distribution"
+
+    @property
+    def branch_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return BranchSharingPolicy.PUBLIC
+
+    @property
+    def bug_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return BugSharingPolicy.PUBLIC
+
+    @property
+    def specification_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return SpecificationSharingPolicy.PUBLIC
 
     @property
     def uploaders(self):
@@ -627,10 +641,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """Customize `search_params` for this distribution."""
         search_params.setDistribution(self)
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
-
     def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
         # This, ignoring privacy issues, is what we want.
@@ -786,11 +796,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             rsync_base_url=urls['rsync_base_url'],
             official_candidate=official_candidate, enabled=enabled,
             whiteboard=whiteboard)
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(distribution=self)
-        return BugSet().createBug(bug_params)
 
     @property
     def currentseries(self):
@@ -978,6 +983,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
         return Specification.selectOneBy(distribution=self, name=name)
+
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        return (InformationType.PUBLIC,)
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        return InformationType.PUBLIC
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -1591,11 +1604,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_with_upstream_patches))
         return results
 
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
+    def getAllowedBugInformationTypes(self):
+        """See `IDistribution.`"""
+        return FREE_INFORMATION_TYPES
+
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        return InformationType.PUBLIC
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
@@ -1754,7 +1769,7 @@ class DistributionSet:
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         policies = itertools.product(
             (distro,), (InformationType.USERDATA,
-                InformationType.EMBARGOEDSECURITY))
+                InformationType.PRIVATESECURITY))
         getUtility(IAccessPolicySource).create(policies)
         return distro
 

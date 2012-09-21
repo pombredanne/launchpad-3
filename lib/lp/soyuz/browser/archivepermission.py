@@ -50,6 +50,9 @@ class ArchivePermissionURL:
                      self.context.distro_series_name))
         elif self.context.pocket is not None:
             item = "type=pocket&item=%s" % self.context.pocket.name
+            # Queue admin permissions for pockets may be granted by series.
+            if self.context.distroseries is not None:
+                item += "&series=%s" % self.context.distroseries.name
         else:
             raise AssertionError(
                 "One of component, sourcepackagename or package set should "

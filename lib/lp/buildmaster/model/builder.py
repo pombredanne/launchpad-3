@@ -501,8 +501,6 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.clean()
 
-    # XXX 2010-08-24 Julian bug=623281
-    # This should not be a property!  It's masking a complicated query.
     @cachedproperty
     def currentjob(self):
         """See IBuilder"""

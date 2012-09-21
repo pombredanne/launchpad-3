@@ -17,10 +17,8 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.registry.interfaces.person import (
-    IPerson,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

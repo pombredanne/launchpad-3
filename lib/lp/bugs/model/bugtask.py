@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Classes that implement IBugTask and its related interfaces."""
 
 __metaclass__ = type
@@ -15,7 +13,6 @@ __all__ = [
     'bugtask_sort_key',
     'bug_target_from_key',
     'bug_target_to_key',
-    'get_related_bugtasks_search_params',
     'validate_new_target',
     'validate_target',
     ]
@@ -70,14 +67,17 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     CannotDeleteBugtask,
@@ -87,7 +87,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
-    IllegalRelatedBugTasksParams,
     IllegalTarget,
     normalize_bugtask_status,
     RESOLVED_BUGTASK_STATUSES,
@@ -96,11 +95,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.enums import (
-    InformationType,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -112,7 +107,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
-    IPerson,
     validate_person,
     validate_public_person,
     )
@@ -146,7 +140,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -194,50 +187,6 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
-
-
-def get_related_bugtasks_search_params(user, context, **kwargs):
-    """Returns a list of `BugTaskSearchParams` which can be used to
-    search for all tasks related to a user given by `context`.
-
-    Which tasks are related to a user?
-      * the user has to be either assignee or owner of this task
-        OR
-      * the user has to be subscriber or commenter to the underlying bug
-        OR
-      * the user is reporter of the underlying bug, but this condition
-        is automatically fulfilled by the first one as each new bug
-        always get one task owned by the bug reporter
-    """
-    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
-    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter',
-                       'structural_subscriber')
-    search_params = []
-    for key in relevant_fields:
-        # all these parameter default to None
-        user_param = kwargs.get(key)
-        if user_param is None or user_param == context:
-            # we are only creating a `BugTaskSearchParams` object if
-            # the field is None or equal to the context
-            arguments = kwargs.copy()
-            arguments[key] = context
-            if key == 'owner':
-                # Specify both owner and bug_reporter to try to
-                # prevent the same bug (but different tasks)
-                # being displayed.
-                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
-                arguments['bug_reporter'] = context
-            search_params.append(
-                BugTaskSearchParams.fromSearchForm(user, **arguments))
-    if len(search_params) == 0:
-        # unable to search for related tasks to user_context because user
-        # modified the query in an invalid way by overwriting all user
-        # related parameters
-        raise IllegalRelatedBugTasksParams(
-            ('Cannot search for related tasks to \'%s\', at least one '
-             'of these parameter has to be empty: %s'
-                % (context.name, ", ".join(relevant_fields))))
-    return search_params
 
 
 def bug_target_from_key(product, productseries, distribution, distroseries,
@@ -387,7 +336,14 @@ def validate_target(bug, target, retarget_existing=True):
             except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
-    if bug.information_type == InformationType.PROPRIETARY:
+    legal_types = target.pillar.getAllowedBugInformationTypes()
+    new_pillar = target.pillar not in bug.affected_pillars
+    if new_pillar and bug.information_type not in legal_types:
+        raise IllegalTarget(
+            "%s doesn't allow %s bugs." % (
+            target.pillar.bugtargetdisplayname, bug.information_type.title))
+
+    if bug.information_type in PROPRIETARY_INFORMATION_TYPES:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.
         if retarget_existing and len(bug.bugtasks) <= 1:
@@ -398,7 +354,7 @@ def validate_target(bug, target, retarget_existing=True):
             raise IllegalTarget(
                 "This proprietary bug already affects %s. "
                 "Proprietary bugs cannot affect multiple projects."
-                    % bug.default_bugtask.target.bugtargetdisplayname)
+                    % bug.default_bugtask.target.pillar.bugtargetdisplayname)
 
 
 def validate_new_target(bug, target):
@@ -622,10 +578,9 @@ class BugTask(SQLBase):
         return True
 
     def checkCanBeDeleted(self):
-        num_bugtasks = Store.of(self).find(
-            BugTask, bug=self.bug).count()
-
-        if num_bugtasks < 2:
+        # Bug.bugtasks is a cachedproperty, so this is pretty much free
+        # to call. Better than a manual count query, at any rate.
+        if len(self.bug.bugtasks) < 2:
             raise CannotDeleteBugtask(
                 "Cannot delete only bugtask affecting: %s."
                 % self.target.bugtargetdisplayname)
@@ -810,13 +765,6 @@ class BugTask(SQLBase):
             # conjoined masters by calling the underlying sqlobject
             # setter methods directly.
             setattr(self, synched_attr, PassthroughValue(slave_attr_value))
-
-    @property
-    def target_uses_malone(self):
-        """See `IBugTask`"""
-        # XXX sinzui 2007-10-04 bug=149009:
-        # This property is not needed. Code should inline this implementation.
-        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
@@ -1190,13 +1138,11 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the parent bug. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, [self.bug], pillar=target_before_change)
+        # As a result of the transition, some subscribers may no longer
+        # have access to the parent bug. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, [self.bug], pillar=target_before_change.pillar)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1550,7 +1496,10 @@ class BugTaskSet:
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
         # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            get_bugsummary_filter_for_user,
+            )
         conditions = []
         # Open bug statuses
         conditions.append(
@@ -1578,27 +1527,14 @@ class BugTaskSet:
             conditions.append(BugSummary.tag == None)
         else:
             conditions.append(BugSummary.tag != None)
+
+        # Apply the privacy filter.
         store = IStore(BugSummary)
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if user is not None and not user.inTeam(admin_team):
-            # admins get to see every bug, everyone else only sees bugs
-            # viewable by them-or-their-teams.
-            store = store.with_(SQL(
-                "teams AS ("
-                "SELECT team from TeamParticipation WHERE person=?)",
-                (user.id,)))
-        # Note that because admins can see every bug regardless of
-        # subscription they will see rather inflated counts. Admins get to
-        # deal.
-        if user is None:
-            conditions.append(BugSummary.viewed_by_id == None)
-        elif not user.inTeam(admin_team):
-            conditions.append(
-                Or(
-                    BugSummary.viewed_by_id == None,
-                    BugSummary.viewed_by_id.is_in(
-                        SQL("SELECT team FROM teams"))
-                    ))
+        user_with, user_where = get_bugsummary_filter_for_user(user)
+        if user_with:
+            store = store.with_(user_with)
+        conditions.extend(user_where)
+
         sum_count = Sum(BugSummary.count)
         resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
@@ -1644,10 +1580,6 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
-            for pillar in pillars:
-                if pillar.security_contact:
-                    bug.subscribe(pillar.security_contact, owner)
 
         values = [
             (bug, owner, key['product'], key['productseries'],

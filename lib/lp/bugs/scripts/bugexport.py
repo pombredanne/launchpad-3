@@ -18,10 +18,8 @@ except ImportError:
 from zope.component import getUtility
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 
 BUGS_XMLNS = 'https://launchpad.net/xmlns/2006/bugs'

@@ -141,14 +141,6 @@
         name="+index"
         template="../templates/bazaar-index.pt" />
     <browser:page
-        for="lp.services.webapp.interfaces.ILaunchpadRoot"
-        layer="lp.code.publisher.CodeLayer"
-        permission="zope.Public"
-        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
-        name="+daily-builds"
-        template="../templates/daily-builds-listing.pt" />
-
-    <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         layer="lp.code.publisher.CodeLayer"
         name="+hierarchy"
@@ -478,6 +470,13 @@
         layer="lp.code.publisher.CodeLayer"
         class="lp.code.browser.branch.BranchEditStatusView"
         permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+edit-information-type"
+        for="lp.code.interfaces.branch.IBranch"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.branch.BranchEditInformationTypeView"
+        permission="launchpad.Moderate"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+edit"

@@ -56,7 +56,6 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTag,
@@ -333,14 +332,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.config(distinct=True)
         return result
 
-    def getUsedBugTags(self):
-        """See `IHasBugs`."""
-        if not self.products:
-            return []
-        product_ids = sqlvalues(*self.products)
-        return get_bug_tags(
-            "BugTask.product IN (%s)" % ",".join(product_ids))
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
@@ -584,7 +575,7 @@ class ProjectGroupSet:
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
-            registrant=None):
+            registrant=None, bug_supervisor=None, driver=None):
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner

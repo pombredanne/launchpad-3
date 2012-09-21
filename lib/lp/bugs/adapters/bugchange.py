@@ -58,7 +58,6 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.product import IProduct
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -550,27 +549,17 @@ class BugTitleChange(AttributeChange):
 class BugInformationTypeChange(AttributeChange):
     """Used to represent a change to the information_type of an `IBug`."""
 
-    def title(self, value):
-        # This function is unnecessary when display_userdata_as_private is
-        # removed.
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        title = value.title
-        if value == InformationType.USERDATA and show_userdata_as_private:
-            title = 'Private'
-        return title
-
     def getBugActivity(self):
         return {
-            'newvalue': self.title(self.new_value),
-            'oldvalue': self.title(self.old_value),
+            'newvalue': self.new_value.title,
+            'oldvalue': self.old_value.title,
             'whatchanged': 'information type'
              }
 
     def getBugNotification(self):
         return {
             'text': "** Information type changed from %s to %s" % (
-                self.title(self.old_value), self.title(self.new_value))}
+                self.old_value.title, self.new_value.title)}
 
 
 # XXX: This can be deleted when information_type_notifications is removed.

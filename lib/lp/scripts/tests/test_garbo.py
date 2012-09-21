@@ -19,6 +19,7 @@ from storm.expr import (
     In,
     Min,
     Not,
+    Update,
     SQL,
     )
 from storm.locals import (
@@ -34,6 +35,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -51,7 +53,13 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -1015,6 +1023,58 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
+
+    def getAccessPolicyTypes(self, pillar):
+        return [
+            ap.type
+            for ap in getUtility(IAccessPolicySource).findByPillar([pillar])]
+
+    def test_UnusedAccessPolicyPruner(self):
+        # UnusedAccessPolicyPruner removes access policies that aren't
+        # in use by artifacts or allowed by the project sharing policy.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=product)
+        self.factory.makeAccessPolicy(product, InformationType.PROPRIETARY)
+        naked_product = removeSecurityProxy(product)
+        naked_product.bug_sharing_policy = BugSharingPolicy.PROPRIETARY
+        naked_product.branch_sharing_policy = BranchSharingPolicy.PROPRIETARY
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.PRIVATESECURITY)])
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+
+        # Private and Private Security were created with the project.
+        # Proprietary was created when the branch sharing policy was set.
+        self.assertContentEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            self.getAccessPolicyTypes(product))
+
+        self.runDaily()
+
+        # Proprietary is permitted by the sharing policy, and there's a
+        # Private Security artifact. But Private isn't in use or allowed
+        # by a sharing policy, so garbo deleted it.
+        self.assertContentEqual(
+            [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
+            self.getAccessPolicyTypes(product))
+
+    def test_SpecificationSharingPolicyDefault(self):
+        switch_dbuser('testadmin')
+        # Set all existing projects to something other than None or 1.
+        store = IMasterStore(Product)
+        store.execute(Update(
+            {Product.specification_sharing_policy: 2}))
+        store.flush()
+        # Make a new product without a specification_sharing_policy.
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).specification_sharing_policy = None
+        store.flush()
+        self.assertEqual(1, store.find(Product,
+            Product.specification_sharing_policy == None).count())
+        self.runDaily()
+        self.assertEqual(0, store.find(Product,
+            Product.specification_sharing_policy == None).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'get_bug_privacy_filter',
     'get_bug_privacy_filter_terms',
+    'get_bug_bulk_privacy_filter_terms',
     'orderby_expression',
     'search_bugs',
     ]
@@ -27,6 +28,7 @@ from storm.expr import (
     Row,
     Select,
     SQL,
+    Union,
     )
 from storm.info import ClassAlias
 from storm.references import Reference
@@ -36,18 +38,22 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     DB_INCOMPLETE_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTaskSearchParams,
     )
 from lp.bugs.model.bug import (
     Bug,
@@ -63,7 +69,6 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -87,6 +92,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     get_where_for_reference,
     NullCount,
+    Unnest,
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
@@ -118,6 +124,7 @@ orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, [bugtask_join]),
     "status": (BugTaskFlat.status, []),
+    "information_type": (BugTaskFlat.information_type, []),
     "title": (Bug.title, [bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
     "dateassigned": (BugTask.date_assigned, [bugtask_join]),
@@ -377,7 +384,7 @@ def _build_query(params):
                 'Excluding conjoined tasks is not currently supported '
                 'for milestone tags')
         if not params.milestone:
-            raise ValueError(
+            raise InvalidSearchParameters(
                 "BugTaskSearchParam.exclude_conjoined cannot be True if "
                 "BugTaskSearchParam.milestone is not set")
 
@@ -572,7 +579,7 @@ def _build_query(params):
         elif params.distroseries:
             distroseries = params.distroseries
         if distroseries is None:
-            raise ValueError(
+            raise InvalidSearchParameters(
                 "Search by component requires a context with a "
                 "distribution or distroseries.")
 
@@ -803,15 +810,15 @@ def _process_order_by(params):
     # strings.
     extra_joins = []
     ambiguous = True
-    # Sorting by milestone only is a very "coarse" sort order.
-    # If no additional sort order is specified, add the bug task
+    # Sorting by milestone or information type only is a very "coarse"
+    # sort order. If no additional sort order is specified, add the bug task
     # importance as a secondary sort order.
     if len(orderby) == 1:
-        if orderby[0] == 'milestone_name':
+        if orderby[0] in ('milestone_name', 'information_type'):
             # We want the most important bugtasks first; these have
             # larger integer values.
             orderby.append('-importance')
-        elif orderby[0] == '-milestone_name':
+        elif orderby[0] in ('-milestone_name', '-information_type'):
             orderby.append('importance')
         else:
             # Other sort orders don't need tweaking.
@@ -821,13 +828,18 @@ def _process_order_by(params):
         if isinstance(orderby_col, SQLConstant):
             orderby_arg.append(orderby_col)
             continue
+        desc_search = False
         if orderby_col.startswith("-"):
-            col, sort_joins = orderby_expression[orderby_col[1:]]
-            extra_joins.extend(sort_joins)
+            orderby_col = orderby_col[1:]
+            desc_search = True
+        if orderby_col not in orderby_expression:
+            raise InvalidSearchParameters(
+                "Unrecognized order_by: %r" % (orderby_col,))
+        col, sort_joins = orderby_expression[orderby_col]
+        extra_joins.extend(sort_joins)
+        if desc_search:
             order_clause = Desc(col)
         else:
-            col, sort_joins = orderby_expression[orderby_col]
-            extra_joins.extend(sort_joins)
             order_clause = col
         if col in unambiguous_cols:
             ambiguous = False
@@ -861,18 +873,21 @@ def _build_search_text_clause(params, fast=False):
         assert params.searchtext is None, (
             'Cannot use searchtext at the same time as fast_searchtext.')
         searchtext = params.fast_searchtext
+        fti_expression = "?::tsquery"
     else:
         assert params.fast_searchtext is None, (
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
+        fti_expression = "ftq(?)"
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
         params.orderby = [
-            SQL("-rank(BugTaskFlat.fti, ftq(?))", params=(searchtext,))]
+            SQL("-rank(BugTaskFlat.fti, %s)" % fti_expression,
+                params=(searchtext,))]
 
-    return SQL("BugTaskFlat.fti @@ ftq(?)", params=(searchtext,))
+    return SQL("BugTaskFlat.fti @@ %s" % fti_expression, params=(searchtext,))
 
 
 def _build_status_clause(col, status):
@@ -897,7 +912,8 @@ def _build_status_clause(col, status):
             status = any(*DB_INCOMPLETE_BUGTASK_STATUSES)
         return search_value_to_storm_where_condition(col, status)
     else:
-        raise ValueError('Unrecognized status value: %r' % (status,))
+        raise InvalidSearchParameters(
+            'Unrecognized status value: %r' % (status,))
 
 
 def _build_exclude_conjoined_clause(milestone):
@@ -1408,6 +1424,23 @@ def _get_bug_privacy_filter_with_decorator(user):
 
 
 def get_bug_privacy_filter_terms(user, check_admin=True):
+    """Return Storm terms for filtering bugs by visibility.
+
+    The same rules as get_bug_bulk_privacy_filter_terms, except designed
+    and optimised for cases like bug searches, where we have a small
+    number of users and a lot of bugs.
+
+    Also unlike get_bug_bulk_privacy_filter_terms, this constrains
+    BugTaskFlat to user, rather than user to a bug column. It's up to
+    callsites to work with BugTaskFlat.
+
+    :param user: a Person ID value or column reference.
+    :param check_admin: add an admin role check. This is probably only
+        necessary when checking multiple users; if you're only checking a
+        specific one, you can do the admin check beforehand.
+    :return: a Storm expression relating person to bug, where bug is visible
+        to person.
+    """
     public_bug_filter = (
         BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
@@ -1445,3 +1478,51 @@ def get_bug_privacy_filter_terms(user, check_admin=True):
                         getUtility(ILaunchpadCelebrities).admin))))
 
     return filters
+
+
+def get_bug_bulk_privacy_filter_terms(person, bug):
+    """Return Storm terms for filtering people by bug visibility.
+
+    The same rules as get_bug_privacy_filter_terms, except that it's
+    designed and optimised for cases like bug notifications, where we
+    have a small number of bug and need to check which people can see
+    them.
+
+    :param person: a Person ID value or column reference.
+    :param bug: a Bug ID value or column reference.
+    :return: a Storm expression relating person to bug, where bug is visible
+        to person.
+    """
+    # This whole query is a bit ugly what with the repeated BugTaskFlat
+    # SELECTs and all that, but it's an order of magnitude faster than
+    # joining at a higher level, and a thousand times faster than
+    # get_bug_privacy_filter_terms for some cases. Test carefully
+    # (particularly with the structural subscription queries) before
+    # touching.
+
+    select_btf = (
+        lambda select, *conds: Select(
+            select, tables=[BugTaskFlat],
+            where=And(BugTaskFlat.bug == bug, *conds)))
+    # Admins, artifact grantees, and policy grantees can all see private
+    # bugs.
+    teams = Union(
+        Select(getUtility(ILaunchpadCelebrities).admin.id),
+        select_btf(Unnest(BugTaskFlat.access_grants)),
+        Select(
+            AccessPolicyGrant.grantee_id,
+            tables=[AccessPolicyGrant],
+            where=In(
+                AccessPolicyGrant.policy_id,
+                select_btf(
+                    Unnest(BugTaskFlat.access_policies)))))
+    # And we need to expand team memberships.
+    participants = Select(
+        TeamParticipation.personID,
+        tables=[TeamParticipation],
+        where=In(TeamParticipation.teamID, teams))
+    # The bug must public, or the user must satisfy the above criteria.
+    return Or(
+        Exists(select_btf(
+            1, BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))),
+        In(person, participants))

@@ -139,8 +139,8 @@ A ProductSeries can't be the target of a new bug.
     ...     target=webservice.getAbsoluteUrl('/firefox/1.0'))
     HTTP/1.1 400 Bad Request
     ...
-    A bug target must be a Project, a Distribution or a
-    DistributionSourcePackage.  Got <ProductSeries...
+    Can't create a bug on a series. Create it with a non-series
+    task instead, and target it to the series afterwards.
 
 That operation will fail if the client doesn't specify the product or
 distribution in which the bug exists.
@@ -590,7 +590,7 @@ Eric creates Fooix 0.1 and 0.2.
     >>> debuntu = factory.makeDistribution(name='debuntu', owner=eric)
     >>> debuntu50 = debuntu.newSeries(
     ...     '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, eric)
-    >>> bug = factory.makeBug(product=fooix)
+    >>> bug = factory.makeBug(target=fooix)
     >>> logout()
 
 Initially there are no nominations.
@@ -1452,7 +1452,7 @@ It can also be used to find bugs modified since a certain date.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> target = factory.makeProduct()
-    >>> bug = factory.makeBug(product=target)
+    >>> bug = factory.makeBug(target=target)
     >>> bug = removeSecurityProxy(bug)
     >>> date = bug.date_last_updated - timedelta(days=6)
     >>> logout()
@@ -1504,7 +1504,7 @@ project group.
     >>> firefox = product_set.getByName('firefox')
     >>> firefox_1_0 = milestone_set.getByNameAndProduct(
     ...     product=firefox, name='1.0')
-    >>> bug = factory.makeBug(product=firefox)
+    >>> bug = factory.makeBug(target=firefox)
     >>> bug.bugtasks[0].milestone = firefox_1_0
     >>> logout()
 

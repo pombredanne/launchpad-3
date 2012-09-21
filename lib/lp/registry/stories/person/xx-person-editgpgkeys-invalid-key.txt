@@ -8,6 +8,7 @@ Imports and setup of stub keyserver:
     ...     ILoginTokenSet)
     >>> from lp.testing.keyserver import KeyServerTac
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
 
     >>> tokenset = getUtility(ILoginTokenSet)
     >>> tac = KeyServerTac()
@@ -27,7 +28,10 @@ The following keys are used in these tests:
 
 Attempts to claim a revoked OpenPGP key fail:
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> browser = setupBrowserFreshLogin(name12)
     >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
     >>> browser.getControl(
     ...     name='fingerprint').value = (

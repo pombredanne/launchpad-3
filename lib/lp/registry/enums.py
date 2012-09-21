@@ -5,76 +5,25 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchSharingPolicy',
+    'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
-    'InformationType',
+    'EXCLUSIVE_TEAM_POLICY',
+    'INCLUSIVE_TEAM_POLICY',
     'PersonTransferJobType',
-    'PRIVATE_INFORMATION_TYPES',
-    'PUBLIC_INFORMATION_TYPES',
+    'PersonVisibility',
     'ProductJobType',
-    'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
+    'SpecificationSharingPolicy',
+    'TeamMembershipPolicy',
+    'TeamMembershipRenewalPolicy',
     ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-
-
-class InformationType(DBEnumeratedType):
-    """Information Type.
-
-    The types used to control which users and teams can see various
-    Launchpad artifacts, including bugs and branches.
-    """
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Everyone can see this information.
-        """)
-
-    UNEMBARGOEDSECURITY = DBItem(2, """
-        Unembargoed Security
-
-        Everyone can see this information pertaining to a resolved security
-        related bug.
-        """)
-
-    EMBARGOEDSECURITY = DBItem(3, """
-        Embargoed Security
-
-        Visible only to users with whom the project has shared embargoed
-        security information.
-        """)
-
-    USERDATA = DBItem(4, """
-        User Data
-
-        Visible only to users with whom the project has shared information
-        containing user data.
-        """)
-
-    PROPRIETARY = DBItem(5, """
-        Proprietary
-
-        Visible only to users with whom the project has shared proprietary
-        information.
-        """)
-
-
-PUBLIC_INFORMATION_TYPES = (
-    InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY)
-
-
-PRIVATE_INFORMATION_TYPES = (
-    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
-    InformationType.PROPRIETARY)
-
-
-SECURITY_INFORMATION_TYPES = (
-    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
 
 
 class SharingPermission(DBEnumeratedType):
@@ -99,6 +48,220 @@ class SharingPermission(DBEnumeratedType):
         Some
 
         Share bug and branch subscriptions.
+        """)
+
+
+class BranchSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Branches are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New branches are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New branches are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new branches.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Branches are always proprietary. Only people who can see the
+        project's proprietary information can create new branches.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New branches are embargoed, but can be made proprietary later. Only
+        people who can see the project's proprietary information can create
+        new branches.
+        """)
+
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new branches may be created, but existing branches may still be
+        updated.
+        """)
+
+
+class BugSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Bugs are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New bugs are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New bugs are proprietary, but can be made public later.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Bugs are always proprietary.
+        """)
+
+    FORBIDDEN = DBItem(5, """
+        Forbidden
+
+        No new bugs may be reported, but existing bugs may still be updated.
+        """)
+
+
+class SpecificationSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Specifications are public.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New specifications are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New specifications are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new specifications.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Specifications are always proprietary. Only people who can see the
+        project's proprietary information can create new specifications.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New specifications are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new specifications.
+        """)
+
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new specifications may be created, but existing specifications may
+        still be updated.
+        """)
+
+
+
+class TeamMembershipRenewalPolicy(DBEnumeratedType):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = DBItem(10, """
+        invite them to apply for renewal
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = DBItem(20, """
+        invite them to renew their own membership
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+
+class TeamMembershipPolicy(DBEnumeratedType):
+    """Team Membership Policies
+
+    The policies that describe who can be a member. The choice of policy
+    reflects the need to build a community (inclusive) versus the need to
+    control Launchpad projects, branches, and PPAs (exclusive).
+    """
+
+    OPEN = DBItem(2, """
+        Open Team
+
+        Membership is inclusive; any user or team can join, and no
+        approval is required.
+        """)
+
+    DELEGATED = DBItem(4, """
+        Delegated Team
+
+        Membership is inclusive; any user or team can join, but team
+        administrators approve direct memberships.
+        """)
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        Membership is exclusive; users and exclusive teams may ask to join.
+        """)
+
+    RESTRICTED = DBItem(3, """
+        Restricted Team
+
+        Membership is exlusive; team administrators can invite users and
+        exclusive teams to join.
+        """)
+
+
+INCLUSIVE_TEAM_POLICY = (
+    TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
+
+
+EXCLUSIVE_TEAM_POLICY = (
+    TeamMembershipPolicy.RESTRICTED, TeamMembershipPolicy.MODERATED)
+
+
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only Launchpad admins and team members can view the team's data.
+        Other users may only know of the team if it is placed
+        in a public relationship such as subscribing to a bug.
         """)
 
 

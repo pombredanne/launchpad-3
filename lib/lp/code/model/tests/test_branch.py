@@ -30,6 +30,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -39,6 +44,7 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.model.bugbranch import BugBranch
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -54,9 +60,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotBePrivate,
-    BranchCannotBePublic,
-    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -78,7 +81,10 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.branchnamespace import (
+    IBranchNamespacePolicy,
+    IBranchNamespaceSet,
+    )
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -86,6 +92,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
 from lp.code.model.branch import (
+    BranchSet,
     ClearDependentBranch,
     ClearOfficialPackageBranch,
     ClearSeriesBranch,
@@ -111,18 +118,15 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
+    BranchSharingPolicy,
+    PersonVisibility,
+    TeamMembershipPolicy,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
-    )
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -137,6 +141,7 @@ from lp.services.job.tests import (
     )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     admin_logged_in,
@@ -151,6 +156,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     time_counter,
+    WebServiceTestCase,
     ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
@@ -162,6 +168,9 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
+    )
+from lp.translations.model.translationtemplatesbuild import (
+    TranslationTemplatesBuild,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -1252,8 +1261,8 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
-            owner=self.user, title='Firefox bug', comment='blah')
-        params.setBugTarget(product=self.product)
+            owner=self.user, title='Firefox bug', comment='blah',
+            target=self.product)
         bug = getUtility(IBugSet).createBug(params)
         bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
@@ -1371,17 +1380,25 @@ class TestBranchDeletion(TestCaseWithFactory):
         job = source.create(branch)
         other_job = source.create(other_branch)
         store = Store.of(branch)
+        bfj = store.find(
+            BuildFarmJob,
+            BuildFarmJob.id == TranslationTemplatesBuild.build_farm_job_id,
+            TranslationTemplatesBuild.branch == branch).one().id
 
         branch.destroySelf(break_references=True)
 
         # The BuildQueue for the job whose branch we deleted is gone.
         buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
-        self.assertEqual([], list(buildqueue))
+        self.assertEqual(0, buildqueue.count())
+
+        # The BuildFarmJob for the TTB is gone.
+        bfjs = store.find(BuildFarmJob, BuildFarmJob.id == bfj)
+        self.assertEqual(0, bfjs.count())
 
         # The other job's BuildQueue entry is still there.
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
-        self.assertNotEqual([], list(other_buildqueue))
+        self.assertEqual(1, other_buildqueue.count())
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -1726,6 +1743,29 @@ class StackedBranches(TestCaseWithFactory):
         self.assertEqual(
             set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
 
+    def testNoBranchesStackedOn(self):
+        # getStackedBranches returns an empty collection if there are no
+        # branches stacked on it.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(set(), set(branch.getStackedOnBranches()))
+
+    def testSingleBranchStackedOn(self):
+        # some_branch.getStackedOnBranches returns a collection of branches
+        # on which some_branch is stacked.
+        branch = self.factory.makeAnyBranch()
+        stacked_branch = self.factory.makeAnyBranch(stacked_on=branch)
+        self.assertEqual(
+            set([branch]), set(stacked_branch.getStackedOnBranches()))
+
+    def testMultipleBranchesStackedOn(self):
+        # some_branch.getStackedOnBranches returns a collection of branches
+        # on which some_branch is stacked.
+        stacked_a = self.factory.makeAnyBranch()
+        stacked_b = self.factory.makeAnyBranch(stacked_on=stacked_a)
+        branch = self.factory.makeAnyBranch(stacked_on=stacked_b)
+        self.assertEqual(
+            set([stacked_a, stacked_b]), set(branch.getStackedOnBranches()))
+
 
 class BranchAddLandingTarget(TestCaseWithFactory):
     """Exercise all the code paths for adding a landing target."""
@@ -1922,8 +1962,8 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertEqual(branch.date_last_modified, date_created)
 
         params = CreateBugParams(
-            owner=branch.owner, title='A bug', comment='blah')
-        params.setBugTarget(product=branch.product)
+            owner=branch.owner, title='A bug', comment='blah',
+            target=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
         bug.linkBranch(branch, branch.owner)
@@ -2363,7 +2403,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
@@ -2388,6 +2428,51 @@ class TestBranchPrivacy(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         removeSecurityProxy(branch)._reconcileAccess()
         self.assertEqual([], get_policies_for_artifact(branch))
+
+    def test__reconcileAccess_for_personal_branch(self):
+        # _reconcileAccess uses a person policy for a personal branch.
+        team_owner = self.factory.makeTeam()
+        branch = self.factory.makePersonalBranch(
+            owner=team_owner, information_type=InformationType.USERDATA)
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).findByTeam([team_owner]),
+            get_policies_for_artifact(branch))
+
+
+class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
+    """Test Branch.getAllowedInformationTypes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_normal_user_sees_namespace_types(self):
+        # An unprivileged user sees the types allowed by the namespace.
+        branch = self.factory.makeBranch()
+        policy = IBranchNamespacePolicy(branch.namespace)
+        self.assertContentEqual(
+            policy.getAllowedInformationTypes(),
+            branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.PROPRIETARY,
+            branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.EMBARGOED,
+            branch.getAllowedInformationTypes(branch.owner))
+
+    def test_admin_sees_namespace_types(self):
+        # An admin sees all the types, since they occasionally need to
+        # override the namespace rules. This is hopefully temporary, and
+        # can go away once the new sharing rules (granting
+        # non-commercial projects limited use of private branches) are
+        # deployed.
+        branch = self.factory.makeBranch()
+        admin = self.factory.makeAdministrator()
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            branch.getAllowedInformationTypes(admin))
+        self.assertIn(
+            InformationType.PROPRIETARY,
+            branch.getAllowedInformationTypes(admin))
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
@@ -2419,12 +2504,12 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
-        # BranchCannotBePrivate is rasied.
-        branch = self.factory.makeProductBranch()
-        self.assertRaises(
-            BranchCannotBePrivate,
-            branch.setPrivate,
-            True, branch.owner)
+        # CannotChangeInformationType is raised.
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(product=product)
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
+            branch.setPrivate, True, branch.owner)
 
     def test_public_to_private_for_admins(self):
         # Admins can override the default behaviour and make any public branch
@@ -2460,17 +2545,18 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
-        # to change the branch to be public raises BranchCannotBePublic.
-        branch = self.factory.makeProductBranch(
+        # to change the branch to be public raises CannotChangeInformationType.
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(
+            product=product,
             information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertRaises(
-            BranchCannotBePublic,
-            branch.setPrivate,
-            False, branch.owner)
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
+            branch.setPrivate, False, branch.owner)
 
     def test_cannot_transition_with_private_stacked_on(self):
         # If a public branch is stacked on a private branch, it can not
@@ -2478,8 +2564,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(stacked_on=stacked_on)
-        self.assertRaises(
-            BranchCannotChangeInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Must match stacked-on branch.',
             branch.transitionToInformationType, InformationType.PUBLIC,
             branch.owner)
 
@@ -2490,9 +2576,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             stacked_on=stacked_on, information_type=InformationType.USERDATA)
         branch.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+            InformationType.PUBLICSECURITY, branch.owner)
         self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
+            InformationType.PUBLICSECURITY, branch.information_type)
 
     def test_transition_reconciles_access(self):
         # transitionToStatus calls _reconcileAccess to make the sharing
@@ -2501,106 +2587,64 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with admin_logged_in():
             branch.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, branch.owner,
+                InformationType.PRIVATESECURITY, branch.owner,
                 verify_policy=False)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             get_policies_for_artifact(branch)[0].type)
 
+    def test_can_transition_with_no_subscribers(self):
+        # Ensure that a branch can transition to another private type when
+        # there are no subscribers to the branch.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            branch.unsubscribe(owner, owner)
+        branch.transitionToInformationType(
+            InformationType.PRIVATESECURITY, owner, verify_policy=False)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
 
-class TestBranchCanBePrivate(TestCaseWithFactory):
-    """Test IBranch.canBePrivate."""
+
+class BranchModerateTestCase(TestCaseWithFactory):
+    """Test that product owners and commercial admins can moderate branches."""
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        # Use an admin user as we aren't checking edit permissions here.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+    def test_moderate_permission(self):
+        # Test the ModerateBranch security checker.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
 
-    def test_arbitary_branch(self):
-        # By default branches cannot be private.
-        branch = self.factory.makeBranch()
-        self.assertFalse(branch.canBePrivate(branch.owner))
+    def test_methods_smoketest(self):
+        # Users with launchpad.Moderate can call transitionToInformationType.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
+            branch.transitionToInformationType(
+                InformationType.PRIVATESECURITY, branch.product.owner)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
 
-    def test_admin(self):
-        # Admins can make a branch private.
-        branch = self.factory.makeBranch()
-        admin = getUtility(ILaunchpadCelebrities).admin
-        self.assertTrue(branch.canBePrivate(admin))
-
-    def test_visibility_policy_private(self):
-        # Users with a suitable  visibility policy can make a branch private.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        product = self.factory.makeProduct()
-        product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        branch = self.factory.makeBranch(product=product, owner=team)
-        self.assertTrue(branch.canBePrivate(team))
-
-    def test_private_owner(self):
-        # Private team owners can make a branch private.
-        team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        branch = self.factory.makeBranch(owner=team)
-        self.assertTrue(branch.canBePrivate(team))
-
-    def test_commercial_project(self):
-        # Branches linked to commercial projects can be private.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product)
-        user = self.factory.makePerson()
-        self.assertTrue(branch.canBePrivate(user))
-
-    def test_linked_private_bug(self):
-        # Users with access to linked private bugs can make a branch private.
-        for info_type in PRIVATE_INFORMATION_TYPES:
-            user = self.factory.makePerson()
-            bug = self.factory.makeBug(
-                owner=user, information_type=info_type)
-            branch = self.factory.makeBranch()
-            removeSecurityProxy(bug).linkBranch(branch, user)
-            self.assertTrue(branch.canBePrivate(user))
-
-    def test_linked_public_bug(self):
-        # Users with access to linked public bugs cannot make a branch private.
-        for info_type in PUBLIC_INFORMATION_TYPES:
-            user = self.factory.makePerson()
-            bug = self.factory.makeBug(
-                owner=user, information_type=info_type)
-            branch = self.factory.makeBranch()
-            removeSecurityProxy(bug).linkBranch(branch, user)
-            self.assertFalse(branch.canBePrivate(user))
-
-
-class TestBranchCanBePublic(TestCaseWithFactory):
-    """Test IBranch.canBePublic."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin user as we aren't checking edit permissions here.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-
-    def test_arbitrary_branch(self):
-        # By default branches can be public.
-        branch = self.factory.makeBranch(
-            information_type=InformationType.USERDATA)
-        self.assertTrue(branch.canBePublic(branch.owner))
-
-    def test_visibility_policy_public_not_allowed(self):
-        # Branches cannot be public if the visibility policy forbids it.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        product = self.factory.makeProduct()
-        product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE_ONLY)
-        branch = self.factory.makeBranch(
-            product=product, owner=team,
-            information_type=InformationType.USERDATA)
-        self.assertFalse(branch.canBePublic(team))
+    def test_attribute_smoketest(self):
+        # Users with launchpad.Moderate can set attrs.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.name = 'not-secret'
+            branch.description = 'redacted'
+            branch.reviewer = branch.product.owner
+            branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
+        self.assertEqual('not-secret', branch.name)
+        self.assertEqual('redacted', branch.description)
+        self.assertEqual(branch.product.owner, branch.reviewer)
+        self.assertEqual(
+            BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -2936,6 +2980,26 @@ class TestBranchSetTarget(TestCaseWithFactory):
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
 
+    def test_private_junk_branches_forbidden_for_public_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam()
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner)
+
+    def test_private_junk_branches_allowed_for_private_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+            self.assertEqual(branch.owner, branch.target.context)
+
     def test_reconciles_access(self):
         # setTarget calls _reconcileAccess to make the sharing schema
         # match the new target.
@@ -2946,6 +3010,115 @@ class TestBranchSetTarget(TestCaseWithFactory):
             branch.setTarget(user=branch.owner, project=new_product)
         self.assertEqual(
             new_product, get_policies_for_artifact(branch)[0].pillar)
+
+    def test_reconciles_access_junk_branch(self):
+        # setTarget calls _reconcileAccess to make the sharing schema
+        # correct for a private junk branch.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+        self.assertEqual(
+            owner, get_policies_for_artifact(branch)[0].person)
+
+    def test_public_branch_to_proprietary_only_project(self):
+        # A branch cannot be moved to a target where the sharing policy does
+        # not allow it.
+        owner = self.factory.makePerson()
+        commercial_product = self.factory.makeProduct(
+            owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner,
+                commercial_product)
+
+
+def make_proposal_and_branch_revision(factory, revno, revision_id,
+                                      userdata_target=False):
+    if userdata_target:
+        information_type = InformationType.USERDATA
+    else:
+        information_type = InformationType.PUBLIC
+    target_branch = factory.makeAnyBranch(information_type=information_type)
+    factory.makeBranchRevision(revision_id=revision_id,
+                               branch=target_branch,
+                               sequence=revno)
+    return factory.makeBranchMergeProposal(merged_revno=revno,
+                                           target_branch=target_branch)
+
+
+class TestGetMergeProposalsWS(WebServiceTestCase):
+
+    def test_getMergeProposals(self):
+        """getMergeProposals works as expected over the API."""
+        bmp = make_proposal_and_branch_revision(self.factory, 5, 'rev-id',
+                                                userdata_target=True)
+        transaction.commit()
+        user = removeSecurityProxy(bmp).target_branch.owner
+        service = self.factory.makeLaunchpadService(
+            user, version=self.ws_version)
+        result = service.branches.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([self.wsObject(bmp, user)], list(result))
+
+
+class TestGetMergeProposals(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetMergeProposals, self).setUp()
+        self.branch_set = BranchSet()
+
+    def test_getMergeProposals_with_no_merged_revno(self):
+        """Merge proposals with no merged revno are not found."""
+        make_proposal_and_branch_revision(self.factory, None, 'rev-id')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([], list(result))
+
+    def test_getMergeProposals_with_any_merged_revno(self):
+        """Any arbitrary revno will connect a revid to a proposal."""
+        bmp = make_proposal_and_branch_revision(
+            self.factory, self.factory.getUniqueInteger(), 'rev-id')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp], list(result))
+
+    def test_getMergeProposals_correct_merged_revno(self):
+        """Only proposals with the correct merged_revno match."""
+        bmp1 = make_proposal_and_branch_revision(self.factory, 4, 'rev-id')
+        bmp2 = make_proposal_and_branch_revision(self.factory, 5, 'other')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp1], list(result))
+        result = self.branch_set.getMergeProposals(merged_revision='other')
+        self.assertEqual([bmp2], list(result))
+
+    def test_getMergeProposals_correct_branch(self):
+        """Only proposals with the correct branch match."""
+        bmp1 = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
+        make_proposal_and_branch_revision(self.factory, 5, 'other')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp1], list(result))
+
+    def test_getMergeProposals_skips_hidden(self):
+        """Proposals not visible to the user are skipped."""
+        make_proposal_and_branch_revision(
+            self.factory, 5, 'rev-id', userdata_target=True)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=self.factory.makePerson())
+        self.assertEqual([], list(result))
+
+    def test_getMergeProposals_shows_visible_userdata(self):
+        """Proposals visible to the user are listed."""
+        bmp = make_proposal_and_branch_revision(
+            self.factory, 5, 'rev-id', userdata_target=True)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=bmp.target_branch.owner)
+        self.assertEqual([bmp], list(result))
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):
@@ -3174,3 +3347,20 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_transitionToInformationType(self):
+        """Test transitionToInformationType() API arguments."""
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            db_branch = self.factory.makeBranch(product=product)
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root=self.layer.appserver_root_url('api'))
+
+        branch = ws_object(launchpad, db_branch)
+        branch.transitionToInformationType(information_type='Proprietary')
+
+        updated_branch = ws_object(launchpad, db_branch)
+        self.assertEqual('Proprietary', updated_branch.information_type)

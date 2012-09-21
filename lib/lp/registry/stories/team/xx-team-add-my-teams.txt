@@ -1,7 +1,7 @@
 = Propose/add your teams as member of another one =
 
 Any team administrator is allowed to propose/add (depending on the
-subscription policy) their teams as members of another team.
+membership policy) their teams as members of another team.
 
 This is done from the +add-my-teams page, which is linked from a team's
 home page.
@@ -73,7 +73,7 @@ members.
 
     >>> admin_browser.open('http://launchpad.dev/~name21/+edit')
     >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    ...     name='field.membership_policy').displayValue = ['Open Team']
     >>> admin_browser.getControl('Save').click()
     >>> admin_browser.title
     'Hoary Gnome Team in Launchpad'
@@ -95,7 +95,7 @@ your teams as members.
 
     >>> admin_browser.open('http://launchpad.dev/~ubuntu-team/+edit')
     >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').displayValue = ['Restricted Team']
+    ...     name='field.membership_policy').displayValue = ['Restricted Team']
     >>> admin_browser.getControl('Save').click()
     >>> admin_browser.title
     'Ubuntu Team in Launchpad'
@@ -135,7 +135,7 @@ anymore of the Hoary Gnome Team:
 
     >>> admin_browser.open('http://launchpad.dev/~name21/+edit')
     >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').displayValue = ['Open']
+    ...     name='field.membership_policy').displayValue = ['Open']
     >>> admin_browser.getControl('Save').click()
 
     >>> browser.open('http://launchpad.dev/~name21/+members')

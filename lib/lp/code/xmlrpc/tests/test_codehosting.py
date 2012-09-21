@@ -16,6 +16,7 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.code.bzr import (
     BranchFormat,
@@ -43,7 +44,6 @@ from lp.code.xmlrpc.codehosting import (
     run_with_login,
     )
 from lp.codehosting.inmemory import InMemoryFrontend
-from lp.registry.enums import InformationType
 from lp.services.database.constants import UTC_NOW
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.webapp.interfaces import ILaunchBag

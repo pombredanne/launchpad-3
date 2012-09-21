@@ -12,10 +12,10 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -105,9 +105,9 @@ class FileBugAPI(LaunchpadXMLRPCView):
                     subscriber_list.append(subscriber)
 
         if security_related:
-            information_type = InformationType.EMBARGOEDSECURITY
+            information_type = InformationType.PRIVATESECURITY
         else:
-            information_type = InformationType.PUBLIC
+            information_type = None
 
         params = CreateBugParams(
             owner=self.user, title=summary, comment=comment,

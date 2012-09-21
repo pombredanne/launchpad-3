@@ -5,7 +5,6 @@ __metaclass__ = type
 
 
 import re
-
 from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,
@@ -13,7 +12,6 @@ from soupmatchers import (
     )
 
 from lp.app.enums import ServiceUsage
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -95,8 +93,6 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
         distroseries = self.factory.makeUbuntuDistroSeries()
         self.sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
@@ -104,7 +100,9 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             sourcepackage=self.sourcepackage, name='ubuntu-only')
         self.shared_template_ubuntu_side = self.factory.makePOTemplate(
             sourcepackage=self.sourcepackage, name='shared-template')
-        self.productseries = self.factory.makeProductSeries()
+        self.privileged_user = self.factory.makePerson(karma=200)
+        product = self.factory.makeProduct(owner=self.privileged_user)
+        self.productseries = self.factory.makeProductSeries(product=product)
         self.shared_template_upstream_side = self.factory.makePOTemplate(
             productseries=self.productseries, name='shared-template')
         self.upstream_only_template = self.factory.makePOTemplate(
@@ -569,8 +567,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.set_packaging_link.escapedtext)
 
-    def test_set_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_set_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "set packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -591,7 +589,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='set-packaging', url='+edit-packaging', icon='add',
             text='Set upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -620,8 +618,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.change_packaging_link.escapedtext)
 
-    def test_change_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_change_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "change packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -642,7 +640,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='change-packaging', url='+edit-packaging', icon='edit',
             text='Change upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -671,8 +669,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             self.assertEqual(
                 expected, self.view.remove_packaging_link.escapedtext)
 
-    def test_remove_packaging_link__with_packaging_any_user(self):
-        # If packaging is configured, arbitrary users do no see
+    def test_remove_packaging_link__with_packaging_probationary_user(self):
+        # If packaging is configured, probationary users do no see
         # the "remove packaging" link.
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
@@ -693,7 +691,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
             text='Remove upstream link', visible=True)
-        with person_logged_in(self.sourcepackage.packaging.owner):
+        with person_logged_in(self.privileged_user):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
             view.initialize()
@@ -706,11 +704,6 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     """Test for the sharing details page of a source package."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSourcePackageSharingDetailsPage, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
 
     def _makeSourcePackage(self):
         """Make a source package in Ubuntu."""
@@ -1128,11 +1121,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
     """Tests for Notifications in SourcePackageTranslationSharingView."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTranslationSharingDetailsViewNotifications, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
 
     def _getNotifications(self, view):
         notifications = view.request.response.notifications

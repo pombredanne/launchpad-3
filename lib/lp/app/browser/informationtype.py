@@ -8,54 +8,25 @@ __all__ = [
 
 from lazr.restful.interfaces import IJSONRequestCache
 
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
-from lp.registry.vocabularies import InformationTypeVocabulary
-from lp.services.features import getFeatureFlag
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.utilities import json_dump_information_types
 
 
 class InformationTypePortletMixin:
 
     def initialize(self):
         cache = IJSONRequestCache(self.request)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary(self.context)]
-        cache.objects['private_types'] = [
-            type.name for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_userdata_as_private'] = (
-            self.show_userdata_as_private)
-
-    @property
-    def show_userdata_as_private(self):
-        return bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
+        json_dump_information_types(
+            cache,
+            self.context.getAllowedInformationTypes(self.user))
 
     @property
     def information_type(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        title = self.context.information_type.title
-        if (self.context.information_type == InformationType.USERDATA and
-            self.show_userdata_as_private):
-            return 'Private'
-        return title
+        return self.context.information_type.title
 
     @property
     def information_type_description(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        description = self.context.information_type.description
-        if (self.context.information_type == InformationType.USERDATA and
-            self.show_userdata_as_private):
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-        return description
+        return self.context.information_type.description
 
     @property
     def information_type_css(self):

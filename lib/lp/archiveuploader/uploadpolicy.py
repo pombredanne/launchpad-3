@@ -212,8 +212,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         size quota.Binary upload will be skipped to avoid unnecessary hassle
         dealing with FAILEDTOUPLOAD builds.
         """
-        # Skip the check for binary uploads.
-        if upload.binaryful:
+        # Skip the check for binary uploads or archives with no quota.
+        if upload.binaryful or self.archive.authorized_size is None:
             return
 
         # Calculate the incoming upload total size.
@@ -247,15 +247,15 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is targeted to any PPA, checks if the upload is within
-        the allowed quota.
+        Also check if the upload is within the allowed quota.
         """
-        if upload.is_ppa:
-            self.checkArchiveSizeQuota(upload)
-        else:
-            if self.pocket == PackagePublishingPocket.SECURITY:
-                upload.reject(
-                    "This upload queue does not permit SECURITY uploads.")
+        self.checkArchiveSizeQuota(upload)
+        # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+        # to SECURITY will not be built.  See
+        # BuildPackageJob.postprocessCandidate.
+        if self.pocket == PackagePublishingPocket.SECURITY:
+            upload.reject(
+                "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
@@ -319,6 +319,8 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def autoApprove(self, upload):
         """Check that all custom files in this upload can be auto-approved."""
+        if upload.is_ppa:
+            return True
         if upload.binaryful:
             for custom_file in upload.changes.custom_files:
                 if not custom_file.autoApprove():

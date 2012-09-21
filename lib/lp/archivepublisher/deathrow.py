@@ -24,6 +24,10 @@ from lp.soyuz.interfaces.publishing import (
     MissingSymlinkInPool,
     NotInPool,
     )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -104,10 +108,6 @@ class DeathRow:
 
         Both sources and binaries are lists.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-
         sources = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
@@ -208,12 +208,6 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackagePublishingHistory,
-            SourcePackagePublishingHistory,
-            )
-
         bytes = 0
         condemned_files = set()
         condemned_records = set()

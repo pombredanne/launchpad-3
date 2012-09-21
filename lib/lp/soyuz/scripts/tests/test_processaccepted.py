@@ -6,12 +6,17 @@ __metaclass__ = type
 from StringIO import StringIO
 from textwrap import dedent
 
+from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.interfaces.processacceptedbugsjob import (
+    IProcessAcceptedBugsJobSource,
+    )
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
     close_bugs_for_sourcepublication,
@@ -103,8 +108,8 @@ class TestClosingBugs(TestCaseWithFactory):
         bugs = self.makeChangelogWithBugs(spr)
 
         # Call the method and test it's closed the bugs.
-        close_bugs_for_sourcepackagerelease(spr, changesfile_object=None,
-                                            since_version="1.0-1")
+        close_bugs_for_sourcepackagerelease(
+            spr.upload_distroseries, spr, None, since_version="1.0-1")
         for bug, bugtask in bugs:
             if bug.id != bugs[5][0].id:
                 self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
@@ -144,6 +149,11 @@ class TestClosingPrivateBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertBugChanges(self, series, spr, bug):
+        with celebrity_logged_in("admin"):
+            self.assertEqual(
+                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
+
     def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
         """close_bugs_for_sourcepackagerelease works with private bugs."""
         changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
@@ -151,19 +161,38 @@ class TestClosingPrivateBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
+        series = spr.upload_distroseries
+        dsp = series.distribution.getSourcePackage(spr.sourcepackagename)
         bug = self.factory.makeBug(
-            sourcepackagename=spr.sourcepackagename,
-            distribution=spr.upload_distroseries.distribution,
-            information_type=InformationType.USERDATA)
+            target=dsp, information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
 
         with person_logged_in(archive_admin):
             # The archive admin user can't normally see this bug.
             self.assertRaises(ForbiddenAttribute, bug, 'status')
             # But the bug closure should work.
-            close_bugs_for_sourcepackagerelease(spr, changes)
+            close_bugs_for_sourcepackagerelease(series, spr, changes)
 
         # Verify it was closed.
+        self.assertBugChanges(series, spr, bug)
+
+
+class TestClosingPrivateBugsJob(TestClosingPrivateBugs):
+    # Repeat TestClosingPrivateBugs, but with the feature flag set to cause
+    # close_bugs_for_sourcepackagerelease to create a job rather than
+    # closing bugs immediately.
+
+    def setUp(self):
+        super(TestClosingPrivateBugsJob, self).setUp()
+        self.useFixture(FeatureFixture(
+            {"soyuz.processacceptedbugsjob.enabled": "on"},
+            ))
+
+    def assertBugChanges(self, series, spr, bug):
         with celebrity_logged_in("admin"):
-            self.assertEqual(
-                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)
+            self.assertEqual(BugTaskStatus.NEW, bug.default_bugtask.status)
+        job_source = getUtility(IProcessAcceptedBugsJobSource)
+        [job] = list(job_source.iterReady())
+        self.assertEqual(series, job.distroseries)
+        self.assertEqual(spr, job.sourcepackagerelease)
+        self.assertEqual([bug.id], job.bug_ids)

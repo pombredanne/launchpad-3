@@ -23,7 +23,7 @@
   <script type="text/javascript"
           tal:content="string:
     LPJS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit',
+              'lp.ui.choiceedit',
               'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
               'lp.code.branch.subscription',

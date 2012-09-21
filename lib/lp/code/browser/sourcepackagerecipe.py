@@ -11,6 +11,7 @@ __all__ = [
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
     'SourcePackageRecipeRequestBuildsView',
+    'SourcePackageRecipeRequestDailyBuildView',
     'SourcePackageRecipeView',
     ]
 
@@ -98,7 +99,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.model.branchtarget import PersonBranchTarget
-from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
+from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
@@ -301,7 +302,9 @@ class SourcePackageRecipeView(LaunchpadView):
     def name_widget(self):
         name = ISourcePackageRecipe['name']
         title = "Edit the recipe name"
-        return TextLineEditorWidget(self.context, name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def distroseries_widget(self):
@@ -364,7 +367,8 @@ def builds_for_recipe(recipe):
         return builds
 
 
-def new_builds_notification_text(builds, already_pending=None):
+def new_builds_notification_text(builds, already_pending=None,
+                                 contains_unbuildable=False):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
@@ -374,6 +378,9 @@ def new_builds_notification_text(builds, already_pending=None):
         builds_text = "%d new recipe builds have been queued." % nr_builds
     if nr_builds > 0 and already_pending:
         builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    if contains_unbuildable:
+        builds_text = ("%s<p>The recipe contains an obsolete distroseries, "
+            "which has been skipped.</p>" % builds_text)
     return structured(builds_text)
 
 
@@ -552,9 +559,12 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
                     "../templates/sourcepackagerecipe-builds.pt")
             return template(self)
         else:
+            contains_unbuildable = recipe.containsUnbuildableSeries(
+                recipe.daily_build_archive)
             self.next_url = canonical_url(recipe)
             self.request.response.addNotification(
-                    new_builds_notification_text(builds))
+                new_builds_notification_text(
+                    builds, contains_unbuildable=contains_unbuildable))
 
     @property
     def builds(self):
@@ -777,7 +787,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @property
     def initial_values(self):
-        distroseries = get_buildable_distroseries_set(self.user)
+        distroseries = BuildableDistroSeries.findSeries(self.user)
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {

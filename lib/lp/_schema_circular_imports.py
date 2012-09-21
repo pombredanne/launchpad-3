@@ -59,7 +59,10 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branch import (
+    IBranch,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -263,6 +266,9 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IBranch, 'getMergeProposals', IBranchMergeProposal)
 
+patch_collection_return_type(
+    IBranchSet, 'getMergeProposals', IBranchMergeProposal)
+
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
@@ -387,6 +393,7 @@ patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_property(
     IArchive, 'enabled_restricted_families', IProcessorFamily)
+patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(
@@ -406,6 +413,10 @@ patch_collection_return_type(
 patch_collection_return_type(
     IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
 patch_collection_return_type(
+    IArchive, 'getQueueAdminsForPocket', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPocketsForQueueAdmin', IArchivePermission)
+patch_collection_return_type(
     IArchive, 'getPocketsForUploader', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getUploadersForPocket', IArchivePermission)
@@ -414,6 +425,7 @@ patch_entry_return_type(IArchive, 'newPackagesetUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPocketUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPocketQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'copyPackage', 'from_archive', IArchive)
@@ -449,9 +461,21 @@ patch_choice_parameter_type(
 patch_choice_parameter_type(
     IArchive, 'getUploadersForPocket', 'pocket', PackagePublishingPocket)
 patch_choice_parameter_type(
+    IArchive, 'getQueueAdminsForPocket', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'getQueueAdminsForPocket', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
     IArchive, 'newPocketUploader', 'pocket', PackagePublishingPocket)
 patch_choice_parameter_type(
+    IArchive, 'newPocketQueueAdmin', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'newPocketQueueAdmin', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
     IArchive, 'deletePocketUploader', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'deletePocketQueueAdmin', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'deletePocketQueueAdmin', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
@@ -789,7 +813,7 @@ patch_operations_explicit_version(
     IBug, 'beta', "addAttachment", "addNomination", "addTask", "addWatch",
     "canBeNominatedFor", "getHWSubmissions", "getNominationFor",
     "getNominations", "isExpirable", "isUserAffected",
-    "linkCVEAndReturnNothing", "linkHWSubmission", "markAsDuplicate",
+    "linkCVE", "linkHWSubmission", "markAsDuplicate",
     "markUserAffected", "newMessage", "setCommentVisibility", "setPrivate",
     "setSecurityRelated", "subscribe", "unlinkCVE", "unlinkHWSubmission",
     "unsubscribe", "unsubscribeFromDupes")

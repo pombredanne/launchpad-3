@@ -28,6 +28,7 @@ __all__ = [
     'IProductSeries',
     'IProductSet',
     'IProjectGroup',
+    'IProjectGroupMilestone',
     'IProjectGroupSet',
     'IServiceFactory',
     'ISharingService',
@@ -71,6 +72,7 @@ from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
+    IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
     IPerson,

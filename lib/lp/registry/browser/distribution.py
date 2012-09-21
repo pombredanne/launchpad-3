@@ -108,7 +108,6 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
@@ -313,12 +312,7 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
-        text = 'Sharing'
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
-        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
-            or bool(getFeatureFlag(enabled_writable_flag)))
-        return Link('+sharing', text, icon='edit', enabled=enabled)
+        return Link('+sharing', 'Sharing', icon='edit')
 
     @cachedproperty
     def links(self):
@@ -501,12 +495,7 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     @property
     def links(self):
-        links = [
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            'filebug',
-            ]
+        links = ['bugsupervisor', 'cve', 'filebug']
         add_subscribe_link(links)
         return links
 

@@ -29,10 +29,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.publisher import (

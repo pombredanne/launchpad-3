@@ -1,6 +1,5 @@
-= Creating a new team =
-
-== As a regular user ==
+Creating a new team
+-------------------
 
 Regular users can create teams.
 
@@ -16,10 +15,7 @@ Regular users can create teams.
 
     >>> browser.getControl(name='field.name').value = 'myemail'
     >>> browser.getControl('Display Name').value = 'your own team'
-    >>> browser.getControl(
-    ...     'Team Description').value = 'my own team description'
     >>> browser.getControl('Subscription period').value = '365'
-    >>> browser.getControl('Renewal period').value = '365'
     >>> browser.getControl('Open Team').selected = True
     >>> browser.getControl('Create').click()
 
@@ -35,108 +31,9 @@ The owner of a team is always added as an administrator of his team.
     >>> [a.name for a in Person.byName('myemail').adminmembers]
     [u'name12']
 
-When creating a new team you can optionally provide a contact email address
-for that team. This contact address must not be registered in Launchpad.
 
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-
-    >>> browser.getControl(name='field.name').value = 'newtestteam'
-    >>> browser.getControl('Display Name').value = 'newtestteam'
-    >>> browser.getControl(
-    ...     'Contact Email Address').value = 'test@canonical.com'
-    >>> browser.getControl('Team Description').value = 'another test team'
-    >>> browser.getControl('Moderated Team').selected = True
-    >>> browser.getControl('Create').click()
-
-    >>> for tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print extract_text(tag)
-    There is 1 error.
-    test@canonical.com is already registered in Launchpad and is associated
-    with Sample Person.
-
-We also check if the given email address is syntatically valid.
-
-    >>> browser.getControl(
-    ...     'Contact Email Address').value = 'testcanonical.com'
-    >>> browser.getControl('Create').click()
-
-    >>> for tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print extract_text(tag)
-    There is 1 error.
-    testcanonical.com isn't a valid email address.
-
-Now we enter a valid email address that's not registered in Launchpad.
-
-    >>> browser.getControl('Contact Email Address').value = 'team-foo@bar.com'
-    >>> browser.getControl('Create').click()
-
-    >>> browser.url
-    'http://launchpad.dev/~newtestteam'
-
-    >>> for tag in find_tags_by_class(
-    ...     browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    A confirmation message has been sent to 'team-foo@bar.com'. Follow the
-    instructions in that message to confirm the new contact address for this
-    team. (If the message doesn't arrive in a few minutes, your mail provider
-    might use 'greylisting', which could delay the message for up to an hour
-    or two.)
-
-== As an administrator ==
-
-Administrators can create teams in much the same manner but they will
-also be given the ability to set the team's visibility
-
-    >>> admin_browser.open('http://launchpad.dev/people/')
-    >>> admin_browser.getLink('Register a team').click()
-
-    >>> admin_browser.url
-    'http://launchpad.dev/people/+newteam'
-
-    >>> admin_browser.title
-    'Register a new team in Launchpad'
-
-    >>> admin_browser.getControl(name='field.name').value = 'super-secret'
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
-    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
-    >>> admin_browser.getControl(
-    ...     'Team Description').value = 'my own team description'
-    >>> admin_browser.getControl('Subscription period').value = '365'
-    >>> admin_browser.getControl('Renewal period').value = '365'
-    >>> admin_browser.getControl('Open Team').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').value = ['RESTRICTED']
-    >>> admin_browser.getControl('Create').click()
-
-    >>> admin_browser.url
-    'http://launchpad.dev/~super-secret'
-
-    >>> admin_browser.title
-    'Shhhh in Launchpad'
-
-A team with Private visibility must be Restricted.
-
-    >>> admin_browser.open('http://launchpad.dev/people/')
-    >>> admin_browser.getLink('Register a team').click()
-
-    >>> admin_browser.getControl(name='field.name').value = (
-    ...     'super-duper-secret')
-    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
-    >>> admin_browser.getControl(
-    ...     'Team Description').value = 'my own team description'
-    >>> admin_browser.getControl('Subscription period').value = '365'
-    >>> admin_browser.getControl('Renewal period').value = '365'
-    >>> admin_browser.getControl('Open Team').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').value = ['OPEN']
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
-    >>> admin_browser.getControl('Create').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    Private teams must have a Restricted subscription policy.
-
-= Joining a team =
+Joining a team
+--------------
 
 Karl will join the newly created team.
 
@@ -144,7 +41,7 @@ Karl will join the newly created team.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Open Team
 
     >>> browser.getLink('Join the team').click()
@@ -184,10 +81,10 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> from lp.registry.model.person import Person
     >>> myemail = Person.selectOneBy(name='myemail')
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> myemail.membership_policy = TeamMembershipPolicy.MODERATED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -195,7 +92,7 @@ approved, though.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Moderated Team
 
     >>> browser.getLink('Join the team').click()
@@ -229,7 +126,7 @@ the 'Cancel' button, going back to the team's page...
 
 If it was a restricted team, users wouldn't even see a link to join the team.
 
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> myemail.membership_policy = TeamMembershipPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -239,7 +136,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Restricted Team
 
     >>> browser.getLink('Join the team')
@@ -284,7 +181,9 @@ James Blackwell as a proposed one and Jeff Waugh won't be there at all.
     ...     print link.renderContents()
     James Blackwell
 
-= Managing team members =
+
+Managing team members
+---------------------
 
 On a team's +members page we can see all active members of that team, as
 well as the former members and the ones which proposed themselves or that
@@ -362,7 +261,8 @@ without bounds, so they are paginated.
     >>> config_data = config.pop('default-batch-size')
 
 
-== Approving a proposed member ==
+Approving a proposed member
+---------------------------
 
 James Blackwell wants to join the team and we know he made some contributions
 in the past, so we'll approve his membership.
@@ -388,7 +288,9 @@ in the past, so we'll approve his membership.
     Karl Tilbury
     Sample Person
 
-== Promoting/Demoting an existing member ==
+
+Promoting/Demoting an existing member
+-------------------------------------
 
 We'll now promote jblack to an administrator of this team.
 
@@ -414,7 +316,9 @@ We can also demote him if he doesn't behave himself.
     >>> browser.getControl(name='admin').value
     ['no']
 
-== Deactivating an existing member ==
+
+Deactivating an existing member
+-------------------------------
 
 Karl Tilbury has made no contributions lately, so we'll deactivate his
 membership for now.
@@ -437,11 +341,13 @@ membership for now.
 Attempt to deactivate the user again using our original browser2
 instance. No crashes in sight:
 
-  >>> browser2.getControl('Deactivate').click()
-  >>> browser2.url
-  'http://launchpad.dev/~myemail/+members'
+    >>> browser2.getControl('Deactivate').click()
+    >>> browser2.url
+    'http://launchpad.dev/~myemail/+members'
 
-== Reactivating a deactivated member ==
+
+Reactivating a deactivated member
+---------------------------------
 
 Later we may decide to reactivate Karl Tilbury's membership, so this must be
 possible.

@@ -358,7 +358,7 @@ information types.
 First we'll change the information type of one of the bugtasks (we are still
 logged in from earlier):
 
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> previous_information_type = open_bugtasks[0].bug.information_type
     >>> open_bugtasks[0].bug.transitionToInformationType(
     ...     InformationType.USERDATA, getUtility(ILaunchBag).user)

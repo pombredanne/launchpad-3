@@ -1,4 +1,4 @@
-<div id='sharee-table-listing'
+<div id='grantee-table-listing'
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -7,7 +7,7 @@
 <div class="lesser"
     tal:content="structure context/@@+navigation-links-upper" />
 
-<table id="sharee-table" class="disclosure listing">
+<table id="grantee-table" class="disclosure listing">
     <thead>
         <tr>
             <th>User or Team</th>
@@ -15,7 +15,7 @@
             <th>Shared items</th>
         </tr>
     </thead>
-    <tr id='sharee-table-loading'><td colspan='3' style="padding-left: 0.25em">
+    <tr id='grantee-table-loading'><td colspan='3' style="padding-left: 0.25em">
         <img class="spinner" src="/@@/spinner" alt="Loading..." />
         Loading...
     </td></tr>

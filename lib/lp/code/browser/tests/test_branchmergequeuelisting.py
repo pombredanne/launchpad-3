@@ -11,7 +11,7 @@ from mechanize import LinkNotFoundError
 import soupmatchers
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,

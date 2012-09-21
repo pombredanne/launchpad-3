@@ -124,7 +124,7 @@
         facet="specifications"
         class="lp.blueprints.browser.specification.NewSpecificationFromSprintView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.blueprints.interfaces.sprint.ISprint"
@@ -276,6 +276,12 @@
                 template="../templates/specification-portlet-blocked.pt"/>
         </browser:pages>
         <browser:page
+            name="+secrecy"
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specification.SpecificationInformationTypeEditView"
+            permission="launchpad.Edit"
+            template="../templates/bug-secrecy.pt"/>
+        <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+portlet-subscribers"
             class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
@@ -311,6 +317,9 @@
             <browser:page
                 name="+listing-detailed"
                 template="../templates/specification-listing-detailed.pt"/>
+            <browser:page
+                name="+portlet-privacy"
+                template="../templates/blueprint-portlet-privacy.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -501,7 +510,7 @@
             name="+new"
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             permission="launchpad.AnyPerson"
-            template="../../app/templates/generic-edit.pt"
+            template="../templates/addspec.pt"
             class="lp.blueprints.browser.specification.NewSpecificationFromRootView"/>
         <browser:pages
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
@@ -557,7 +566,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.blueprints.browser.specification.NewSpecificationFromDistributionView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
 
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -568,7 +577,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.blueprints.browser.specification.NewSpecificationFromDistroSeriesView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
 
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
@@ -592,21 +601,21 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
 
     <browser:page
         name="+addspec"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.blueprints.browser.specification.NewSpecificationFromProductView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
 
     <browser:page
         name="+addspec"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/addspec.pt" />
     </facet>
 
     <browser:page

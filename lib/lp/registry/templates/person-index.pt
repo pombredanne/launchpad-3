@@ -56,11 +56,9 @@
   tal:define="overview_menu context/menu:overview">
   <tal:is-valid-person tal:condition="context/is_valid_person">
 
-    <div
-      class="description"
-      tal:condition="view/homepage_content"
-      tal:content="structure view/homepage_content"
-    />
+    <div class="description">
+      <tal:widget replace="structure view/description_widget" />
+   </div>
     <ul class="horizontal">
       <tal:comment condition="nothing">
         This link name is different from the menu, since it refers

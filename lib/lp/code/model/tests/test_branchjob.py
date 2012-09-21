@@ -28,6 +28,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.bzr import (
     branch_revision_history,
     BranchFormat,
@@ -172,6 +173,23 @@ class TestBranchScanJob(TestCaseWithFactory):
             job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
+
+    def test_run_with_private_linked_bug(self):
+        """Ensure the job scans a branch with a private bug in the revprops."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        product = self.factory.makeProduct()
+        private_bug = self.factory.makeBug(
+            target=product, information_type=InformationType.USERDATA)
+        bug_line = 'https://launchpad.net/bugs/%s fixed' % private_bug.id
+        with override_environ(BZR_EMAIL='me@example.com'):
+            bzr_tree.commit(
+                'First commit', rev_id='rev1', revprops={'bugs': bug_line})
+        job = BranchScanJob.create(db_branch)
+        with dbuser(config.branchscanner.dbuser):
+            job.run()
+        self.assertEqual(db_branch.revision_count, 1)
+        self.assertTrue(private_bug.hasBranch(db_branch))
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):

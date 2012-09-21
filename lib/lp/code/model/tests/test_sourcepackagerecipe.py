@@ -15,12 +15,14 @@ from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -50,8 +52,8 @@ from lp.code.model.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import (
@@ -60,6 +62,7 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
@@ -69,11 +72,11 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.testing import (
     ANONYMOUS,
-    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     ws_object,
     )
@@ -81,17 +84,17 @@ from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
-from lp.testing.matchers import DoesNotSnapshot
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    HasQueryCount,
+    )
+from lp.testing.pages import webservice_for_person
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSourcePackageRecipe, self).setUp()
-        self.useContext(feature_flags())
 
     def test_implements_interface(self):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
@@ -738,6 +741,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual([], list(recipe.completed_builds))
         self.assertEqual([], list(recipe.pending_builds))
 
+    def test_containsUnbuildableSeries(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertFalse(recipe.containsUnbuildableSeries(
+            recipe.daily_build_archive))
+
+    def test_containsUnbuildableSeries_with_obsolete_series(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        warty = self.factory.makeSourcePackageRecipeDistroseries()
+        removeSecurityProxy(warty).status = SeriesStatus.OBSOLETE
+        self.assertTrue(recipe.containsUnbuildableSeries(
+            recipe.daily_build_archive))
+
+    def test_performDailyBuild_filters_obsolete_series(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        warty = self.factory.makeSourcePackageRecipeDistroseries()
+        hoary = self.factory.makeSourcePackageRecipeDistroseries(name='hoary')
+        with person_logged_in(recipe.owner):
+            recipe.updateSeries((warty, hoary))
+        removeSecurityProxy(warty).status = SeriesStatus.OBSOLETE
+        builds = recipe.performDailyBuild()
+        self.assertEqual([build.recipe for build in builds], [recipe])
+
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
@@ -1178,3 +1203,16 @@ class TestWebservice(TestCaseWithFactory):
                 "archive": '%s/%s' %
                            (archive.owner.name, archive.name)})
         self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
+
+    def test_query_count_of_webservice_recipe(self):
+        owner = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe(owner=owner)
+        webservice = webservice_for_person(owner)
+        with person_logged_in(owner):
+            url = canonical_url(recipe, force_local_path=True)
+        store = Store.of(recipe)
+        store.flush()
+        store.invalidate()
+        with StormStatementRecorder() as recorder:
+            webservice.get(url)
+        self.assertThat(recorder, HasQueryCount(Equals(28)))

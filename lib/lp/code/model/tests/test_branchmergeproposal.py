@@ -23,6 +23,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -62,11 +63,8 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.enums import TeamMembershipPolicy
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
@@ -172,12 +170,12 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             self.assertEqual([owner], subscriptions)
 
     def test_closed_reviewer_with_private_branch(self):
-        """If the reviewer is a closed team, they are subscribed."""
+        """If the reviewer is a exclusive team, they are subscribed."""
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         trunk = self.factory.makeBranch(product=product, owner=owner)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA, owner=owner,
             product=product)
@@ -429,6 +427,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIsNot(None, proposal.date_reviewed)
         self.assertIsNot(None, proposal.reviewed_revision_id)
         proposal.setAsWorkInProgress()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
+
+    def test_transitions_from_rejected_to_merged_resets_reviewer(self):
+        # When a rejected proposal ends up being merged anyway, reset the
+        # reviewer details as they did not approve as is otherwise assumed.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.REJECTED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.markAsMerged()
         self.assertIs(None, proposal.reviewer)
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
@@ -1570,7 +1582,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 
     def test_nominate_team_grants_visibility(self):
         reviewer = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):

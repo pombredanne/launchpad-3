@@ -58,31 +58,12 @@ Editing bug tags
 ----------------
 
 When editing bug tags, we want to discourage people from adding new
-tags. Therefore, if you try to add a tag that hasn't been used in the
-current context before, you have to confirm that you indeed want to add
-the tag.
+tags.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.getLink(url="+edit").click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-
-    >>> user_browser.getControl('Tags').value = 'new-tag'
-    >>> user_browser.getControl('Change').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-    >>> print user_browser.contents
-    <...The tag "new-tag" hasn't been used by Mozilla Firefox before...
-
-Here we can confirm that we want to add the tag, or change the tag name
-and submit the form again.
-
-    >>> user_browser.getControl('Create the new tag') is not None
-    True
-    >>> user_browser.getControl('Change') is not None
-    True
-
-Let's edit it, changing it to an existing tag.
 
     >>> user_browser.getControl('Tags').value = 'layout-test'
     >>> user_browser.getControl('Change').click()
@@ -102,7 +83,6 @@ Now, let's add 'new-tag' again, and confirm it this time.
     >>> user_browser.getControl('Tags').value = 'new-tag'
     >>> user_browser.getControl('Change').click()
 
-    >>> user_browser.getControl('Create the new tag').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 

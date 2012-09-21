@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -16,7 +14,6 @@ __all__ = [
     'BugTag',
     'FileBugData',
     'get_also_notified_subscribers',
-    'get_bug_tags',
     'get_bug_tags_open_count',
     ]
 
@@ -81,8 +78,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     SubscriptionPrivacyViolation,
@@ -103,10 +106,7 @@ from lp.bugs.adapters.bugchange import (
     UnsubscribedFromBug,
     )
 from lp.bugs.enums import BugNotificationLevel
-from lp.bugs.errors import (
-    BugCannotBePrivate,
-    InvalidDuplicateValue,
-    )
+from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
@@ -126,11 +126,13 @@ from lp.bugs.interfaces.bugnomination import (
     NominationSeriesObsoleteError,
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
+    IllegalTarget,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -158,11 +160,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
@@ -197,12 +195,10 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    cursor,
     SQLBase,
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -225,17 +221,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-
-
-_bug_tag_query_template = """
-        SELECT %(columns)s FROM %(tables)s WHERE
-            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def snapshot_bug_params(bug_params):
@@ -243,10 +229,9 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "information_type", "distribution",
-            "sourcepackagename", "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by", "importance", "milestone",
-            "assignee", "cve"])
+            "datecreated", "information_type", "target", "status",
+            "subscribers", "tags", "subscribe_owner", "filed_by",
+            "importance", "milestone", "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -254,25 +239,6 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
-
-
-def get_bug_tags(context_clause):
-    """Return all the bug tags as a list of strings.
-
-    context_clause is a SQL condition clause, limiting the tags to a
-    specific context. The SQL clause can only use the BugTask table to
-    choose the context.
-    """
-    from_tables = ['BugTag', 'BugTask']
-    select_columns = ['BugTag.tag']
-    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
-
-    cur = cursor()
-    cur.execute(_bug_tag_query_template % dict(
-            columns=', '.join(select_columns),
-            tables=', '.join(from_tables),
-            condition=' AND '.join(conditions)))
-    return shortlist([row[0] for row in cur.fetchall()])
 
 
 def get_bug_tags_open_count(context_condition, user, tag_limit=0,
@@ -289,29 +255,26 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
         (and {} returned).
     """
     # Circular fail.
-    from lp.bugs.model.bugsummary import BugSummary
+    from lp.bugs.model.bugsummary import (
+        BugSummary,
+        get_bugsummary_filter_for_user,
+        )
     tags = {}
     if include_tags:
         tags = dict((tag, 0) for tag in include_tags)
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    admin_team = getUtility(ILaunchpadCelebrities).admin
-    if user is not None and not user.inTeam(admin_team):
-        store = store.with_(SQL(
-            "teams AS ("
-            "SELECT team from TeamParticipation WHERE person=?)", (user.id,)))
     where_conditions = [
         BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         BugSummary.tag != None,
         context_condition,
         ]
-    if user is None:
-        where_conditions.append(BugSummary.viewed_by_id == None)
-    elif not user.inTeam(admin_team):
-        where_conditions.append(
-            Or(
-                BugSummary.viewed_by_id == None,
-                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
-                ))
+
+    # Apply the privacy filter.
+    store = IStore(BugSummary)
+    user_with, user_where = get_bugsummary_filter_for_user(user)
+    if user_with:
+        store = store.with_(user_with)
+    where_conditions.extend(user_where)
+
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
 
@@ -848,7 +811,8 @@ class Bug(SQLBase):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            bugs, ignored, ignored = service.getVisibleArtifacts(
+                person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
                     [person], subscribed_by, bugs=[self],
@@ -962,7 +926,8 @@ class Bug(SQLBase):
             # This may be a webservice request.
             person = unmuted_by
         mutes = self._getMutes(person)
-        store.remove(mutes.one())
+        if not mutes.is_empty():
+            store.remove(mutes.one())
         return self.getSubscriptionForPerson(person)
 
     @property
@@ -985,7 +950,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.getSubscriptionInfo().direct_subscriptions
 
-    def getDirectSubscribers(self, recipients=None, level=None):
+    def getDirectSubscribers(self, recipients=None, level=None,
+                             filter_visible=False):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
@@ -997,6 +963,13 @@ class Bug(SQLBase):
             level = BugNotificationLevel.LIFECYCLE
         direct_subscribers = (
             self.getSubscriptionInfo(level).direct_subscribers)
+        if filter_visible:
+            filtered_subscribers = IStore(Person).find(Person,
+                Person.id.is_in([s.id for s in direct_subscribers]),
+                self.getSubscriptionInfo().visible_recipients_filter(
+                    Person.id))
+            direct_subscribers = BugSubscriberSet(
+                direct_subscribers.intersection(filtered_subscribers))
         if recipients is not None:
             for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
@@ -1129,27 +1102,13 @@ class Bug(SQLBase):
         return get_also_notified_subscribers(self, recipients, level)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None,
-                                     include_master_dupe_subscribers=False):
+                                     level=None):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        self.getDirectSubscribers(recipients, level=level)
-        if self.private:
-            assert self.getIndirectSubscribers() == [], (
-                "Indirect subscribers found on private bug. "
-                "A private bug should never have implicit subscribers!")
-        else:
-            self.getIndirectSubscribers(recipients, level=level)
-            if include_master_dupe_subscribers and self.duplicateof:
-                # This bug is a public duplicate of another bug, so include
-                # the dupe target's subscribers in the recipient list. Note
-                # that we only do this for duplicate bugs that are public;
-                # changes in private bugs are not broadcast to their dupe
-                # targets.
-                dupe_recipients = (
-                    self.duplicateof.getBugNotificationRecipients(
-                        duplicateof=self.duplicateof, level=level))
-                recipients.update(dupe_recipients)
+        self.getDirectSubscribers(
+            recipients, level=level, filter_visible=True)
+        self.getIndirectSubscribers(recipients, level=level)
+
         # XXX Tom Berger 2008-03-18:
         # We want to look up the recipients for `old_bug` too,
         # but for this to work, this code has to move out of the
@@ -1384,19 +1343,13 @@ class Bug(SQLBase):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user):
+    def linkCVE(self, cve, user, return_cve=True):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
             notify(ObjectCreatedEvent(bugcve, user=user))
-            return bugcve
-
-    # XXX intellectronica 2008-11-06 Bug #294858:
-    # See lp.bugs.interfaces.bug
-    def linkCVEAndReturnNothing(self, cve, user):
-        """See `IBug`."""
-        self.linkCVE(cve, user)
-        return None
+            if return_cve:
+                return bugcve
 
     def unlinkCVE(self, cve, user):
         """See `IBug`."""
@@ -1638,6 +1591,8 @@ class Bug(SQLBase):
             filter_args = dict(distroseriesID=target.id)
         elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        elif ISourcePackage.providedBy(target):
+            filter_args = dict(distroseriesID=target.series.id)
         else:
             return None
 
@@ -1745,94 +1700,94 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
-    def transitionToInformationType(self, information_type, who,
-                                    from_api=False):
+    def getAllowedInformationTypes(self, who):
         """See `IBug`."""
-        if from_api and information_type == InformationType.PROPRIETARY:
-            raise BugCannotBePrivate(
-                "Cannot transition the information type to proprietary.")
+        types = set(InformationType.items)
+        for pillar in self.affected_pillars:
+            types.intersection_update(
+                set(pillar.getAllowedBugInformationTypes()))
+        types.add(self.information_type)
+        return types
+
+    def transitionToInformationType(self, information_type, who):
+        """See `IBug`."""
         if self.information_type == information_type:
             return False
-        if (information_type == InformationType.PROPRIETARY and
-            len(self.affected_pillars) > 1):
-            raise BugCannotBePrivate(
-                "Multi-pillar bugs cannot be proprietary.")
+        if information_type not in self.getAllowedInformationTypes(who):
+            raise CannotChangeInformationType("Forbidden by project policy.")
+        if (information_type in PROPRIETARY_INFORMATION_TYPES
+            and len(self.affected_pillars) > 1):
+            raise CannotChangeInformationType(
+                "Proprietary bugs can only affect one project.")
         if information_type in PRIVATE_INFORMATION_TYPES:
             self.who_made_private = who
             self.date_made_private = UTC_NOW
-            missing_subscribers = set([who, self.owner])
+            required_subscribers = set([who, self.owner])
         else:
             self.who_made_private = None
             self.date_made_private = None
-            missing_subscribers = set()
+            required_subscribers = set()
         # XXX: This should be a bulk update. RBC 20100827
         # bug=https://bugs.launchpad.net/storm/+bug/625071
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
 
-        # There are several people we need to ensure are subscribed.
-        # If the information type is userdata, we need to check for bug
-        # supervisors who aren't subscribed and should be. If there is no
-        # bug supervisor, we need to subscribe the maintainer.
+        self.information_type = information_type
+        self._reconcileAccess()
+
         pillars = self.affected_pillars
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        subscribers = self.getDirectSubscribers()
+
+        # We have to capture subscribers that must exist after transition. In
+        # the case of a transition to USERDATA, we want the bug supervisor or
+        # maintainer and if the driver is already subscribed, then the driver
+        # is also required. Ubuntu is special: we don't want to add required
+        # subscribers in that case.
         if information_type == InformationType.USERDATA:
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             for pillar in pillars:
-                # Ubuntu is special cased; no one else should be added in the
-                # USERDATA case.
+                if pillar.driver in subscribers:
+                    required_subscribers.add(pillar.driver)
                 if pillar != ubuntu:
                     if pillar.bug_supervisor is not None:
-                        missing_subscribers.add(pillar.bug_supervisor)
+                        required_subscribers.add(pillar.bug_supervisor)
                     else:
-                        missing_subscribers.add(pillar.owner)
+                        required_subscribers.add(pillar.owner)
 
-        # If the information type is security related, we need to ensure
-        # the security contacts are subscribed. If there is no security
-        # contact, we need to subscribe the maintainer.
-        if information_type in SECURITY_INFORMATION_TYPES:
-            for pillar in pillars:
-                if pillar.security_contact is not None:
-                    missing_subscribers.add(pillar.security_contact)
-                else:
-                    missing_subscribers.add(pillar.owner)
+        # If we've made the bug private, we need to do some cleanup.
+        # Required subscribers must be given access.
+        # People without existing access who aren't required should be
+        # unsubscribed. Even if we're transitioning from one private type to
+        # another, we must do this check, as different policies are granted to
+        # different users/teams.
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            if subscribers:
+                # If we're switching to private types, and the driver is
+                # subscribed for a pillar (except ubuntu), we need to make
+                # sure the driver maintains access.
+                for pillar in pillars:
+                    if pillar.driver in subscribers and pillar != ubuntu:
+                        required_subscribers.add(pillar.driver)
+                service = getUtility(IService, 'sharing')
+                if len(required_subscribers):
+                    service.ensureAccessGrants(
+                        required_subscribers, who, bugs=[self],
+                        ignore_permissions=True)
 
-        for s in missing_subscribers:
-            # Don't subscribe someone if they're already subscribed via a
-            # team.
+        # Add the required subscribers, but not if they are all already
+        # subscribed via a team.
+        for s in required_subscribers:
             already_subscribed_teams = self.getSubscribersForPerson(s)
             if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
 
-        self.information_type = information_type
-        self._reconcileAccess()
-
-        # If the transition makes the bug private, then we need to ensure all
-        # subscribers can see the bug. For any who can't, we create an access
-        # artifact grant. Note that the previous value of information_type may
-        # also have been private but we still need to perform the access check
-        # since any access policy grants will not confer access with the new
-        # information type value.
-        if information_type in PRIVATE_INFORMATION_TYPES:
-            # Grant the subscriber access if they can't see the bug.
-            service = getUtility(IService, 'sharing')
-            subscribers = self.getDirectSubscribers()
-            blind_subscribers = service.getPeopleWithoutAccess(
-                self, subscribers)
-            if len(blind_subscribers):
-                service.ensureAccessGrants(
-                    blind_subscribers, who, bugs=[self],
-                    ignore_permissions=True)
-
         self.updateHeat()
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the bug. We need to run a job to remove any such
-            # subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                who, [self])
+        # As a result of the transition, some subscribers may no longer
+        # have access to the bug. We need to run a job to remove any such
+        # subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(who, [self])
 
         return True
 
@@ -2002,10 +1957,7 @@ class Bug(SQLBase):
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
 
-        user_owns_comment = False
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        if bool(getFeatureFlag(flag)):
-            user_owns_comment = bug_message.owner == user
+        user_owns_comment = (bug_message.owner == user)
         if (not self.userCanSetCommentVisibility(user)
             and not user_owns_comment):
             raise Unauthorized(
@@ -2041,7 +1993,7 @@ class Bug(SQLBase):
         to be made to the queries which screen for privacy.  See
         bugtasksearch's get_bug_privacy_filter.
         """
-        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+        from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 
         if not self.private:
             # This is a public bug.
@@ -2061,25 +2013,17 @@ class Bug(SQLBase):
 
     def userCanSetCommentVisibility(self, user):
         """See `IBug`"""
-
         if user is None:
             return False
+        # Admins and registry experts always have permission.
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
-
-    def userInProjectRole(self, user):
-        """ Return True if user has a project role for any affected pillar."""
-        roles = IPersonRoles(user)
-        if roles is None:
-            return False
-        for pillar in self.affected_pillars:
-            if (roles.isOwner(pillar)
-                or roles.isOneOfDrivers(pillar)
-                or roles.isBugSupervisor(pillar)
-                or roles.isSecurityContact(pillar)):
+        pillars = list(self.affected_pillars)
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            if service.checkPillarAccess(
+                    pillar, InformationType.USERDATA, user):
                 return True
         return False
 
@@ -2114,9 +2058,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
-        # actually a composite of bug contacts, structural subscribers
-        # and assignees. As such, it's not possible to get them all with
-        # one query.
+        # actually a composite of bug structural subscribers and assignees.
+        # As such, it's not possible to get them all with one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
         if person in also_notified_subscribers:
             return True
@@ -2255,9 +2198,6 @@ def get_also_notified_subscribers(
     else:
         raise ValueError('First argument must be bug or bugtask')
 
-    if bug.private:
-        return []
-
     # Subscribers to exclude.
     exclude_subscribers = frozenset().union(
         info.direct_subscribers_at_all_levels, info.muted_subscribers)
@@ -2270,12 +2210,6 @@ def get_also_notified_subscribers(
             if assignee in also_notified_subscribers:
                 # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-            # If the target's bug supervisor isn't set...
-            pillar = bugtask.pillar
-            if pillar.official_malone and pillar.bug_supervisor is None:
-                if pillar.owner in also_notified_subscribers:
-                    # ...we add the owner as a subscriber.
-                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
     # TODO: Pass the info object into get_structural_subscribers for
@@ -2472,6 +2406,17 @@ class BugSubscriptionInfo:
         muted_people = Select(BugMute.person_id, BugMute.bug == self.bug)
         return load_people(Person.id.is_in(muted_people))
 
+    def visible_recipients_filter(self, column):
+        # Circular fail :(
+        from lp.bugs.model.bugtasksearch import (
+            get_bug_bulk_privacy_filter_terms,
+            )
+
+        if self.bug.private:
+            return get_bug_bulk_privacy_filter_terms(column, self.bug.id)
+        else:
+            return True
+
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def direct_subscriptions(self):
@@ -2516,21 +2461,20 @@ class BugSubscriptionInfo:
     def duplicate_subscriptions(self):
         """Subscriptions to duplicates of the bug.
 
-        Excludes muted subscriptions.
+        Excludes muted subscriptions, and subscribers who can not see the
+        master bug.
         """
-        if self.bug.private:
-            return ()
-        else:
-            return IStore(BugSubscription).find(
-                BugSubscription,
-                BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self.bug,
-                Not(In(
-                    BugSubscription.person_id,
-                    Select(
-                        BugMute.person_id, BugMute.bug_id == Bug.id,
-                        tables=[BugMute]))))
+        return IStore(BugSubscription).find(
+            BugSubscription,
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug_id == Bug.id,
+            Bug.duplicateof == self.bug,
+            Not(In(
+                BugSubscription.person_id,
+                Select(
+                    BugMute.person_id, BugMute.bug_id == Bug.id,
+                    tables=[BugMute]))),
+            self.visible_recipients_filter(BugSubscription.person_id))
 
     @property
     def duplicate_subscribers(self):
@@ -2591,43 +2535,26 @@ class BugSubscriptionInfo:
         *Does not* exclude muted subscribers.
         """
         if self.bugtask is None:
-            assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
-            return load_people(Person.id.is_in(assignees))
+            assignees = load_people(
+                Person.id.is_in(Select(BugTask.assigneeID,
+                    BugTask.bug == self.bug)))
         else:
-            return load_people(Person.id == self.bugtask.assigneeID)
-
-    @cachedproperty
-    @freeze(BugSubscriberSet)
-    def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which there is no bug supervisor.
-
-        The pillars must also use Launchpad for bug tracking.
-
-        *Does not* exclude muted subscribers.
-        """
-        if self.bugtask is None:
-            bugtasks = self.bug.bugtasks
+            assignees = load_people(Person.id == self.bugtask.assigneeID)
+        if self.bug.private:
+            return IStore(Person).find(Person,
+                Person.id.is_in([a.id for a in assignees]),
+                self.visible_recipients_filter(Person.id))
         else:
-            bugtasks = [self.bugtask]
-        for bugtask in bugtasks:
-            pillar = bugtask.pillar
-            if pillar.official_malone:
-                if pillar.bug_supervisor is None:
-                    yield pillar.owner
+            return assignees
 
     @cachedproperty
     def also_notified_subscribers(self):
         """All subscribers except direct, dupe, and muted subscribers."""
-        if self.bug.private:
-            return BugSubscriberSet()
-        else:
-            subscribers = BugSubscriberSet().union(
-                self.structural_subscribers,
-                self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees)
-            return subscribers.difference(
-                self.direct_subscribers_at_all_levels,
-                self.muted_subscribers)
+        subscribers = BugSubscriberSet().union(
+            self.structural_subscribers, self.all_assignees)
+        return subscribers.difference(
+            self.direct_subscribers_at_all_levels,
+            self.muted_subscribers)
 
     @cachedproperty
     def indirect_subscribers(self):
@@ -2686,48 +2613,34 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
-        if params.product and params.product.private_bugs:
-            # If the private_bugs flag is set on a product, then
-            # force the new bug report to be private.
-            if params.information_type == InformationType.PUBLIC:
-                params.information_type = InformationType.USERDATA
+        if ISeriesBugTarget.providedBy(params.target):
+            raise IllegalTarget(
+                "Can't create a bug on a series. Create it with a non-series "
+                "task instead, and target it to the series afterwards.")
+
+        if params.information_type is None:
+            params.information_type = (
+                params.target.pillar.getDefaultBugInformationType())
 
         bug, event = self._makeBug(params)
 
-        # Create the task on a product if one was passed.
-        if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
+        # Create the initial task on the specified target.
+        getUtility(IBugTaskSet).createTask(
+            bug, params.owner, params.target, status=params.status)
 
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
-
-        if params.information_type in SECURITY_INFORMATION_TYPES:
-            if params.product:
-                context = params.product
-            else:
-                context = params.distribution
-
-            if context.security_contact:
-                bug.subscribe(context.security_contact, params.owner)
-            else:
-                bug.subscribe(context.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
-        elif params.product and params.product.private_bugs:
+        if (IProduct.providedBy(params.target) and params.target.private_bugs
+            and params.target.bug_sharing_policy is None
+            and params.information_type not in SECURITY_INFORMATION_TYPES):
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bug_supervisor:
-                bug.subscribe(params.product.bug_supervisor, params.owner)
+            if params.target.bug_supervisor:
+                bug.subscribe(params.target.bug_supervisor, params.owner)
             else:
-                bug.subscribe(params.product.owner, params.owner)
+                bug.subscribe(params.target.owner, params.owner)
 
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)
@@ -2796,15 +2709,10 @@ class BugSet:
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
-        # Set the legacy attributes for now.
-        private = params.information_type in PRIVATE_INFORMATION_TYPES
-        security_related = (
-            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
             owner=params.owner, datecreated=params.datecreated,
             information_type=params.information_type,
-            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.tags:
