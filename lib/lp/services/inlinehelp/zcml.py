@@ -37,7 +37,8 @@ def register_help_folder(context, folder, name):
     """Create a help folder subclass and register it with the ZCA."""
 
     help_folder = type(
-        str('%s for %s' % (name, folder)), (HelpFolder, ), {'folder': folder})
+        str('%s for %s' % (name, folder)), (HelpFolder, ),
+        {'folder': folder, '__name__': name})
 
     defineChecker(
         help_folder,
