@@ -41,6 +41,7 @@ from zope.interface import (
     implements,
     )
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -55,7 +56,6 @@ from lp.code.model.branch import (
     get_branch_privacy_filter,
     )
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (

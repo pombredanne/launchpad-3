@@ -32,6 +32,16 @@
       </tal:does-not-use-malone>
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
+      <tal:no-new-bugs tal:condition="not: view/contextAllowsNewBugs">
+          Reporting new bugs for
+          <tal:name replace="context/displayname"/> is not allowed.
+          <tal:sharing-link condition="context/required:launchpad.Edit">
+          <br>This can be fixed by changing the bug sharing policy on the
+          <a tal:attributes="href string:${context/fmt:url:mainsite}/+sharing">sharing page</a>.
+          </tal:sharing-link>
+      </tal:no-new-bugs>
+
+      <tal:new-bugs tal:condition="view/contextAllowsNewBugs">
         <div class="informational message"
             tal:condition="view/extra_data_to_process"
           >Please wait while bug data is processed. This page will
@@ -139,6 +149,7 @@
           <a id="duplicate-search-url"
               tal:attributes="href view/duplicate_search_url"></a>
         </p>
+      </tal:new-bugs>
       </tal:uses-malone>
     </div>
 

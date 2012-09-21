@@ -90,7 +90,7 @@ we will register a handler to observe the event.
 The event can be seen when we file a bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
     >>> jukebox = factory.makeProduct()

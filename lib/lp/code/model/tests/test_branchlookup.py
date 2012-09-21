@@ -9,6 +9,7 @@ from lazr.uri import URI
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -27,7 +28,6 @@ from lp.code.interfaces.codehosting import (
     compose_public_url,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,

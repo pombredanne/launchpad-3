@@ -8,6 +8,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
@@ -17,7 +18,6 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
-from lp.registry.enums import InformationType
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,

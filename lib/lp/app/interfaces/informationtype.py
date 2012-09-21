@@ -9,8 +9,8 @@ __all__ = [
 from zope.schema import Choice
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.registry.enums import InformationType
 
 
 class IInformationType(IPrivacy):
