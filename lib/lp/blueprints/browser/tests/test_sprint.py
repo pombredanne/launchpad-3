@@ -35,7 +35,7 @@ class TestSprintIndex(BrowserTestCase):
         sprint = self.factory.makeSprint()
         for count in range(10):
             blueprint = self.factory.makeSpecification(
-                information_type=InformationType.PROPRIETARY)
+                information_type=InformationType.PUBLIC)
             link = blueprint.linkSprint(sprint, blueprint.owner)
             link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:

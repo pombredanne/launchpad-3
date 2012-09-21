@@ -157,13 +157,14 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
     def specifications(self, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       prejoin_people=None):
         """See IHasSpecifications."""
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
         query = self.spec_filter_clause(filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
+        assert prejoin_people is None or not prejoin_people
         result = Store.of(self).find(Specification, *query)
         if sort is not None:
             assert sort == SpecificationSort.DATE
@@ -178,6 +179,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See `ISprint`."""
+        assert sort is None
+        assert quantity is None
         query = self.spec_filter_clause(filter=filter)
         result = Store.of(self).find(SprintSpecification, *query)
         return result
