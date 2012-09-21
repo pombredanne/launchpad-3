@@ -496,7 +496,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
-    def test_proprietary_or_public_grantor(self):
+    def test_proprietary_or_public_owner_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         with person_logged_in(namespace.product.owner):
@@ -510,13 +510,28 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.PROPRIETARY,
             namespace.getDefaultInformationType())
 
+    def test_proprietary_or_public_caller_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        grantee = self.factory.makePerson()
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, grantee, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes(grantee))
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            namespace.getDefaultInformationType(grantee))
+
     def test_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
-    def test_proprietary_grantee(self):
+    def test_proprietary_branch_owner_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
         with person_logged_in(namespace.product.owner):
@@ -530,13 +545,28 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.PROPRIETARY,
             namespace.getDefaultInformationType())
 
+    def test_proprietary_caller_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.PROPRIETARY)
+        grantee = self.factory.makePerson()
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, grantee, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            namespace.getAllowedInformationTypes(grantee))
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            namespace.getDefaultInformationType(grantee))
+
     def test_embargoed_or_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
-    def test_embargoed_or_proprietary_grantee(self):
+    def test_embargoed_or_proprietary_owner_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(namespace.product.owner):
@@ -549,6 +579,21 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.assertEqual(
             InformationType.EMBARGOED,
             namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_caller_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        grantee = self.factory.makePerson()
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, grantee, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            namespace.getAllowedInformationTypes(grantee))
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            namespace.getDefaultInformationType(grantee))
 
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
