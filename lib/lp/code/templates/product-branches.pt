@@ -25,6 +25,10 @@
            id="privacy-text">
           You can't create new branches for
           <tal:name replace="context/displayname"/>.
+          <tal:sharing-link condition="context/required:launchpad.Edit">
+          <br>Sharing policies may be changed on the
+          <a tal:attributes="href string:${context/fmt:url:mainsite}/+sharing">sharing page</a>.
+          </tal:sharing-link>
         </span>
 
         <span tal:condition="view/default_information_type"

@@ -884,6 +884,18 @@ class TestBugPrivacy(TestCaseWithFactory):
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeBug().getAllowedInformationTypes(None))
 
+    def test_getAllowedInformationTypes_includes_current(self):
+        # A bug's allowed information types must include its current
+        # information type even if said type is not in the allowed types.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            target=product, information_type=InformationType.PUBLICSECURITY)
+        removeSecurityProxy(product).bug_sharing_policy = (
+            BugSharingPolicy.FORBIDDEN)
+        self.assertContentEqual(
+            [InformationType.PUBLICSECURITY],
+            bug.getAllowedInformationTypes(None))
+
     def test_transitionToInformationType_respects_allowed_proprietary(self):
         # transitionToInformationType rejects types that aren't allowed
         # for the bug.

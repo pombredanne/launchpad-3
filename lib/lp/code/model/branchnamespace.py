@@ -95,6 +95,7 @@ BRANCH_POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    BranchSharingPolicy.FORBIDDEN: [],
     }
 
 BRANCH_POLICY_DEFAULT_TYPES = {
@@ -103,6 +104,7 @@ BRANCH_POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 BRANCH_POLICY_REQUIRED_GRANTS = {
@@ -111,6 +113,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 
@@ -145,6 +148,8 @@ class _BaseNamespace:
             sourcepackagename = sourcepackage.sourcepackagename
 
         information_type = self.getDefaultInformationType()
+        if information_type is None:
+            raise BranchCreationForbidden()
 
         branch = Branch(
             registrant=registrant, name=name, owner=self.owner,
