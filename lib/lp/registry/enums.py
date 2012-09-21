@@ -269,6 +269,14 @@ class SpecificationSharingPolicy(DBEnumeratedType):
         create new specifications.
         """)
 
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new specifications may be created, but existing specifications may
+        still be updated.
+        """)
+
+
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
