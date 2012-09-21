@@ -5,25 +5,99 @@
 
 __metaclass__ = type
 
+
+import datetime
+
+from pytz import utc
+from zope.security.proxy import removeSecurityProxy
+
+from lp.blueprints.enums import (
+    SpecificationFilter,
+    SpecificationSort,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
+
+
+def list_result(sprint, filter=None):
+    result = sprint.specifications(SpecificationSort.DATE, filter=filter)
+    return list(result)
 
 
 class TestSpecifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSpecifications, self).setUp()
+        self.date_decided = datetime.datetime.now(utc)
+
+    def makeSpec(self, sprint, date_decided=0, date_created=0, proposed=False):
+        blueprint = self.factory.makeSpecification()
+        link = blueprint.linkSprint(sprint, blueprint.owner)
+        naked_link = removeSecurityProxy(link)
+        if not proposed:
+            link.acceptBy(sprint.owner)
+            date_decided = self.date_decided + datetime.timedelta(date_decided)
+            naked_link.date_decided = date_decided
+        date_created = self.date_decided + datetime.timedelta(date_created)
+        naked_link.date_created = date_created
+        return blueprint
+
     def test_specifications_quantity(self):
         sprint = self.factory.makeSprint()
         for count in range(10):
-            blueprint = self.factory.makeSpecification()
-            link = blueprint.linkSprint(sprint, blueprint.owner)
-            link.acceptBy(sprint.owner)
+            self.makeSpec(sprint)
         self.assertEqual(10, sprint.specifications().count())
         self.assertEqual(10, sprint.specifications(quantity=None).count())
         self.assertEqual(8, sprint.specifications(quantity=8).count())
         self.assertEqual(10, sprint.specifications(quantity=11).count())
 
+    def test_specifications_date_sort_accepted_decided(self):
+        sprint = self.factory.makeSprint()
+        blueprint1 = self.makeSpec(sprint, date_decided=0, date_created=0)
+        blueprint2 = self.makeSpec(sprint, date_decided=-1, date_created=1)
+        blueprint3 = self.makeSpec(sprint, date_decided=1, date_created=2)
+        result = list_result(sprint)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+        result = list_result(sprint, [SpecificationFilter.ALL])
+        self.assertEqual([blueprint3, blueprint2, blueprint1], result)
+
+    def test_accepted_date_sort_creation(self):
+        sprint = self.factory.makeSprint()
+        blueprint1 = self.makeSpec(sprint, date_created=0)
+        blueprint2 = self.makeSpec(sprint, date_created=-1)
+        blueprint3 = self.makeSpec(sprint, date_created=1)
+        result = list_result(sprint)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+        result = list_result(sprint, [SpecificationFilter.ALL])
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+
+    def test_proposed_date_sort_creation(self):
+        sprint = self.factory.makeSprint()
+        blueprint1 = self.makeSpec(sprint, date_created=0, proposed=True)
+        blueprint2 = self.makeSpec(sprint, date_created=-1, proposed=True)
+        blueprint3 = self.makeSpec(sprint, date_created=1, proposed=True)
+        result = list_result(sprint, [SpecificationFilter.PROPOSED])
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+
+    def test_accepted_date_sort_id(self):
+        sprint = self.factory.makeSprint()
+        blueprint1 = self.makeSpec(sprint)
+        blueprint2 = self.makeSpec(sprint)
+        blueprint3 = self.makeSpec(sprint)
+        result = list_result(sprint)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+        result = list_result(sprint, [SpecificationFilter.ALL])
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_proposed_date_sort_id(self):
+        sprint = self.factory.makeSprint()
+        blueprint1 = self.makeSpec(sprint, proposed=True)
+        blueprint2 = self.makeSpec(sprint, proposed=True)
+        blueprint3 = self.makeSpec(sprint, proposed=True)
+        result = list_result(sprint, [SpecificationFilter.PROPOSED])
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
 
 class TestSprintAttendancesSort(TestCaseWithFactory):
 
