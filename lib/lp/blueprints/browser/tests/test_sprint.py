@@ -8,7 +8,7 @@ __metaclass__ = type
 from storm.locals import Store
 from testtools.matchers import Equals
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit, HasQueryCount
@@ -41,4 +41,4 @@ class TestSprintIndex(BrowserTestCase):
         with QueryCollector() as recorder:
             # getViewBrowser should not raise an exception
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(22)))
+        self.assertThat(recorder, HasQueryCount(Equals(30)))
