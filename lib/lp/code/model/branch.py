@@ -53,6 +53,11 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
@@ -65,6 +70,7 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -131,12 +137,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -369,6 +370,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchTargetError(
                     'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
+        if self.information_type not in namespace.getAllowedInformationTypes():
+            raise BranchTargetError(
+                '%s branches are not allowed for target %s.' % (
+                    self.information_type.title, target.displayname))
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()
 
@@ -895,7 +900,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
-        ignored, branches = service.getVisibleArtifacts(
+        ignored, branches, ignored = service.getVisibleArtifacts(
             person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(
@@ -1252,12 +1257,20 @@ class Branch(SQLBase, BzrIdentityMixin):
         # the affected Jobs in the database otherwise.
         store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
 
+        # Find BuildFarmJobs to delete.
+        bfjs = store.find(
+            (BuildFarmJob.id,),
+            TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
+            TranslationTemplatesBuild.branch == self)
+        bfj_ids = [bfj[0] for bfj in bfjs]
+
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
 
         store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == self).remove()
+        store.find(BuildFarmJob, BuildFarmJob.id.is_in(bfj_ids)).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

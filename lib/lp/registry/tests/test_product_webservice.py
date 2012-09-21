@@ -103,3 +103,18 @@ class TestProduct(TestCaseWithFactory):
                 body=('A current commercial subscription is required to use '
                       'proprietary bugs.')))
         self.assertIs(None, product.bug_sharing_policy)
+
+    def fetch_product(self, webservice, product, api_version):
+        return webservice.get(
+            canonical_url(product, force_local_path=True),
+            api_version=api_version).jsonBody()
+
+    def test_security_contact_exported(self):
+        # security_contact is exported for 1.0, but not for other versions.
+        product = self.factory.makeProduct()
+        webservice = webservice_for_person(product.owner)
+        api_prod = self.fetch_product(webservice, product, '1.0')
+        self.assertIs(None, api_prod['security_contact'])
+        for api_version in ('beta', 'devel'):
+            api_prod = self.fetch_product(webservice, product, api_version)
+            self.assertNotIn('security_contact', api_prod)

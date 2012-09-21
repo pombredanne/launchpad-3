@@ -13,10 +13,10 @@ import subprocess
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
-from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (

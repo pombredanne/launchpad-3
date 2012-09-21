@@ -21,11 +21,11 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
     BugSharingPolicy,
     BranchSharingPolicy,
-    InformationType,
     ProductJobType,
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy

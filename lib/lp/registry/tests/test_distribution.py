@@ -23,7 +23,10 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
@@ -31,7 +34,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
-    InformationType,
     )
 from lp.registry.errors import (
     InclusiveTeamLinkageError,

@@ -63,7 +63,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
@@ -141,9 +145,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
-    InformationType,
     SpecificationSharingPolicy,
-    PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -214,6 +216,7 @@ from lp.registry.interfaces.sourcepackage import (
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.config import config
@@ -607,7 +610,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
         time_zone=None, latitude=None, longitude=None, description=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False, member_of=(), karma=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -668,6 +671,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             with person_logged_in(team.teamowner):
                 team.addMember(person, team.teamowner)
 
+        if karma is not None:
+            with dbuser('karma'):
+                # Give the user karma to make the user non-probationary.
+                KarmaTotalCache(person=person.id, karma_total=karma)
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person

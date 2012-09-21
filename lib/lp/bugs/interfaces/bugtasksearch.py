@@ -41,13 +41,13 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     IBugTask,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.registry.enums import InformationType
 from lp.services.fields import SearchTag
 from lp.services.searchbuilder import (
     all,

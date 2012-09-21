@@ -13,6 +13,7 @@ from storm.store import (
 from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -30,7 +31,6 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import InformationType
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,
@@ -925,12 +925,30 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             non_team_subscription = self.target.addBugSubscription(
                 person, person)
         filter = non_team_subscription.bug_filters.one()
+        expected = "This subscription cannot be muted for %s" % person.name
         self.assertFalse(filter.isMuteAllowed(person))
-        self.assertRaises(MuteNotAllowed, filter.mute, person)
+        self.assertRaisesWithContent(
+            MuteNotAllowed, expected, filter.mute, person)
 
     def test_mute_raises_error_for_non_team_members(self):
         # BugSubscriptionFilter.mute() will raise an error if called on
         # a subscription of which the calling person is not a member.
         non_team_person = self.factory.makePerson()
         self.assertFalse(self.filter.isMuteAllowed(non_team_person))
-        self.assertRaises(MuteNotAllowed, self.filter.mute, non_team_person)
+        expected = "This subscription cannot be muted for %s" % (
+            non_team_person.name,)
+        self.assertRaisesWithContent(
+            MuteNotAllowed, expected, self.filter.mute, non_team_person)
+        
+    def test_mute_on_team_with_contact_address(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a subscription if the team has a contact address.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(email='foo@example.com', owner=person)
+        with person_logged_in(person):
+            ss = self.target.addBugSubscription(team, person)
+        filter = ss.bug_filters.one()
+        expected = ("This subscription cannot be muted because team %s has a "
+            "contact address." % team.name)
+        self.assertRaisesWithContent(
+            MuteNotAllowed, expected, filter.mute, person)

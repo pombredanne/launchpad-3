@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
@@ -35,10 +36,7 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
-from lp.registry.enums import (
-    BranchSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
@@ -997,8 +995,28 @@ class TestBranchEditView(TestCaseWithFactory):
         }
         view = create_initialized_view(branch, name='+edit', form=form)
         self.assertEqual(person, branch.target.context)
+        self.assertEqual(1, len(view.request.response.notifications))
         self.assertEqual(
-            'This branch is now a personal branch for %s' % person.displayname,
+            'This branch is now a personal branch for %s (%s)'
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_save_to_different_junk(self):
+        # The branch target widget can retarget to a junk branch.
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        new_owner = self.factory.makeTeam(name='newowner', members=[person])
+        login_person(person)
+        form = {
+            'field.target': 'personal',
+            'field.owner': 'newowner',
+            'field.actions.change': 'Change Branch',
+        }
+        view = create_initialized_view(branch, name='+edit', form=form)
+        self.assertEqual(new_owner, branch.target.context)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            'The branch owner has been changed to Newowner (newowner)',
             view.request.response.notifications[0].message)
 
     def test_branch_target_widget_saves_product(self):
@@ -1018,6 +1036,28 @@ class TestBranchEditView(TestCaseWithFactory):
             'The branch target has been changed to %s (%s)'
                 % (product.displayname, product.name),
             view.request.response.notifications[0].message)
+
+    def test_forbidden_target_is_error(self):
+        # An error is displayed if a branch is saved with a target that is not
+        # allowed by the sharing policy.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        self.factory.makeProduct(
+            name="commercial", owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeProductBranch(
+            owner=owner, product=initial_target,
+            information_type=InformationType.PUBLIC)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=owner)
+        browser.getControl(name="field.target.product").value = "commercial"
+        browser.getControl("Change Branch").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Public branches are not allowed for target Commercial.'))
+        with person_logged_in(owner):
+            self.assertEquals(initial_target, branch.target.context)
 
     def test_information_type_in_ui(self):
         # The information_type of a branch can be changed via the UI by an

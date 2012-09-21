@@ -54,6 +54,11 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
@@ -61,12 +66,7 @@ from lp.bugs.interfaces.bugtasksearch import (
     BugTagsSearchCombinator,
     IBugTaskSearch,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.fields import Tag
 
 

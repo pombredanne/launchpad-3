@@ -7,10 +7,8 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import AllMatch
 from zope.component import getUtility
 
-from lp.registry.enums import (
-    InformationType,
-    SharingPermission,
-    )
+from lp.app.enums import InformationType
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,

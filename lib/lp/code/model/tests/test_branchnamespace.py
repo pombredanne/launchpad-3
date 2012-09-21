@@ -8,6 +8,13 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
@@ -38,12 +45,7 @@ from lp.code.model.branchnamespace import (
     )
 from lp.registry.enums import (
     BranchSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
-    PUBLIC_INFORMATION_TYPES,
     SharingPermission,
     TeamMembershipPolicy,
     )

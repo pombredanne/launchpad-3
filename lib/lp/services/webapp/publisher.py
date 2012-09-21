@@ -65,6 +65,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.versioninfo import revno
 from lp.layers import (
@@ -90,7 +91,6 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.registry.interfaces.informationtype import IInformationType
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.

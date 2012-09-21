@@ -38,6 +38,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
@@ -68,7 +69,6 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone

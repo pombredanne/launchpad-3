@@ -20,6 +20,13 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -48,12 +55,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
-    PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
