@@ -15,7 +15,12 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import Store
+from storm.locals import (
+    Not,
+    Or,
+    Select,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -38,6 +43,7 @@ from lp.blueprints.interfaces.sprint import (
 from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
@@ -186,10 +192,57 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
+    def _new_spec_filter_clause(self, filter=None):
+        """Figure out the appropriate query for specifications on a sprint.
+
+        We separate out the query generation from the normal
+        specifications() method because we want to reuse this query in the
+        specificationLinks() method.
+        """
+        # import here to avoid circular deps
+        from lp.blueprints.model.specification import Specification
+        from lp.registry.model.product import Product
+        query = [Specification.information_type == InformationType.PUBLIC,
+                 SprintSpecification.sprintID == self.id,
+                 SprintSpecification.specificationID == Specification.id,
+                 Or(Specification.product == None,
+                    Not(Specification.productID.is_in(Select(Product.id,
+                        Product.active == False))))]
+        if not filter:
+            filter = set([SpecificationFilter.ACCEPTED])
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query.append(Specification.implementation_status ==
+                         SpecificationImplementationStatus.INFORMATIONAL)
+        if SpecificationFilter.COMPLETE in filter:
+            query.append(Specification.storm_completeness())
+        if SpecificationFilter.INCOMPLETE in filter:
+            query.append(Not(Specification.storm_completeness()))
+        sprint_status = []
+        if SpecificationFilter.PROPOSED in filter:
+            sprint_status.append(SprintSpecificationStatus.PROPOSED)
+        if SpecificationFilter.ACCEPTED in filter:
+            sprint_status.append(SprintSpecificationStatus.ACCEPTED)
+        statuses = [SprintSpecification.status == status for status in
+                    sprint_status]
+        if len(statuses) > 0:
+            query.append(Or(*statuses))
+        return query
+
+    def _new_specifications(self, sort=None, quantity=None, filter=None,
+                            prejoin_people=True):
+        query = self._new_spec_filter_clause(filter=filter)
+        # import here to avoid circular deps
+        from lp.blueprints.model.specification import Specification
+        result = Store.of(self).find(Specification, *query)
+        return result
+
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
 
+        if True:
+            return self._new_specifications(sort, quantity, filter,
+                                            prejoin_people)
         query = self.spec_filter_clause(filter=filter)
         if filter == None:
             filter = []

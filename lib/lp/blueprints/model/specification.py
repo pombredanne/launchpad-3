@@ -530,6 +530,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
                         SpecificationImplementationStatus.INFORMATIONAL.value,
                         SpecificationDefinitionStatus.APPROVED.value))
 
+    @classmethod
+    def storm_completeness(cls):
+        """Storm version of the above."""
+        return Or(
+            cls.implementation_status ==
+                SpecificationImplementationStatus.IMPLEMENTED,
+            cls.definition_status.is_in([
+                SpecificationDefinitionStatus.OBSOLETE,
+                SpecificationDefinitionStatus.SUPERSEDED,
+                ]),
+            And(
+                cls.implementation_status ==
+                    SpecificationImplementationStatus.INFORMATIONAL,
+                cls.definition_status ==
+                    SpecificationDefinitionStatus.APPROVED
+                ),
+            )
+
     @property
     def is_complete(self):
         """See `ISpecification`."""

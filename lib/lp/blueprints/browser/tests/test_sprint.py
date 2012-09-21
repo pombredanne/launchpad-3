@@ -41,4 +41,4 @@ class TestSprintIndex(BrowserTestCase):
         with QueryCollector() as recorder:
             # getViewBrowser should not raise an exception
             self.getViewBrowser(sprint)
-        self.assertThat(recorder, HasQueryCount(Equals(29)))
+        self.assertThat(recorder, HasQueryCount(Equals(22)))
