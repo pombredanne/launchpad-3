@@ -420,16 +420,12 @@ class ProductNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
-
-        # Owners of commercial projects can always set any of the allowed
-        # information types, even for legacy projects still using
-        # BranchVisibilityPolicy.
         if not self._using_branchvisibilitypolicy:
             # The project uses the new simplified branch_sharing_policy
             # rules, so check them.
 
-            # Some policies require that the branch or product owner have full
-            # access to an information type. If it's required and the owner
+            # Some policies require that the branch owner or current user have
+            # full access to an information type. If it's required and the user
             # doesn't hold it, no information types are legal.
             required_grant = BRANCH_POLICY_REQUIRED_GRANTS[
                 self.product.branch_sharing_policy]
