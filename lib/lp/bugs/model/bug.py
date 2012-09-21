@@ -1706,6 +1706,7 @@ class Bug(SQLBase):
         for pillar in self.affected_pillars:
             types.intersection_update(
                 set(pillar.getAllowedBugInformationTypes()))
+        types.add(self.information_type)
         return types
 
     def transitionToInformationType(self, information_type, who):

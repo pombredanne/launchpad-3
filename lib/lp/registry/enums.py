@@ -89,6 +89,13 @@ class BranchSharingPolicy(DBEnumeratedType):
         new branches.
         """)
 
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new branches may be created, but existing branches may still be
+        updated.
+        """)
+
 
 class BugSharingPolicy(DBEnumeratedType):
 
@@ -115,6 +122,12 @@ class BugSharingPolicy(DBEnumeratedType):
         Proprietary
 
         Bugs are always proprietary.
+        """)
+
+    FORBIDDEN = DBItem(5, """
+        Forbidden
+
+        No new bugs may be reported, but existing bugs may still be updated.
         """)
 
 
@@ -154,6 +167,14 @@ class SpecificationSharingPolicy(DBEnumeratedType):
         Only people who can see the project's proprietary information can
         create new specifications.
         """)
+
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new specifications may be created, but existing specifications may
+        still be updated.
+        """)
+
 
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):

@@ -477,6 +477,19 @@ class TestFileBugViewBase(TestCaseWithFactory):
         self.assertIsNotNone(
             soup.find('input', attrs={'name': 'field.information_type'}))
 
+    def test_filebug_when_no_bugs_allowed(self):
+        # Attempting to file a bug against a project with sharing policy
+        # forbidden results in a message saying it's not allowed.
+        product = self.factory.makeProduct(
+            official_malone=True,
+            bug_sharing_policy=BugSharingPolicy.FORBIDDEN)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+        self.assertIn("Reporting new bugs for", html)
+        self.assertIn("This can be fixed by changing", html)
+
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
 
