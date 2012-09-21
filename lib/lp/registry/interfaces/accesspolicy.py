@@ -290,9 +290,3 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param grantee: the access artifact grantee.
         :param policies: a collection of `IAccessPolicy`s.
         """
-
-    def findPillarsByGrantee(grantee):
-        """Find the `IPillar`s for grantee.
-
-        :param grantee: the pillar access grantee.
-        """
