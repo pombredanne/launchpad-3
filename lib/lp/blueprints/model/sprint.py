@@ -165,8 +165,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
-        if quantity is not None:
-            result = result[:quantity]
         if sort is not None:
             assert sort == SpecificationSort.DATE
             order = (Desc(SprintSpecification.date_created), Specification.id)
@@ -174,6 +172,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 SpecificationFilter.PROPOSED not in filter):
                 order = (Desc(SprintSpecification.date_decided),) + order
             result = result.order_by(*order)
+        if quantity is not None:
+            result = result[:quantity]
         return result
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
