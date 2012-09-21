@@ -16,6 +16,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    Desc,
     Not,
     Or,
     Select,
@@ -33,6 +34,7 @@ from lp.app.interfaces.launchpad import (
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
+    SpecificationSort,
     SprintSpecificationStatus,
     )
 from lp.blueprints.interfaces.sprint import (
@@ -157,12 +159,21 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
+        if filter is None:
+            filter = set([SpecificationFilter.ACCEPTED])
         query = self.spec_filter_clause(filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
         if quantity is not None:
             result = result[:quantity]
+        if sort is not None:
+            assert sort == SpecificationSort.DATE
+            order = (Desc(SprintSpecification.date_created), Specification.id)
+            if (SpecificationFilter.ALL not in filter and
+                SpecificationFilter.PROPOSED not in filter):
+                order = (Desc(SprintSpecification.date_decided),) + order
+            result = result.order_by(*order)
         return result
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
