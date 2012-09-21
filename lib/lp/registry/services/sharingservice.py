@@ -131,15 +131,19 @@ class SharingService:
             filter = Or(Product._owner == user, Product.driver == user)
         store = IStore(AccessPolicyGrantFlat)
         tables = [
-            Product,
-            Join(AccessPolicy, AccessPolicy.product_id == Product.id),
+            AccessPolicyGrantFlat,
             Join(
-                AccessPolicyGrantFlat,
+                AccessPolicy,
                 AccessPolicyGrantFlat.policy_id == AccessPolicy.id)]
-        result_set = store.using(*tables).find(
+        result_set = store.find(
             Product,
-            AccessPolicyGrantFlat.grantee_id == person.id, filter).config(
-            distinct=True)
+            Product.id.is_in(
+                Select(
+                    columns=AccessPolicy.product_id,
+                    tables=tables,
+                    where=(AccessPolicyGrantFlat.grantee_id == person.id)
+                )
+            ), filter)
         return result_set
 
     @available_with_permission('launchpad.Driver', 'pillar')
