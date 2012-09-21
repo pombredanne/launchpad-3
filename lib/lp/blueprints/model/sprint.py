@@ -161,6 +161,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
+        if quantity is not None:
+            result = result[:quantity]
         return result
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
