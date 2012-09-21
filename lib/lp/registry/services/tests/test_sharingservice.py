@@ -14,6 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
@@ -36,6 +37,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.services.sharingservice import SharingService
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
@@ -1280,6 +1282,55 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(branches[:9], shared_branches)
         self.assertContentEqual(specs[:9], shared_specs)
 
+    def _assert_getSharedProducts(self, product, who):
+        # Test that 'who' can query the shared products for a grantee.
+
+        # Make a product not related to 'who' which will be shared.
+        unrelated_product = self.factory.makeProduct()
+        # Make an unshared product.
+        self.factory.makeProduct()
+        person = self.factory.makePerson()
+        # Include more than one permission to ensure distinct works.
+        permissions = {
+            InformationType.PRIVATESECURITY: SharingPermission.ALL,
+            InformationType.USERDATA: SharingPermission.ALL}
+        with person_logged_in(product.owner):
+            self.service.sharePillarInformation(
+                product, person, product.owner, permissions)
+        with person_logged_in(unrelated_product.owner):
+            self.service.sharePillarInformation(
+                unrelated_product, person, unrelated_product.owner,
+                permissions)
+        shared = self.service.getSharedProducts(person, who)
+        expected = []
+        if who:
+            expected = [product]
+        if who and IPersonRoles(who).in_admin:
+            expected.append(unrelated_product)
+        self.assertEqual(expected, list(shared))
+
+    def test_getSharedProducts_anonymous(self):
+        # Anonymous users don't get to see any shared products.
+        product = self.factory.makeProduct()
+        self._assert_getSharedProducts(product, None)
+
+    def test_getSharedProducts_admin(self):
+        # Admins can see all shared products.
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        product = self.factory.makeProduct()
+        self._assert_getSharedProducts(product, admin)
+
+    def test_getSharedProducts_owner(self):
+        # Users only see shared products they own.
+        product = self.factory.makeProduct()
+        self._assert_getSharedProducts(product, product.owner)
+
+    def test_getSharedProducts_driver(self):
+        # Users only see shared products they are the driver for.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        self._assert_getSharedProducts(product, driver)
+
     def test_getSharedBugs(self):
         # Test the getSharedBugs method.
         owner = self.factory.makePerson()
@@ -1680,6 +1731,13 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             permissions={
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
+
+    def test_getSharedProducts(self):
+        # Test the exported getSharedProducts() method.
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        products = self.service.getSharedProducts(person=ws_grantee)
+        self.assertEqual(1, len(products))
+        self.assertEqual(products[0].name, self.pillar.name)
 
     def test_getSharedBugs(self):
         # Test the exported getSharedBugs() method.

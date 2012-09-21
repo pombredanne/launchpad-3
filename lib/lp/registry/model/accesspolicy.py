@@ -599,3 +599,11 @@ class AccessPolicyGrantFlat(StormBase):
             AccessArtifact.id == cls.abstract_artifact_id,
             cls.grantee_id == grantee.id,
             cls.policy_id.is_in(ids))
+
+    @classmethod
+    def findPillarsByGrantee(cls, grantee):
+        """See `IAccessPolicyGrantFlatSource`."""
+        return IStore(cls).find(
+            AccessPolicy.pillar,
+            AccessPolicy.id == cls.policy_id,
+            cls.grantee_id == grantee.id)

@@ -49,6 +49,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -63,6 +64,7 @@ from lp.registry.model.accesspolicy import (
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.registry.model.product import Product
 from lp.services.database.bulk import load
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
@@ -118,6 +120,27 @@ class SharingService:
             ColumnSelect(count_select)),
             AccessPolicy.id.is_in(ids)
         )
+
+    def getSharedProducts(self, person, user):
+        """See `ISharingService`."""
+        if user is None:
+            return []
+        if IPersonRoles(user).in_admin:
+            filter = True
+        else:
+            filter = Or(Product._owner == user, Product.driver == user)
+        store = IStore(AccessPolicyGrantFlat)
+        tables = [
+            Product,
+            Join(AccessPolicy, AccessPolicy.product_id == Product.id),
+            Join(
+                AccessPolicyGrantFlat,
+                AccessPolicyGrantFlat.policy_id == AccessPolicy.id)]
+        result_set = store.using(*tables).find(
+            Product,
+            AccessPolicyGrantFlat.grantee_id == person.id, filter).config(
+            distinct=True)
+        return result_set
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
