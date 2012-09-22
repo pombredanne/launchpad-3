@@ -453,3 +453,14 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         copier.getTargetArchive = FakeMethod(result=None)
         self.assertIs(None, copier.copyUpload(upload))
         self.assertEqual([], list_custom_uploads(target_series))
+
+    def test_copyUpload_unapproves_uefi(self):
+        # Copies of UEFI custom uploads to a primary archive are set to
+        # UNAPPROVED, since they will normally end up being signed.
+        original_upload = self.makeUpload(
+            custom_type=PackageUploadCustomFormat.UEFI)
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        copied_upload = copier.copyUpload(original_upload)
+        self.assertEqual(
+            PackageUploadStatus.UNAPPROVED, copied_upload.packageupload.status)

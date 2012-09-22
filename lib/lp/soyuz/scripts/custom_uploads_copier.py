@@ -55,6 +55,17 @@ class CustomUploadsCopier:
         """Is `upload` the kind of `PackageUploadCustom` that we can copy?"""
         return upload.customformat in self.copyable_types
 
+    def autoApprove(self, custom):
+        """Can `custom` be automatically approved?"""
+        # XXX cjwatson 2012-08-16: This more or less duplicates
+        # CustomUploadFile.autoApprove.
+        if custom.packageupload.archive.is_ppa:
+            return True
+        # UEFI uploads are signed, and must therefore be approved by a human.
+        if custom.customformat == PackageUploadCustomFormat.UEFI:
+            return False
+        return True
+
     def getCandidateUploads(self, source_series,
                             source_pocket=PackagePublishingPocket.RELEASE):
         """Find custom uploads that may need copying."""
@@ -132,7 +143,10 @@ class CustomUploadsCopier:
             changes_file_alias=original_upload.packageupload.changesfile)
         custom = package_upload.addCustom(
             original_upload.libraryfilealias, original_upload.customformat)
-        package_upload.setAccepted()
+        if self.autoApprove(custom):
+            package_upload.setAccepted()
+        else:
+            package_upload.setUnapproved()
         return custom
 
     def copy(self, source_series,
