@@ -195,8 +195,8 @@ class TestSharingService(TestCaseWithFactory):
         # it is nominally not allowed.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        removeSecurityProxy(product).branch_sharing_policy = (
-            BranchSharingPolicy.FORBIDDEN)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(BranchSharingPolicy.FORBIDDEN)
         self._assert_getBranchSharingPolicies(
             product,
             [BranchSharingPolicy.PUBLIC, BranchSharingPolicy.FORBIDDEN])
@@ -292,8 +292,8 @@ class TestSharingService(TestCaseWithFactory):
         # is nominally not allowed.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        removeSecurityProxy(product).bug_sharing_policy = (
-            BugSharingPolicy.FORBIDDEN)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.FORBIDDEN)
         self._assert_getBugSharingPolicies(
             product, [BugSharingPolicy.PUBLIC, BugSharingPolicy.FORBIDDEN])
 
