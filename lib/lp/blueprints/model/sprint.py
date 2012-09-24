@@ -57,6 +57,7 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )
+from lp.services.database.stormexpr import fti_search
 
 
 class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
@@ -145,6 +146,10 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                     sprint_status]
         if len(statuses) > 0:
             query.append(Or(*statuses))
+        for constraint in filter:
+            if not isinstance(constraint, basestring):
+                continue
+            query.append(fti_search(Specification, constraint))
         return query
 
     @property

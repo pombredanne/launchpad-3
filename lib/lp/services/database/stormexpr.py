@@ -11,6 +11,7 @@ __all__ = [
     'ColumnSelect',
     'Concatenate',
     'CountDistinct',
+    'fti_search',
     'Greatest',
     'get_where_for_reference',
     'NullCount',
@@ -29,8 +30,12 @@ from storm.expr import (
     In,
     NamedFunc,
     Or,
+    SQL,
     )
-from storm.info import get_obj_info
+from storm.info import (
+    get_cls_info,
+    get_obj_info,
+    )
 
 
 class ColumnSelect(Expr):
@@ -191,3 +196,10 @@ def _get_where_for_local_many(relation, others):
             [_remote_variables(relation, value) for value in others])
     else:
         return Or(*[relation.get_where_for_local(value) for value in others])
+
+
+def fti_search(table, text):
+    """An expression ensuring that table rows match the specified text."""
+    table = get_cls_info(table).table
+    return SQL('%s.fti @@ ftq(?)' % table.name, params=(unicode(text),),
+               tables=(table,))
