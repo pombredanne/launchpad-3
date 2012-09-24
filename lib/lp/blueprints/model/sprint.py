@@ -44,7 +44,6 @@ from lp.blueprints.interfaces.sprint import (
 from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
-from lp.app.enums import InformationType
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
@@ -122,8 +121,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         from lp.registry.model.product import Product
-        query = [Specification.information_type == InformationType.PUBLIC,
-                 SprintSpecification.sprintID == self.id,
+        query = [SprintSpecification.sprintID == self.id,
                  SprintSpecification.specificationID == Specification.id,
                  Or(Specification.product == None,
                     Not(Specification.productID.is_in(Select(Product.id,
