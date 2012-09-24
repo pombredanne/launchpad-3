@@ -110,15 +110,17 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
-    def getAllowedInformationTypes():
+    def getAllowedInformationTypes(who):
         """Get the information types that a branch in this namespace can have.
 
+        :param who: The user making the request.
         :return: A sequence of `InformationType`s.
         """
 
-    def getDefaultInformationType():
+    def getDefaultInformationType(who):
         """Get the default information type for branches in this namespace.
 
+        :param who: The user for whom to return the information type.
         :return: An `InformationType`.
         """
 
