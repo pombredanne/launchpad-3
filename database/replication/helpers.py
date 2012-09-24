@@ -241,7 +241,7 @@ class Node:
         self.is_master = is_master
 
     def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
-        con = psycopg2.connect(self.connection_string)
+        con = psycopg2.connect(str(self.connection_string))
         con.set_isolation_level(isolation)
         return con
 

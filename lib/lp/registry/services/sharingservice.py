@@ -386,6 +386,9 @@ class SharingService:
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 BugSharingPolicy.PROPRIETARY])
+        if (pillar.bug_sharing_policy and
+            not pillar.bug_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.bug_sharing_policy)
 
         return self._makeEnumData(allowed_policies)
 

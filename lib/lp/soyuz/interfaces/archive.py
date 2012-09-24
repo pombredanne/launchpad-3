@@ -16,7 +16,6 @@ __all__ = [
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
-    'CannotRestrictArchitectures',
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
@@ -178,10 +177,6 @@ class NoSuchPPA(NameLookupFailed):
 @error_status(httplib.BAD_REQUEST)
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
-
-
-class CannotRestrictArchitectures(Exception):
-    """The architectures for this archive can not be restricted."""
 
 
 @error_status(httplib.FORBIDDEN)
