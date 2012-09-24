@@ -142,6 +142,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             sprint_status.append(SprintSpecificationStatus.PROPOSED)
         if SpecificationFilter.ACCEPTED in filter:
             sprint_status.append(SprintSpecificationStatus.ACCEPTED)
+        if SpecificationFilter.DECLINED in filter:
+            sprint_status.append(SprintSpecificationStatus.DECLINED)
         statuses = [SprintSpecification.status == status for status in
                     sprint_status]
         if len(statuses) > 0:
