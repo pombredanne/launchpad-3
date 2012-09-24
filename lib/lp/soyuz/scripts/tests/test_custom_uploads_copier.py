@@ -94,8 +94,7 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
         # If extractSeriesKey returns None, getKey also returns None.
         copier = CustomUploadsCopier(FakeDistroSeries())
         copier.extractSeriesKey = FakeMethod()
-        self.assertIs(
-            None,
+        self.assertIsNone(
             copier.getKey(FakeUpload(
                 PackageUploadCustomFormat.DEBIAN_INSTALLER,
                 "bad-filename.tar")))
@@ -239,10 +238,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
             source_series, custom_type=PackageUploadCustomFormat.DIST_UPGRADER,
             arch='mips')
         copier = CustomUploadsCopier(FakeDistroSeries())
-        expected_key = (
-            PackageUploadCustomFormat.DIST_UPGRADER,
-            'mips',
-            )
+        expected_key = (PackageUploadCustomFormat.DIST_UPGRADER, 'mips')
         self.assertEqual(expected_key, copier.getKey(upload))
 
     def test_getKey_ddtp_includes_format_and_component(self):
@@ -253,10 +249,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
             source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL,
             component='restricted')
         copier = CustomUploadsCopier(FakeDistroSeries())
-        expected_key = (
-            PackageUploadCustomFormat.DDTP_TARBALL,
-            'restricted',
-            )
+        expected_key = (PackageUploadCustomFormat.DDTP_TARBALL, 'restricted')
         self.assertEqual(expected_key, copier.getKey(upload))
 
     def test_getLatestUploads_indexes_uploads_by_key(self):
