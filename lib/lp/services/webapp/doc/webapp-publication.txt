@@ -623,39 +623,6 @@ name of the context class and the view class name.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:TestView
 
-When a view is registered using ZCML, the Zope machinery will store
-the name under which the view was registered in the view's '__name__'
-attribute. For these views, that's the name that will be used in
-the pageid.
-
-    >>> view.__name__ = '+test'
-    >>> publication.callObject(request, view)
-    u'Result'
-    >>> print request._orig_env['launchpad.pageid']
-    TestContext:+test
-
-Views registered through ZCML using the attribute property, are really a
-bounded method. These views have the same pageid as their class.
-
-    >>> del request._orig_env['launchpad.pageid']
-    >>> publication.callObject(request, view.__call__)
-    u'Result'
-    >>> print request._orig_env['launchpad.pageid']
-    TestContext:+test
-
-If the published object doesn't have a context attribute (unlike most
-views), the pageid will be empty.
-
-    >>> request, publication = get_request_and_publication()
-    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
-
-    >>> def callable_publication():
-    ...     return u'Result'
-    >>> publication.callObject(request, callable_publication)
-    u'Result'
-    >>> request._orig_env['launchpad.pageid']
-    ''
-
 
 Tick counts
 -----------
