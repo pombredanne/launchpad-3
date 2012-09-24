@@ -8,7 +8,6 @@ __metaclass__ = type
 from storm.locals import Store
 from testtools.matchers import Equals
 
-from lp.app.enums import InformationType
 from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit, HasQueryCount
@@ -32,10 +31,10 @@ class TestSprintIndex(BrowserTestCase):
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
 
     def test_blueprint_listing_query_count(self):
+        """Set a maximum number of queries for sprint blueprint lists."""
         sprint = self.factory.makeSprint()
         for count in range(10):
-            blueprint = self.factory.makeSpecification(
-                information_type=InformationType.PUBLIC)
+            blueprint = self.factory.makeSpecification()
             link = blueprint.linkSprint(sprint, blueprint.owner)
             link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:
