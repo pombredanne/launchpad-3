@@ -35,8 +35,10 @@ from lp.services.utils import total_seconds
 SCHEMA_DIR = os.path.dirname(__file__)
 
 
-def main():
-    con = connect()
+def main(con=None):
+    if con is None:
+        con = connect()
+
     patches = get_patchlist(con)
 
     log.info("Applying patches.")
