@@ -541,6 +541,11 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     # Attributes for the html version
     page_title = "Build now"
 
+    def initialize(self):
+        super(SourcePackageRecipeRequestDailyBuildView, self).initialize()
+        if self.request.method == 'GET':
+            self.request.response.redirect(canonical_url(self.context))
+
     class schema(Interface):
         """Schema for requesting a build."""
 
