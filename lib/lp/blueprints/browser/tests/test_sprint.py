@@ -31,14 +31,13 @@ class TestSprintIndex(BrowserTestCase):
         Store.of(sprint).invalidate()
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
 
-    def test_proprietary_blueprint(self):
+    def test_blueprint_listing_query_count(self):
         sprint = self.factory.makeSprint()
         for count in range(10):
             blueprint = self.factory.makeSpecification(
-                information_type=InformationType.PROPRIETARY)
+                information_type=InformationType.PUBLIC)
             link = blueprint.linkSprint(sprint, blueprint.owner)
             link.acceptBy(sprint.owner)
         with QueryCollector() as recorder:
-            # getViewBrowser should not raise an exception
             self.getViewBrowser(sprint)
         self.assertThat(recorder, HasQueryCount(Equals(33)))
