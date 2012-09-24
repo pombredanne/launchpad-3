@@ -15,6 +15,7 @@ from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
     Count,
+    Exists,
     In,
     Join,
     LeftJoin,
@@ -64,6 +65,7 @@ from lp.registry.model.accesspolicy import (
     AccessPolicyGrant,
     AccessPolicyGrantFlat,
     )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.product import Product
@@ -128,9 +130,13 @@ class SharingService:
         if user is None:
             return []
         store = IStore(AccessPolicyGrantFlat)
-        if (IPersonRoles(user).in_admin or
-            IPersonRoles(user).in_commercial_admin):
+        roles = IPersonRoles(user)
+        if roles.in_admin:
             filter = True
+        elif roles.in_commercial_admin:
+            filter = Exists(Select(
+                1, tables=CommercialSubscription,
+                where=CommercialSubscription.product == Product.id))
         else:
             with_statement = With("teams",
                 Select(TeamParticipation.teamID,

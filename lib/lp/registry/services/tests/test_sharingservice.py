@@ -1282,7 +1282,7 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(branches[:9], shared_branches)
         self.assertContentEqual(specs[:9], shared_specs)
 
-    def _assert_getSharedProducts(self, product, who):
+    def _assert_getSharedProducts(self, product, who=None):
         # Test that 'who' can query the shared products for a grantee.
 
         # Make a product not related to 'who' which will be shared.
@@ -1305,16 +1305,14 @@ class TestSharingService(TestCaseWithFactory):
         expected = []
         if who:
             expected = [product]
-        if who and (
-            IPersonRoles(who).in_admin or
-            IPersonRoles(who).in_commercial_admin):
-            expected.append(unrelated_product)
+            if IPersonRoles(who).in_admin:
+                expected.append(unrelated_product)
         self.assertEqual(expected, list(shared))
 
     def test_getSharedProducts_anonymous(self):
         # Anonymous users don't get to see any shared products.
         product = self.factory.makeProduct()
-        self._assert_getSharedProducts(product, None)
+        self._assert_getSharedProducts(product)
 
     def test_getSharedProducts_admin(self):
         # Admins can see all shared products.
@@ -1322,10 +1320,18 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self._assert_getSharedProducts(product, admin)
 
-    def test_getSharedProducts_commercial_admin(self):
-        # Commercial admins can see all shared products.
+    def test_getSharedProducts_commercial_admin_current(self):
+        # Commercial admins can see all current commercial products.
         admin = getUtility(ILaunchpadCelebrities).commercial_admin.teamowner
         product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self._assert_getSharedProducts(product, admin)
+
+    def test_getSharedProducts_commercial_admin_expired(self):
+        # Commercial admins can see all expired commercial products.
+        admin = getUtility(ILaunchpadCelebrities).commercial_admin.teamowner
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
         self._assert_getSharedProducts(product, admin)
 
     def test_getSharedProducts_owner(self):
