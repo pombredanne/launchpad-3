@@ -14,6 +14,7 @@ import threading
 import traceback
 import urllib
 
+from lazr.restful.utils import safe_hasattr
 from lazr.uri import (
     InvalidURIError,
     URI,
@@ -380,7 +381,7 @@ class LaunchpadBrowserPublication(
             uri = uri.replace(query=query_string)
         return str(uri)
 
-    def constructPageID(self, view, context):
+    def constructPageID(self, view, context, view_names=()):
         """Given a view, figure out what its page ID should be.
 
         This provides a hook point for subclasses to override.
@@ -392,11 +393,18 @@ class LaunchpadBrowserPublication(
             # is accessible in the instance __name__ attribute. We use
             # that if it's available, otherwise fall back to the class
             # name.
-            if getattr(view, '__name__', None) is not None:
+            if safe_hasattr(view, '__name__'):
                 view_name = view.__name__
             else:
                 view_name = view.__class__.__name__
-            pageid = '%s:%s' % (context.__class__.__name__, view_name)
+            names = [view_name] + list(view_names)
+            context_name = context.__class__.__name__
+            if ' ' in context_name and safe_hasattr(context, 'context'):
+                # This is a view of a generated view class,
+                # such as ++model++ view of Product:+bugs. Recuse!
+                return self.constructPageID(context, context.context, names)
+            view_names = ':'.join(names)
+            pageid = '%s:%s' % (context_name, view_names)
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid
         # problems we encode it into ASCII.

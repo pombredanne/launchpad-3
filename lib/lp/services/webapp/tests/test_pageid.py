@@ -76,6 +76,28 @@ class LaunchpadBrowserPublicationPageIDTestCase(TestCase):
             'FakeContext:+snarf',
             self.publication.constructPageID(self.view, self.context))
 
+    def test_pageid_context_is_view_from_template(self):
+        # When the context is a dynamic view class of a page template,
+        # such as adapting a form view to ++model++, the method recurses
+        # the views to locate the true context.
+        class FakeView2(FakeView):
+            pass
+
+        class FakeViewView(FakeView):
+            __name__ = '++model++'
+
+            def __init__(self):
+                self.request = FakeRequest()
+                self.context = FakeView2()
+
+        self.view = FakeViewView()
+        self.context = self.view.context
+        self.context.__name__ = '+bugs'
+        self.context.__class__.__name__ = 'SimpleViewClass from template.pt'
+        self.assertEqual(
+            'FakeContext:+bugs:++model++',
+            self.publication.constructPageID(self.view, self.context))
+
 
 class TestWebServicePageIDs(TestCase):
     """Ensure that the web service enhances the page ID correctly."""
