@@ -1184,18 +1184,10 @@ class ProductPackagesView(LaunchpadView):
         return results
 
 
-class ProductPackagesPortletView(LaunchpadFormView):
+class ProductPackagesPortletView(LaunchpadView):
     """View class for product packaging portlet."""
 
     schema = Interface
-    package_field_name = 'distributionsourcepackage'
-    custom_widget(
-        package_field_name, LaunchpadRadioWidget, orientation='vertical')
-    suggestions = None
-    max_suggestions = 8
-    other_package = object()
-    not_packaged = object()
-    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
@@ -1211,89 +1203,6 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """Are there packages, or can packages be suggested."""
         if len(self.sourcepackages) > 0:
             return True
-        if self.user is None:
-            return False
-        date_next_suggest_packaging = self.context.date_next_suggest_packaging
-        return (
-            date_next_suggest_packaging is None
-            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
-
-    @property
-    def initial_values(self):
-        """See `LaunchpadFormView`."""
-        return {self.package_field_name: self.other_package}
-
-    def initialize(self):
-        # The template only shows the form if the portlet is shown and
-        # there aren't any linked sourcepackages. If either of those
-        # conditions fails, there's no point setting up the widgets
-        # (with the expensive FTI query that entails).
-        if self.can_show_portlet and not self.sourcepackages:
-            super(ProductPackagesPortletView, self).initialize()
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProductPackagesPortletView, self).setUpFields()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        distro_source_packages = ubuntu.searchSourcePackages(
-            self.context.name, has_packaging=False,
-            publishing_distroseries=ubuntu.currentseries)
-        # Based upon the matches, create a new vocabulary with
-        # term descriptions that include a link to the source package.
-        self.suggestions = []
-        vocab_terms = []
-        for package in distro_source_packages[:self.max_suggestions]:
-            if package.development_version.currentrelease is not None:
-                self.suggestions.append(package)
-                item_url = canonical_url(package)
-                description = structured(
-                    '<a href="%s">%s</a>', item_url, package.name)
-                vocab_terms.append(
-                    SimpleTerm(package, package.name, description))
-        # Add an option to represent the user's decision to choose a
-        # different package. Note that source packages cannot have uppercase
-        # names with underscores, so the name is safe to use.
-        description = 'Choose another Ubuntu package'
-        vocab_terms.append(
-            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        # Add an option to represent that the project is not packaged in
-        # Ubuntu.
-        description = 'This project is not packaged in Ubuntu'
-        vocab_terms.append(
-            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        series_display_name = ubuntu.currentseries.displayname
-        self.form_fields = form.Fields(
-            Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages') % series_display_name,
-                   default=None,
-                   vocabulary=vocabulary,
-                   required=True))
-
-    @action(_('Set Ubuntu Package Information'), name='link')
-    def link(self, action, data):
-        product = self.context
-        dsp = data.get(self.package_field_name)
-        product_series = product.development_focus
-        if dsp is self.other_package:
-            # The user wants to link an alternate package to this project.
-            self.next_url = canonical_url(
-                product_series, view_name="+ubuntupkg")
-            return
-        if dsp is self.not_packaged:
-            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
-            self.context.date_next_suggest_packaging = year_from_now
-            self.next_url = self.request.getURL()
-            return
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        product_series.setPackaging(ubuntu.currentseries,
-                                    dsp.sourcepackagename,
-                                    self.user)
-        self.request.response.addInfoNotification(
-            'This project was linked to the source package "%s"' %
-            dsp.displayname)
-        self.next_url = self.request.getURL()
 
 
 class SeriesReleasePair:
