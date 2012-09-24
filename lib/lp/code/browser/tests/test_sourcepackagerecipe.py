@@ -1276,6 +1276,15 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             [build6, build5, build4, build3, build2], view.builds)
 
+    def test_request_builds_redirects_on_get(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        with person_logged_in(self.chef):
+            url = canonical_url(recipe)
+        browser = self.getViewBrowser(recipe, '+request-daily-build')
+        self.assertEqual(url, browser.url)
+
     def test_request_daily_builds_button_stale(self):
         # Recipes that are stale and are built daily have a build now link
         recipe = self.factory.makeSourcePackageRecipe(
