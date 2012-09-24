@@ -399,9 +399,9 @@ class LaunchpadBrowserPublication(
                 view_name = view.__class__.__name__
             names = [view_name] + list(view_names)
             context_name = context.__class__.__name__
+            # Is this a view of a generated view class,
+            # such as ++model++ view of Product:+bugs. Recurse!
             if ' ' in context_name and safe_hasattr(context, 'context'):
-                # This is a view of a generated view class,
-                # such as ++model++ view of Product:+bugs. Recuse!
                 return self.constructPageID(context, context.context, names)
             view_names = ':'.join(names)
             pageid = '%s:%s' % (context_name, view_names)
