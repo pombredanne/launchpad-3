@@ -37,7 +37,7 @@ endef
 JS_BUILD_DIR := build/js
 YUI_VERSIONS := 3.3.0 3.5.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
-YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.5.1
+YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.3.0
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_LP)
