@@ -27,6 +27,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
@@ -35,7 +36,6 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    PRIVATE_INFORMATION_TYPES,
     SharingPermission,
     SpecificationSharingPolicy,
     )
@@ -386,6 +386,9 @@ class SharingService:
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 BugSharingPolicy.PROPRIETARY])
+        if (pillar.bug_sharing_policy and
+            not pillar.bug_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.bug_sharing_policy)
 
         return self._makeEnumData(allowed_policies)
 

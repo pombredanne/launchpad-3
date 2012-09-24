@@ -14,6 +14,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
@@ -27,10 +28,7 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -885,6 +883,18 @@ class TestBugPrivacy(TestCaseWithFactory):
             [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeBug().getAllowedInformationTypes(None))
+
+    def test_getAllowedInformationTypes_includes_current(self):
+        # A bug's allowed information types must include its current
+        # information type even if said type is not in the allowed types.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            target=product, information_type=InformationType.PUBLICSECURITY)
+        removeSecurityProxy(product).bug_sharing_policy = (
+            BugSharingPolicy.FORBIDDEN)
+        self.assertContentEqual(
+            [InformationType.PUBLICSECURITY],
+            bug.getAllowedInformationTypes(None))
 
     def test_transitionToInformationType_respects_allowed_proprietary(self):
         # transitionToInformationType rejects types that aren't allowed

@@ -11,6 +11,7 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import (
@@ -23,10 +24,7 @@ from lp.bugs.model.bugsummary import (
     get_bugsummary_filter_for_user,
     )
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.enums import (
-    InformationType,
-    SharingPermission,
-    )
+from lp.registry.enums import SharingPermission
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser

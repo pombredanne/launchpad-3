@@ -7,10 +7,10 @@ and displays a meaningful error message.
 
 The No Privilege User may open the same page in two browser tabs.
 
-    >>> first_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> first_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> first_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
 
-    >>> second_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> second_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> second_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
 
 Then the user click the "Delete Link" button in the first tab. The

@@ -146,7 +146,7 @@ If the development focus branch is private, then for unauthorized viewers, it
 appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> branch.transitionToInformationType(
     ...     InformationType.USERDATA, branch.owner, verify_policy=False)
     >>> logout()

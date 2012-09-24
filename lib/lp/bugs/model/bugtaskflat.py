@@ -12,12 +12,12 @@ from storm.locals import (
     Storm,
     )
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     BugTaskStatusSearch,
     )
-from lp.registry.enums import InformationType
 from lp.services.database.enumcol import EnumCol
 
 

@@ -13,6 +13,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
@@ -24,7 +25,6 @@ from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     SharingPermission,
     SpecificationSharingPolicy,
     )
@@ -190,6 +190,17 @@ class TestSharingService(TestCaseWithFactory):
              BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
              BranchSharingPolicy.PROPRIETARY])
 
+    def test_getBranchSharingPolicies_disallowed_policy(self):
+        # getBranchSharingPolicies includes a pillar's current policy even if
+        # it is nominally not allowed.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(BranchSharingPolicy.FORBIDDEN)
+        self._assert_getBranchSharingPolicies(
+            product,
+            [BranchSharingPolicy.PUBLIC, BranchSharingPolicy.FORBIDDEN])
+
     def test_getBranchSharingPolicies_product_with_embargoed(self):
         # The sharing policies will contain the product's sharing policy even
         # if it is not in the nominally allowed policy list.
@@ -275,6 +286,16 @@ class TestSharingService(TestCaseWithFactory):
              BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
              BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
              BugSharingPolicy.PROPRIETARY])
+
+    def test_getBugSharingPolicies_disallowed_policy(self):
+        # getBugSharingPolicies includes a pillar's current policy even if it
+        # is nominally not allowed.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.FORBIDDEN)
+        self._assert_getBugSharingPolicies(
+            product, [BugSharingPolicy.PUBLIC, BugSharingPolicy.FORBIDDEN])
 
     def test_getBugSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()

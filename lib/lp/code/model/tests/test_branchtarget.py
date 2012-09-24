@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -19,7 +20,6 @@ from lp.code.model.branchtarget import (
     PersonBranchTarget,
     ProductBranchTarget,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import IPrimaryContext
