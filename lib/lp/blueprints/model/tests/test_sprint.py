@@ -33,14 +33,17 @@ class TestSpecifications(TestCaseWithFactory):
         self.date_decided = datetime.datetime.now(utc)
 
     def makeSpec(self, sprint=None, date_decided=0, date_created=0,
-                 proposed=False, title=None):
+                 proposed=False, declined=False, title=None):
         if sprint is None:
             sprint = self.factory.makeSprint()
         blueprint = self.factory.makeSpecification(title=title)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
-        if not proposed:
+        if declined:
+            link.declineBy(sprint.owner)
+        elif not proposed:
             link.acceptBy(sprint.owner)
+        if not proposed:
             date_decided = self.date_decided + datetime.timedelta(date_decided)
             naked_link.date_decided = date_decided
         date_created = self.date_decided + datetime.timedelta(date_created)
@@ -120,6 +123,14 @@ class TestSpecifications(TestCaseWithFactory):
         result = list_result(sprint, ['abc'])
         self.assertEqual([blueprint1], result)
         result = list_result(sprint, ['def'])
+        self.assertEqual([blueprint2], result)
+
+    def test_declined(self):
+        # Specifying SpecificationFilter.DECLINED shows only declined specs.
+        blueprint1 = self.makeSpec()
+        sprint = blueprint1.sprints[0]
+        blueprint2 = self.makeSpec(sprint, declined=True)
+        result = list_result(sprint, [SpecificationFilter.DECLINED])
         self.assertEqual([blueprint2], result)
 
 
