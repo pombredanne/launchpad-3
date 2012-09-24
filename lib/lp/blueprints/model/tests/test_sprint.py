@@ -32,8 +32,11 @@ class TestSpecifications(TestCaseWithFactory):
         super(TestSpecifications, self).setUp()
         self.date_decided = datetime.datetime.now(utc)
 
-    def makeSpec(self, sprint, date_decided=0, date_created=0, proposed=False):
-        blueprint = self.factory.makeSpecification()
+    def makeSpec(self, sprint=None, date_decided=0, date_created=0,
+                 proposed=False, title=None):
+        if sprint is None:
+            sprint = self.factory.makeSprint()
+        blueprint = self.factory.makeSpecification(title=title)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
         if not proposed:
@@ -108,6 +111,16 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(sprint, proposed=True)
         result = list_result(sprint, [SpecificationFilter.PROPOSED])
         self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_text_search(self):
+        # Text searches work.
+        blueprint1 = self.makeSpec(title='abc')
+        sprint = blueprint1.sprints[0]
+        blueprint2 = self.makeSpec(sprint, title='def')
+        result = list_result(sprint, ['abc'])
+        self.assertEqual([blueprint1], result)
+        result = list_result(sprint, ['def'])
+        self.assertEqual([blueprint2], result)
 
 
 class TestSprintAttendancesSort(TestCaseWithFactory):
