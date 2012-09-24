@@ -181,7 +181,8 @@ class ChangesFile(SignableTagFile):
                 digest, size, component_and_section, priority_name, filename = (
                     fileline.strip().split())
             except ValueError as e:
-                yield UploadError("Unable to parse file line, check section.")
+                yield UploadError(
+                    "Wrong number of fields in Files line in .changes.")
                 continue
             filepath = os.path.join(self.dirname, filename)
             try:

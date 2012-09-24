@@ -1288,7 +1288,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
         self.processUpload(uploadprocessor, upload_dir)
         self.assertRejectionMessage(
-            uploadprocessor, 'Unable to parse file line, check section.',
+            uploadprocessor,
+            'Wrong number of fields in Files line in .changes.',
             with_file=False)
 
     def testUploadWithUnknownComponentIsRejected(self):
