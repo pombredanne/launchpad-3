@@ -201,5 +201,6 @@ def _get_where_for_local_many(relation, others):
 def fti_search(table, text):
     """An expression ensuring that table rows match the specified text."""
     table = get_cls_info(table).table
-    return SQL('%s.fti @@ ftq(?)' % table.name, params=(unicode(text),),
-               tables=(table,))
+    tables = (table,)
+    text = unicode(text)
+    return SQL('%s.fti @@ ftq(?)' % table.name, params=(text,), tables=tables)
