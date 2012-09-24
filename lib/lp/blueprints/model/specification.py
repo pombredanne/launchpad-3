@@ -726,14 +726,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See ISpecification."""
         # see if a relevant subscription exists, and if so, delete it
         if person is None:
             person = unsubscribed_by
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                if (not sub.canBeUnsubscribedByUser(unsubscribed_by) and
+                    not ignore_permissions):
                     raise UserCannotUnsubscribePerson(
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
