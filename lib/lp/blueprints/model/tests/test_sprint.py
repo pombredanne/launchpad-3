@@ -15,6 +15,7 @@ from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationFilter,
+    SpecificationPriority,
     SpecificationSort,
     )
 from lp.testing import TestCaseWithFactory
@@ -37,11 +38,11 @@ class TestSpecifications(TestCaseWithFactory):
     def makeSpec(self, sprint=None, date_decided=0, date_created=0,
                  proposed=False, declined=False, title=None,
                  status=NewSpecificationDefinitionStatus.NEW,
-                 name=None):
+                 name=None, priority=None):
         if sprint is None:
             sprint = self.factory.makeSprint()
-        blueprint = self.factory.makeSpecification(title=title, status=status,
-                                                   name=name)
+        blueprint = self.factory.makeSpecification(
+            title=title, status=status, name=name, priority=priority)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
         if declined:
@@ -122,13 +123,31 @@ class TestSpecifications(TestCaseWithFactory):
 
     def test_priority_sort(self):
         # Sorting by priority works and is the default.
-        blueprint1 = self.makeSpec(
-            status=SpecificationDefinitionStatus.OBSOLETE)
+        # When priority is supplied, status is ignored.
+        blueprint1 = self.makeSpec(priority=SpecificationPriority.UNDEFINED,
+                                   status=SpecificationDefinitionStatus.NEW)
         sprint = blueprint1.sprints[0]
         blueprint2 = self.makeSpec(
-            sprint, status=SpecificationDefinitionStatus.APPROVED)
-        blueprint3 = self.makeSpec(sprint,
-                                   status=SpecificationDefinitionStatus.NEW)
+            sprint, priority=SpecificationPriority.NOTFORUS,
+            status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(
+            sprint, priority=SpecificationPriority.LOW,
+            status=SpecificationDefinitionStatus.OBSOLETE)
+        result = sprint.specifications()
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_priority_sort_fallback_status(self):
+        # Sorting by priority falls back to defintion_status.
+        # When status is supplied, name is ignored.
+        blueprint1 = self.makeSpec(
+            status=SpecificationDefinitionStatus.OBSOLETE, name='a')
+        sprint = blueprint1.sprints[0]
+        blueprint2 = self.makeSpec(
+            sprint, status=SpecificationDefinitionStatus.APPROVED, name='c')
+        blueprint3 = self.makeSpec(
+            sprint, status=SpecificationDefinitionStatus.NEW, name='b')
         result = sprint.specifications()
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
         result = sprint.specifications(sort=SpecificationSort.PRIORITY)
