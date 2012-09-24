@@ -140,5 +140,6 @@ class TestSprintAttendancesSort(TestCaseWithFactory):
         sprint.attend(
             dave, sprint.time_starts, sprint.time_ends, True)
         attendances = [bob.displayname, ced.displayname, dave.displayname]
-        people = [attendee.attendee.displayname for attendee in sprint.attendances]
+        people = [attendee.attendee.displayname for attendee in
+                  sprint.attendances]
         self.assertEqual(attendances, people)
