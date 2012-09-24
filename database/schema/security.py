@@ -164,6 +164,7 @@ class DbSchema(dict):
             WHERE c.relkind IN ('r','v','S','')
                 AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
                 AND pg_catalog.pg_table_is_visible(c.oid)
+                AND c.relpersistence <> 't'
             ORDER BY 1,2
             ''')
         for schema, name, type_, owner, acl in cur.fetchall():
@@ -232,16 +233,17 @@ CONFIG_DEFAULTS = {
     }
 
 
-def main(options):
+def main(options, master_con=None):
     # Load the config file
     config = SafeConfigParser(CONFIG_DEFAULTS)
     configfile_name = os.path.join(os.path.dirname(__file__), 'security.cfg')
     config.read([configfile_name])
 
-    con = connect()
+    if master_con is None:
+        master_con = connect()
 
     log.info("Resetting permissions.")
-    reset_permissions(con, config, options)
+    reset_permissions(master_con, config, options)
     return 0
 
 
