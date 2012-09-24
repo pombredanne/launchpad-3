@@ -253,7 +253,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             # Otherwise the permitted types are defined by the namespace.
             policy = IBranchNamespacePolicy(self.namespace)
-            types = set(policy.getAllowedInformationTypes())
+            types = set(policy.getAllowedInformationTypes(who))
         return types
 
     def transitionToInformationType(self, information_type, who,
@@ -370,7 +370,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchTargetError(
                     'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
-        if self.information_type not in namespace.getAllowedInformationTypes():
+        if (self.information_type not in
+            namespace.getAllowedInformationTypes(user)):
             raise BranchTargetError(
                 '%s branches are not allowed for target %s.' % (
                     self.information_type.title, target.displayname))
