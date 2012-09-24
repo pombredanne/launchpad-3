@@ -279,12 +279,8 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             expected_emails, job.getErrorRecipients())
 
-    CHANGE_BUG = 0
-    CHANGE_BRANCH = 1
-    CHANGE_SPECIFICATION = 2
-
     def _assert_artifact_change_unsubscribes(self, change_callback,
-                                             test_type):
+                                             configure_test):
         # Subscribers are unsubscribed if the artifact becomes invisible
         # due to a change in information_type.
         product = self.factory.makeProduct(
@@ -330,62 +326,11 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             spec_artifact, artifact_indirect_grantee)
         specification.subscribe(artifact_indirect_grantee, owner)
 
-        if test_type == self.CHANGE_BUG:
-            concrete_artifact = bug
-            bug.subscribe(policy_team_grantee, owner)
-            bug.subscribe(policy_indirect_grantee, owner)
-            bug.subscribe(artifact_team_grantee, owner)
-
-            def get_bug_pillars(concrete_artifact):
-                return concrete_artifact.affected_pillars
-
-            def get_bug_subscribers(concrete_artifact):
-                return removeSecurityProxy(
-                    concrete_artifact).getDirectSubscribers()
-
-            get_pillars = get_bug_pillars
-            get_subscribers = get_bug_subscribers
-
-        elif test_type == self.CHANGE_BRANCH:
-            concrete_artifact = branch
-            branch.subscribe(
-                policy_team_grantee,
-                BranchSubscriptionNotificationLevel.NOEMAIL,
-                None, CodeReviewNotificationLevel.NOEMAIL, owner)
-            branch.subscribe(
-                policy_indirect_grantee,
-                BranchSubscriptionNotificationLevel.NOEMAIL, None,
-                CodeReviewNotificationLevel.NOEMAIL, owner)
-            branch.subscribe(
-                artifact_team_grantee,
-                BranchSubscriptionNotificationLevel.NOEMAIL, None,
-                CodeReviewNotificationLevel.NOEMAIL, owner)
-
-            def get_branch_pillars(concrete_artifact):
-                return [concrete_artifact.product]
-
-            def get_branch_subscribers(concrete_artifact):
-                return concrete_artifact.subscribers
-
-            get_pillars = get_branch_pillars
-            get_subscribers = get_branch_subscribers
-
-        elif test_type == self.CHANGE_SPECIFICATION:
-            concrete_artifact = specification
-            specification.subscribe(policy_team_grantee, owner)
-            specification.subscribe(policy_indirect_grantee, owner)
-            self.factory.makeAccessArtifactGrant(
-                spec_artifact, artifact_team_grantee)
-            specification.subscribe(artifact_team_grantee, owner)
-
-            def get_spec_pillars(concrete_artifact):
-                return [concrete_artifact.product]
-
-            def get_spec_subscribers(concrete_artifact):
-                return concrete_artifact.subscribers
-
-            get_pillars = get_spec_pillars
-            get_subscribers = get_spec_subscribers
+        # pick one of the concrete artifacts (bug, branch or spec)
+        # and subscribe the teams and persons.
+        concrete_artifact, get_pillars, get_subscribers = configure_test(
+            bug, branch, specification, policy_team_grantee,
+            policy_indirect_grantee, artifact_team_grantee, owner)
 
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
@@ -420,16 +365,77 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertIn(artifact_indirect_grantee, specification.subscribers)
 
     def _assert_bug_change_unsubscribes(self, change_callback):
+
+        def get_pillars(concrete_artifact):
+            return concrete_artifact.affected_pillars
+
+        def get_subscribers(concrete_artifact):
+            return removeSecurityProxy(
+                concrete_artifact).getDirectSubscribers()
+
+        def configure_test(bug, branch, specification, policy_team_grantee,
+                           policy_indirect_grantee, artifact_team_grantee,
+                           owner):
+            concrete_artifact = bug
+            bug.subscribe(policy_team_grantee, owner)
+            bug.subscribe(policy_indirect_grantee, owner)
+            bug.subscribe(artifact_team_grantee, owner)
+            return concrete_artifact, get_pillars, get_subscribers
+
         self._assert_artifact_change_unsubscribes(
-            change_callback, self.CHANGE_BUG)
+            change_callback, configure_test)
 
     def _assert_branch_change_unsubscribes(self, change_callback):
+
+        def get_pillars(concrete_artifact):
+            return [concrete_artifact.product]
+
+        def get_subscribers(concrete_artifact):
+            return concrete_artifact.subscribers
+
+        def configure_test(bug, branch, specification, policy_team_grantee,
+                           policy_indirect_grantee, artifact_team_grantee,
+                           owner):
+            concrete_artifact = branch
+            branch.subscribe(
+                policy_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            branch.subscribe(
+                policy_indirect_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
+            branch.subscribe(
+                artifact_team_grantee,
+                BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                CodeReviewNotificationLevel.NOEMAIL, owner)
+            return concrete_artifact, get_pillars, get_subscribers
+
         self._assert_artifact_change_unsubscribes(
-            change_callback, self.CHANGE_BRANCH)
+            change_callback, configure_test)
 
     def _assert_specification_change_unsubscribes(self, change_callback):
+
+        def get_pillars(concrete_artifact):
+            return [concrete_artifact.product]
+
+        def get_subscribers(concrete_artifact):
+            return concrete_artifact.subscribers
+
+        def configure_test(bug, branch, specification, policy_team_grantee,
+                           policy_indirect_grantee, artifact_team_grantee,
+                           owner):
+            concrete_artifact = specification
+            specification.subscribe(policy_team_grantee, owner)
+            specification.subscribe(policy_indirect_grantee, owner)
+            spec_artifact = self.factory.makeAccessArtifact(specification)
+            self.factory.makeAccessArtifactGrant(
+                spec_artifact, artifact_team_grantee)
+            specification.subscribe(artifact_team_grantee, owner)
+            return concrete_artifact, get_pillars, get_subscribers
+
         self._assert_artifact_change_unsubscribes(
-            change_callback, self.CHANGE_SPECIFICATION)
+            change_callback, configure_test)
 
     def test_change_information_type_branch(self):
         def change_information_type(branch):
