@@ -45,6 +45,7 @@ class TestSpecifications(TestCaseWithFactory):
         return blueprint
 
     def test_specifications_quantity(self):
+        # Ensure the quantity controls the maximum number of entries.
         sprint = self.factory.makeSprint()
         for count in range(10):
             self.makeSpec(sprint)
@@ -54,16 +55,21 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual(10, sprint.specifications(quantity=11).count())
 
     def test_specifications_date_sort_accepted_decided(self):
+        # If only accepted proposals are requested, date-sorting uses
+        # date_decided.  Otherwise, it uses date_created.
         sprint = self.factory.makeSprint()
         blueprint1 = self.makeSpec(sprint, date_decided=0, date_created=0)
         blueprint2 = self.makeSpec(sprint, date_decided=-1, date_created=1)
         blueprint3 = self.makeSpec(sprint, date_decided=1, date_created=2)
         result = list_result(sprint)
         self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+        # SpecificationFilter.ALL forces sorting by date_created, since not
+        # all entries will have date_decided.
         result = list_result(sprint, [SpecificationFilter.ALL])
         self.assertEqual([blueprint3, blueprint2, blueprint1], result)
 
     def test_accepted_date_sort_creation(self):
+        # If date_decided does not vary, sort on date_created.
         sprint = self.factory.makeSprint()
         blueprint1 = self.makeSpec(sprint, date_created=0)
         blueprint2 = self.makeSpec(sprint, date_created=-1)
@@ -74,6 +80,7 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual([blueprint3, blueprint1, blueprint2], result)
 
     def test_proposed_date_sort_creation(self):
+        # date-sorting by PROPOSED uses date_created.
         sprint = self.factory.makeSprint()
         blueprint1 = self.makeSpec(sprint, date_created=0, proposed=True)
         blueprint2 = self.makeSpec(sprint, date_created=-1, proposed=True)
@@ -82,22 +89,26 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual([blueprint3, blueprint1, blueprint2], result)
 
     def test_accepted_date_sort_id(self):
+        # date-sorting when no date varies uses object id.
         sprint = self.factory.makeSprint()
         blueprint1 = self.makeSpec(sprint)
         blueprint2 = self.makeSpec(sprint)
         blueprint3 = self.makeSpec(sprint)
         result = list_result(sprint)
         self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+        # date-sorting ALL when no date varies uses object id.
         result = list_result(sprint, [SpecificationFilter.ALL])
         self.assertEqual([blueprint1, blueprint2, blueprint3], result)
 
     def test_proposed_date_sort_id(self):
+        # date-sorting PROPOSED when no date varies uses object id.
         sprint = self.factory.makeSprint()
         blueprint1 = self.makeSpec(sprint, proposed=True)
         blueprint2 = self.makeSpec(sprint, proposed=True)
         blueprint3 = self.makeSpec(sprint, proposed=True)
         result = list_result(sprint, [SpecificationFilter.PROPOSED])
         self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
 
 class TestSprintAttendancesSort(TestCaseWithFactory):
 
