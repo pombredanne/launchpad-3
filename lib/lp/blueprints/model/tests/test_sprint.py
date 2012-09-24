@@ -12,6 +12,8 @@ from pytz import utc
 from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationSort,
     )
@@ -33,10 +35,13 @@ class TestSpecifications(TestCaseWithFactory):
         self.date_decided = datetime.datetime.now(utc)
 
     def makeSpec(self, sprint=None, date_decided=0, date_created=0,
-                 proposed=False, declined=False, title=None):
+                 proposed=False, declined=False, title=None,
+                 status=NewSpecificationDefinitionStatus.NEW,
+                 name=None):
         if sprint is None:
             sprint = self.factory.makeSprint()
-        blueprint = self.factory.makeSpecification(title=title)
+        blueprint = self.factory.makeSpecification(title=title, status=status,
+                                                   name=name)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
         if declined:
@@ -114,6 +119,31 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(sprint, proposed=True)
         result = list_result(sprint, [SpecificationFilter.PROPOSED])
         self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_priority_sort(self):
+        # Sorting by priority works and is the default.
+        blueprint1 = self.makeSpec(
+            status=SpecificationDefinitionStatus.OBSOLETE)
+        sprint = blueprint1.sprints[0]
+        blueprint2 = self.makeSpec(
+            sprint, status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(sprint,
+                                   status=SpecificationDefinitionStatus.NEW)
+        result = sprint.specifications()
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+
+    def test_priority_sort_fallback_name(self):
+        # Sorting by priority falls back to name
+        blueprint1 = self.makeSpec(name='b')
+        sprint = blueprint1.sprints[0]
+        blueprint2 = self.makeSpec(sprint, name='c')
+        blueprint3 = self.makeSpec(sprint, name='a')
+        result = sprint.specifications()
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_text_search(self):
         # Text searches work.
