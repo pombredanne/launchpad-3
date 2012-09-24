@@ -749,8 +749,8 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         self.assertEqual(permission.package_set_name, self.packageset.name)
 
     def test_new_packageset_uploader_repeated(self):
-        # Creating the same permission repeatedly should return the re-use the
-        # existing permission.
+        # Creating the same permission repeatedly should re-use the existing
+        # permission.
         permission1 = self.ap_set.newPackagesetUploader(
             self.archive, self.person, self.packageset)
         permission2 = self.ap_set.newPackagesetUploader(
