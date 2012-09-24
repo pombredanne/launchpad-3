@@ -177,8 +177,12 @@ class ChangesFile(SignableTagFile):
         for fileline in self._dict['Files'].strip().split("\n"):
             # files lines from a changes file are always of the form:
             # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
-            digest, size, component_and_section, priority_name, filename = (
-                fileline.strip().split())
+            try:
+                digest, size, component_and_section, priority_name, filename = (
+                    fileline.strip().split())
+            except ValueError as e:
+                yield UploadError("Unable to parse file line, check section.")
+                continue
             filepath = os.path.join(self.dirname, filename)
             try:
                 if self.isCustom(component_and_section):
