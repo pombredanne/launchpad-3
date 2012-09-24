@@ -173,13 +173,14 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         from lp.blueprints.model.specification import Specification
         assert prejoin_people is None or not prejoin_people
         result = Store.of(self).find(Specification, *query)
-        if sort is not None:
-            assert sort == SpecificationSort.DATE
+        if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
             if (SpecificationFilter.ALL not in filter and
                 SpecificationFilter.PROPOSED not in filter):
                 order = (Desc(SprintSpecification.date_decided),) + order
             result = result.order_by(*order)
+        else:
+            assert sort is None or sort == SpecificationSort.PRIORITY
         if quantity is not None:
             result = result[:quantity]
         return result
