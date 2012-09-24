@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from storm.store import Store
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -31,7 +32,14 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.registry.enums import SharingPermission
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    Specification,
+    )
+from lp.registry.enums import (
+    SharingPermission,
+    SpecificationSharingPolicy,
+    )
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -408,6 +416,49 @@ class SpecificationTests(TestCaseWithFactory):
             self.write_access_to_ISpecificationView(
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
+
+    def test_get_specification_privacy_filter(self):
+        # get_specification_privacy_filter() returns a Storm expression
+        # that can be used to filter specifications by their visibility-
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        public_spec = self.factory.makeSpecification(product=product)
+        proprietary_spec_1 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        proprietary_spec_2 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        all_specs = [
+            public_spec, proprietary_spec_1, proprietary_spec_2]
+        store = Store.of(product)
+        specs_for_anon = store.find(
+            Specification, get_specification_privacy_filter(None),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_anon)
+        # Product owners havae grants on the product, the privacy
+        # filter returns thus all specifications for them.
+        specs_for_owner = store.find(
+            Specification, get_specification_privacy_filter(owner.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(all_specs, specs_for_owner)
+        # The filter returns only public specs for ordinary users.
+        user = self.factory.makePerson()
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_other_user)
+        # If the user has a grant for a specification, the filter returns
+        # this specification too.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, specifications=[proprietary_spec_1])
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(
+            [public_spec, proprietary_spec_1], specs_for_other_user)
 
 
 class TestSpecificationSet(TestCaseWithFactory):
