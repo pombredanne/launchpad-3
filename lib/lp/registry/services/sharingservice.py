@@ -20,6 +20,8 @@ from storm.expr import (
     LeftJoin,
     Or,
     Select,
+    SQL,
+    With,
     )
 from storm.store import Store
 from zope.component import getUtility
@@ -125,11 +127,20 @@ class SharingService:
         """See `ISharingService`."""
         if user is None:
             return []
-        if IPersonRoles(user).in_admin:
+        store = IStore(AccessPolicyGrantFlat)
+        if (IPersonRoles(user).in_admin or
+            IPersonRoles(user).in_commercial_admin):
             filter = True
         else:
-            filter = Or(Product._owner == user, Product.driver == user)
-        store = IStore(AccessPolicyGrantFlat)
+            with_statement = With("teams",
+                Select(TeamParticipation.teamID,
+                    tables=TeamParticipation,
+                    where=TeamParticipation.person == user.id))
+            teams_sql = SQL("SELECT team from teams")
+            store = store.with_(with_statement)
+            filter = Or(
+                Product._ownerID.is_in(teams_sql),
+                Product.driverID.is_in(teams_sql))
         tables = [
             AccessPolicyGrantFlat,
             Join(

@@ -1305,7 +1305,9 @@ class TestSharingService(TestCaseWithFactory):
         expected = []
         if who:
             expected = [product]
-        if who and IPersonRoles(who).in_admin:
+        if who and (
+            IPersonRoles(who).in_admin or
+            IPersonRoles(who).in_commercial_admin):
             expected.append(unrelated_product)
         self.assertEqual(expected, list(shared))
 
@@ -1320,16 +1322,24 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self._assert_getSharedProducts(product, admin)
 
+    def test_getSharedProducts_commercial_admin(self):
+        # Commercial admins can see all shared products.
+        admin = getUtility(ILaunchpadCelebrities).commercial_admin.teamowner
+        product = self.factory.makeProduct()
+        self._assert_getSharedProducts(product, admin)
+
     def test_getSharedProducts_owner(self):
         # Users only see shared products they own.
-        product = self.factory.makeProduct()
-        self._assert_getSharedProducts(product, product.owner)
+        owner_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=owner_team)
+        self._assert_getSharedProducts(product, owner_team.teamowner)
 
     def test_getSharedProducts_driver(self):
         # Users only see shared products they are the driver for.
-        driver = self.factory.makePerson()
-        product = self.factory.makeProduct(driver=driver)
-        self._assert_getSharedProducts(product, driver)
+        driver_team = self.factory.makeTeam()
+        product = self.factory.makeProduct(driver=driver_team)
+        self._assert_getSharedProducts(product, driver_team.teamowner)
 
     def test_getSharedBugs(self):
         # Test the getSharedBugs method.
