@@ -54,7 +54,7 @@ class CustomUploadsCopier:
     def autoApprove(self, custom):
         """Can `custom` be automatically approved?"""
         # XXX cjwatson 2012-08-16: This more or less duplicates
-        # CustomUploadFile.autoApprove.
+        # BuildDaemonUploadPolicy.autoApprove/CustomUploadFile.autoApprove.
         if custom.packageupload.archive.is_ppa:
             return True
         # UEFI uploads are signed, and must therefore be approved by a human.
