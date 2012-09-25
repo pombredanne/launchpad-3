@@ -8,6 +8,7 @@ __metaclass__ = type
 from lazr.restful.interfaces import ICollectionResource
 from zope.interface import implements
 
+from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import WebServicePublication
 from lp.testing import TestCase
 
@@ -34,6 +35,9 @@ class FakeView:
         self.context = FakeContext()
         self.request = FakeRequest()
 
+    def __call__(self):
+        return 'result'
+
 
 class FakeCollectionResourceView(FakeView):
     """A view object that provides ICollectionResource."""
@@ -43,6 +47,56 @@ class FakeCollectionResourceView(FakeView):
         super(FakeCollectionResourceView, self).__init__()
         self.type_url = (
             u'https://launchpad.dev/api/devel/#milestone-page-resource')
+
+
+class LaunchpadBrowserPublicationPageIDTestCase(TestCase):
+    """Ensure that the web service enhances the page ID correctly."""
+
+    def setUp(self):
+        super(LaunchpadBrowserPublicationPageIDTestCase, self).setUp()
+        self.publication = LaunchpadBrowserPublication(db=None)
+        self.view = FakeView()
+        self.context = FakeContext()
+
+    def test_pageid_without_context(self):
+        # The pageid is an empty string if there is no context.
+        self.assertEqual('', self.publication.constructPageID(self.view, None))
+
+    def test_pageid_view_without_name(self):
+        # The view. __class__.__name__ is used if the view does not have a
+        # __name__ attribute.
+        self.assertEqual(
+            'FakeContext:FakeView',
+            self.publication.constructPageID(self.view, self.context))
+
+    def test_pageid_view_with_name(self):
+        # The view.__name__ is used when it exists.
+        self.view.__name__ = '+snarf'
+        self.assertEqual(
+            'FakeContext:+snarf',
+            self.publication.constructPageID(self.view, self.context))
+
+    def test_pageid_context_is_view_from_template(self):
+        # When the context is a dynamic view class of a page template,
+        # such as adapting a form view to ++model++, the method recurses
+        # the views to locate the true context.
+        class FakeView2(FakeView):
+            pass
+
+        class FakeViewView(FakeView):
+            __name__ = '++model++'
+
+            def __init__(self):
+                self.request = FakeRequest()
+                self.context = FakeView2()
+
+        self.view = FakeViewView()
+        self.context = self.view.context
+        self.context.__name__ = '+bugs'
+        self.context.__class__.__name__ = 'SimpleViewClass from template.pt'
+        self.assertEqual(
+            'FakeContext:+bugs:++model++',
+            self.publication.constructPageID(self.view, self.context))
 
 
 class TestWebServicePageIDs(TestCase):

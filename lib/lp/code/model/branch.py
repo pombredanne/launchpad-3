@@ -53,6 +53,11 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
@@ -132,12 +137,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -253,7 +253,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             # Otherwise the permitted types are defined by the namespace.
             policy = IBranchNamespacePolicy(self.namespace)
-            types = set(policy.getAllowedInformationTypes())
+            types = set(policy.getAllowedInformationTypes(who))
         return types
 
     def transitionToInformationType(self, information_type, who,
@@ -370,7 +370,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchTargetError(
                     'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
-        if self.information_type not in namespace.getAllowedInformationTypes():
+        if (self.information_type not in
+            namespace.getAllowedInformationTypes(user)):
             raise BranchTargetError(
                 '%s branches are not allowed for target %s.' % (
                     self.information_type.title, target.displayname))

@@ -45,13 +45,19 @@ The help folder is registered on the ILaunchpadRoot interface.
 
     >>> from zope.component import queryMultiAdapter
     >>> from lp.services.webapp.publisher import rootObject
-    >>> help = queryMultiAdapter((rootObject, request), name="+help")
+    >>> help_view = queryMultiAdapter((rootObject, request), name="+help")
 
-    >>> help.folder == help_folder
+    >>> help_view.folder == help_folder
     True
 
-    >>> isinstance(help, HelpFolder)
+    >>> isinstance(help_view, HelpFolder)
     True
+
+    >>> print help_view.__name__
+    +help
+
+    >>> print help_view.__class__.__name__
+    +help for /tmp/help...
 
 
 Cleanup

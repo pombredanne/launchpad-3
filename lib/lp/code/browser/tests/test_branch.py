@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
@@ -35,10 +36,7 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
-from lp.registry.enums import (
-    BranchSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config

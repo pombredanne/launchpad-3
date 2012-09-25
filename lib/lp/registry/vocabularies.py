@@ -39,7 +39,6 @@ __all__ = [
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
-    'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NewPillarGranteeVocabulary',
@@ -65,7 +64,6 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -2252,17 +2250,3 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SQL('DistributionSourcePackage.id = SearchableDSP.id'))
 
         return CountableIterator(dsps.count(), dsps, self.toTerm)
-
-
-class InformationTypeVocabulary(SimpleVocabulary):
-
-    implements(IEnumeratedType)
-
-    def __init__(self, types):
-        terms = []
-        for type in types:
-            term = SimpleTerm(type, type.name, type.title)
-            term.name = type.name
-            term.description = type.description
-            terms.append(term)
-        super(InformationTypeVocabulary, self).__init__(terms)

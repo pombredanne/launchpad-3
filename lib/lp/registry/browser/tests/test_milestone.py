@@ -10,10 +10,14 @@ from textwrap import dedent
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.config import config
@@ -184,6 +188,26 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
             BugTaskSearchParams(user=None))
         self.assertEqual(0, tasks.count())
 
+    def test_delete_all_bugtasks(self):
+        # When a milestone is deleted, all bugtasks are deleted.
+        milestone = self.factory.makeMilestone()
+        self.factory.makeBug(milestone=milestone)
+        self.factory.makeBug(
+            milestone=milestone, information_type=InformationType.USERDATA)
+        # Remove the APG the product owner has so he can't see the private bug.
+        ap = getUtility(IAccessPolicySource).find(
+            [(milestone.product, InformationType.USERDATA)]).one()
+        getUtility(IAccessPolicyGrantSource).revoke(
+            [(ap, milestone.product.owner)])
+        form = {
+            'field.actions.delete': 'Delete Milestone',
+            }
+        with person_logged_in(milestone.product.owner):
+            view = create_initialized_view(milestone, '+delete', form=form)
+        self.assertEqual([], view.errors)
+        tasks = milestone.product.development_focus.searchTasks(
+            BugTaskSearchParams(user=None))
+        self.assertEqual(0, tasks.count())
 
 class TestQueryCountBase(TestCaseWithFactory):
 

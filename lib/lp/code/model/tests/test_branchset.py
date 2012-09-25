@@ -8,9 +8,9 @@ __metaclass__ = type
 from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
-from lp.registry.enums import InformationType
 from lp.testing import (
     login_person,
     logout,

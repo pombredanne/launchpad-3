@@ -56,7 +56,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
     CannotCopy,
-    CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
     IArchiveSet,
@@ -1037,35 +1036,6 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
-
-    def test_main_archive_can_use_restricted(self):
-        # Main archives for distributions can always use restricted
-        # architectures if they are not using virtual builders.
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = False
-        self.assertContentEqual([self.arm],
-            distro.main_archive.enabled_restricted_families)
-
-    def test_main_archive_can_not_be_restricted_not_virtualized(self):
-        # A main archive can not be restricted to certain architectures
-        # (unless it's set to build on virtualized builders).
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = False
-        # Restricting to all restricted architectures is fine
-        distro.main_archive.enabled_restricted_families = [self.arm]
-        self.assertRaises(
-            CannotRestrictArchitectures, setattr, distro.main_archive,
-            "enabled_restricted_families", [])
-
-    def test_main_virtualized_archive_can_be_restricted(self):
-        # A main archive can be restricted to certain architectures
-        # if it's set to build on virtualized builders.
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = True
-
-        # Restricting to architectures is fine.
-        distro.main_archive.enabled_restricted_families = [self.arm]
-        distro.main_archive.enabled_restricted_families = []
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""

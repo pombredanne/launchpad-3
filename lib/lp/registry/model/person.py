@@ -108,6 +108,7 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -152,7 +153,6 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )

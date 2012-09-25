@@ -336,7 +336,7 @@ Duplicates
 We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(

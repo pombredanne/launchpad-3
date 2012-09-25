@@ -27,6 +27,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
@@ -34,12 +35,13 @@ from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     SharingPermission,
     SpecificationSharingPolicy,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 
 
 class ISharingService(IService):
@@ -62,6 +64,37 @@ class ISharingService(IService):
         Returns a resultset of (InformationType, count) tuples, where count is
         the number of grantees who have an access policy grant for the
         information type.
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IProduct)
+    @operation_for_version('devel')
+    def getSharedProducts(person, user):
+        """Find products for which person has one or more access policy grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all products are returned, else only those for which the user is a
+            maintainer or driver.
+        :return: a collection of products
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IDistribution)
+    @operation_for_version('devel')
+    def getSharedDistributions(person, user):
+        """Find distributions for which person has one or more access policy
+           grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all distributions are returned, else only those for which the user
+            is a maintainer or driver.
+        :return: a collection of distributions
         """
 
     @export_read_operation()

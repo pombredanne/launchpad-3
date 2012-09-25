@@ -159,7 +159,6 @@ Projects are available at their canonical URL on the API virtual host.
     commercial_subscription_is_due: False
     commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
-    date_next_suggest_packaging: None
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
     display_name: u'Mozilla Firefox'

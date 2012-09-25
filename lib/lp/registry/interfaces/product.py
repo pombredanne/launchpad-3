@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -109,7 +110,6 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -675,16 +675,6 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
-    date_next_suggest_packaging = exported(
-        Datetime(
-            title=_('Next suggest packaging date'),
-            description=_(
-                "The date when Launchpad can resume suggesting Ubuntu "
-                "packages that the project provides. The default value is "
-                "one year after a user states the project is not packaged "
-                "in Ubuntu."),
-            required=False))
-
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
@@ -996,12 +986,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getAllowedProductInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
         """
 
     @call_with(owner=REQUEST_USER)

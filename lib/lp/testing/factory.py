@@ -63,7 +63,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
@@ -141,9 +145,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
-    InformationType,
     SpecificationSharingPolicy,
-    PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -3551,16 +3553,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             component=component)
         return upload
 
-    def makeCustomPackageUpload(self, distroseries=None, pocket=None,
-                                custom_type=None, filename=None):
+    def makeCustomPackageUpload(self, distroseries=None, archive=None,
+                                pocket=None, custom_type=None, filename=None):
         """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+        if archive is None:
+            archive = distroseries.main_archive
         if custom_type is None:
             custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
         upload = self.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive,
-            pocket=pocket)
+            distroseries=distroseries, archive=archive, pocket=pocket)
         file_alias = self.makeLibraryFileAlias(filename=filename)
         upload.addCustom(file_alias, custom_type)
         return upload

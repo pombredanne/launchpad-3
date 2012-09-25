@@ -27,6 +27,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import (
     IBugSubscriptionFilter,
@@ -36,7 +37,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
