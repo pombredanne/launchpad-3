@@ -259,11 +259,11 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def has_any_specifications(self):
-        return self.context.has_any_specifications
+        return not self.context.all_specifications(self.user).is_empty()
 
     @cachedproperty
     def all_specifications(self):
-        return shortlist(self.context.all_specifications)
+        return shortlist(self.context.all_specifications(self.user))
 
     @cachedproperty
     def searchrequested(self):
@@ -348,7 +348,7 @@ class HasSpecificationsView(LaunchpadView):
                 and not check_permission('launchpad.View', self.context)):
             return []
         filter = self.spec_filter
-        return self.context.specifications(filter=filter)
+        return self.context.specifications(self.user, filter=filter)
 
     @cachedproperty
     def specs_batched(self):

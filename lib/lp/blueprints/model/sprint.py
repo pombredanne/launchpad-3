@@ -41,7 +41,10 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
-from lp.blueprints.model.specification import HasSpecificationsMixin
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    HasSpecificationsMixin,
+    )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.app.enums import InformationType
@@ -112,7 +115,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # Only really used in tests.
         return [a.attendee for a in self.attendances]
 
-    def spec_filter_clause(self, filter=None):
+    def spec_filter_clause(self, user, filter=None):
         """Figure out the appropriate query for specifications on a sprint.
 
         We separate out the query generation from the normal
@@ -122,12 +125,12 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         from lp.registry.model.product import Product
-        query = [Specification.information_type == InformationType.PUBLIC,
-                 SprintSpecification.sprintID == self.id,
+        query = [SprintSpecification.sprintID == self.id,
                  SprintSpecification.specificationID == Specification.id,
                  Or(Specification.product == None,
                     Not(Specification.productID.is_in(Select(Product.id,
                         Product.active == False))))]
+        query.append(get_specification_privacy_filter(user))
         if not filter:
             filter = set([SpecificationFilter.ACCEPTED])
         if SpecificationFilter.INFORMATIONAL in filter:
@@ -154,20 +157,14 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             query.append(fti_search(Specification, constraint))
         return query
 
-    @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
+    def all_specifications(self, user):
+        return self.specifications(user, filter=[SpecificationFilter.ALL])
 
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, user, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
-        query = self.spec_filter_clause(filter=filter)
+        query = self.spec_filter_clause(user, filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
@@ -185,7 +182,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
-        query = self.spec_filter_clause(filter=filter)
+        query = self.spec_filter_clause(None, filter=filter)
         result = Store.of(self).find(SprintSpecification, *query)
         return result
 
@@ -212,7 +209,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(
+        return self.specifications(decider,
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     def declineSpecificationLinks(self, idlist, decider):
@@ -226,7 +223,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(
+        return self.specifications(decider,
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance

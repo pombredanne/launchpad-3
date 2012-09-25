@@ -9,8 +9,10 @@ __metaclass__ = type
 import datetime
 
 from pytz import utc
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -18,12 +20,13 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationSort,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-def list_result(sprint, filter=None):
-    result = sprint.specifications(SpecificationSort.DATE, filter=filter)
+def list_result(sprint, filter=None, user=None):
+    result = sprint.specifications(user, SpecificationSort.DATE, filter=filter)
     return list(result)
 
 
@@ -38,11 +41,12 @@ class TestSpecifications(TestCaseWithFactory):
     def makeSpec(self, sprint=None, date_decided=0, date_created=0,
                  proposed=False, declined=False, title=None,
                  status=NewSpecificationDefinitionStatus.NEW,
-                 name=None, priority=None):
+                 name=None, priority=None, information_type=None):
         if sprint is None:
             sprint = self.factory.makeSprint()
         blueprint = self.factory.makeSpecification(
-            title=title, status=status, name=name, priority=priority)
+            title=title, status=status, name=name, priority=priority,
+            information_type=information_type)
         link = blueprint.linkSprint(sprint, blueprint.owner)
         naked_link = removeSecurityProxy(link)
         if declined:
@@ -61,10 +65,11 @@ class TestSpecifications(TestCaseWithFactory):
         sprint = self.factory.makeSprint()
         for count in range(10):
             self.makeSpec(sprint)
-        self.assertEqual(10, sprint.specifications().count())
-        self.assertEqual(10, sprint.specifications(quantity=None).count())
-        self.assertEqual(8, sprint.specifications(quantity=8).count())
-        self.assertEqual(10, sprint.specifications(quantity=11).count())
+        self.assertEqual(10, sprint.specifications(None).count())
+        result = sprint.specifications(None, quantity=None).count()
+        self.assertEqual(10, result)
+        self.assertEqual(8, sprint.specifications(None, quantity=8).count())
+        self.assertEqual(10, sprint.specifications(None, quantity=11).count())
 
     def test_specifications_date_sort_accepted_decided(self):
         # If only accepted proposals are requested, date-sorting uses
@@ -133,9 +138,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(
             sprint, priority=SpecificationPriority.LOW,
             status=SpecificationDefinitionStatus.OBSOLETE)
-        result = sprint.specifications()
+        result = sprint.specifications(None)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        result = sprint.specifications(None, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_priority_sort_fallback_status(self):
@@ -148,9 +153,9 @@ class TestSpecifications(TestCaseWithFactory):
             sprint, status=SpecificationDefinitionStatus.APPROVED, name='c')
         blueprint3 = self.makeSpec(
             sprint, status=SpecificationDefinitionStatus.NEW, name='b')
-        result = sprint.specifications()
+        result = sprint.specifications(None)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
-        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        result = sprint.specifications(None, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
 
     def test_priority_sort_fallback_name(self):
@@ -159,9 +164,9 @@ class TestSpecifications(TestCaseWithFactory):
         sprint = blueprint1.sprints[0]
         blueprint2 = self.makeSpec(sprint, name='c')
         blueprint3 = self.makeSpec(sprint, name='a')
-        result = sprint.specifications()
+        result = sprint.specifications(None)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = sprint.specifications(sort=SpecificationSort.PRIORITY)
+        result = sprint.specifications(None, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_text_search(self):
@@ -181,6 +186,34 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint2 = self.makeSpec(sprint, declined=True)
         result = list_result(sprint, [SpecificationFilter.DECLINED])
         self.assertEqual([blueprint2], result)
+
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertEqual([], list_result(blueprint1.sprints[0]))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.sprints[0], user=grant.grantee))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.sprints[0], user=grant.grantee))
 
 
 class TestSprintAttendancesSort(TestCaseWithFactory):

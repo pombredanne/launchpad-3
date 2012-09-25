@@ -4348,9 +4348,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return link
 
     def makeAccessArtifactGrant(self, artifact=None, grantee=None,
-                                grantor=None):
+                                grantor=None, concrete_artifact=None):
         if artifact is None:
-            artifact = self.makeAccessArtifact()
+            artifact = self.makeAccessArtifact(concrete_artifact)
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:
