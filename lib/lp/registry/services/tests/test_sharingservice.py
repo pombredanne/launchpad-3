@@ -1334,6 +1334,18 @@ class TestSharingService(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product, expired=True)
         self._assert_getSharedProducts(product, admin)
 
+    def test_getSharedProducts_commercial_admin_owner(self):
+        # Commercial admins can see products they own.
+        admin = getUtility(ILaunchpadCelebrities).commercial_admin
+        product = self.factory.makeProduct(owner=admin)
+        self._assert_getSharedProducts(product, admin.teamowner)
+
+    def test_getSharedProducts_commercial_admin_driver(self):
+        # Commercial admins can see products they are the driver for.
+        admin = getUtility(ILaunchpadCelebrities).commercial_admin
+        product = self.factory.makeProduct(driver=admin)
+        self._assert_getSharedProducts(product, admin.teamowner)
+
     def test_getSharedProducts_owner(self):
         # Users only see shared products they own.
         owner_team = self.factory.makeTeam(

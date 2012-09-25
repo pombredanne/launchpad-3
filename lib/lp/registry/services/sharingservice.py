@@ -133,11 +133,12 @@ class SharingService:
         roles = IPersonRoles(user)
         if roles.in_admin:
             filter = True
-        elif roles.in_commercial_admin:
-            filter = Exists(Select(
-                1, tables=CommercialSubscription,
-                where=CommercialSubscription.product == Product.id))
         else:
+            commercial_filter = None
+            if roles.in_commercial_admin:
+                commercial_filter = Exists(Select(
+                    1, tables=CommercialSubscription,
+                    where=CommercialSubscription.product == Product.id))
             with_statement = With("teams",
                 Select(TeamParticipation.teamID,
                     tables=TeamParticipation,
@@ -145,6 +146,7 @@ class SharingService:
             teams_sql = SQL("SELECT team from teams")
             store = store.with_(with_statement)
             filter = Or(
+                commercial_filter or False,
                 Product._ownerID.is_in(teams_sql),
                 Product.driverID.is_in(teams_sql))
         tables = [
