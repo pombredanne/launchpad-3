@@ -56,6 +56,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.sqlbase import (
+    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -977,7 +978,9 @@ class BinaryPackageBuildSet:
                     SourcePackageName.id])
             origin.extend([SourcePackageRelease, SourcePackageName])
             if not isinstance(name, (list, tuple)):
-                clauses.append(SourcePackageName.name.like(name))
+                clauses.append(
+                    "SourcepackageName.name LIKE '%%%%' || %s || '%%%%'" % (
+                        quote_like(name)))
             else:
                 clauses.append(SourcePackageName.name.is_in(name))
 
@@ -990,13 +993,12 @@ class BinaryPackageBuildSet:
 
         clauses = [
             PackageBuild.archive_id == Archive.id,
-            BuildFarmJob.builder_id == builder_id]
+            BuildFarmJob.builder_id == builder_id,
+            get_archive_privacy_filter(user)]
         origin = [PackageBuild, Archive]
 
         self.handleOptionalParamsForBuildQueries(
             clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
-
-        clauses.append(get_archive_privacy_filter(user))
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(
@@ -1005,7 +1007,7 @@ class BinaryPackageBuildSet:
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
-        clauses = []
+        clauses = [PackageBuild.archive_id == archive.id]
         origin = [PackageBuild]
 
         self.handleOptionalParamsForBuildQueries(
@@ -1021,8 +1023,6 @@ class BinaryPackageBuildSet:
             orderBy = [Desc(BuildFarmJob.date_finished)]
         # All orders fallback to id if the primary order doesn't succeed
         orderBy.append(BinaryPackageBuild.id)
-
-        clauses.append(PackageBuild.archive_id == archive.id)
 
         return self._decorate_with_prejoins(
             IStore(BinaryPackageBuild).using(*origin).find(

@@ -417,7 +417,9 @@ class BuildFarmJobSet:
         from lp.soyuz.model.archive import (
             Archive, get_archive_privacy_filter)
 
-        clauses = [BuildFarmJob.builder == builder_id]
+        clauses = [
+            BuildFarmJob.builder == builder_id,
+            Or(PackageBuild.id == None, get_archive_privacy_filter(user))]
         if status is not None:
             clauses.append(BuildFarmJob.status == status)
 
@@ -432,9 +434,6 @@ class BuildFarmJobSet:
                 PackageBuild.build_farm_job == BuildFarmJob.id),
             LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
             ]
-
-        clauses.append(
-            Or(PackageBuild.id == None, get_archive_privacy_filter(user)))
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
