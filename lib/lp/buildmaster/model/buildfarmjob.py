@@ -18,7 +18,6 @@ from storm.expr import (
     LeftJoin,
     Not,
     Or,
-    Select,
     )
 from storm.locals import (
     Bool,
@@ -54,7 +53,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import (
@@ -418,7 +416,8 @@ class BuildFarmJobSet:
         """See `IBuildFarmJobSet`."""
         # Imported here to avoid circular imports.
         from lp.buildmaster.model.packagebuild import PackageBuild
-        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.archive import (
+            Archive, get_archive_privacy_filter)
 
         clauses = [BuildFarmJob.builder == builder_id]
         if status is not None:
@@ -446,11 +445,7 @@ class BuildFarmJobSet:
             origin.append(
                 LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
             clauses.append(
-                Or(PackageBuild.id == None, Not(Archive._private),
-                    Archive.ownerID.is_in(
-                        Select(
-                            TeamParticipation.teamID,
-                            where=(TeamParticipation.person == user)))))
+                Or(PackageBuild.id == None, *get_archive_privacy_filter(user)))
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
