@@ -17,7 +17,6 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
-    Not,
     SQL,
     )
 from storm.locals import (
@@ -48,7 +47,6 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -945,8 +943,8 @@ class BinaryPackageBuildSet:
 
         # Ensure the underlying buildfarmjob and package build tables
         # are included.
-        clauses.extend(
-            [BinaryPackageBuild.package_build == PackageBuild.id,
+        clauses.extend([
+            BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id])
         origin.extend([BinaryPackageBuild, BuildFarmJob])
 
@@ -990,18 +988,15 @@ class BinaryPackageBuildSet:
         from lp.soyuz.model.archive import (
             Archive, get_archive_privacy_filter)
 
-        clauses = [PackageBuild.archive_id == Archive.id]
+        clauses = [
+            PackageBuild.archive_id == Archive.id,
+            BuildFarmJob.builder_id == builder_id]
         origin = [PackageBuild, Archive]
 
         self.handleOptionalParamsForBuildQueries(
             clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
 
-        if user is None:
-            clauses.append(Not(Archive._private))
-        elif not IPersonRoles(user).in_admin:
-            clauses.append(*get_archive_privacy_filter(user))
-
-        clauses.append(BuildFarmJob.builder_id == builder_id)
+        clauses.append(get_archive_privacy_filter(user))
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(

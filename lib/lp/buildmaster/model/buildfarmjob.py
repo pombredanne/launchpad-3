@@ -16,7 +16,6 @@ import pytz
 from storm.expr import (
     Desc,
     LeftJoin,
-    Not,
     Or,
     )
 from storm.locals import (
@@ -52,7 +51,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import (
@@ -432,20 +430,11 @@ class BuildFarmJobSet:
             LeftJoin(
                 PackageBuild,
                 PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
             ]
 
-        if user is None:
-            # Anonymous requests don't get to see private builds at all.
-            origin.append(
-                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            clauses.append(Or(PackageBuild.id == None, Not(Archive._private)))
-        elif not IPersonRoles(user).in_admin:
-            # Non-admin users see all public builds and the specific
-            # private builds to which they have access.
-            origin.append(
-                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            clauses.append(
-                Or(PackageBuild.id == None, *get_archive_privacy_filter(user)))
+        clauses.append(
+            Or(PackageBuild.id == None, get_archive_privacy_filter(user)))
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
