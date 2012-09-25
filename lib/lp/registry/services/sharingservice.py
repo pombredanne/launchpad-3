@@ -15,11 +15,14 @@ from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
     Count,
+    Exists,
     In,
     Join,
     LeftJoin,
     Or,
     Select,
+    SQL,
+    With,
     )
 from storm.store import Store
 from zope.component import getUtility
@@ -49,6 +52,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -61,8 +65,10 @@ from lp.registry.model.accesspolicy import (
     AccessPolicyGrant,
     AccessPolicyGrantFlat,
     )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.registry.model.product import Product
 from lp.services.database.bulk import load
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
@@ -118,6 +124,44 @@ class SharingService:
             ColumnSelect(count_select)),
             AccessPolicy.id.is_in(ids)
         )
+
+    def getSharedProducts(self, person, user):
+        """See `ISharingService`."""
+        if user is None:
+            return []
+        store = IStore(AccessPolicyGrantFlat)
+        roles = IPersonRoles(user)
+        if roles.in_admin:
+            filter = True
+        else:
+            commercial_filter = None
+            if roles.in_commercial_admin:
+                commercial_filter = Exists(Select(
+                    1, tables=CommercialSubscription,
+                    where=CommercialSubscription.product == Product.id))
+            with_statement = With("teams",
+                Select(TeamParticipation.teamID,
+                    tables=TeamParticipation,
+                    where=TeamParticipation.person == user.id))
+            teams_sql = SQL("SELECT team from teams")
+            store = store.with_(with_statement)
+            filter = Or(
+                commercial_filter or False,
+                Product._ownerID.is_in(teams_sql),
+                Product.driverID.is_in(teams_sql))
+        tables = [
+            AccessPolicyGrantFlat,
+            Join(
+                AccessPolicy,
+                AccessPolicyGrantFlat.policy_id == AccessPolicy.id)]
+        result_set = store.find(
+            Product,
+            Product.id.is_in(
+                Select(
+                    columns=AccessPolicy.product_id, tables=tables,
+                    where=(AccessPolicyGrantFlat.grantee_id == person.id))
+            ), filter)
+        return result_set
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
