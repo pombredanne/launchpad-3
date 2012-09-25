@@ -675,16 +675,6 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
-    date_next_suggest_packaging = exported(
-        Datetime(
-            title=_('Next suggest packaging date'),
-            description=_(
-                "The date when Launchpad can resume suggesting Ubuntu "
-                "packages that the project provides. The default value is "
-                "one year after a user states the project is not packaged "
-                "in Ubuntu."),
-            required=False))
-
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
