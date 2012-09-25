@@ -886,12 +886,15 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_deleteGranteeRemoveSubscriptions(
             [InformationType.USERDATA])
 
-    def _assert_revokeAccessGrants(self, pillar, bugs, branches):
+    def _assert_revokeAccessGrants(self, pillar, bugs, branches,
+                                   specifications):
         artifacts = []
         if bugs:
             artifacts.extend(bugs)
         if branches:
             artifacts.extend(branches)
+        if specifications:
+            artifacts.extend(specifications)
         policy = self.factory.makeAccessPolicy(pillar=pillar)
         # Grant access to a grantee and another person.
         grantee = self.factory.makePerson()
@@ -916,6 +919,8 @@ class TestSharingService(TestCaseWithFactory):
                 branch.subscribe(person,
                     BranchSubscriptionNotificationLevel.NOEMAIL, None,
                     CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+            for spec in specifications or []:
+                spec.subscribe(person)
 
         # Check that grantee has expected access grants.
         accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
@@ -925,7 +930,8 @@ class TestSharingService(TestCaseWithFactory):
         self.assertEqual(1, grants.count())
 
         self.service.revokeAccessGrants(
-            pillar, grantee, pillar.owner, bugs=bugs, branches=branches)
+            pillar, grantee, pillar.owner, bugs=bugs, branches=branches,
+            specifications=specifications)
         with block_on_job(self):
             transaction.commit()
 
@@ -939,6 +945,8 @@ class TestSharingService(TestCaseWithFactory):
             self.assertNotIn(grantee, bug.getDirectSubscribers())
         for branch in branches or []:
             self.assertNotIn(grantee, branch.subscribers)
+        for spec in specifications or []:
+            self.assertNotIn(grantee, spec.subscribers)
 
         # Someone else still has access to the bugs and branches.
         grants = accessartifact_grant_source.findByArtifact(
@@ -949,6 +957,8 @@ class TestSharingService(TestCaseWithFactory):
             self.assertIn(someone, bug.getDirectSubscribers())
         for branch in branches or []:
             self.assertIn(someone, branch.subscribers)
+        for spec in specifications or []:
+            self.assertIn(someone, spec.subscribers)
 
     def test_revokeAccessGrantsBugs(self):
         # Users with launchpad.Edit can delete all access for a grantee.
@@ -958,7 +968,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(distro, [bug], None)
+        self._assert_revokeAccessGrants(distro, [bug], None, None)
 
     def test_revokeAccessGrantsBranches(self):
         owner = self.factory.makePerson()
@@ -967,14 +977,30 @@ class TestSharingService(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(product, None, [branch])
+        self._assert_revokeAccessGrants(product, None, [branch], None)
 
-    def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches):
+    def test_revokeAccessGrantsSpecifications(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=(
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
+        self.factory.makeAccessPolicy(
+            pillar=product, type=InformationType.EMBARGOED)
+        login_person(owner)
+        specification = self.factory.makeSpecification(
+            product=product, owner=owner,
+            information_type=InformationType.EMBARGOED)
+        self._assert_revokeAccessGrants(product, None, None, [specification])
+
+    def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches,
+                                       specifications):
         artifacts = []
         if bugs:
             artifacts.extend(bugs)
         if branches:
             artifacts.extend(branches)
+        if specifications:
+            artifacts.extend(specifications)
         policy = self.factory.makeAccessPolicy(pillar=pillar)
 
         person_grantee = self.factory.makePerson()
@@ -982,7 +1008,7 @@ class TestSharingService(TestCaseWithFactory):
         team_grantee = self.factory.makeTeam(
             owner=team_owner,
             membership_policy=TeamMembershipPolicy.RESTRICTED,
-            members=[person_grantee])
+            members=[person_grantee], email='team@example.org')
 
         # Subscribe the team and person grantees to the artifacts.
         for person in [team_grantee, person_grantee]:
@@ -998,19 +1024,28 @@ class TestSharingService(TestCaseWithFactory):
                 branch.subscribe(
                     person, BranchSubscriptionNotificationLevel.NOEMAIL,
                     None, CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+            # Snbscribing somebody to a specification does not yet imply
+            # granting access to this person.
+            self.service.ensureAccessGrants(
+                [person], pillar.owner, specifications=specifications)
+            for spec in specifications or []:
+                spec.subscribe(person)
 
         # Check that grantees have expected access grants and subscriptions.
         for person in [team_grantee, person_grantee]:
             visible_bugs, visible_branches, visible_specs = (
-                self.service.getVisibleArtifacts(person, branches, bugs))
+                self.service.getVisibleArtifacts(
+                    person, branches, bugs, specifications))
             self.assertContentEqual(bugs or [], visible_bugs)
             self.assertContentEqual(branches or [], visible_branches)
+            self.assertContentEqual(specifications or [], visible_specs)
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
                 self.assertIn(person, bug.getDirectSubscribers())
 
         self.service.revokeAccessGrants(
-            pillar, team_grantee, pillar.owner, bugs=bugs, branches=branches)
+            pillar, team_grantee, pillar.owner, bugs=bugs, branches=branches,
+            specifications=specifications)
         with block_on_job(self):
             transaction.commit()
 
@@ -1029,6 +1064,7 @@ class TestSharingService(TestCaseWithFactory):
                 self.service.getVisibleArtifacts(person, branches, bugs))
             self.assertContentEqual([], visible_bugs)
             self.assertContentEqual([], visible_branches)
+            self.assertContentEqual([], visible_specs)
 
     def test_revokeTeamAccessGrantsBugs(self):
         # Users with launchpad.Edit can delete all access for a grantee.
@@ -1038,7 +1074,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeTeamAccessGrants(distro, [bug], None)
+        self._assert_revokeTeamAccessGrants(distro, [bug], None, None)
 
     def test_revokeTeamAccessGrantsBranches(self):
         # Users with launchpad.Edit can delete all access for a grantee.
@@ -1047,7 +1083,21 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        self._assert_revokeTeamAccessGrants(product, None, [branch])
+        self._assert_revokeTeamAccessGrants(product, None, [branch], None)
+
+    def test_revokeTeamAccessGrantsSpecifications(self):
+        # Users with launchpad.Edit can delete all access for a grantee.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=(
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
+        self.factory.makeAccessPolicy(product, InformationType.EMBARGOED)
+        login_person(owner)
+        specification = self.factory.makeSpecification(
+            product=product, owner=owner,
+            information_type=InformationType.EMBARGOED)
+        self._assert_revokeTeamAccessGrants(
+            product, None, None, [specification])
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user

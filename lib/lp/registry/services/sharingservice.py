@@ -604,17 +604,20 @@ class SharingService:
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def revokeAccessGrants(self, pillar, grantee, user, branches=None,
-                           bugs=None):
+                           bugs=None, specifications=None):
         """See `ISharingService`."""
 
-        if not branches and not bugs:
-            raise ValueError("Either bugs or branches must be specified")
+        if not branches and not bugs and not specifications:
+            raise ValueError(
+                "Either bugs, branches or specifications must be specified")
 
         artifacts = []
         if branches:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
+        if specifications:
+            artifacts.extend(specifications)
         # Find the access artifacts associated with the bugs and branches.
         accessartifact_source = getUtility(IAccessArtifactSource)
         artifacts_to_delete = accessartifact_source.find(artifacts)
