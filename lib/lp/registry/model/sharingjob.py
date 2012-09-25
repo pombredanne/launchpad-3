@@ -46,6 +46,14 @@ from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
     )
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    Specification,
+    )
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
@@ -265,18 +273,25 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
         bug_ids = []
         branch_ids = []
+        specification_ids = []
         if artifacts:
             for artifact in artifacts:
                 if IBug.providedBy(artifact):
                     bug_ids.append(artifact.id)
                 elif IBranch.providedBy(artifact):
                     branch_ids.append(artifact.id)
+                elif ISpecification.providedBy(artifact):
+                    specification_ids.append(artifact.id)
+                else:
+                    raise ValueError(
+                        'Unsupported artifact: %r' % artifact)
         information_types = [
             info_type.value for info_type in information_types or []
         ]
         metadata = {
             'bug_ids': bug_ids,
             'branch_ids': branch_ids,
+            'specification_ids': specification_ids,
             'information_types': information_types,
             'requestor.id': requestor.id
         }
@@ -308,6 +323,10 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
         return [getUtility(IBranchLookup).get(id) for id in self.branch_ids]
 
     @property
+    def specification_ids(self):
+        return self.metadata.get('specification_ids', [])
+
+    @property
     def information_types(self):
         if not 'information_types' in self.metadata:
             return []
@@ -332,6 +351,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             'requestor': self.requestor.name,
             'bug_ids': self.bug_ids,
             'branch_ids': self.branch_ids,
+            'specification_ids': self.specification_ids,
             'pillar': getattr(self.pillar, 'name', None),
             'grantee': getattr(self.grantee, 'name', None)
             }
@@ -346,9 +366,13 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
         bug_filters = []
         branch_filters = []
+        specification_filters = []
 
         if self.branch_ids:
             branch_filters.append(Branch.id.is_in(self.branch_ids))
+        if self.specification_ids:
+            specification_filters.append(Specification.id.is_in(
+                self.specification_ids))
         if self.bug_ids:
             bug_filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
         else:
@@ -358,14 +382,21 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                         self.information_types))
                 branch_filters.append(
                     Branch.information_type.is_in(self.information_types))
+                specification_filters.append(
+                    Specification.information_type.is_in(
+                        self.information_types))
             if self.product:
                 bug_filters.append(
                     BugTaskFlat.product == self.product)
                 branch_filters.append(Branch.product == self.product)
+                specification_filters.append(
+                    Specification.product == self.product)
             if self.distro:
                 bug_filters.append(
                     BugTaskFlat.distribution == self.distro)
                 branch_filters.append(Branch.distribution == self.distro)
+                specification_filters.append(
+                    Specification.distribution == self.distro)
 
         if self.grantee:
             bug_filters.append(
@@ -375,6 +406,11 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                         where=TeamParticipation.team == self.grantee)))
             branch_filters.append(
                 In(BranchSubscription.personID,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team == self.grantee)))
+            specification_filters.append(
+                In(SpecificationSubscription.personID,
                     Select(
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
@@ -401,4 +437,21 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                     distinct=True)
             for sub in branch_subscriptions:
                 sub.branch.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)
+        if specification_filters:
+            specification_filters.append(
+                Not(get_specification_privacy_filter(
+                    SpecificationSubscription.personID)))
+            tables = (
+                SpecificationSubscription,
+                Join(
+                    Specification,
+                    Specification.id ==
+                        SpecificationSubscription.specificationID))
+            specifications_subscriptions = IStore(
+                SpecificationSubscription).using(*tables).find(
+                SpecificationSubscription, *specification_filters).config(
+                distinct=True)
+            for sub in specifications_subscriptions:
+                sub.specification.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
