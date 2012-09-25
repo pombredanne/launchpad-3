@@ -405,8 +405,9 @@ class HasSpecificationsView(LaunchpadView):
         Only ACCEPTED specifications are returned.  This list is used by the
         +portlet-latestspecs view.
         """
-        return self.context.specifications(sort=SpecificationSort.DATE,
-            quantity=quantity, prejoin_people=False)
+        return self.context.specifications(self.user,
+            sort=SpecificationSort.DATE, quantity=quantity,
+            prejoin_people=False)
 
 
 class SpecificationAssignmentsView(HasSpecificationsView):

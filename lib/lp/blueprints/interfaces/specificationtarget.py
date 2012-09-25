@@ -52,10 +52,6 @@ class IHasSpecifications(Interface):
                 'approval or completion, for this object.'))),
                                   as_of="devel")
 
-    has_any_specifications = Attribute(
-        'A true or false indicator of whether or not this object has any '
-        'specifications associated with it, regardless of their status.')
-
     valid_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("Valid specifications"),
@@ -73,10 +69,11 @@ class IHasSpecifications(Interface):
     latest_completed_specifications = Attribute(
         "The 5 specifications most recently completed for this context.")
 
-    def specifications(quantity=None, sort=None, filter=None,
+    def specifications(user, quantity=None, sort=None, filter=None,
                        prejoin_people=True):
         """Specifications for this target.
 
+        The user specifies which user to use for calculation of visibility.
         The sort is a dbschema which indicates the preferred sort order. The
         filter is an indicator of the kinds of specs to be returned, and
         appropriate filters depend on the kind of object this method is on.

@@ -1021,26 +1021,25 @@ class HasSpecificationsMixin:
             )
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
-    @property
-    def valid_specifications(self):
+    def valid_specifications(self, user):
         """See IHasSpecifications."""
-        return self.specifications(filter=[SpecificationFilter.VALID])
+        return self.specifications(user, filter=[SpecificationFilter.VALID])
 
-    @property
-    def latest_specifications(self):
+    def latest_specifications(self, user):
         """See IHasSpecifications."""
-        return self.specifications(sort=SpecificationSort.DATE, quantity=5)
+        return self.specifications(user, sort=SpecificationSort.DATE,
+                                   quantity=5)
 
-    @property
-    def latest_completed_specifications(self):
+    def latest_completed_specifications(self, user):
         """See IHasSpecifications."""
-        return self.specifications(sort=SpecificationSort.DATE, quantity=5,
-            filter=[SpecificationFilter.COMPLETE, ])
+        return self.specifications(user, sort=SpecificationSort.DATE,
+                                   quantity=5,
+                                   filter=[SpecificationFilter.COMPLETE])
 
-    @property
-    def specification_count(self):
+    def specification_count(self, user):
         """See IHasSpecifications."""
-        return self.specifications(filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(user,
+                                   filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1083,7 +1082,7 @@ class SpecificationSet(HasSpecificationsMixin):
     def has_any_specifications(self):
         return self.all_specifications.count() != 0
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
 

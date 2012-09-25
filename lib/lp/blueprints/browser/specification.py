@@ -1509,6 +1509,16 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 
     label = 'Blueprints'
 
+    def latest_specifications(self):
+        return self.context.latest_specifications(self.user)
+
+    def latest_completed_specifications(self):
+        return self.context.latest_completed_specifications(self.user)
+
+    def specification_count(self):
+        return self.context.specification_count(self.user)
+
+
     @safe_action
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
