@@ -176,7 +176,7 @@ class BugTaskSearchParams:
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
                  milestone_dateexpected_after=None, created_before=None,
-                 information_type=None):
+                 information_type=None, ignore_privacy=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -236,6 +236,7 @@ class BugTaskSearchParams:
             self.information_type = set((information_type,))
         else:
             self.information_type = None
+        self.ignore_privacy = ignore_privacy
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
