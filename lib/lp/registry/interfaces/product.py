@@ -681,7 +681,7 @@ class IProductPublic(
             description=_(
                 "Obsolete. The date to resume Ubuntu package suggestions."),
             required=False))
-   
+
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
