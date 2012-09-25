@@ -1024,7 +1024,7 @@ class TestSharingService(TestCaseWithFactory):
                 branch.subscribe(
                     person, BranchSubscriptionNotificationLevel.NOEMAIL,
                     None, CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
-            # Snbscribing somebody to a specification does not yet imply
+            # Subscribing somebody to a specification does not yet imply
             # granting access to this person.
             self.service.ensureAccessGrants(
                 [person], pillar.owner, specifications=specifications)
