@@ -66,6 +66,7 @@ from lp.registry.model.accesspolicy import (
     AccessPolicyGrantFlat,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.product import Product
@@ -125,8 +126,13 @@ class SharingService:
             AccessPolicy.id.is_in(ids)
         )
 
-    def getSharedProducts(self, person, user):
-        """See `ISharingService`."""
+    def _getSharedPillars(self, person, user, pillar_class, extra_filter=None):
+        """Helper method for getSharedProducts and getSharedDistributions.
+
+        pillar_class is either Product or Distribution. Products define the
+        owner foreign key attribute as _owner so we need to account for that,
+        but otherwise the logic is the same for both pillar types.
+        """
         if user is None:
             return []
         store = IStore(AccessPolicyGrantFlat)
@@ -134,34 +140,50 @@ class SharingService:
         if roles.in_admin:
             filter = True
         else:
-            commercial_filter = None
-            if roles.in_commercial_admin:
-                commercial_filter = Exists(Select(
-                    1, tables=CommercialSubscription,
-                    where=CommercialSubscription.product == Product.id))
             with_statement = With("teams",
                 Select(TeamParticipation.teamID,
                     tables=TeamParticipation,
                     where=TeamParticipation.person == user.id))
             teams_sql = SQL("SELECT team from teams")
             store = store.with_(with_statement)
+            if IProduct.implementedBy(pillar_class):
+                ownerID = pillar_class._ownerID
+            else:
+                ownerID = pillar_class.ownerID
             filter = Or(
-                commercial_filter or False,
-                Product._ownerID.is_in(teams_sql),
-                Product.driverID.is_in(teams_sql))
+                extra_filter or False,
+                ownerID.is_in(teams_sql),
+                pillar_class.driverID.is_in(teams_sql))
         tables = [
             AccessPolicyGrantFlat,
             Join(
                 AccessPolicy,
                 AccessPolicyGrantFlat.policy_id == AccessPolicy.id)]
+        if IProduct.implementedBy(pillar_class):
+            access_policy_column = AccessPolicy.product_id
+        else:
+            access_policy_column = AccessPolicy.distribution_id
         result_set = store.find(
-            Product,
-            Product.id.is_in(
+            pillar_class,
+            pillar_class.id.is_in(
                 Select(
-                    columns=AccessPolicy.product_id, tables=tables,
+                    columns=access_policy_column, tables=tables,
                     where=(AccessPolicyGrantFlat.grantee_id == person.id))
             ), filter)
         return result_set
+
+    def getSharedProducts(self, person, user):
+        """See `ISharingService`."""
+        commercial_filter = None
+        if user and IPersonRoles(user).in_commercial_admin:
+            commercial_filter = Exists(Select(
+                1, tables=CommercialSubscription,
+                where=CommercialSubscription.product == Product.id))
+        return self._getSharedPillars(person, user, Product, commercial_filter)
+
+    def getSharedDistributions(self, person, user):
+        """See `ISharingService`."""
+        return self._getSharedPillars(person, user, Distribution)
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
