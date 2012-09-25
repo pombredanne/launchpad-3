@@ -5,8 +5,8 @@ Launchpad has expired.
 %(commercial_use_expiration)s
 
 Commercial features were deactivated. Things that are private will
-remain private. New bugs and branches are public by default! Private
-branches cannot be linked to project series.
+remain private. New bugs and branches are forbidden until the project sharing
+policies are updated. Private branches cannot be linked to project series.
 
 A commercial subscription allows you to host your commercial project
 on Launchpad in the same way as any other project. Project's with a
