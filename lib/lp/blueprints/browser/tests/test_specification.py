@@ -522,12 +522,11 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         self.assertThat(browser.contents, Not(self.match_it))
 
 
-class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
+class BaseNewSpecificationInformationTypeDefaultMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(BaseNewSpecificationInformationTypeDefaultTest, self).setUp()
+    def _setUp(self):
         set_blueprint_information_type(self, True)
         it_field = soupmatchers.Tag('it-field', True,
                                     attrs=dict(name='field.information_type'))
@@ -624,9 +623,10 @@ class BaseNewSpecificationInformationTypeDefaultTest(BrowserTestCase):
 
 
 class TestNewSpecificationDefaultInformationTypeProduct(
-    BaseNewSpecificationInformationTypeDefaultTest):
+    BrowserTestCase, BaseNewSpecificationInformationTypeDefaultMixin):
 
     def makeTarget(self, policy, owner=None):
+        self._setUp()
         if owner is None:
             owner = self.factory.makePerson()
         return self.factory.makeProduct(
@@ -634,9 +634,10 @@ class TestNewSpecificationDefaultInformationTypeProduct(
 
 
 class TestNewSpecificationDefaultInformationTypeProductSeries(
-    BaseNewSpecificationInformationTypeDefaultTest):
+    BrowserTestCase, BaseNewSpecificationInformationTypeDefaultMixin):
 
     def makeTarget(self, policy, owner=None):
+        self._setUp()
         if owner is None:
             owner = self.factory.makePerson()
         product = self.factory.makeProduct(
