@@ -35,8 +35,10 @@ from lp.services.utils import total_seconds
 SCHEMA_DIR = os.path.dirname(__file__)
 
 
-def main():
-    con = connect()
+def main(con=None):
+    if con is None:
+        con = connect()
+
     patches = get_patchlist(con)
 
     log.info("Applying patches.")
@@ -238,7 +240,10 @@ def apply_other(con, script, no_commit=False):
 
 
 def apply_comments(con):
-    apply_other(con, 'comments.sql')
+    if options.comments:
+        apply_other(con, 'comments.sql')
+    else:
+        log.debug("Skipping comments.sql per command line settings")
 
 
 _bzr_details_cache = None
@@ -273,6 +278,9 @@ if __name__ == '__main__':
     parser.add_option(
         "--partial", dest="partial", default=False,
         action="store_true", help="Commit after applying each patch")
+    parser.add_option(
+        "--skip-comments", dest="comments", default=True,
+        action="store_false", help="Skip applying comments.sql")
     (options, args) = parser.parse_args()
 
     if args:
