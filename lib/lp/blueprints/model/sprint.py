@@ -160,8 +160,12 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     def all_specifications(self, user):
         return self.specifications(user, filter=[SpecificationFilter.ALL])
 
-    def specifications(self, user, sort=None, quantity=None, filter=None):
+    def specifications(self, user, sort=None, quantity=None, filter=None,
+                       prejoin_people=False):
         """See IHasSpecifications."""
+        # prejoin_people  is provided only for interface compatibility and
+        # prejoin_people=True is not implemented.
+        assert not prejoin_people
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
         query = self.spec_filter_clause(user, filter=filter)
