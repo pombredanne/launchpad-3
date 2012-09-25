@@ -163,6 +163,19 @@ Check if 'currentrelease' works with version containing letters
     >>> dsp3.currentrelease.version
     u'cr.g7-37'
 
+=== Distribution Source Package Branches ===
+
+We can use the getBranches() API from IHasBranches to get the related branches
+for a DSP.
+
+    >>> fred = factory.makePerson(name='fred')
+    >>> branch = factory.makePackageBranch(
+    ...     distroseries=hoary, sourcepackagename='pmount', name='tip',
+    ...     owner=fred)
+    >>> [branch] = list(dsp.getBranches())
+    >>> print branch.unique_name
+    ~fred/ubuntu/hoary/pmount/tip
+
 === Grabbing DSPRs ===
 
 To list the current 'pmount in Ubuntu' ISourcePackages, use
