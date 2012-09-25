@@ -44,17 +44,12 @@ __all__ = [
     ]
 
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 
-import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -74,10 +69,6 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Bool,
     Choice,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    SimpleVocabulary,
     )
 
 from lp import _
