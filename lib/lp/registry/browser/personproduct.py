@@ -22,6 +22,7 @@ from lp.services.webapp import (
     Navigation,
     StandardLaunchpadFacets,
     )
+from lp.services.webapp import canonical_url
 from lp.services.webapp.breadcrumb import Breadcrumb
 
 
@@ -46,6 +47,13 @@ class PersonProductBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.product.displayname
+
+    @property
+    def url(self):
+        if self._url is None:
+            return canonical_url(self.context.product, rootsite=self.rootsite)
+        else:
+            return self._url
 
     @property
     def icon(self):

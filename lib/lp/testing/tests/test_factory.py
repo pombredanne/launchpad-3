@@ -807,14 +807,16 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
 
     def test_makeCustomPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive()
         custom_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
         filename = self.factory.getUniqueString()
         pu = self.factory.makeCustomPackageUpload(
-            distroseries=distroseries, pocket=PackagePublishingPocket.PROPOSED,
-            custom_type=custom_type, filename=filename)
+            distroseries=distroseries, archive=archive,
+            pocket=PackagePublishingPocket.PROPOSED, custom_type=custom_type,
+            filename=filename)
         custom = list(pu.customfiles)[0]
         self.assertEqual(distroseries, pu.distroseries)
-        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(archive, pu.archive)
         self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
         self.assertEqual(custom_type, custom.customformat)
         self.assertEqual(filename, custom.libraryfilealias.filename)
