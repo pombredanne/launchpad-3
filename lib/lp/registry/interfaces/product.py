@@ -72,6 +72,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -108,7 +109,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -648,6 +649,11 @@ class IProductPublic(
         description=_("Sharing policy for this project's bugs."),
         required=False, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Specification sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        as_of='devel')
 
     licenses = exported(
         Set(title=_('Licences'),
@@ -774,6 +780,12 @@ class IProductPublic(
         _("Series that are active and/or have been packaged."))
 
     packagings = Attribute(_("All the packagings for the project."))
+
+    security_contact = exported(
+        TextLine(
+            title=_('Security contact'), required=False, readonly=True,
+            description=_('Security contact (obsolete; always None)')),
+            ('devel', dict(exported=False)), as_of='1.0')
 
     def checkPrivateBugsTransitionAllowed(private_bugs, user):
         """Can the private_bugs attribute be changed to the value by the user?
@@ -906,6 +918,18 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
+    @mutator_for(IProductPublic['specification_sharing_policy'])
+    @operation_parameters(
+        specification_sharing_policy=copy_field(
+            IProductPublic['specification_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setSpecificationSharingPolicy(specification_sharing_policy):
+        """Mutator for specification_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
@@ -972,12 +996,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getAllowedProductInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
         """
 
     @call_with(owner=REQUEST_USER)

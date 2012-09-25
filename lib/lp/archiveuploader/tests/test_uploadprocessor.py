@@ -221,9 +221,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
         log_lines = self.log.getLogBuffer()
-        self.assertTrue(line in log_lines,
-                        "'%s' is not in logged output\n\n%s"
-                        % (line, log_lines))
+        self.assertTrue(
+            line in log_lines, "'%s' is not in logged output\n\n%s" % (
+                line, log_lines))
 
     def assertRaisesAndReturnError(self, excClass, callableObj, *args,
                                    **kwargs):
@@ -1264,29 +1264,40 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
+    def assertRejectionMessage(self, uploadprocessor, msg, with_file=True):
+        expected = ''
+        for part in ('-1.dsc', '.orig.tar.gz', '-1.diff.gz'):
+            if with_file:
+                expected += 'bar_1.0%s: %s\n' % (part, msg)
+            else:
+                expected += '%s\n' % msg
+        expected += ('Further error processing not possible because of a '
+            'critical previous error.')
+        self.assertEqual(
+            expected, uploadprocessor.last_processed_upload.rejection_message)
+
     def testUploadWithUnknownSectionIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Unknown section 'badsection'\n"
-            "bar_1.0.orig.tar.gz: Unknown section 'badsection'\n"
-            "bar_1.0-1.diff.gz: Unknown section 'badsection'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
+        self.assertRejectionMessage(
+            uploadprocessor, "Unknown section 'badsection'")
+
+    def testUploadWithMalformedSectionIsRejected(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertRejectionMessage(
+            uploadprocessor,
+            'Wrong number of fields in Files line in .changes.',
+            with_file=False)
 
     def testUploadWithUnknownComponentIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Unknown component 'contrib'\n"
-            "bar_1.0.orig.tar.gz: Unknown component 'contrib'\n"
-            "bar_1.0-1.diff.gz: Unknown component 'contrib'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
+        self.assertRejectionMessage(
+            uploadprocessor, "Unknown component 'contrib'")
 
     def testSourceUploadToBuilddPath(self):
         """Source uploads to buildd upload paths are not permitted."""
@@ -1340,8 +1351,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # The component contrib does not exist in the sample data, so
         # add it here.
         Component(name='contrib')
-
-        # Test it.
         self.checkComponentOverride(
             "bar_1.0-1_contrib_component", "multiverse")
 
@@ -1350,8 +1359,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # The component non-free does not exist in the sample data, so
         # add it here.
         Component(name='non-free')
-
-        # Test it.
         self.checkComponentOverride(
             "bar_1.0-1_nonfree_component", "multiverse")
 
@@ -1902,7 +1909,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         should both have the PGP signature removed.
         """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor(
-        policy='insecure')
+            policy='insecure')
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         # ACCEPT the upload

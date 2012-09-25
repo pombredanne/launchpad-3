@@ -15,7 +15,11 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -28,12 +32,11 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     BranchSharingPolicy,
     BugSharingPolicy,
-    EXCLUSIVE_TEAM_POLICY,
-    FREE_INFORMATION_TYPES,
-    INCLUSIVE_TEAM_POLICY,
-    InformationType,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
@@ -457,6 +460,86 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PROPRIETARY,
             product.getDefaultBugInformationType())
+
+
+class TestProductSpecificationPolicyAndInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProductWithPolicy(self, specification_sharing_policy):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setSpecificationSharingPolicy(
+                specification_sharing_policy)
+        return product
+
+    def test_no_policy(self):
+        # Projects that have not specified a policy can use the PUBLIC
+        # information type.
+        product = self.factory.makeProduct()
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_public(self):
+        # Projects with a purely public policy should use PUBLIC
+        # information type.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC)
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_public_or_proprietary(self):
+        # specification_sharing_policy can enable Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_proprietary_or_public(self):
+        # specification_sharing_policy can enable and default to Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_proprietary(self):
+        # specification_sharing_policy can enable only Proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultSpecificationInformationType())
+
+    def test_sharing_policy_embargoed_or_proprietary(self):
+        # specification_sharing_policy can be embargoed and then proprietary.
+        product = self.makeProductWithPolicy(
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            product.getAllowedSpecificationInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            product.getDefaultSpecificationInformationType())
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):

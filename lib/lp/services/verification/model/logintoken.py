@@ -186,7 +186,8 @@ class LoginToken(SQLBase):
         template = get_email_template('request-merge.txt', app=MAIL_APP)
         from_name = "Launchpad Account Merge"
 
-        dupe = getUtility(IPersonSet).getByEmail(self.email)
+        dupe = getUtility(IPersonSet).getByEmail(
+            self.email, filter_status=False)
         replacements = {'dupename': "%s (%s)" % (dupe.displayname, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,

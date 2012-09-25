@@ -182,6 +182,7 @@ class BMPMailer(BranchMailer):
                 "The attached diff has been truncated due to its size.\n")
 
         params['reviews'] = self._getRequestedReviews()
+        params['commit_message'] = self._getCommitMessage()
         return params
 
     def _formatExtraInformation(self, heading, chunks):
@@ -195,6 +196,13 @@ class BMPMailer(BranchMailer):
         else:
             info = ''.join('  %s\n' % value for value in chunks)
             return '%s\n%s' % (heading, info)
+
+    def _getCommitMessage(self):
+        """Return a string describing the commit message, if any."""
+        if not self.merge_proposal.commit_message:
+            return ''
+        else:
+            return 'Commit message:\n%s\n\n' % self.merge_proposal.commit_message
 
     def _getRequestedReviews(self):
         """Return a string describing the requested reviews, if any."""

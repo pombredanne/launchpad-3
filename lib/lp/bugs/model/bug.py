@@ -78,8 +78,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     SubscriptionPrivacyViolation,
@@ -154,12 +160,6 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PROPRIETARY_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -811,7 +811,7 @@ class Bug(SQLBase):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(
+            bugs, ignored, ignored = service.getVisibleArtifacts(
                 person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
@@ -1591,6 +1591,8 @@ class Bug(SQLBase):
             filter_args = dict(distroseriesID=target.id)
         elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        elif ISourcePackage.providedBy(target):
+            filter_args = dict(distroseriesID=target.series.id)
         else:
             return None
 
@@ -1704,6 +1706,7 @@ class Bug(SQLBase):
         for pillar in self.affected_pillars:
             types.intersection_update(
                 set(pillar.getAllowedBugInformationTypes()))
+        types.add(self.information_type)
         return types
 
     def transitionToInformationType(self, information_type, who):

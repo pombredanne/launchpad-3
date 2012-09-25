@@ -48,7 +48,13 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -93,10 +99,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -292,6 +295,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasSharingPolicies."""
         # Sharing policy for distributions is always PUBLIC.
         return BugSharingPolicy.PUBLIC
+
+    @property
+    def specification_sharing_policy(self):
+        """See `IHasSharingPolicies."""
+        # Sharing policy for distributions is always PUBLIC.
+        return SpecificationSharingPolicy.PUBLIC
 
     @property
     def uploaders(self):
@@ -978,6 +987,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
         return (InformationType.PUBLIC,)
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        return InformationType.PUBLIC
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,

@@ -17,13 +17,11 @@ from lp.app.browser.launchpad import (
     iter_view_registrations,
     LaunchpadRootNavigation,
     )
+from lp.app.enums import InformationType
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.webapp import canonical_url

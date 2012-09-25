@@ -13,6 +13,7 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
@@ -32,10 +33,7 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
@@ -58,47 +56,36 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertCollection(self, target):
+        self.assertIsNot(None, IBranchCollection(target, None))
+
     def test_product(self):
         # A product can be adapted to a branch collection.
-        product = self.factory.makeProduct()
-        collection = IBranchCollection(product, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeProduct())
 
     def test_project(self):
         # A project can be adapted to a branch collection.
-        project = self.factory.makeProject()
-        collection = IBranchCollection(project, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeProject())
 
     def test_person(self):
         # A person can be adapted to a branch collection.
-        person = self.factory.makePerson()
-        collection = IBranchCollection(person, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makePerson())
 
     def test_distribution(self):
         # A distribution can be adapted to a branch collection.
-        distribution = self.factory.makeDistribution()
-        collection = IBranchCollection(distribution, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistribution())
 
     def test_distro_series(self):
         # A distro series can be adapted to a branch collection.
-        distro_series = self.factory.makeDistroSeries()
-        collection = IBranchCollection(distro_series, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistroSeries())
 
     def test_source_package(self):
         # A source package can be adapted to a branch collection.
-        source_package = self.factory.makeSourcePackage()
-        collection = IBranchCollection(source_package, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeSourcePackage())
 
     def test_distribution_source_package(self):
         # A distribution source pakcage can be adapted to a branch collection.
-        distro_source_package = self.factory.makeDistributionSourcePackage()
-        collection = IBranchCollection(distro_source_package, None)
-        self.assertIsNot(None, collection)
+        self.assertCollection(self.factory.makeDistributionSourcePackage())
 
 
 class TestGenericBranchCollection(TestCaseWithFactory):

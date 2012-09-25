@@ -65,6 +65,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.versioninfo import revno
 from lp.layers import (
@@ -300,6 +301,14 @@ class LaunchpadView(UserAttributeCache):
             return privacy.private
         else:
             return False
+
+    @property
+    def information_type(self):
+        """A view has the information_type of its context."""
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.title
 
     def __init__(self, context, request):
         self.context = context
@@ -959,7 +968,9 @@ class Navigation:
                             nextobj = None
                         else:
                             # Circular import; breaks make.
-                            from lp.services.webapp.breadcrumb import Breadcrumb
+                            from lp.services.webapp.breadcrumb import (
+                                Breadcrumb,
+                            )
                             stepthrough_page = queryMultiAdapter(
                                     (self.context, self.request), name=name)
                             if stepthrough_page:

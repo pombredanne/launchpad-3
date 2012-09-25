@@ -19,6 +19,7 @@ from soupmatchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bugcomment import (
     BugComment,
     group_comments_with_activity,
@@ -28,7 +29,6 @@ from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject

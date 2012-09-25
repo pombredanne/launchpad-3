@@ -23,7 +23,10 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
@@ -31,7 +34,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
-    InformationType,
     )
 from lp.registry.errors import (
     InclusiveTeamLinkageError,
@@ -285,6 +287,22 @@ class TestDistribution(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PUBLIC,
             self.factory.makeDistribution().getDefaultBugInformationType())
+
+    def test_getAllowedSpecificationInformationTypes(self):
+        # All distros currently support only public specifications.
+        distro = self.factory.makeDistribution()
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            distro.getAllowedSpecificationInformationTypes()
+            )
+
+    def test_getDefaultSpecificationInformtationType(self):
+        # All distros currently support only Public by default
+        # specifications.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            distro.getDefaultSpecificationInformationType())
 
 
 class TestDistributionCurrentSourceReleases(

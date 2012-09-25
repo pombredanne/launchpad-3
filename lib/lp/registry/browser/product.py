@@ -108,10 +108,15 @@ from lp.app.browser.tales import (
     format_link,
     MenuAPI,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.utilities import json_dump_information_types
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -158,11 +163,6 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -2028,20 +2028,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def initialize(self):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
-        # when an action is invokved.
+        # when an action is invoked.
         if IProductSet.providedBy(self.context):
             cache = IJSONRequestCache(self.request)
-            cache.objects['private_types'] = [
-                type.name for type in PRIVATE_INFORMATION_TYPES]
-            cache.objects['public_types'] = [
-                    type.name for type in PUBLIC_INFORMATION_TYPES]
-            cache.objects['information_type_data'] = [
-                {'value': term.name, 'description': term.description,
-                'name': term.title,
-                'description_css_class': 'choice-description'}
-                for term in
-                    self.context.getAllowedProductInformationTypes()]
-
+            json_dump_information_types(cache,
+                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property

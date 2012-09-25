@@ -108,6 +108,7 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -152,7 +153,6 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
@@ -3781,6 +3781,11 @@ class PersonSet:
             naked_recipe.owner = to_person
             naked_recipe.name = new_name
 
+    def _mergeLoginTokens(self, cur, from_id, to_id):
+        # Remove all LoginTokens.
+        cur.execute('''
+            DELETE FROM LoginToken WHERE requester=%(from_id)d''' % vars())
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -4380,6 +4385,9 @@ class PersonSet:
         skip.append(('karmatotalcache', 'person'))
 
         self._mergeDateCreated(cur, from_id, to_id)
+
+        self._mergeLoginTokens(cur, from_id, to_id)
+        skip.append(('logintoken', 'requester'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

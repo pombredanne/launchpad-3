@@ -48,6 +48,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.revision import (
     IRevision,
@@ -56,7 +57,6 @@ from lp.code.interfaces.revision import (
     IRevisionProperty,
     IRevisionSet,
     )
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup

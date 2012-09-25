@@ -16,6 +16,7 @@ from zope.security.management import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.mail.commands import (
     BugEmailCommand,
@@ -28,10 +29,7 @@ from lp.bugs.mail.handler import (
     MaloneHandler,
     )
 from lp.bugs.model.bugnotification import BugNotification
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
