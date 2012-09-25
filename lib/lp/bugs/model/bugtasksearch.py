@@ -700,10 +700,11 @@ def _build_query(params):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
-    if clause:
-        extra_clauses.append(clause)
-        decorators.append(decorator)
+    if not params.ignore_privacy:
+        clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
+        if clause:
+            extra_clauses.append(clause)
+            decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:

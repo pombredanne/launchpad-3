@@ -39,6 +39,7 @@ def run_upgrade(options, log, master_con):
     # applied in the same transaction.
     options.commit = False
     options.partial = False
+    options.comments = False  # Saves about 1s. Apply comments manually.
     # Invoke the database schema upgrade process.
     try:
         return upgrade.main(master_con)
