@@ -1359,6 +1359,57 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(driver=driver_team)
         self._assert_getSharedProducts(product, driver_team.teamowner)
 
+    def _assert_getSharedDistributions(self, distro, who=None):
+        # Test that 'who' can query the shared distros for a grantee.
+
+        # Make a distro not related to 'who' which will be shared.
+        unrelated_distro = self.factory.makeDistribution()
+        # Make an unshared distro.
+        self.factory.makeDistribution()
+        person = self.factory.makePerson()
+        # Include more than one permission to ensure distinct works.
+        permissions = {
+            InformationType.PRIVATESECURITY: SharingPermission.ALL,
+            InformationType.USERDATA: SharingPermission.ALL}
+        with person_logged_in(distro.owner):
+            self.service.sharePillarInformation(
+                distro, person, distro.owner, permissions)
+        with person_logged_in(unrelated_distro.owner):
+            self.service.sharePillarInformation(
+                unrelated_distro, person, unrelated_distro.owner,
+                permissions)
+        shared = self.service.getSharedDistributions(person, who)
+        expected = []
+        if who:
+            expected = [distro]
+            if IPersonRoles(who).in_admin:
+                expected.append(unrelated_distro)
+        self.assertEqual(expected, list(shared))
+
+    def test_getSharedDistributions_anonymous(self):
+        # Anonymous users don't get to see any shared distros.
+        distro = self.factory.makeDistribution()
+        self._assert_getSharedDistributions(distro)
+
+    def test_getSharedDistributions_admin(self):
+        # Admins can see all shared distros.
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        distro = self.factory.makeDistribution()
+        self._assert_getSharedDistributions(distro, admin)
+
+    def test_getSharedDistributions_owner(self):
+        # Users only see shared distros they own.
+        owner_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        distro = self.factory.makeDistribution(owner=owner_team)
+        self._assert_getSharedDistributions(distro, owner_team.teamowner)
+
+    def test_getSharedDistributions_driver(self):
+        # Users only see shared distros they are the driver for.
+        driver_team = self.factory.makeTeam()
+        distro = self.factory.makeDistribution(driver=driver_team)
+        self._assert_getSharedDistributions(distro, driver_team.teamowner)
+
     def test_getSharedBugs(self):
         # Test the getSharedBugs method.
         owner = self.factory.makePerson()
@@ -1699,7 +1750,7 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
         super(TestWebService, self).setUp()
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        self._sharePillarInformation()
+        self._sharePillarInformation(self.pillar)
 
     def test_url(self):
         # Test that the url for the service is correct.
@@ -1724,8 +1775,8 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
         return self._named_get(
             'getPillarGranteeData', pillar=pillar_uri)
 
-    def _sharePillarInformation(self):
-        pillar_uri = canonical_url(self.pillar, force_local_path=True)
+    def _sharePillarInformation(self, pillar):
+        pillar_uri = canonical_url(pillar, force_local_path=True)
         return self._named_post(
             'sharePillarInformation', pillar=pillar_uri,
             grantee=self.grantee_uri,
@@ -1745,14 +1796,14 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         self.launchpad = self.factory.makeLaunchpadService(person=self.owner)
         self.service = self.launchpad.load('+services/sharing')
         transaction.commit()
-        self._sharePillarInformation()
+        self._sharePillarInformation(self.pillar)
 
     def _getPillarGranteeData(self):
         ws_pillar = ws_object(self.launchpad, self.pillar)
         return self.service.getPillarGranteeData(pillar=ws_pillar)
 
-    def _sharePillarInformation(self):
-        ws_pillar = ws_object(self.launchpad, self.pillar)
+    def _sharePillarInformation(self, pillar):
+        ws_pillar = ws_object(self.launchpad, pillar)
         ws_grantee = ws_object(self.launchpad, self.grantee)
         return self.service.sharePillarInformation(pillar=ws_pillar,
             grantee=ws_grantee,
@@ -1766,6 +1817,16 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         products = self.service.getSharedProducts(person=ws_grantee)
         self.assertEqual(1, len(products))
         self.assertEqual(products[0].name, self.pillar.name)
+
+    def test_getSharedDistributions(self):
+        # Test the exported getSharedDistributions() method.
+        distro = self.factory.makeDistribution(owner=self.owner)
+        transaction.commit()
+        self._sharePillarInformation(distro)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        distros = self.service.getSharedDistributions(person=ws_grantee)
+        self.assertEqual(1, len(distros))
+        self.assertEqual(distros[0].name, distro.name)
 
     def test_getSharedBugs(self):
         # Test the exported getSharedBugs() method.
