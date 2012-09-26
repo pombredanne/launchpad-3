@@ -517,8 +517,7 @@ class Archive(SQLBase):
                     storm_clauses.append(SourcePackageName.name == name)
                 else:
                     clauses.append(
-                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                        % quote_like(name))
+                        SourcePackageName.name.contains_string(name))
             elif len(name) != 0:
                 clauses.append(
                     "SourcePackageName.name IN %s"
