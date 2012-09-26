@@ -27,7 +27,7 @@ class BugMessageCanonicalUrlData:
     rootsite = 'bugs'
 
     def __init__(self, bug, message):
-        self.inside = bug.bugtasks[0]
+        self.inside = bug.default_bugtask
         self.path = "comments/%d" % list(bug.messages).index(message)
 
 
