@@ -680,7 +680,8 @@ class IProductPublic(
             title=_('Next suggest packaging date'),
             description=_(
                 "Obsolete. The date to resume Ubuntu package suggestions."),
-            required=False))
+            required=False),
+        ('devel', dict(exported=False)))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
