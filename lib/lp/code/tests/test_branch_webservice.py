@@ -102,7 +102,8 @@ class TestBranchOperations(TestCaseWithFactory):
         renamed_branch = lp.branches.getByUniqueName(
             unique_name='~barney/myproduct/mybranch')
         self.assertIsNotNone(renamed_branch)
-
+        self.assertEqual(
+            '~barney/myproduct/mybranch', renamed_branch.unique_name)
 
 class TestBranchDeletes(TestCaseWithFactory):
 
