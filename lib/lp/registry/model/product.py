@@ -396,7 +396,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    date_next_suggest_packaging = UtcDateTimeCol(default=None)
+
+    @property
+    def date_next_suggest_packaging(self):
+        """See `IProduct`
+
+        Returns None; exists only to maintain API compatability.
+        """
+        return None
+
+    @date_next_suggest_packaging.setter
+    def date_next_suggest_packaging(self, value):
+        """See `IProduct`
+
+        Ignores supplied value; exists only to maintain API compatability.
+        """
+        pass
 
     @property
     def information_type(self):
