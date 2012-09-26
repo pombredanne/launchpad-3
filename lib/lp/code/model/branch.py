@@ -52,6 +52,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lazr.restful.utils import get_current_web_service_request
+
 from lp import _
 from lp.app.enums import (
     InformationType,
@@ -180,7 +182,10 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import urlappend
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
 from lp.services.webapp.authorization import check_permission
 
 
@@ -236,6 +241,17 @@ class Branch(SQLBase, BzrIdentityMixin):
                 pillars = [self.product]
         reconcile_access_for_artifact(
             self, self.information_type, pillars, wanted_links)
+
+    def _move(self, namespace, mover, rename_if_necessary=False):
+        namespace.moveBranch(
+            self, mover, rename_if_necessary=rename_if_necessary)
+        # If this is from an API request, we need to ensure the response
+        # contains the location of the new URL.
+        api_request = get_current_web_service_request()
+        if api_request:
+            update_trigger_modified_fields(self)
+            api_request.response.setHeader(
+                'Location', canonical_url(self, request=api_request))
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
@@ -294,7 +310,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def setOwner(self, new_owner, user):
         """See `IBranch`."""
         new_namespace = self.target.getNamespace(new_owner)
-        new_namespace.moveBranch(self, user, rename_if_necessary=True)
+        self._move(new_namespace, user, rename_if_necessary=True)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -375,7 +391,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             raise BranchTargetError(
                 '%s branches are not allowed for target %s.' % (
                     self.information_type.title, target.displayname))
-        namespace.moveBranch(self, user, rename_if_necessary=True)
+        self._move(namespace, user, rename_if_necessary=True)
         self._reconcileAccess()
 
     @property
