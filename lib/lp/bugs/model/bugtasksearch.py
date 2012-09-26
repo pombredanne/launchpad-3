@@ -496,7 +496,7 @@ def _build_query(params):
             ss_clauses.append(In(
                 BugTaskFlat.distribution_id,
                 Select(
-                    (SS.distributionID,),
+                    SS.distributionID,
                     tables=[SS],
                     where=(SS.sourcepackagenameID == None))))
             ss_clauses.append(In(
@@ -510,7 +510,7 @@ def _build_query(params):
             ss_clauses.append(In(
                 BugTaskFlat.distroseries_id,
                 Select(
-                    (SS.distroseriesID,),
+                    SS.distroseriesID,
                     tables=[SS],
                     where=(SS.sourcepackagenameID == None))))
             # Structural subscriptions to DSPs are treated as subscriptions
@@ -535,19 +535,19 @@ def _build_query(params):
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(
-                    (SS.productID,),
+                    SS.productID,
                     tables=[SS])))
         if is_person_search or params.productseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.productseries_id,
                 Select(
-                    (SS.productseriesID,),
+                    SS.productseriesID,
                     tables=[SS])))
         if is_person_search or params.project is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(
-                    (Product.id,),
+                    Product.id,
                     tables=[SS, Product],
                     where=And(
                         SS.projectID == Product.projectID,
@@ -557,7 +557,7 @@ def _build_query(params):
             ss_clauses.append(In(
                 BugTaskFlat.milestone_id,
                 Select(
-                    (SS.milestoneID,),
+                    SS.milestoneID,
                     tables=[SS])))
         extra_clauses.append(Or(*ss_clauses))
 
