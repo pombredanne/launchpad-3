@@ -87,11 +87,9 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
-    Array,
     ArrayAgg,
     ArrayIntersects,
     get_where_for_reference,
-    NullCount,
     Unnest,
     )
 from lp.services.propertycache import get_property_cache
@@ -550,81 +548,6 @@ def _build_query(params):
                         Product.project == params.project,
                         Product.active)))
             ))
-        # XXX sinzui 2012-09-26: remove.
-#        join_tables.append(
-#            (Product, LeftJoin(Product, And(
-#                            BugTaskFlat.product_id == Product.id,
-#                            Product.active))))
-#        ProductSub = ClassAlias(StructuralSubscriptionCTE)
-#        join_tables.append((
-#            ProductSub,
-#            LeftJoin(
-#                ProductSub,
-#                BugTaskFlat.product_id == ProductSub.productID)))
-#        ProductSeriesSub = ClassAlias(StructuralSubscriptionCTE)
-#        join_tables.append((
-#            ProductSeriesSub,
-#            LeftJoin(
-#                ProductSeriesSub,
-#                BugTaskFlat.productseries_id ==
-#                    ProductSeriesSub.productseriesID)))
-
-#        if params.project:
-#            join_tables.append(
-#                (Product, LeftJoin(Product, And(
-#                                BugTaskFlat.product_id == Product.id,
-#                                Product.active))))
-#            ProjectSub = ClassAlias(StructuralSubscriptionCTE)
-#            join_tables.append((
-#                ProjectSub,
-#                LeftJoin(
-#                    ProjectSub,
-#                    Product.projectID == ProjectSub.projectID)))
-#            extra_clauses.append(NullCount(Array(ProjectSub.id)) == 0)
-
-#        DistributionSub = ClassAlias(StructuralSubscriptionCTE)
-#        join_tables.append((
-#            DistributionSub,
-#            LeftJoin(
-#                DistributionSub,
-#                And(BugTaskFlat.distribution_id ==
-#                        DistributionSub.distributionID,
-#                    Or(
-#                        DistributionSub.sourcepackagenameID ==
-#                            BugTaskFlat.sourcepackagename_id,
-#                        DistributionSub.sourcepackagenameID == None)))))
-#        if params.distroseries is not None:
-#            parent_distro_id = params.distroseries.distributionID
-#        else:
-#            parent_distro_id = 0
-#        DistroSeriesSub = ClassAlias(StructuralSubscriptionCTE)
-#        join_tables.append((
-#            DistroSeriesSub,
-#            LeftJoin(
-#                DistroSeriesSub,
-#                Or(BugTaskFlat.distroseries_id ==
-#                        DistroSeriesSub.distroseriesID,
-#                    # There is a mismatch between BugTask and
-#                    # StructuralSubscription. SS does not support
-#                    # distroseries. This clause works because other
-#                    # joins ensure the match bugtask is the right
-#                    # series.
-#                    And(parent_distro_id == DistroSeriesSub.distributionID,
-#                        BugTaskFlat.sourcepackagename_id ==
-#                            DistroSeriesSub.sourcepackagenameID)))))
-#        MilestoneSub = ClassAlias(StructuralSubscriptionCTE)
-#        join_tables.append((
-#            MilestoneSub,
-#            LeftJoin(
-#                MilestoneSub,
-#                BugTaskFlat.milestone_id == MilestoneSub.milestoneID)))
-#        extra_clauses.append(
-#            NullCount(Array(
-#                ProductSub.id, ProductSeriesSub.id, ProjectSub.id,
-#                DistributionSub.id, DistroSeriesSub.id, MilestoneSub.id)) < 6)
-#        has_duplicate_results = True
-
-    # XXX sinzui 2012-09-26: may ne need has_duplicate_results to finish work.
 
     # Remove bugtasks from deactivated products, if necessary.
     # We don't have to do this if
