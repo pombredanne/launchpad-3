@@ -1014,12 +1014,6 @@ class IDistroSeriesSet(Interface):
         """Return a set of distroseriess that can be translated in
         rosetta."""
 
-    def findByName(name):
-        """Find a DistroSeries by name.
-
-        Returns a list of matching distributions, which may be empty.
-        """
-
     def queryByName(distribution, name):
         """Query a DistroSeries by name.
 

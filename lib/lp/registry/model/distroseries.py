@@ -1645,10 +1645,6 @@ class DistroSeriesSet:
         result_set = result_set.config(distinct=True)
         return result_set
 
-    def findByName(self, name):
-        """See `IDistroSeriesSet`."""
-        return DistroSeries.selectBy(name=name)
-
     def queryByName(self, distribution, name):
         """See `IDistroSeriesSet`."""
         return DistroSeries.selectOneBy(distribution=distribution, name=name)
