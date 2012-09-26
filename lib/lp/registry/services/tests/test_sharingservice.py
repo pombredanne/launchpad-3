@@ -1026,8 +1026,9 @@ class TestSharingService(TestCaseWithFactory):
                     None, CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
             # Subscribing somebody to a specification does not yet imply
             # granting access to this person.
-            self.service.ensureAccessGrants(
-                [person], pillar.owner, specifications=specifications)
+            if specifications:
+                self.service.ensureAccessGrants(
+                    [person], pillar.owner, specifications=specifications)
             for spec in specifications or []:
                 spec.subscribe(person)
 
