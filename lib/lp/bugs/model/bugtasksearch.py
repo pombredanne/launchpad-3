@@ -475,6 +475,12 @@ def _build_query(params):
             BugTaskFlat.bug_id == BugSubscription.bug_id,
             BugSubscription.person == params.subscriber))
 
+    non_pillar_series = (
+        params.product is None and
+        params.distribution is None and
+        params.productseries is None and
+        params.distroseries is None)
+
     if params.structural_subscriber is not None:
         # See bug 787294 for the story that led to the query elements
         # below.  Please change with care.
@@ -495,72 +501,75 @@ def _build_query(params):
             parent_distro_id = 0
         ss_clauses = [
             In(
-                BugTaskFlat.distribution_id,
-                Select(
-                    (SS.distributionID,),
-                    tables=[SS],
-                    where=(SS.sourcepackagenameID == None))),
-            In(
-                Row(BugTaskFlat.distribution_id,
-                    BugTaskFlat.sourcepackagename_id),
-                Select(
-                    ((SS.distributionID,
-                     SS.sourcepackagenameID),),
-                    tables=[SS])),
-            In(
-                BugTaskFlat.distroseries_id,
-                Select(
-                    (SS.distroseriesID,),
-                    tables=[SS],
-                    where=(SS.sourcepackagenameID == None))),
-            In(
-                Row(BugTaskFlat.distroseries_id,
-                    BugTaskFlat.sourcepackagename_id),
-                Select(
-                    ((distroseries_id,
-                     SS.sourcepackagenameID),),
-                    tables=[SS],
-                    where=And(
-                        SS.distributionID == parent_distro_id,
-                        SS.sourcepackagenameID != None))),
-            In(
-                BugTaskFlat.product_id,
-                Select(
-                    (SS.productID,),
-                    tables=[SS])),
-            In(
-                BugTaskFlat.productseries_id,
-                Select(
-                    (SS.productseriesID,),
-                    tables=[SS])),
-            In(
                 BugTaskFlat.milestone_id,
                 Select(
                     (SS.milestoneID,),
-                    tables=[SS])),
-            In(
-                BugTaskFlat.product_id,
-                Select(
-                    (Product.id,),
-                    tables=[SS, Product],
-                    where=And(
-                        SS.projectID == Product.projectID,
-                        Product.project == params.project,
-                        Product.active)))]
+                    tables=[SS]))]
+        if non_pillar_series or params.distribution or params.distroseries:
+            ss_clauses.append(
+                In(
+                    BugTaskFlat.distribution_id,
+                    Select(
+                        (SS.distributionID,),
+                        tables=[SS],
+                        where=(SS.sourcepackagenameID == None))))
+            ss_clauses.append(
+                In(
+                    Row(BugTaskFlat.distribution_id,
+                        BugTaskFlat.sourcepackagename_id),
+                    Select(
+                        ((SS.distributionID,
+                         SS.sourcepackagenameID),),
+                        tables=[SS])))
+        if non_pillar_series or params.distroseries:
+            ss_clauses.append(
+                In(
+                    BugTaskFlat.distroseries_id,
+                    Select(
+                        (SS.distroseriesID,),
+                        tables=[SS],
+                        where=(SS.sourcepackagenameID == None))))
+            ss_clauses.append(
+                In(
+                    Row(BugTaskFlat.distroseries_id,
+                        BugTaskFlat.sourcepackagename_id),
+                    Select(
+                        ((distroseries_id,
+                         SS.sourcepackagenameID),),
+                        tables=[SS],
+                        where=And(
+                            SS.distributionID == parent_distro_id,
+                            SS.sourcepackagenameID != None))))
+        if non_pillar_series or params.product or params.productseries:
+            ss_clauses.append(
+                In(
+                    BugTaskFlat.product_id,
+                    Select(
+                        (SS.productID,),
+                        tables=[SS])))
+        if non_pillar_series or params.productseries:
+            ss_clauses.append(
+                In(
+                    BugTaskFlat.productseries_id,
+                    Select(
+                        (SS.productseriesID,),
+                        tables=[SS])))
+        if non_pillar_series or params.project:
+            ss_clauses.append(
+                In(
+                    BugTaskFlat.product_id,
+                    Select(
+                        (Product.id,),
+                        tables=[SS, Product],
+                        where=And(
+                            SS.projectID == Product.projectID,
+                            Product.project == params.project,
+                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
 
     # Remove bugtasks from deactivated products, if necessary.
-    # We don't have to do this if
-    # 1) We're searching on bugtasks for a specific product
-    # 2) We're searching on bugtasks for a specific productseries
-    # 3) We're searching on bugtasks for a distribution
-    # 4) We're searching for bugtasks for a distroseries
-    # because in those instances we don't have arbitrary products which
-    # may be deactivated showing up in our search.
-    if (params.product is None and
-        params.distribution is None and
-        params.productseries is None and
-        params.distroseries is None):
+    # This is needed for searched where people or milestones are the context.
+    if non_pillar_series:
         extra_clauses.append(
             Or(BugTaskFlat.product == None, Product.active == True))
         join_tables.append(
