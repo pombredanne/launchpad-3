@@ -155,6 +155,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return recipients
 
     @property
+    def _store(self):
+        return Store.of(self.sourcepackagename)
+
+    @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
         answer_contacts = set()
