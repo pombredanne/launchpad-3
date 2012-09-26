@@ -398,6 +398,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
 
     @property
+    def date_next_suggest_packaging(self):
+        """See `IProduct`
+
+        Returns None; exists only to maintain API compatability.
+        """
+        return None
+
+    @date_next_suggest_packaging.setter
+    def date_next_suggest_packaging(self, value):
+        """See `IProduct`
+
+        Ignores supplied value; exists only to maintain API compatability.
+        """
+        pass
+
+    @property
     def information_type(self):
         """See `IProduct`
 
