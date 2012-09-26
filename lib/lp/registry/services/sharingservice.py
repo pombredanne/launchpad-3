@@ -127,7 +127,7 @@ class SharingService:
         )
 
     def _getSharedPillars(self, person, user, pillar_class, extra_filter=None):
-        """Helper method for getSharedProducts and getSharedDistributions.
+        """Helper method for getSharedProjects and getSharedDistributions.
 
         pillar_class is either Product or Distribution. Products define the
         owner foreign key attribute as _owner so we need to account for that,
@@ -172,7 +172,7 @@ class SharingService:
             ), filter)
         return result_set
 
-    def getSharedProducts(self, person, user):
+    def getSharedProjects(self, person, user):
         """See `ISharingService`."""
         commercial_filter = None
         if user and IPersonRoles(user).in_commercial_admin:
