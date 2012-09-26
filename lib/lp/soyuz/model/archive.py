@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database class for table Archive."""
 
 __metaclass__ = type
@@ -10,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'Archive',
     'ArchiveSet',
+    'get_archive_privacy_filter',
     'validate_ppa',
     ]
 
@@ -28,6 +27,7 @@ from storm.expr import (
     And,
     Desc,
     Or,
+    Not,
     Select,
     SQL,
     Sum,
@@ -68,7 +68,10 @@ from lp.registry.interfaces.person import (
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -2574,3 +2577,18 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
+
+
+def get_archive_privacy_filter(user):
+    if user is None:
+        privacy_filter = Not(Archive._private)
+    elif IPersonRoles(user).in_admin:
+        privacy_filter = True
+    else:
+        privacy_filter = Or(
+            Not(Archive._private),
+            Archive.ownerID.is_in(
+                Select(
+                    TeamParticipation.teamID,
+                    where=(TeamParticipation.person == user))))
+    return privacy_filter
