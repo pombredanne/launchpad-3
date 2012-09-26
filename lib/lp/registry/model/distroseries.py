@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database classes for a distribution series."""
 
 __metaclass__ = type
@@ -688,15 +686,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             prejoins=["distroseries"],
             orderBy=["Language.englishname"])
         return result
-
-    def priorReleasedSeries(self):
-        """See `IDistroSeries`."""
-        datereleased = self.datereleased
-        # if this one is unreleased, use the last released one
-        if not datereleased:
-            datereleased = UTC_NOW
-        return getUtility(IDistroSeriesSet).priorReleasedSeries(
-            self.distribution, datereleased)
 
     @property
     def bug_reporting_guidelines(self):
@@ -1728,15 +1717,3 @@ class DistroSeriesSet:
         else:
 
             return DistroSeries.select(where_clause)
-
-    def priorReleasedSeries(self, distribution, prior_to_date):
-            """See `IDistroSeriesSet`."""
-            store = Store.of(distribution)
-            results = store.find(
-                DistroSeries,
-                DistroSeries.distributionID == distribution.id,
-                DistroSeries.datereleased < prior_to_date,
-                DistroSeries.datereleased != None
-            ).order_by(Desc(DistroSeries.datereleased))
-
-            return results
