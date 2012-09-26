@@ -306,7 +306,8 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None):
+    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None,
+                           specifications=None):
         """Remove a grantee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
@@ -314,6 +315,7 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
+        :param specifications: the specifications for which to revoke access
         """
 
     @export_write_operation()
