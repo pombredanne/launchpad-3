@@ -125,8 +125,8 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import (
     IProduct,
-    IProductSeries,
     )
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText
