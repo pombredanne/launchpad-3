@@ -490,18 +490,18 @@ First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> kubuntu.specifications(None, filter=filter).count()
+    >>> kubuntu.specifications(filter=filter).count()
     0
     >>> filter = [SpecificationFilter.INFORMATIONAL,
     ...           SpecificationFilter.COMPLETE]
-    >>> kubuntu.specifications(None, filter=filter).count()
+    >>> kubuntu.specifications(filter=filter).count()
     1
 
 
 There are 2 completed specs for Kubuntu:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in kubuntu.specifications(None, filter=filter):
+    >>> for spec in kubuntu.specifications(filter=filter):
     ...    print spec.name, spec.is_complete
     thinclient-local-devices True
     usplash-on-hibernation True
@@ -510,7 +510,7 @@ There are 2 completed specs for Kubuntu:
 And there are four incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in kubuntu.specifications(None, filter=filter):
+    >>> for spec in kubuntu.specifications(filter=filter):
     ...    print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -521,7 +521,7 @@ And there are four incomplete specs:
 If we ask for all specs, we get them in the order of priority.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for spec in kubuntu.specifications(None, filter=filter):
+    >>> for spec in kubuntu.specifications(filter=filter):
     ...    print spec.priority.title, spec.name
     Essential cluster-installation
     High revu
@@ -533,7 +533,7 @@ If we ask for all specs, we get them in the order of priority.
 
 And if we ask just for specs, we get the incomplete ones.
 
-    >>> for spec in kubuntu.specifications(None):
+    >>> for spec in kubuntu.specifications():
     ...     print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -542,7 +542,7 @@ And if we ask just for specs, we get the incomplete ones.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in kubuntu.specifications(None, filter=['package']):
+    >>> for spec in kubuntu.specifications(filter=['package']):
     ...     print spec.name
     revu
 
@@ -550,7 +550,7 @@ We can get only valid specs (those that are not obsolete or superseded):
 
     >>> from lp.blueprints.enums import SpecificationDefinitionStatus
     >>> login('mark@example.com')
-    >>> for spec in kubuntu.specifications(None):
+    >>> for spec in kubuntu.specifications():
     ...     # Do this here, otherwise, the change will be flush before
     ...     # updateLifecycleStatus() acts and an IntegrityError will be
     ...     # raised.

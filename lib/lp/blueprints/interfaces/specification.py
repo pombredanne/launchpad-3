@@ -674,8 +674,8 @@ class ISpecificationSet(IHasSpecifications):
 
     coming_sprints = Attribute("The next 5 sprints in the system.")
 
-    def specification_count(user):
-        """The number of specifications viewable to the user."""
+    specification_count = Attribute(
+        "The total number of blueprints in Launchpad")
 
     def getStatusCountsForProductSeries(product_series):
         """Return the status counts for blueprints in a series.

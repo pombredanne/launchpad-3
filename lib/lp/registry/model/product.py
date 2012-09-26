@@ -1303,7 +1303,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # automatically shared.
         return True
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 

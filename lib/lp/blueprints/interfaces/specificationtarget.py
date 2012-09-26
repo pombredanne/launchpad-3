@@ -60,11 +60,10 @@ class IHasSpecifications(Interface):
                 'have not been accepted for that goal'))),
         exported_as="valid_specifications", as_of="devel")
 
-    def specifications(user, quantity=None, sort=None, filter=None,
+    def specifications(quantity=None, sort=None, filter=None,
                        prejoin_people=True):
         """Specifications for this target.
 
-        The user specifies which user to use for calculation of visibility.
         The sort is a dbschema which indicates the preferred sort order. The
         filter is an indicator of the kinds of specs to be returned, and
         appropriate filters depend on the kind of object this method is on.

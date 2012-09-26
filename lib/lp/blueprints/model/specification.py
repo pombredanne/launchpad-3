@@ -109,7 +109,6 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.services.webapp.interfaces import ILaunchBag
 
 
 def recursive_blocked_query(spec):
@@ -958,7 +957,7 @@ class HasSpecificationsMixin:
     for other classes that have specifications.
     """
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
@@ -1025,19 +1024,17 @@ class HasSpecificationsMixin:
     @property
     def _all_specifications(self):
         """See IHasSpecifications."""
-        user = getUtility(ILaunchBag).user
-        return self.specifications(user, filter=[SpecificationFilter.ALL])
+        return self.specifications(filter=[SpecificationFilter.ALL])
 
     @property
     def _valid_specifications(self):
         """See IHasSpecifications."""
-        user = getUtility(ILaunchBag).user
-        return self.specifications(user, filter=[SpecificationFilter.VALID])
+        return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specification_count(self, user):
+    @property
+    def specification_count(self):
         """See IHasSpecifications."""
-        return self.specifications(user,
-                                   filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1076,7 +1073,7 @@ class SpecificationSet(HasSpecificationsMixin):
         """See ISpecificationSet."""
         return iter(self.all_specifications)
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
 

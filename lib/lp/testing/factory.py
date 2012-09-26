@@ -2091,16 +2091,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
-        proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
-            information_type is not None)
         if distribution is None and product is None:
-            if proprietary:
-                specification_sharing_policy = (
-                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-            else:
-                specification_sharing_policy = None
-            product = self.makeProduct(
-                specification_sharing_policy=specification_sharing_policy)
+            product = self.makeProduct()
         if name is None:
             name = self.getUniqueString('name')
         if summary is None:
@@ -2133,7 +2125,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
         if information_type is not None:
-            if proprietary:
+            if information_type not in PUBLIC_INFORMATION_TYPES:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
                 information_type, spec.target.owner)
@@ -4348,9 +4340,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return link
 
     def makeAccessArtifactGrant(self, artifact=None, grantee=None,
-                                grantor=None, concrete_artifact=None):
+                                grantor=None):
         if artifact is None:
-            artifact = self.makeAccessArtifact(concrete_artifact)
+            artifact = self.makeAccessArtifact()
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:

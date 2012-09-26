@@ -150,7 +150,7 @@ We should be able to generate filtered lists of specs on a project.
 First, there should be only one informational spec for mozilla:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for spec in mozilla.specifications(None, filter=filter):
+    >>> for spec in mozilla.specifications(filter=filter):
     ...    print spec.name
     extension-manager-upgrades
 
@@ -158,19 +158,19 @@ First, there should be only one informational spec for mozilla:
 There are no completed specs for mozilla:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in mozilla.specifications(None, filter=filter):
+    >>> for spec in mozilla.specifications(filter=filter):
     ...    print spec.name
 
 
 And there are five incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(None, filter=filter).count()
+    >>> mozilla.specifications(filter=filter).count()
     5
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in mozilla.specifications(None, filter=['install']):
+    >>> for spec in mozilla.specifications(filter=['install']):
     ...     print spec.name
     extension-manager-upgrades
 
@@ -178,7 +178,7 @@ We can filter for specifications that contain specific text:
 Inactive products are excluded from the listings.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(None, filter=filter).count()
+    >>> mozilla.specifications(filter=filter).count()
     5
 
     >>> from lp.registry.interfaces.product import IProductSet
@@ -190,7 +190,7 @@ Inactive products are excluded from the listings.
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(None, filter=filter).count()
+    >>> mozilla.specifications(filter=filter).count()
     0
 
 Reset firefox so we don't mess up later tests.
@@ -248,8 +248,7 @@ If a specification is assigned to series 1.0, it appears in
 mozilla_1_0_series._all_specifications.
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> extension_manager_upgrades = mozilla.specifications(
-    ...     None, filter=filter)[0]
+    >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
     >>> series_1_0 = firefox.getSeries('1.0')
     >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
     >>> for spec in mozilla_series_1_0._all_specifications:
@@ -265,7 +264,7 @@ This specification is not listed for other series.
 Filtered lists of project series related specifications are generated
 the same way as for project related specifications.
 
-    >>> for spec in mozilla_series_1_0.specifications(None, filter=filter):
+    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
     ...     print spec.name
     extension-manager-upgrades
 
@@ -278,7 +277,7 @@ we have the save five incomplete specs in the series 1.0 as we have for the
 project itself.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in mozilla_series_1_0.specifications(None, filter=filter):
+    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
     ...     print spec.name
     svg-support
     canvas
@@ -288,22 +287,21 @@ project itself.
 
  Searching for text is also possible.
 
-    >>> for spec in mozilla_series_1_0.specifications(
-    ...     None, filter=['install']):
+    >>> for spec in mozilla_series_1_0.specifications(filter=['install']):
     ...     print spec.name
     extension-manager-upgrades
 
 Inactive products are excluded from the series listings.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> specs = mozilla_series_1_0.specifications(None, filter=filter)
+    >>> specs = mozilla_series_1_0.specifications(filter=filter)
     >>> print specs.count()
     5
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.active = False
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla_series_1_0.specifications(None, filter=filter).count()
+    >>> mozilla_series_1_0.specifications(filter=filter).count()
     0
 
 Reset firefox so we don't mess up later tests.

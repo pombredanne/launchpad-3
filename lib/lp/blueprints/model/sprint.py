@@ -41,10 +41,7 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
-from lp.blueprints.model.specification import (
-    get_specification_privacy_filter,
-    HasSpecificationsMixin,
-    )
+from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.registry.interfaces.person import (
@@ -114,7 +111,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # Only really used in tests.
         return [a.attendee for a in self.attendances]
 
-    def spec_filter_clause(self, user, filter=None):
+    def spec_filter_clause(self, filter=None):
         """Figure out the appropriate query for specifications on a sprint.
 
         We separate out the query generation from the normal
@@ -129,7 +126,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                  Or(Specification.product == None,
                     Not(Specification.productID.is_in(Select(Product.id,
                         Product.active == False))))]
-        query.append(get_specification_privacy_filter(user))
         if not filter:
             filter = set([SpecificationFilter.ACCEPTED])
         if SpecificationFilter.INFORMATIONAL in filter:
@@ -156,10 +152,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             query.append(fti_search(Specification, constraint))
         return query
 
-    def all_specifications(self, user):
-        return self.specifications(user, filter=[SpecificationFilter.ALL])
-
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=False):
         """See IHasSpecifications."""
         # prejoin_people  is provided only for interface compatibility and
@@ -167,7 +160,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         assert not prejoin_people
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
-        query = self.spec_filter_clause(user, filter=filter)
+        query = self.spec_filter_clause(filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         result = Store.of(self).find(Specification, *query)
@@ -185,7 +178,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
-        query = self.spec_filter_clause(None, filter=filter)
+        query = self.spec_filter_clause(filter=filter)
         result = Store.of(self).find(SprintSpecification, *query)
         return result
 
@@ -212,7 +205,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(decider,
+        return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     def declineSpecificationLinks(self, idlist, decider):
@@ -226,7 +219,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(decider,
+        return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance

@@ -130,7 +130,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def blueprint_count(self):
         """The total blueprint count in all of Launchpad."""
-        return getUtility(ISpecificationSet).specification_count(self.user)
+        return getUtility(ISpecificationSet).specification_count
 
     @property
     def answer_count(self):

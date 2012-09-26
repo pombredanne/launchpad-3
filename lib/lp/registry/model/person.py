@@ -822,7 +822,7 @@ class Person(
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 

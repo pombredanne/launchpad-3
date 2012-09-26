@@ -99,10 +99,7 @@ member, and therefore should be able to edit any spec attached to it
 
 SpecificationSet implements the ISpecificationSet interface
 
-    >>> ubuspec in specset.all_specifications
-    True
-
-    >>> specset.has_any_specifications
+    >>> ubuspec in specset._all_specifications
     True
 
     >>> from lp.services.webapp.testing import verifyObject

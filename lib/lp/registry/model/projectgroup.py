@@ -231,7 +231,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
         return query, ['Product', 'Specification', 'SprintSpecification']
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
 
@@ -631,11 +631,10 @@ class ProjectGroupSeries(HasSpecificationsMixin):
         self.project = project
         self.name = name
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         return self.project.specifications(
-            user, sort, quantity, filter, self.name,
-            prejoin_people=prejoin_people)
+            sort, quantity, filter, self.name, prejoin_people=prejoin_people)
 
     @property
     def title(self):

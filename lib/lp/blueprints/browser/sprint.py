@@ -216,7 +216,7 @@ class SprintView(HasSpecificationsView):
     @cachedproperty
     def latest_approved(self):
         filter = [SpecificationFilter.ACCEPTED]
-        return self.context.specifications(self.user, filter=filter,
+        return self.context.specifications(filter=filter,
                     quantity=self.latest_specs_limit,
                     sort=SpecificationSort.DATE)
 
@@ -464,7 +464,7 @@ class SprintMeetingExportView(LaunchpadView):
 
         model_specs = []
         for spec in self.context.specifications(
-            self.user, filter=[SpecificationFilter.ACCEPTED]):
+            filter=[SpecificationFilter.ACCEPTED]):
 
             # skip sprints with no priority or less than low:
             if spec.priority < SpecificationPriority.UNDEFINED:

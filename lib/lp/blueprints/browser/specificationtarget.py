@@ -259,11 +259,11 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def has_any_specifications(self):
-        return not self.context.all_specifications(self.user).is_empty()
+        return self.context.has_any_specifications
 
     @cachedproperty
     def all_specifications(self):
-        return shortlist(self.context.all_specifications(self.user))
+        return shortlist(self.context.all_specifications)
 
     @cachedproperty
     def searchrequested(self):
@@ -348,7 +348,7 @@ class HasSpecificationsView(LaunchpadView):
                 and not check_permission('launchpad.View', self.context)):
             return []
         filter = self.spec_filter
-        return self.context.specifications(self.user, filter=filter)
+        return self.context.specifications(filter=filter)
 
     @cachedproperty
     def specs_batched(self):
@@ -405,9 +405,8 @@ class HasSpecificationsView(LaunchpadView):
         Only ACCEPTED specifications are returned.  This list is used by the
         +portlet-latestspecs view.
         """
-        return self.context.specifications(self.user,
-            sort=SpecificationSort.DATE, quantity=quantity,
-            prejoin_people=False)
+        return self.context.specifications(sort=SpecificationSort.DATE,
+            quantity=quantity, prejoin_people=False)
 
 
 class SpecificationAssignmentsView(HasSpecificationsView):
