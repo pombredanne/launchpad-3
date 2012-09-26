@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including and related to IDistroSeries."""
 
 __metaclass__ = type
@@ -379,9 +377,6 @@ class IDistroSeriesPublic(
                 file reduces the bandwidth footprint of enabling multiarch
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
-
-    def priorReleasedSeries():
-        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
@@ -1071,24 +1066,8 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(distribution, prior_to_date):
-        """Find distroseries for the supplied distro  released before a
-        certain date.
-
-        :param distribution: An `IDistribution` in which to search for its
-            series.
-        :param prior_to_date: A `datetime`
-
-        :return: `IResultSet` of `IDistroSeries` that were released before
-            prior_to_date, ordered in increasing order of age.
-        """
-
 
 @error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
     _message_prefix = "Error deriving distro series"
-
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py
