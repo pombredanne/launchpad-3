@@ -248,7 +248,8 @@ If a specification is assigned to series 1.0, it appears in
 mozilla_1_0_series._all_specifications.
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> extension_manager_upgrades = mozilla.specifications(None, filter=filter)[0]
+    >>> extension_manager_upgrades = mozilla.specifications(
+    ...     None, filter=filter)[0]
     >>> series_1_0 = firefox.getSeries('1.0')
     >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
     >>> for spec in mozilla_series_1_0._all_specifications:
@@ -287,7 +288,8 @@ project itself.
 
  Searching for text is also possible.
 
-    >>> for spec in mozilla_series_1_0.specifications(None, filter=['install']):
+    >>> for spec in mozilla_series_1_0.specifications(
+    ...     None, filter=['install']):
     ...     print spec.name
     extension-manager-upgrades
 

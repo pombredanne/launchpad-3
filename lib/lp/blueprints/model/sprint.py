@@ -47,7 +47,6 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
-from lp.app.enums import InformationType
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,

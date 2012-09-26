@@ -1542,7 +1542,6 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     def specification_count(self):
         return self.context.specification_count(self.user)
 
-
     @safe_action
     @action('Find blueprints', name="search")
     def search_action(self, action, data):

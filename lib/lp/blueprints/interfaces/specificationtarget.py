@@ -26,10 +26,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import TextLine
 
 from lp import _
