@@ -109,6 +109,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def recursive_blocked_query(spec):
@@ -1021,8 +1022,16 @@ class HasSpecificationsMixin:
             )
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
-    def valid_specifications(self, user):
+    @property
+    def _all_specifications(self):
         """See IHasSpecifications."""
+        user = getUtility(ILaunchBag).user
+        return self.specifications(user, filter=[SpecificationFilter.ALL])
+
+    @property
+    def _valid_specifications(self):
+        """See IHasSpecifications."""
+        user = getUtility(ILaunchBag).user
         return self.specifications(user, filter=[SpecificationFilter.VALID])
 
     def specification_count(self, user):
@@ -1060,16 +1069,12 @@ class SpecificationSet(HasSpecificationsMixin):
         return cur.fetchall()
 
     @property
-    def all_specifications(self):
+    def _all_specifications(self):
         return Specification.select()
 
     def __iter__(self):
         """See ISpecificationSet."""
         return iter(self.all_specifications)
-
-    @property
-    def has_any_specifications(self):
-        return self.all_specifications.count() != 0
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):

@@ -822,12 +822,6 @@ class Person(
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
-    def all_specifications(self, user):
-        return self.specifications(user, filter=[SpecificationFilter.ALL])
-
-    def valid_specifications(self, user):
-        return self.specifications(user, filter=[SpecificationFilter.VALID])
-
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""

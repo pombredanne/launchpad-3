@@ -297,19 +297,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return ret
 
     @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    @property
     def is_development_focus(self):
         """See `IProductSeries`."""
         return self == self.product.development_focus
