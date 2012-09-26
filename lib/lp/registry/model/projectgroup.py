@@ -631,10 +631,11 @@ class ProjectGroupSeries(HasSpecificationsMixin):
         self.project = project
         self.name = name
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         return self.project.specifications(
-            sort, quantity, filter, self.name, prejoin_people=prejoin_people)
+            user, sort, quantity, filter, self.name,
+            prejoin_people=prejoin_people)
 
     @property
     def title(self):
