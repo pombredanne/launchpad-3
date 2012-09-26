@@ -531,6 +531,7 @@ class ValidPersonOrTeamVocabulary(
     # This is what subclasses must change if they want any extra filtering of
     # results.
     extra_clause = True
+    extra_tables = ()
 
     # Subclasses should override this property to allow null searches to
     # return all results.  If false, an empty result set is returned.
@@ -609,6 +610,7 @@ class ValidPersonOrTeamVocabulary(
                      SQL("%s.id = Person.id" % self.cache_table_name)),
                 ]
             tables.extend(private_tables)
+            tables.extend(self.extra_tables)
             result = self.store.using(*tables).find(
                 Person,
                 And(
@@ -716,6 +718,7 @@ class ValidPersonOrTeamVocabulary(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, Account.id == Person.accountID),
                 ]
+            public_tables.extend(self.extra_tables)
 
             # If private_tables is empty, we are searching for all private
             # teams. We can simply append the private query component to the
@@ -834,7 +837,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             Person.merged == None
             )
 
-        tables = [Person] + private_tables
+        tables = [Person] + private_tables + list(self.extra_tables)
 
         if not text:
             query = And(base_query,
@@ -1016,10 +1019,14 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
         if user is None:
             self.extra_clause = False
         else:
-            self.extra_clause = AND(
-                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
-                TeamParticipation.person == user.id,
-                TeamParticipation.team == Person.id)
+            # TeamParticipation might already be used for private team
+            # access checks, so alias and join it separately here.
+            tp_alias = ClassAlias(TeamParticipation)
+            self.extra_tables = [
+                Join(
+                    tp_alias,
+                    And(tp_alias.teamID == Person.id,
+                        tp_alias.personID == user.id))]
 
 
 class PersonActiveMembershipVocabulary:
