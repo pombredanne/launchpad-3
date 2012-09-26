@@ -786,7 +786,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 

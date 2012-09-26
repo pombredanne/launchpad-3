@@ -957,7 +957,7 @@ class HasSpecificationsMixin:
     for other classes that have specifications.
     """
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
         # this should be implemented by the actual context class

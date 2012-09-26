@@ -889,7 +889,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasSpecifications`."""
         return self.specifications(filter=[SpecificationFilter.ALL])
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`.
 
