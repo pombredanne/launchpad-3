@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -112,7 +112,9 @@ from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationFilter,
     SpecificationImplementationStatus,
+    SpecificationSort,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -123,9 +125,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.product import (
-    IProduct,
-    )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
@@ -1530,9 +1530,13 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     label = 'Blueprints'
 
     def latest_specifications(self):
-        return self.context.latest_specifications(self.user)
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5)
 
     def latest_completed_specifications(self):
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5,
+            filter=[SpecificationFilter.COMPLETE])
         return self.context.latest_completed_specifications(self.user)
 
     def specification_count(self):

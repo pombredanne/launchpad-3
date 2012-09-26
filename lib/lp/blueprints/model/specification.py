@@ -1025,17 +1025,6 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         return self.specifications(user, filter=[SpecificationFilter.VALID])
 
-    def latest_specifications(self, user):
-        """See IHasSpecifications."""
-        return self.specifications(user, sort=SpecificationSort.DATE,
-                                   quantity=5)
-
-    def latest_completed_specifications(self, user):
-        """See IHasSpecifications."""
-        return self.specifications(user, sort=SpecificationSort.DATE,
-                                   quantity=5,
-                                   filter=[SpecificationFilter.COMPLETE])
-
     def specification_count(self, user):
         """See IHasSpecifications."""
         return self.specifications(user,
