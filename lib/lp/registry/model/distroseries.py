@@ -25,10 +25,11 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.locals import (
+from storm.expr import (
     And,
     Desc,
     Join,
+    Or,
     SQL,
     )
 from storm.store import (
@@ -105,7 +106,6 @@ from lp.services.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -1239,13 +1239,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # raised.
         package_caches = store.using(*origin).find(
             find_spec,
-            """DistroSeriesPackageCache.distroseries = %s AND
-            DistroSeriesPackageCache.archive IN %s AND
-            (fti @@ ftq(%s) OR
-            DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self),
-                   quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
+            DistroSeriesPackageCache.distroseries == self,
+            DistroSeriesPackageCache.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            Or(
+                SQL("DistroSeriesPackageCache.fti @@ ftq(?)", params=(text,)),
+                DistroSeriesPackageCache.name.contains_string(text.lower())),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting

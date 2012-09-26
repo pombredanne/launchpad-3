@@ -198,7 +198,7 @@ cache when it's updated.
     >>> foobar_bin_pub.status.name
     'DELETED'
 
-    >>> warty.searchPackages('foobar').count()
+    >>> warty.searchPackages(u'foobar').count()
     1
 
     >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -216,7 +216,7 @@ offers a method for removing obsolete records in cache:
 
     >>> transaction.commit()
 
-    >>> warty.searchPackages('foobar').count()
+    >>> warty.searchPackages(u'foobar').count()
     0
 
     >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -233,7 +233,7 @@ cache will be added to it.
     >>> cdrkit_bin_pub.status.name
     'PUBLISHED'
 
-    >>> warty.searchPackages('cdrkit').count()
+    >>> warty.searchPackages(u'cdrkit').count()
     0
 
     >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -266,7 +266,7 @@ it commits full batches of 100 elements.
 Now we see that the 'cdrkit' binary is part of the caches and can be
 reached via searches:
 
-    >>> warty.searchPackages('cdrkit').count()
+    >>> warty.searchPackages(u'cdrkit').count()
     1
 
     >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
