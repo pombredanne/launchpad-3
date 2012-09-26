@@ -69,7 +69,6 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     flush_database_updates,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -1252,9 +1251,10 @@ class POTemplateSubset:
     def findUniquePathlessMatch(self, filename):
         """See `IPOTemplateSubset`."""
         result = self._build_query(
-            ("(POTemplate.path = %s OR POTemplate.path LIKE '%%%%/' || %s)"
-                % (quote(filename), quote_like(filename))),
-                ordered=False)
+            Or(
+                POTemplate.path == filename,
+                POTemplate.path.endswith(u'/%s' % filename)),
+            ordered=False)
         candidates = list(result.config(limit=2))
 
         if len(candidates) == 1:
