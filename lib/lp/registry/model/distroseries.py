@@ -1649,9 +1649,10 @@ class DistroSeriesSet:
         """See `IDistroSeriesSet`."""
         return DistroSeries.selectOneBy(distribution=distribution, name=name)
 
-    def findByVersion(self, version):
+    def queryByVersion(self, distribution, version):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.selectBy(version=version)
+        return DistroSeries.selectOneBy(
+            distribution=distribution, version=version)
 
     def _parseSuite(self, suite):
         """Parse 'suite' into a series name and a pocket."""

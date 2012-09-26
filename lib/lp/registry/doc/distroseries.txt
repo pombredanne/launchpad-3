@@ -46,18 +46,15 @@ To get one specific release by name, use queryByName:
     >>> warty = distroseriesset.queryByName(ubuntu, "warty")
     >>> warty.name
     u'warty'
-
-If the release by that name doesn't exist, None will be returned:
-
-    >>> foobar = distroseriesset.queryByName(ubuntu, "foobar")
-    >>> print foobar
+    >>> print distroseriesset.queryByName(ubuntu, "foobar")
     None
 
-Or IDistroSeriesSet.findByVersion:
+Or IDistroSeriesSet.queryByVersion:
 
-    >>> for distroseries in distroseriesset.findByVersion("5.04"):
-    ...     print distroseries.name
+    >>> print distroseriesset.queryByVersion(ubuntu, "5.04").name
     hoary
+    >>> print distroseriesset.queryByVersion(ubuntu, "5.05")
+    None
 
 We verify that a distroseries does in fact fully provide IDistroSeries:
 

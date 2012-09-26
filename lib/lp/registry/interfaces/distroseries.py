@@ -142,15 +142,10 @@ class DistroSeriesVersionField(UniqueField):
         The distribution is the context's distribution (which may
         the context itself); A version is unique to a distribution.
         """
-        found_series = None
-        for series in getUtility(IDistroSeriesSet).findByVersion(version):
-            if (series.distribution == self._distribution
-                and series != self.context):
-                # A version is unique to a distribution, but a distroseries
-                # may edit itself.
-                found_series = series
-                break
-        return found_series
+        existing = getUtility(IDistroSeriesSet).queryByVersion(
+            self._distribution, version)
+        if existing != self.context:
+            return existing
 
     def _getByAttribute(self, version):
         """Return the content object with the given attribute."""
@@ -1023,10 +1018,13 @@ class IDistroSeriesSet(Interface):
         Returns the matching DistroSeries, or None if not found.
         """
 
-    def findByVersion(version):
-        """Find a DistroSeries by version.
+    def queryByVersion(distribution, version):
+        """Query a DistroSeries by version.
 
-        Returns a list of matching distributions, which may be empty.
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroSeries, or None if not found.
         """
 
     def fromSuite(distribution, suite):
