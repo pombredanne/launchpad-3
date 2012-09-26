@@ -63,12 +63,6 @@ class IHasSpecifications(Interface):
                 'have not been accepted for that goal'))),
                                     as_of="devel")
 
-    latest_specifications = Attribute(
-        "The latest 5 specifications registered for this context.")
-
-    latest_completed_specifications = Attribute(
-        "The 5 specifications most recently completed for this context.")
-
     def specifications(user, quantity=None, sort=None, filter=None,
                        prejoin_people=True):
         """Specifications for this target.
