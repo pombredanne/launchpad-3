@@ -312,8 +312,10 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         """The bug comment url should use the default bugtastk."""
         bug_message = self.factory.makeBugComment()
         bugtask = bug_message.bugs[0].default_bugtask
-        url = 'http://bugs.launchpad.dev/%s/+bug/%s/comments/%s/' % (
-            bugtask.target, bugtask.bug.id, 1)
+        product = removeSecurityProxy(bugtask).target
+        url = 'http://bugs.launchpad.dev/%s/+bug/%s/comments/%s' % (
+           product.name, bugtask.bug.id, 1)
+        self.assertEqual(url, canonical_url(bug_message))
 
 
 def make_bug_comment(factory, *args, **kwargs):
