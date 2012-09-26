@@ -486,13 +486,13 @@ def _build_query(params):
         class StructuralSubscriptionCTE(StructuralSubscription):
             __storm_table__ = 'ss'
 
+        SS = ClassAlias(StructuralSubscriptionCTE)
         if params.distroseries is not None:
             distroseries_id = params.distroseries.id
             parent_distro_id = params.distroseries.distributionID
         else:
             distroseries_id = 0
             parent_distro_id = 0
-        SS = ClassAlias(StructuralSubscriptionCTE)
         extra_clauses.append(Or(
             In(
                 BugTaskFlat.distribution_id,
