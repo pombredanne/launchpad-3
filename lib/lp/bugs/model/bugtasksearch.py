@@ -493,7 +493,7 @@ def _build_query(params):
         else:
             distroseries_id = 0
             parent_distro_id = 0
-        extra_clauses.append(Or(
+        ss_clauses = [
             In(
                 BugTaskFlat.distribution_id,
                 Select(
@@ -546,8 +546,8 @@ def _build_query(params):
                     where=And(
                         SS.projectID == Product.projectID,
                         Product.project == params.project,
-                        Product.active)))
-            ))
+                        Product.active)))]
+        extra_clauses.append(Or(*ss_clauses))
 
     # Remove bugtasks from deactivated products, if necessary.
     # We don't have to do this if
