@@ -308,6 +308,13 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         url = canonical_url(bug_comment, view_name='+download')
         self.assertEqual(url, bug_comment.download_url)
 
+    def test_bug_comment_canonical_url(self):
+        """The bug comment url should use the default bugtastk."""
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].default_bugtask
+        url = 'http://bugs.launchpad.dev/%s/+bug/%s/comments/%s/' % (
+            bugtask.target, bugtask.bug.id, 1)
+
 
 def make_bug_comment(factory, *args, **kwargs):
     bug_message = factory.makeBugComment(*args, **kwargs)
