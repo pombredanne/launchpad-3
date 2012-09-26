@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'BinaryPackageBuild',
@@ -872,15 +870,9 @@ class BinaryPackageBuildSet:
 
     def preloadBuildsData(self, builds):
         # Circular imports.
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries
-            )
-        from lp.registry.model.distroseries import (
-            DistroSeries
-            )
-        from lp.registry.model.distribution import (
-            Distribution
-            )
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.distribution import Distribution
         from lp.soyuz.model.archive import Archive
         from lp.registry.model.person import Person
         self._prefetchBuildData(builds)
@@ -926,15 +918,15 @@ class BinaryPackageBuildSet:
             BuildFarmJob.status == BuildStatus.NEEDSBUILD)
 
     def handleOptionalParamsForBuildQueries(
-        self, queries, tables, status=None, name=None, pocket=None,
+        self, clauses, origin, status=None, name=None, pocket=None,
         arch_tag=None):
         """Construct query clauses needed/shared by all getBuild..() methods.
 
         This method is not exposed via the public interface as it is only
         used to DRY-up trusted code.
 
-        :param queries: container to which to add any resulting query clauses.
-        :param tables: container to which to add joined tables.
+        :param clauses: container to which to add any resulting query clauses.
+        :param origin: container to which to add joined tables.
         :param status: optional build state for which to add a query clause if
             present.
         :param name: optional source package release name (or list of source
@@ -945,112 +937,96 @@ class BinaryPackageBuildSet:
         :param arch_tag: optional architecture tag for which to add a
             query clause if present.
         """
+        # Circular. :(
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         # Ensure the underlying buildfarmjob and package build tables
         # are included.
-        queries.append('BinaryPackageBuild.package_build = PackageBuild.id')
-        queries.append('PackageBuild.build_farm_job = BuildFarmJob.id')
-        tables.extend(['PackageBuild', 'BuildFarmJob'])
+        clauses.extend([
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id])
+        origin.extend([BinaryPackageBuild, BuildFarmJob])
 
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('BuildFarmJob.status=%s' % sqlvalues(status))
+            clauses.append(BuildFarmJob.status == status)
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
             if not isinstance(pocket, (list, tuple)):
                 pocket = (pocket,)
-
-            queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
+            clauses.append(PackageBuild.pocket.is_in(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
-            queries.append('''
-                BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
-                AND DistroArchSeries.architecturetag = %s
-            ''' % sqlvalues(arch_tag))
-            tables.extend(['DistroArchSeries'])
+            clauses.extend([
+                BinaryPackageBuild.distro_arch_series_id ==
+                    DistroArchSeries.id,
+                DistroArchSeries.architecturetag == arch_tag])
+            origin.append(DistroArchSeries)
 
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
+            clauses.extend(
+                [BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id])
+            origin.extend([SourcePackageRelease, SourcePackageName])
             if not isinstance(name, (list, tuple)):
-                queries.append('''
-                    BinaryPackageBuild.source_package_release =
-                        SourcePackageRelease.id AND
-                    SourcePackageRelease.sourcepackagename =
-                        SourcePackageName.id
-                    AND SourcepackageName.name LIKE '%%%%' || %s || '%%%%'
-                ''' % quote_like(name))
+                clauses.append(
+                    "SourcepackageName.name LIKE '%%%%' || %s || '%%%%'" % (
+                        quote_like(name)))
             else:
-                queries.append('''
-                    BinaryPackageBuild.source_package_release =
-                        SourcePackageRelease.id AND
-                    SourcePackageRelease.sourcepackagename =
-                        SourcePackageName.id
-                    AND SourcepackageName.name IN %s
-                ''' % sqlvalues(name))
-            tables.extend(['SourcePackageRelease', 'SourcePackageName'])
+                clauses.append(SourcePackageName.name.is_in(name))
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             arch_tag=None, user=None):
         """See `IBinaryPackageBuildSet`."""
-        queries = []
-        clauseTables = []
+        # Circular. :(
+        from lp.soyuz.model.archive import (
+            Archive, get_archive_privacy_filter)
+
+        clauses = [
+            PackageBuild.archive_id == Archive.id,
+            BuildFarmJob.builder_id == builder_id,
+            get_archive_privacy_filter(user)]
+        origin = [PackageBuild, Archive]
 
         self.handleOptionalParamsForBuildQueries(
-            queries, clauseTables, status, name, pocket=None,
-            arch_tag=arch_tag)
+            clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
 
-        # This code MUST match the logic in the Build security adapter,
-        # otherwise users are likely to get 403 errors, or worse.
-        queries.append("Archive.id = PackageBuild.archive")
-        clauseTables.append('Archive')
-        if user is not None:
-            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-                queries.append("""
-                (Archive.private = FALSE
-                 OR %s IN (SELECT TeamParticipation.person
-                       FROM TeamParticipation
-                       WHERE TeamParticipation.person = %s
-                           AND TeamParticipation.team = Archive.owner)
-                )""" % sqlvalues(user, user))
-        else:
-            queries.append("Archive.private = FALSE")
-
-        queries.append("builder=%s" % builder_id)
-
-        return BinaryPackageBuild.select(
-            " AND ".join(queries), clauseTables=clauseTables,
-            orderBy=["-BuildFarmJob.date_finished", "id"])
+        return IStore(BinaryPackageBuild).using(*origin).find(
+            BinaryPackageBuild, *clauses).order_by(
+                Desc(BuildFarmJob.date_finished), BinaryPackageBuild.id)
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
-        queries = []
-        clauseTables = []
+        clauses = [PackageBuild.archive_id == archive.id]
+        origin = [PackageBuild]
 
         self.handleOptionalParamsForBuildQueries(
-            queries, clauseTables, status, name, pocket, arch_tag)
+            clauses, origin, status, name, pocket, arch_tag)
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-BuildFarmJob.date_created"]
+            orderBy = [Desc(BuildFarmJob.date_created)]
         else:
-            orderBy = ["-BuildFarmJob.date_finished"]
+            orderBy = [Desc(BuildFarmJob.date_finished)]
         # All orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-        queries.append("archive=%s" % sqlvalues(archive))
-        clause = " AND ".join(queries)
+        orderBy.append(BinaryPackageBuild.id)
 
         return self._decorate_with_prejoins(
-            BinaryPackageBuild.select(
-                clause, clauseTables=clauseTables, orderBy=orderBy))
+            IStore(BinaryPackageBuild).using(*origin).find(
+                BinaryPackageBuild, *clauses).order_by(*orderBy))
 
     def getBuildsByArchIds(self, distribution, arch_ids, status=None,
                            name=None, pocket=None):
@@ -1059,7 +1035,7 @@ class BinaryPackageBuildSet:
         if not arch_ids:
             return EmptyResultSet()
 
-        clauseTables = []
+        clauseTables = [PackageBuild]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -1124,9 +1100,7 @@ class BinaryPackageBuildSet:
             "PackageBuild.archive IN %s" %
             sqlvalues(list(distribution.all_distro_archive_ids)))
 
-        store = Store.of(distribution)
-        clauseTables = [BinaryPackageBuild] + clauseTables
-        result_set = store.using(*clauseTables).find(
+        result_set = Store.of(distribution).using(*clauseTables).find(
             (BinaryPackageBuild, order_by_table), *condition_clauses)
         result_set.order_by(*order_by)
 
