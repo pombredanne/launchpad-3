@@ -1,7 +1,6 @@
-# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
@@ -156,10 +155,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return recipients
 
     @property
-    def _store(self):
-        return Store.of(self.sourcepackagename)
-
-    @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
         answer_contacts = set()
@@ -221,18 +216,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
     def __repr__(self):
         return '<%s %r %r %r>' % (self.__class__.__name__,
             self.distribution, self.distroseries, self.sourcepackagename)
-
-    def _get_ubuntu(self):
-        # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
-        # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        # and not need this method. However, importd currently depends
-        # on SourcePackage methods that require the ubuntu celebrity,
-        # and given it does not execute_zcml_for_scripts, we are forced
-        # here to do this hack instead of using components. Ideally,
-        # imports is rewritten to not use SourcePackage, or it
-        # initializes the component architecture correctly.
-        from lp.registry.model.distribution import Distribution
-        return Distribution.byName("ubuntu")
 
     def _getPublishingHistory(self, version=None, include_status=None,
                               exclude_status=None, order_by=None):
@@ -423,32 +406,17 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         """See `ISourcePackage`"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
-        # parent distroseries, and when we hit Ubuntu, we look backwards in
-        # time through Ubuntu series till we find packaging information or
-        # blow past the Warty Warthog.
+        # parent distroseries.
 
-        # see if there is a direct packaging
         result = self.direct_packaging
         if result is not None:
             return result
 
-        ubuntu = self._get_ubuntu()
-        # if we are an ubuntu sourcepackage, try the previous series of
-        # ubuntu
-        if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.priorReleasedSeries()
-            previous_ubuntu_series = ubuntuseries.first()
-            if previous_ubuntu_series is not None:
-                sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                                   distroseries=previous_ubuntu_series)
-                return sp.packaging
-        # if we have a parent distroseries, try that
+        # If we have a parent distroseries, try that.
         if self.distroseries.previous_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                distroseries=self.distroseries.previous_series)
             return sp.packaging
-        # capitulate
-        return None
 
     @property
     def published_by_pocket(self):
@@ -626,7 +594,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         # binary_only parameter as a source package can only have
         # binary builds.
 
-        clauseTables = ['SourcePackageRelease',
+        clauseTables = ['SourcePackageRelease', 'PackageBuild',
                         'SourcePackagePublishingHistory']
 
         condition_clauses = ["""
@@ -673,17 +641,17 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
-            orderBy = ["-BuildFarmJob.date_created"]
+            orderBy = [Desc("BuildFarmJob.date_created")]
         else:
-            orderBy = ["-BuildFarmJob.date_finished"]
+            orderBy = [Desc("BuildFarmJob.date_finished")]
 
         # Fallback to ordering by -id as a tie-breaker.
-        orderBy.append("-id")
+        orderBy.append(Desc("id"))
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        return BinaryPackageBuild.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables, orderBy=orderBy)
+        return IStore(BinaryPackageBuild).using(clauseTables).find(
+            BinaryPackageBuild, *condition_clauses).order_by(*orderBy)
 
     @property
     def latest_published_component(self):
