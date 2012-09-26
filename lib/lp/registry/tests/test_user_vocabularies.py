@@ -9,13 +9,12 @@ from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.registry.enums import TeamMembershipPolicy
-from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.model.person import Person
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
     )
+from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -140,18 +139,11 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
     def _vocabTermValues(self):
         """Return the token values for the vocab."""
         # XXX Abel Deuring 2010-05-21, bug 583502: We cannot simply iterate
-        # over the items of AllUserTeamsPariticipationVocabulary as in
-        # class TestUserTeamsParticipationPlusSelfVocabulary.
-        # So we iterate over all Person records and return all terms
-        # returned by vocabulary.searchForTerms(person.name)
+        # over the items of AllUserTeamsPariticipationVocabulary, so
+        # so iterate over all Persons and check membership.
         vocabulary_registry = getVocabularyRegistry()
         vocab = vocabulary_registry.get(None, 'AllUserTeamsParticipation')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = []
-        for person in store.find(Person):
-            result.extend(
-                term.value for term in vocab.searchForTerms(person.name))
-        return result
+        return [p for p in IStore(Person).find(Person) if p in vocab]
 
     def test_user_no_team(self):
         user = self.factory.makePerson()
@@ -167,22 +159,15 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
     def test_user_in_two_teams(self):
         user = self.factory.makePerson()
         login_person(user)
-        team1 = self.factory.makeTeam()
-        user.join(team1)
-        team2 = self.factory.makeTeam()
-        user.join(team2)
-        self.assertEqual(set([team1, team2]), set(self._vocabTermValues()))
+        team1 = self.factory.makeTeam(members=[user])
+        team2 = self.factory.makeTeam(members=[user])
+        self.assertContentEqual([team1, team2], set(self._vocabTermValues()))
 
     def test_user_in_private_teams(self):
         # Private teams are included in the vocabulary.
         user = self.factory.makePerson()
-        team_owner = self.factory.makePerson()
-        login_person(team_owner)
-        team = self.factory.makeTeam(owner=team_owner)
-        team.addMember(person=user, reviewer=team_owner)
-        # Launchpad admin rights are needed to create private teams.
-        login('foo.bar@canonical.com')
-        team.visibility = PersonVisibility.PRIVATE
+        team = self.factory.makeTeam(
+            members=[user], visibility=PersonVisibility.PRIVATE)
         login_person(user)
         self.assertEqual([team], self._vocabTermValues())
 
@@ -190,3 +175,11 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
         # AllUserTeamsPariticipationVocabulary is empty for anoymous users.
         login(ANONYMOUS)
         self.assertEqual([], self._vocabTermValues())
+
+    def test_commercial_admin(self):
+        # The vocab does the membership check for commercial admins too.
+        user = self.factory.makeCommercialAdmin()
+        com_admins = getUtility(IPersonSet).getByName('commercial-admins')
+        team1 = self.factory.makeTeam(members=[user])
+        login_person(user)
+        self.assertContentEqual([com_admins, team1], self._vocabTermValues())
