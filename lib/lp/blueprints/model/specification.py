@@ -1034,7 +1034,7 @@ class HasSpecificationsMixin:
         user = getUtility(ILaunchBag).user
         return self.specifications(user, filter=[SpecificationFilter.VALID])
 
-    def specification_count(self, user):
+    def specificationCount(self, user):
         """See IHasSpecifications."""
         return self.specifications(user,
                                    filter=[SpecificationFilter.ALL]).count()

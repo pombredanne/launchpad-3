@@ -172,7 +172,7 @@ class RegistryDeleteViewMixin:
     def _getSpecifications(self, target):
         """Return the list `ISpecification`s associated to the target."""
         if IProductSeries.providedBy(target):
-            return list(target.all_specifications)
+            return list(target._all_specifications)
         else:
             return list(target.specifications)
 

@@ -259,7 +259,7 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def has_any_specifications(self):
-        return not self.context.all_specifications(self.user).is_empty()
+        return not self.context._all_specifications.is_empty()
 
     @cachedproperty
     def all_specifications(self):
