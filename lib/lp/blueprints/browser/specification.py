@@ -1539,7 +1539,6 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         return self.context.specifications(
             self.user, sort=SpecificationSort.DATE, quantity=5,
             filter=[SpecificationFilter.COMPLETE])
-        return self.context.latest_completed_specifications(self.user)
 
     @property
     def specification_count(self):
