@@ -58,9 +58,6 @@ class ISourcePackageNameSet(Interface):
     def getAll():
         """return an iselectresults representing all package names"""
 
-    def findByName(name):
-        """Find sourcepackagenames by its name or part of it"""
-
     def queryByName(name):
         """Get a sourcepackagename by its name atttribute.
 
