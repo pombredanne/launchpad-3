@@ -215,17 +215,17 @@ Package searching
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
 
-    >>> warty.searchPackages("pmount").count()
+    >>> warty.searchPackages(u"pmount").count()
     1
 
 This also works for small or weirdly named packages that don't work
 through fti, and even for substrings:
 
-    >>> warty.searchPackages("linux-2.6.12").count()
+    >>> warty.searchPackages(u"linux-2.6.12").count()
     1
-    >>> warty.searchPackages("at").count()
+    >>> warty.searchPackages(u"at").count()
     1
-    >>> pkgs = warty.searchPackages('a')
+    >>> pkgs = warty.searchPackages(u'a')
     >>> for dsbp in pkgs:
     ...     print "%s: %s" % (dsbp.__class__.__name__, dsbp.name)
     DistroSeriesBinaryPackage: foobar
@@ -1039,7 +1039,7 @@ Getting build records for a distro series
 IDistroSeries inherits the IHasBuildRecords interfaces and therefore provides
 a getBuildRecords() method.
 
-    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox')
+    >>> builds = ubuntu['warty'].getBuildRecords(name=u'firefox')
     >>> for build in builds:
     ...     print build.title
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE

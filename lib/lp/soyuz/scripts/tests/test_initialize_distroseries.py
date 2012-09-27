@@ -557,9 +557,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                                                parent_das):
         # Check that 'udev' has been copied correctly.
         parent_udev_pubs = parent.main_archive.getPublishedSources(
-            'udev', distroseries=parent)
+            u'udev', distroseries=parent)
         child_udev_pubs = child.main_archive.getPublishedSources(
-            'udev', distroseries=child)
+            u'udev', distroseries=child)
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
         parent_arch_udev_pubs = parent[

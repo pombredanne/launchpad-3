@@ -432,7 +432,7 @@ class TestBuildViews(TestCaseWithFactory):
             distroseries.distribution, name="+builds",
             form={
                 'build_state': 'built',
-                'build_text': 'foo',
+                'build_text': u'foo',
                 'start': 75,
                 'memo': '["2012-01-01T01:01:01", 0]'})
         view.setupBuildList()
