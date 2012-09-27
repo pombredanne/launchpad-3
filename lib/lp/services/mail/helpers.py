@@ -21,6 +21,9 @@ from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+NO_KEY_TEMPLATE = 'key-not-registered.txt'
+
+
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
@@ -179,7 +182,6 @@ def ensure_not_weakly_authenticated(signed_msg, context,
     message has just been passed through authenticateEmail -- you can't give
     it an arbitrary message object.
     """
-    no_key_template = 'key-not-registered.txt'
     cur_principal = get_current_principal()
     # The security machinery doesn't know about
     # IWeaklyAuthenticatedPrincipal yet, so do a manual
@@ -194,7 +196,7 @@ def ensure_not_weakly_authenticated(signed_msg, context,
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                no_key_template, None, import_url=import_url, context=context)
+                NO_KEY_TEMPLATE, None, import_url=import_url, context=context)
         raise IncomingEmailError(error_message)
 
 
