@@ -72,13 +72,13 @@ class ISharingService(IService):
         person=Reference(IPerson, title=_('Person'), required=True))
     @operation_returns_collection_of(IProduct)
     @operation_for_version('devel')
-    def getSharedProducts(person, user):
-        """Find products for which person has one or more access policy grants.
+    def getSharedProjects(person, user):
+        """Find projects for which person has one or more access policy grants.
 
         :param user: the user making the request. If the user is an admin, then
-            all products are returned, else only those for which the user is a
+            all projects are returned, else only those for which the user is a
             maintainer or driver.
-        :return: a collection of products
+        :return: a collection of projects
         """
 
     @export_read_operation()
