@@ -204,17 +204,13 @@ class TestSharingService(TestCaseWithFactory):
             [BranchSharingPolicy.PUBLIC, BranchSharingPolicy.FORBIDDEN])
 
     def test_getBranchSharingPolicies_product_with_embargoed(self):
-        # The sharing policies will contain the product's sharing policy even
-        # if it is not in the nominally allowed policy list.
+        # If the current sharing policy is embargoed, that is all that is
+        # allowed.
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self._assert_getBranchSharingPolicies(
             product,
-            [BranchSharingPolicy.PUBLIC,
-             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-             BranchSharingPolicy.PROPRIETARY,
-             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+            [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
