@@ -195,7 +195,7 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             "http://launchpad.dev/~eric/+editpgpkeys to import your key.\n",
             error.message)
 
-    def test_weakly_authenticated_with_unknonw_sig_with_error_template(self):
+    def test_weakly_authenticated_with_unknown_sig_with_no_key_template(self):
         # The no_key_template is managed by the helpers module; the
         # error_templates path is ignored.
         signed_msg = self.factory.makeSignedMessage()
