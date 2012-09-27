@@ -84,6 +84,26 @@ class TestBranchOperations(TestCaseWithFactory):
             exception.content,
             'Source and target branches must be different.')
 
+    def test_setOwner(self):
+        """Test setOwner via the web API does not raise a 404."""
+        branch_owner = self.factory.makePerson(name='fred')
+        product = self.factory.makeProduct(name='myproduct')
+        self.factory.makeProductBranch(
+            name='mybranch', product=product, owner=branch_owner)
+        self.factory.makeTeam(name='barney', owner=branch_owner)
+        endInteraction()
+
+        lp = launchpadlib_for("test", person=branch_owner)
+        ws_branch = lp.branches.getByUniqueName(
+            unique_name='~fred/myproduct/mybranch')
+        ws_new_owner = lp.people['barney']
+        ws_branch.setOwner(new_owner=ws_new_owner)
+        # Check the result.
+        renamed_branch = lp.branches.getByUniqueName(
+            unique_name='~barney/myproduct/mybranch')
+        self.assertIsNotNone(renamed_branch)
+        self.assertEqual(
+            '~barney/myproduct/mybranch', renamed_branch.unique_name)
 
 class TestBranchDeletes(TestCaseWithFactory):
 

@@ -127,7 +127,7 @@ class SharingService:
         )
 
     def _getSharedPillars(self, person, user, pillar_class, extra_filter=None):
-        """Helper method for getSharedProducts and getSharedDistributions.
+        """Helper method for getSharedProjects and getSharedDistributions.
 
         pillar_class is either Product or Distribution. Products define the
         owner foreign key attribute as _owner so we need to account for that,
@@ -172,7 +172,7 @@ class SharingService:
             ), filter)
         return result_set
 
-    def getSharedProducts(self, person, user):
+    def getSharedProjects(self, person, user):
         """See `ISharingService`."""
         commercial_filter = None
         if user and IPersonRoles(user).in_commercial_admin:
@@ -426,14 +426,19 @@ class SharingService:
         """See `ISharingService`."""
         # Only Products have branch sharing policies. Distributions just
         # default to Public.
-        allowed_policies = [BranchSharingPolicy.PUBLIC]
-        # Commercial projects also allow proprietary branches.
-        if (IProduct.providedBy(pillar)
-            and pillar.has_current_commercial_subscription):
-            allowed_policies.extend([
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                BranchSharingPolicy.PROPRIETARY])
+        # If the branch sharing policy is EMBARGOED_OR_PROPRIETARY, then we
+        # do not allow any other policies.
+        allowed_policies = []
+        if (pillar.branch_sharing_policy !=
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY):
+            allowed_policies = [BranchSharingPolicy.PUBLIC]
+            # Commercial projects also allow proprietary branches.
+            if (IProduct.providedBy(pillar)
+                and pillar.has_current_commercial_subscription):
+                allowed_policies.extend([
+                    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    BranchSharingPolicy.PROPRIETARY])
         if (pillar.branch_sharing_policy and
             not pillar.branch_sharing_policy in allowed_policies):
             allowed_policies.append(pillar.branch_sharing_policy)

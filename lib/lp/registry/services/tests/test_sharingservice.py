@@ -204,17 +204,12 @@ class TestSharingService(TestCaseWithFactory):
             [BranchSharingPolicy.PUBLIC, BranchSharingPolicy.FORBIDDEN])
 
     def test_getBranchSharingPolicies_product_with_embargoed(self):
-        # The sharing policies will contain the product's sharing policy even
-        # if it is not in the nominally allowed policy list.
+        # If the current sharing policy is embargoed, that is all that is
+        # allowed.
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self._assert_getBranchSharingPolicies(
-            product,
-            [BranchSharingPolicy.PUBLIC,
-             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-             BranchSharingPolicy.PROPRIETARY,
-             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+            product, [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
@@ -1354,7 +1349,7 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(branches[:9], shared_branches)
         self.assertContentEqual(specs[:9], shared_specs)
 
-    def _assert_getSharedProducts(self, product, who=None):
+    def _assert_getSharedProjects(self, product, who=None):
         # Test that 'who' can query the shared products for a grantee.
 
         # Make a product not related to 'who' which will be shared.
@@ -1373,7 +1368,7 @@ class TestSharingService(TestCaseWithFactory):
             self.service.sharePillarInformation(
                 unrelated_product, person, unrelated_product.owner,
                 permissions)
-        shared = self.service.getSharedProducts(person, who)
+        shared = self.service.getSharedProjects(person, who)
         expected = []
         if who:
             expected = [product]
@@ -1381,55 +1376,55 @@ class TestSharingService(TestCaseWithFactory):
                 expected.append(unrelated_product)
         self.assertEqual(expected, list(shared))
 
-    def test_getSharedProducts_anonymous(self):
+    def test_getSharedProjects_anonymous(self):
         # Anonymous users don't get to see any shared products.
         product = self.factory.makeProduct()
-        self._assert_getSharedProducts(product)
+        self._assert_getSharedProjects(product)
 
-    def test_getSharedProducts_admin(self):
+    def test_getSharedProjects_admin(self):
         # Admins can see all shared products.
         admin = getUtility(ILaunchpadCelebrities).admin.teamowner
         product = self.factory.makeProduct()
-        self._assert_getSharedProducts(product, admin)
+        self._assert_getSharedProjects(product, admin)
 
-    def test_getSharedProducts_commercial_admin_current(self):
+    def test_getSharedProjects_commercial_admin_current(self):
         # Commercial admins can see all current commercial products.
         admin = getUtility(ILaunchpadCelebrities).commercial_admin.teamowner
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        self._assert_getSharedProducts(product, admin)
+        self._assert_getSharedProjects(product, admin)
 
-    def test_getSharedProducts_commercial_admin_expired(self):
+    def test_getSharedProjects_commercial_admin_expired(self):
         # Commercial admins can see all expired commercial products.
         admin = getUtility(ILaunchpadCelebrities).commercial_admin.teamowner
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        self._assert_getSharedProducts(product, admin)
+        self._assert_getSharedProjects(product, admin)
 
-    def test_getSharedProducts_commercial_admin_owner(self):
+    def test_getSharedProjects_commercial_admin_owner(self):
         # Commercial admins can see products they own.
         admin = getUtility(ILaunchpadCelebrities).commercial_admin
         product = self.factory.makeProduct(owner=admin)
-        self._assert_getSharedProducts(product, admin.teamowner)
+        self._assert_getSharedProjects(product, admin.teamowner)
 
-    def test_getSharedProducts_commercial_admin_driver(self):
+    def test_getSharedProjects_commercial_admin_driver(self):
         # Commercial admins can see products they are the driver for.
         admin = getUtility(ILaunchpadCelebrities).commercial_admin
         product = self.factory.makeProduct(driver=admin)
-        self._assert_getSharedProducts(product, admin.teamowner)
+        self._assert_getSharedProjects(product, admin.teamowner)
 
-    def test_getSharedProducts_owner(self):
+    def test_getSharedProjects_owner(self):
         # Users only see shared products they own.
         owner_team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=owner_team)
-        self._assert_getSharedProducts(product, owner_team.teamowner)
+        self._assert_getSharedProjects(product, owner_team.teamowner)
 
-    def test_getSharedProducts_driver(self):
+    def test_getSharedProjects_driver(self):
         # Users only see shared products they are the driver for.
         driver_team = self.factory.makeTeam()
         product = self.factory.makeProduct(driver=driver_team)
-        self._assert_getSharedProducts(product, driver_team.teamowner)
+        self._assert_getSharedProjects(product, driver_team.teamowner)
 
     def _assert_getSharedDistributions(self, distro, who=None):
         # Test that 'who' can query the shared distros for a grantee.
@@ -1883,10 +1878,10 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
 
-    def test_getSharedProducts(self):
-        # Test the exported getSharedProducts() method.
+    def test_getSharedProjects(self):
+        # Test the exported getSharedProjects() method.
         ws_grantee = ws_object(self.launchpad, self.grantee)
-        products = self.service.getSharedProducts(person=ws_grantee)
+        products = self.service.getSharedProjects(person=ws_grantee)
         self.assertEqual(1, len(products))
         self.assertEqual(products[0].name, self.pillar.name)
 

@@ -154,7 +154,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -1120,12 +1119,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     SourcePackageName.id),
             ]
 
-        # quote_like SQL-escapes the string in addition to LIKE-escaping
-        # it, so we can't use params=. So we need to double-escape the %
-        # on either side of the string: once to survive the formatting
-        # here, and once to survive Storm's formatting during
-        # compilation. Storm should really %-escape literal SQL strings,
-        # but it doesn't.
         conditions = [
             DistributionSourcePackageCache.distribution == self,
             DistributionSourcePackageCache.archiveID.is_in(
@@ -1133,8 +1126,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Or(
                 SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
                     params=(text,)),
-                SQL("DistributionSourcePackageCache.name "
-                    "LIKE '%%%%' || %s || '%%%%'" % quote_like(text.lower())),
+                DistributionSourcePackageCache.name.contains_string(
+                    text.lower()),
                 ),
             ]
 

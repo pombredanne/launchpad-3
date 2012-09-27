@@ -1155,7 +1155,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # at upload-time. 'foocomm' only builds in 'i386', thus only one
         # build gets created.
         foocomm_source = partner_archive.getPublishedSources(
-            name='foocomm', version='1.0-2').one()
+            name=u'foocomm', version='1.0-2').one()
         [build] = foocomm_source.sourcepackagerelease.builds
         self.assertEqual(
             build.title,

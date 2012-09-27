@@ -172,7 +172,7 @@ helper function will do this job in this test.
 
 The page section id is built using "pub$ID" notation.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -257,7 +257,7 @@ indeed the same by checking the changelog, also that the binaries
 were not copied and instead a build was already created in his PPA
 context.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -679,8 +679,8 @@ have ever seen. He goes to Celso's PPA copy interface.
 James would like to re-distribute Celso's 'pmount' and 'iceweasel'
 packages, thus he selects both.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
-    >>> iceweasel_pub_id = getPPAPubIDsFor('cprov', 'iceweasel')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('cprov', u'pmount')[0]
+    >>> iceweasel_pub_id = getPPAPubIDsFor('cprov', u'iceweasel')[0]
 
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
     ...     [iceweasel_pub_id, pmount_pub_id])
@@ -740,7 +740,7 @@ sources and binaries are copied to their PPA.
 James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
-    >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
+    >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', u'pmount')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % pmount_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -751,7 +751,7 @@ sources to ensure the binaries are really there.
       pmount
     ...
 
-    >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
+    >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', u'iceweasel')[0]
     >>> expander_url = jblack_browser.getLink(
     ...     id='pub%s-expander' % iceweasel_pub_id).url
     >>> jblack_extra_browser.open(expander_url)
@@ -973,7 +973,7 @@ foo_2.0 version to his PPA.
         Status
     foo - 2.0 (changes file) ... Published  Hoary            Base
 
-    >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('no-priv', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
@@ -1004,7 +1004,7 @@ packages since they would not be published in the destination anyway.
     iceweasel...(...) 2007-07-09  Published  Warty            Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('cprov', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('cprov', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
@@ -1062,7 +1062,7 @@ to copy the *same* version with different contents to grumpy in his PPA.
     foo - 1.1 (changes file) ...   Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('mark', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('mark', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
@@ -1097,7 +1097,7 @@ But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He
 is told that the sources cannot be copied.
 
-    >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', u'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl('Destination PPA').value = ['jblack/ppa']
