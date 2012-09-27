@@ -257,7 +257,6 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -1161,29 +1160,23 @@ class Person(
         # Import here to work around a circular import problem.
         from lp.registry.model.product import Product
 
-        clauses = ["""
-            SELECT DISTINCT Product.id
-            FROM Product, TeamParticipation
-            WHERE TeamParticipation.person = %(person)s
-            AND owner = TeamParticipation.team
-            AND Product.active IS TRUE
-            """ % sqlvalues(person=self)]
+        clauses = [
+            Product.active == True,
+            Product._ownerID == TeamParticipation.teamID,
+            TeamParticipation.person == self,
+            ]
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
         if match_name:
-            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
-            quoted_query = quote(match_name)
             clauses.append(
-                """(Product.name LIKE %s OR
-                    Product.displayname LIKE %s OR
-                    fti @@ ftq(%s))""" % (like_query,
-                                          like_query,
-                                          quoted_query))
-        query = " AND ".join(clauses)
-        results = Product.select("""id IN (%s)""" % query,
-                                 orderBy=['displayname'])
-        return results
+                Or(
+                    Product.name.contains_string(match_name),
+                    Product.displayname.contains_string(match_name),
+                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
+        return IStore(Product).find(
+            Product, *clauses
+            ).config(distinct=True).order_by(Product.displayname)
 
     def isAnyPillarOwner(self):
         """See IPerson."""

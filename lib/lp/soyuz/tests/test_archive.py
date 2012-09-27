@@ -10,6 +10,7 @@ from datetime import (
     )
 import doctest
 
+from pytz import UTC
 from testtools.matchers import (
     DocTestMatches,
     MatchesRegex,
@@ -2030,20 +2031,20 @@ class TestGetPublishedSources(TestCaseWithFactory):
             found.append((title, pub_ds))
         self.assertEqual(expected, found)
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name='cd').count())
+            cprov_archive.getPublishedSources(name=u'cd').count())
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name='ice').count())
+            cprov_archive.getPublishedSources(name=u'ice').count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='iceweasel', exact_match=True).count())
+            name=u'iceweasel', exact_match=True).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', exact_match=True).count())
+            name=u'ice', exact_match=True).count())
         self.assertRaises(VersionRequiresName,
             cprov_archive.getPublishedSources,
             version='1.0')
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='ice', version='1.0').count())
+            name=u'ice', version='1.0').count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', version='666').count())
+            name=u'ice', version='666').count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
@@ -2063,12 +2064,10 @@ class TestGetPublishedSources(TestCaseWithFactory):
             distroseries=warty,
             pocket=PackagePublishingPocket.UPDATES).count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='ice', distroseries=warty).count())
+            name=u'ice', distroseries=warty).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', distroseries=breezy_autotest).count())
-        self.assertEqual(0, cprov_archive.getPublishedSources(
-            created_since_date='2007-07-09 14:00:00').count())
-        mid_2007 = datetime(year=2007, month=7, day=9, hour=14)
+            name=u'ice', distroseries=breezy_autotest).count())
+        mid_2007 = datetime(year=2007, month=7, day=9, hour=14, tzinfo=UTC)
         self.assertEqual(0, cprov_archive.getPublishedSources(
             created_since_date=mid_2007).count())
         one_hour_step = timedelta(hours=1)
