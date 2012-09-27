@@ -259,7 +259,7 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def has_any_specifications(self):
-        return self.context.has_any_specifications
+        return self.context._all_specifications.count() != 0
 
     @cachedproperty
     def all_specifications(self):
