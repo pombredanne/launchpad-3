@@ -38,17 +38,6 @@ class TestBinaryPackageNameSet(TestCaseWithFactory):
         name = self.factory.makeBinaryPackageName()
         self.assertIn(name, self.name_set.getAll())
 
-    def test_findByName_not_found(self):
-        self.assertEqual([], list(self.name_set.findByName("notfound")))
-
-    def test_findByName_found(self):
-        name1 = self.factory.makeBinaryPackageName("prefixname")
-        name2 = self.factory.makeBinaryPackageName("name")
-        name3 = self.factory.makeBinaryPackageName("namesuffix")
-        name4 = self.factory.makeBinaryPackageName("other")
-        self.assertEqual(
-            [name1, name2, name3], list(self.name_set.findByName("name")))
-
     def test_queryByName_not_found(self):
         self.assertEqual(None, self.name_set.queryByName("notfound"))
 

@@ -119,7 +119,7 @@ not be linked.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
     >>> firefox_build = warty.getBuildRecords(
-    ...     name='mozilla-firefox', arch_tag='i386')[0]
+    ...     name=u'mozilla-firefox', arch_tag='i386')[0]
     >>> firefox_deb = firefox_build.binarypackages[0].files[0]
     >>> print firefox_deb.libraryfile.filename
     mozilla-firefox_0.9_i386.deb

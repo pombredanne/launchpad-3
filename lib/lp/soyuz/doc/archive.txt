@@ -540,7 +540,7 @@ upstream tarball, as if it was part of two different SourcePackageRelease.
     ...     )
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
-    ...     name='cdrkit').first()
+    ...     name=u'cdrkit').first()
     >>> unused_src_file = cprov_cdrkit_src.sourcepackagerelease.addFile(
     ...     huge_firefox_orig_file)
 
@@ -570,7 +570,7 @@ decreases.
     >>> cprov_archive.number_of_sources
     3
     >>> cprov_archive.getPublishedSources(
-    ...     name='cdrkit').first().supersede()
+    ...     name=u'cdrkit').first().supersede()
 
     >>> cprov_archive.number_of_sources
     2
@@ -611,7 +611,7 @@ If only the source publication is DELETED, leaving its binary behind,
 it continues to be considered 'available for deletion'.
 
     >>> removal_candidate = cprov_archive.getPublishedSources(
-    ...     name='ice').first()
+    ...     name=u'ice').first()
     >>> len(removal_candidate.getPublishedBinaries())
     1
 
@@ -676,19 +676,19 @@ It also implements a build lookup method, which supports, 'name',
 This method can return build records for sources matching the given
 'name' as in SQL LIKE:
 
-    >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
+    >>> cd_lookup = cprov_archive.getBuildRecords(name=u'cd')
     >>> cd_lookup.count()
     1
     >>> cd_lookup[0].source_package_release.name
     u'cdrkit'
 
-    >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
+    >>> ice_lookup = cprov_archive.getBuildRecords(name=u'ice')
     >>> ice_lookup.count()
     1
     >>> ice_lookup[0].source_package_release.name
     u'iceweasel'
 
-    >>> cprov_archive.getBuildRecords(name='foo').count()
+    >>> cprov_archive.getBuildRecords(name=u'foo').count()
     0
 
 Or return build records in a specific status:
@@ -719,7 +719,7 @@ And finally build records target to a given pocket:
 All the attributes can be combined in order to refine the result:
 
     >>> cprov_archive.getBuildRecords(
-    ...     name='ice',
+    ...     name=u'ice',
     ...     build_state=BuildStatus.FULLYBUILT,
     ...     pocket=PackagePublishingPocket.RELEASE).count()
     1
@@ -2001,10 +2001,10 @@ Let's log in as mark and it will work:
     >>> mark.archive.syncSources(
     ...     sources, cprov.archive, "release", person=mark)
 
-    >>> mark_one = mark.archive.getPublishedSources(name="package1").one()
+    >>> mark_one = mark.archive.getPublishedSources(name=u"package1").one()
     >>> print mark_one.sourcepackagerelease.version
     1.1
-    >>> mark_two = mark.archive.getPublishedSources(name="package2").one()
+    >>> mark_two = mark.archive.getPublishedSources(name=u"package2").one()
     >>> print mark_two.sourcepackagerelease.version
     1.0
 
@@ -2079,7 +2079,7 @@ parameter to select the distroseries to synchronise from:
     ...     ["package-multiseries"], cprov.archive, "release",
     ...     from_series="hoary", person=mark)
     >>> mark_multiseries = mark.archive.getPublishedSources(
-    ...     name="package-multiseries").one()
+    ...     name=u"package-multiseries").one()
     >>> print mark_multiseries.sourcepackagerelease.version
     1.0
 
@@ -2134,7 +2134,7 @@ Copy package3 1.0 explicitly:
 
     >>> mark.archive.syncSource("package3", "1.0", cprov.archive,
     ...     "release", person=mark)
-    >>> mark_three = mark.archive.getPublishedSources(name="package3").one()
+    >>> mark_three = mark.archive.getPublishedSources(name=u"package3").one()
     >>> print mark_three.sourcepackagerelease.version
     1.0
 
@@ -2152,7 +2152,7 @@ by specifying the "include_binaries" boolean.
 
 It s not present in Mark's PPA.
 
-    >>> mark.archive.getPublishedSources(name="built-source").count()
+    >>> mark.archive.getPublishedSources(name=u"built-source").count()
     0
 
 'built-source' and its binaries can be copied from Celso's to Mark's
@@ -2164,7 +2164,7 @@ PPA like this:
 
 Now, Mark's PPA has 'built-source' source and it's 2 binaries.
 
-    >>> copy = mark.archive.getPublishedSources(name="built-source").one()
+    >>> copy = mark.archive.getPublishedSources(name=u"built-source").one()
     >>> len(copy.getPublishedBinaries())
     2
 
@@ -2192,7 +2192,7 @@ source archive.
     >>> copy_candidate = source_old.changeOverride(new_section=python_section)
 
     >>> source_archive = copy_candidate.archive
-    >>> source_archive.getPublishedSources(name="overridden").count()
+    >>> source_archive.getPublishedSources(name=u"overridden").count()
     2
 
     >>> print copy_candidate.section.name
@@ -2205,6 +2205,6 @@ the one published in 'python' section, will be used.
     ...     source_name='overridden', version='1.0',
     ...     from_archive=source_archive, to_pocket='release', person=mark)
 
-    >>> copy = mark.archive.getPublishedSources(name="overridden").one()
+    >>> copy = mark.archive.getPublishedSources(name=u"overridden").one()
     >>> print copy.section.name
     python
