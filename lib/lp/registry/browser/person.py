@@ -1337,7 +1337,6 @@ class PersonSpecWorkloadTableView(LaunchpadView):
                 for spec in self.context.specifications(self.user)]
 
 
-
 class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
