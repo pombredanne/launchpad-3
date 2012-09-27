@@ -165,7 +165,8 @@ class RegistryDeleteViewMixin:
             params.setProductSeries(target)
         else:
             params = BugTaskSearchParams(
-                milestone=target, user=self.user, ignore_privacy=ignore_privacy)
+                milestone=target, user=self.user,
+                ignore_privacy=ignore_privacy)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
