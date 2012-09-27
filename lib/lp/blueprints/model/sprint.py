@@ -131,29 +131,46 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                         Product.active == False))))]
         query.append(get_specification_privacy_filter(user))
         if not filter:
-            filter = set([SpecificationFilter.ACCEPTED])
+            # filter could be None or [] then we decide the default
+            # which for a sprint is to show everything approved
+            filter = [SpecificationFilter.ACCEPTED]
+
+        # figure out what set of specifications we are interested in. for
+        # sprint, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - acceptance for sprint agenda.
+        #  - informational.
+        #
+
+        # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query.append(Specification.implementation_status ==
                          SpecificationImplementationStatus.INFORMATIONAL)
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
         if SpecificationFilter.COMPLETE in filter:
             query.append(Specification.storm_completeness())
         if SpecificationFilter.INCOMPLETE in filter:
             query.append(Not(Specification.storm_completeness()))
         sprint_status = []
-        if SpecificationFilter.PROPOSED in filter:
-            sprint_status.append(SprintSpecificationStatus.PROPOSED)
+        # look for specs that have a particular SprintSpecification
+        # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
             sprint_status.append(SprintSpecificationStatus.ACCEPTED)
+        if SpecificationFilter.PROPOSED in filter:
+            sprint_status.append(SprintSpecificationStatus.PROPOSED)
         if SpecificationFilter.DECLINED in filter:
             sprint_status.append(SprintSpecificationStatus.DECLINED)
         statuses = [SprintSpecification.status == status for status in
                     sprint_status]
         if len(statuses) > 0:
             query.append(Or(*statuses))
+        # Filter for specification text
         for constraint in filter:
-            if not isinstance(constraint, basestring):
-                continue
-            query.append(fti_search(Specification, constraint))
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                query.append(fti_search(Specification, constraint))
         return query
 
     def all_specifications(self, user):
@@ -170,18 +187,23 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         query = self.spec_filter_clause(user, filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        result = Store.of(self).find(Specification, *query)
+        results = Store.of(self).find(Specification, *query)
         if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
+            # we need to establish if the listing will show specs that have
+            # been decided only, or will include proposed specs.
             if (SpecificationFilter.ALL not in filter and
                 SpecificationFilter.PROPOSED not in filter):
+                # this will show only decided specs so use the date the spec
+                # was accepted or declined for the sprint
                 order = (Desc(SprintSpecification.date_decided),) + order
-            result = result.order_by(*order)
+            results = results.order_by(*order)
         else:
             assert sort is None or sort == SpecificationSort.PRIORITY
+            # fall back to default, which is priority, descending.
         if quantity is not None:
-            result = result[:quantity]
-        return result
+            results = results[:quantity]
+        return results
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
