@@ -362,7 +362,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_copy_with_packageupload(self):
         # When a PCJ with a PackageUpload gets processed, the resulting
         # publication is linked to the PackageUpload.
-        spn = self.factory.getUniqueString()
+        spn = self.factory.getUniqueUnicode()
         pcj = self.createCopyJob(spn, 'universe', 'web', '1.0-1', True)
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [pcj.id]).one()
@@ -469,7 +469,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job.run()
 
         published_sources = job.target_archive.getPublishedSources(
-            name="libc", version="2.8-1")
+            name=u"libc", version="2.8-1")
         self.assertIsNot(None, published_sources.any())
 
         # The copy should have sent an email too. (see
@@ -527,7 +527,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(0, exit_code)
         copied_source_package = archive2.getPublishedSources(
-            name="libc", version="2.8-1", exact_match=True).first()
+            name=u"libc", version="2.8-1", exact_match=True).first()
         self.assertIsNot(copied_source_package, None)
 
     def test___repr__(self):
@@ -691,7 +691,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.runJob(job)
 
         new_publication = target_archive.getPublishedSources(
-            name='libc', version='2.8-1').one()
+            name=u'libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
 
@@ -730,7 +730,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.COMPLETED, job.status)
 
         new_publication = target_archive.getPublishedSources(
-            name='libc', version='2.8-1').one()
+            name=u'libc', version='2.8-1').one()
         self.assertEqual('main', new_publication.component.name)
         self.assertEqual('web', new_publication.section.name)
 
@@ -781,7 +781,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The copied source should have the manual overrides, not the
         # original values.
         new_publication = target_archive.getPublishedSources(
-            name='copyme', version='2.8-1').one()
+            name=u'copyme', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('editors', new_publication.section.name)
 
@@ -802,7 +802,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # There is no package of the same name already in the target
         # archive.
-        existing_sources = target_archive.getPublishedSources(name='copyme')
+        existing_sources = target_archive.getPublishedSources(name=u'copyme')
         self.assertEqual(None, existing_sources.any())
 
         # Now, run the copy job.
@@ -924,7 +924,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             spph, archive, archive, requester=archive.owner)
         self.runJob(job)
         self.assertEqual(JobStatus.COMPLETED, job.status)
-        published_sources = archive.getPublishedSources(name="copyme")
+        published_sources = archive.getPublishedSources(name=u"copyme")
         self.assertIsNotNone(published_sources.any())
 
     def test_copying_to_main_archive_unapproved(self):
@@ -1112,7 +1112,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(PackageUploadStatus.DONE, pu.status)
 
         # Make sure packages were actually copied.
-        existing_sources = target_archive.getPublishedSources(name='copyme')
+        existing_sources = target_archive.getPublishedSources(name=u'copyme')
         self.assertIsNot(None, existing_sources.any())
 
         # It would be nice to test emails in a separate test but it would
@@ -1258,7 +1258,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Make sure packages were actually copied.
         copied_sources = target_archive.getPublishedSources(
-            name="copyme", version="2.8-1")
+            name=u"copyme", version="2.8-1")
         self.assertNotEqual(0, copied_sources.count())
         copied_binaries = target_archive.getAllPublishedBinaries(name="copyme")
         self.assertNotEqual(0, copied_binaries.count())
@@ -1516,7 +1516,7 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
 
         published_sources = job.target_archive.getPublishedSources(
-            name="libc", version="2.8-1")
+            name=u"libc", version="2.8-1")
         self.assertIsNot(None, published_sources.any())
 
         # The copy should have sent an email too. (see

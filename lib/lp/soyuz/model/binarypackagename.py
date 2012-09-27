@@ -67,12 +67,6 @@ class BinaryPackageNameSet:
         """See `IBinaryPackageNameSet`."""
         return BinaryPackageName.select()
 
-    def findByName(self, name):
-        """Find binarypackagenames by its name or part of it."""
-        return IStore(BinaryPackageName).find(
-            BinaryPackageName,
-            BinaryPackageName.name.contains_string(ensure_unicode(name)))
-
     def queryByName(self, name):
         return IStore(BinaryPackageName).find(
             BinaryPackageName, name=ensure_unicode(name)).one()
