@@ -177,7 +177,8 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             signed_msg, 'test')
         self.assertEqual(
             "The message you sent included commands to modify the test,\n"
-            "but you didn't sign the message with your OpenPGP key.\n",
+            "but you didn't sign the message with an OpenPGP key that is\n"
+            "registered in Launchpad.\n",
             error.message)
 
     def test_weakly_authenticated_with_sig(self):
@@ -194,20 +195,6 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             "Please go to\n"
             "http://launchpad.dev/~eric/+editpgpkeys to import your key.\n",
             error.message)
-
-    def test_weakly_authenticated_with_unknown_sig_with_no_key_template(self):
-        # The no_key_template is managed by the helpers module; the
-        # error_templates path is ignored.
-        signed_msg = self.factory.makeSignedMessage()
-        signed_msg.signature = 'fakesig'
-        self._setWeakPrincipal()
-        error = self.assertRaises(
-            IncomingEmailError,
-            ensure_not_weakly_authenticated,
-            signed_msg, 'test', error_template='dummy.txt',
-            error_templates='/ignored/path/to/callsites/templates')
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            ".*your OpenPGP key isn't imported into Launchpad", error.message)
 
 
 class TestGetPersonOrTeam(TestCaseWithFactory):
