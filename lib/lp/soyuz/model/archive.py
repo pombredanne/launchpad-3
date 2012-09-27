@@ -498,8 +498,7 @@ class Archive(SQLBase):
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
         # callers are problematic. (Migrate them and test to see).
-        clauses = []
-        storm_clauses = [
+        clauses = [
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
@@ -514,26 +513,24 @@ class Archive(SQLBase):
         if name is not None:
             if type(name) in (str, unicode):
                 if exact_match:
-                    storm_clauses.append(SourcePackageName.name == name)
+                    clauses.append(SourcePackageName.name == name)
                 else:
                     clauses.append(
                         SourcePackageName.name.contains_string(name))
             elif len(name) != 0:
-                clauses.append(
-                    "SourcePackageName.name IN %s"
-                    % sqlvalues(name))
+                clauses.append(SourcePackageName.name.is_in(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version == version)
+            clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
         if component_name is not None:
-            storm_clauses.extend(
+            clauses.extend(
                 [SourcePackagePublishingHistory.componentID == Component.id,
                  Component.name == component_name,
                  ])
@@ -543,12 +540,10 @@ class Archive(SQLBase):
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append(
-                "SourcePackagePublishingHistory.status IN %s "
-                % sqlvalues(status))
+            clauses.append(SourcePackagePublishingHistory.status.is_in(status))
 
         if distroseries is not None:
-            storm_clauses.append(
+            clauses.append(
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id)
 
@@ -557,21 +552,16 @@ class Archive(SQLBase):
                 pockets = tuple(pocket)
             except TypeError:
                 pockets = (pocket,)
-            storm_clauses.append(
-                "SourcePackagePublishingHistory.pocket IN %s " %
-                   sqlvalues(pockets))
+            clauses.append(
+                SourcePackagePublishingHistory.pocket.is_in(pockets))
 
         if created_since_date is not None:
             clauses.append(
-                "SourcePackagePublishingHistory.datecreated >= %s"
-                % sqlvalues(created_since_date))
+                SourcePackagePublishingHistory.datecreated >=
+                    created_since_date)
 
-        store = Store.of(self)
-        if clauses:
-            storm_clauses.append(SQL(' AND '.join(clauses)))
-        resultset = store.find(SourcePackagePublishingHistory,
-            *storm_clauses).order_by(
-            *orderBy)
+        resultset = Store.of(self).find(
+            SourcePackagePublishingHistory, *clauses).order_by(*orderBy)
         if not eager_load:
             return resultset
 
