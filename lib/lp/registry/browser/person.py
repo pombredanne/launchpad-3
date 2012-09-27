@@ -1303,6 +1303,9 @@ class PersonSpecWorkloadView(LaunchpadView):
         batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
+    def specifications(self):
+        return self.context.specifications(self.user)
+
 
 class PersonSpecWorkloadTableView(LaunchpadView):
     """View to render the specification workload table for a person.
@@ -1331,7 +1334,8 @@ class PersonSpecWorkloadTableView(LaunchpadView):
         approver, the assignee or the drafter.
         """
         return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
-                for spec in self.context.specifications()]
+                for spec in self.context.specifications(self.user)]
+
 
 
 class PersonVouchersView(LaunchpadFormView):

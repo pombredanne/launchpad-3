@@ -364,7 +364,7 @@ class HasSpecificationsView(LaunchpadView):
     def documentation(self):
         filter = [SpecificationFilter.COMPLETE,
                   SpecificationFilter.INFORMATIONAL]
-        return shortlist(self.context.specifications(filter=filter))
+        return shortlist(self.context.specifications(self.user, filter=filter))
 
     @cachedproperty
     def categories(self):
