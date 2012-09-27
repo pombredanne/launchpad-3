@@ -170,7 +170,6 @@ def get_person_or_team(person_name_or_email):
 
 def ensure_not_weakly_authenticated(signed_msg, context,
                                     error_template='not-signed.txt',
-                                    no_key_template='key-not-registered.txt',
                                     error_templates=None):
     """Make sure that the current principal is not weakly authenticated.
 
@@ -180,6 +179,7 @@ def ensure_not_weakly_authenticated(signed_msg, context,
     message has just been passed through authenticateEmail -- you can't give
     it an arbitrary message object.
     """
+    no_key_template = 'key-not-registered.txt'
     cur_principal = get_current_principal()
     # The security machinery doesn't know about
     # IWeaklyAuthenticatedPrincipal yet, so do a manual
