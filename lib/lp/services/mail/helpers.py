@@ -194,8 +194,7 @@ def ensure_not_weakly_authenticated(signed_msg, context,
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                no_key_template, error_templates,
-                import_url=import_url, context=context)
+                no_key_template, None, import_url=import_url, context=context)
         raise IncomingEmailError(error_message)
 
 
