@@ -2124,7 +2124,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         # The inital state is that 1.0-1 is not in the derived series.
         pubs = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
+            name=u'my-src-name', version=versions['parent'],
             distroseries=derived_series).any()
         self.assertIs(None, pubs)
 
@@ -2186,7 +2186,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self._syncAndGetView(
             derived_series, person, [diff_id])
         parent_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
+            name=u'my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
 
         # We look for a PackageCopyJob with the right metadata.

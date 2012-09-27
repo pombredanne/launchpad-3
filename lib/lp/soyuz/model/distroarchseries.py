@@ -19,6 +19,7 @@ from sqlobject import (
     )
 from storm.locals import (
     Join,
+    Or,
     SQL,
     )
 from storm.store import EmptyResultSet
@@ -31,8 +32,6 @@ from lp.services.database.constants import DEFAULT
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
-    quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -203,21 +202,18 @@ class DistroArchSeries(SQLBase):
                 )
         archives = self.distroseries.distribution.getArchiveIDList()
 
-        # Note: When attempting to convert the query below into straight
-        # Storm expressions, a 'tuple index out-of-range' error was always
-        # raised.
-        query = """
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % (quote(self), quote(archives))
+        clauses = [
+            BinaryPackagePublishingHistory.distroarchseries == self,
+            BinaryPackagePublishingHistory.archiveID.is_in(archives),
+            BinaryPackagePublishingHistory.dateremoved == None,
+            ]
         if text:
-            query += """
-            AND (BinaryPackageRelease.fti @@ ftq(%s) OR
-            BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(text), quote_like(text))
+            clauses.append(
+                Or(
+                    SQL("BinaryPackageRelease.fti @@ ftq(?)", params=(text,)),
+                    BinaryPackageName.name.contains_string(text.lower())))
         result = store.using(*origin).find(
-            find_spec, query).config(distinct=True)
+            find_spec, *clauses).config(distinct=True)
 
         if text:
             result = result.order_by("rank DESC, BinaryPackageName.name")

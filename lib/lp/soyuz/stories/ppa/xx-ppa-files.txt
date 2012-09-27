@@ -272,7 +272,7 @@ binaries across to no-priv's public ppa.
     ...     )
     >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(
-    ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
+    ...     no_priv_private_ppa.getPublishedSources(name=u'test-pkg'),
     ...     no_priv.archive, series=ubuntu['warty'],
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     include_binaries=True, allow_delayed_copies=False,
