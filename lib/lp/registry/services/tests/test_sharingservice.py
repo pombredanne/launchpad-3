@@ -209,8 +209,7 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self._assert_getBranchSharingPolicies(
-            product,
-            [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+            product, [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
