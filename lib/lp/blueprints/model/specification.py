@@ -1031,8 +1031,7 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    @property
-    def specification_count(self):
+    def specificationCount(self):
         """See IHasSpecifications."""
         return self.specifications(filter=[SpecificationFilter.ALL]).count()
 

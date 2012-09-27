@@ -1529,18 +1529,21 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 
     label = 'Blueprints'
 
+    @property
     def latest_specifications(self):
         return self.context.specifications(
             sort=SpecificationSort.DATE, quantity=5)
 
+    @property
     def latest_completed_specifications(self):
         return self.context.specifications(
             sort=SpecificationSort.DATE, quantity=5,
             filter=[SpecificationFilter.COMPLETE])
         return self.context.latest_completed_specifications(self.user)
 
+    @property
     def specification_count(self):
-        return self.context.specification_count()
+        return self.context.specificationCount()
 
     @safe_action
     @action('Find blueprints', name="search")
