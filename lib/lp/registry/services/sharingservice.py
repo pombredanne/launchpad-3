@@ -426,14 +426,19 @@ class SharingService:
         """See `ISharingService`."""
         # Only Products have branch sharing policies. Distributions just
         # default to Public.
-        allowed_policies = [BranchSharingPolicy.PUBLIC]
-        # Commercial projects also allow proprietary branches.
-        if (IProduct.providedBy(pillar)
-            and pillar.has_current_commercial_subscription):
-            allowed_policies.extend([
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                BranchSharingPolicy.PROPRIETARY])
+        # If the branch sharing policy is EMBARGOED_OR_PROPRIETARY, then we
+        # do not allow any other policies.
+        allowed_policies = []
+        if (pillar.branch_sharing_policy !=
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY):
+            allowed_policies = [BranchSharingPolicy.PUBLIC]
+            # Commercial projects also allow proprietary branches.
+            if (IProduct.providedBy(pillar)
+                and pillar.has_current_commercial_subscription):
+                allowed_policies.extend([
+                    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    BranchSharingPolicy.PROPRIETARY])
         if (pillar.branch_sharing_policy and
             not pillar.branch_sharing_policy in allowed_policies):
             allowed_policies.append(pillar.branch_sharing_policy)
