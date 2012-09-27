@@ -560,7 +560,8 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.datecreated >=
                     created_since_date)
 
-        resultset = Store.of(self).find(
+        store = Store.of(self)
+        resultset = store.find(
             SourcePackagePublishingHistory, *clauses).order_by(*orderBy)
         if not eager_load:
             return resultset

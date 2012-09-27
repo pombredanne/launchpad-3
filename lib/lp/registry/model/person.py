@@ -1173,7 +1173,7 @@ class Person(
                 Or(
                     Product.name.contains_string(match_name),
                     Product.displayname.contains_string(match_name),
-                    SQL("Product.fti @@ ftq(?)", params=(match_name))))
+                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
         return IStore(Product).find(
             Product, *clauses
             ).config(distinct=True).order_by(Product.displayname)
