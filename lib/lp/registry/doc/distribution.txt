@@ -261,20 +261,20 @@ Searching for an exact match on a valid binary name returns the
 expected results:
 
     >>> results = ubuntu.searchBinaryPackages(
-    ...     "mozilla-firefox", exact_match=True)
+    ...     u"mozilla-firefox", exact_match=True)
     >>> print [result.name for result in results]
     [u'mozilla-firefox']
 
 An exact match search with no matches on any package name returns
 an empty result set:
 
-    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=True)
+    >>> results = ubuntu.searchBinaryPackages(u"mozilla", exact_match=True)
     >>> results.count()
     0
 
 Loosening to substring matches gives another result:
 
-    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
+    >>> results = ubuntu.searchBinaryPackages(u"mozilla", exact_match=False)
     >>> print results[0]
     <...DistributionSourcePackageCache instance ...
 
@@ -286,7 +286,7 @@ Loosening to substring matches gives another result:
 The results of searchBinaryPackages() are simply ordered alphabetically
 for the moment until we have a better FTI rank to order with.
 
-    >>> results = ubuntu.searchBinaryPackages("m")
+    >>> results = ubuntu.searchBinaryPackages(u"m")
     >>> for result in results:
     ...     print result.name
     mozilla-firefox

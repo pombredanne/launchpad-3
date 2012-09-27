@@ -56,7 +56,6 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.sqlbase import (
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -979,8 +978,7 @@ class BinaryPackageBuildSet:
             origin.extend([SourcePackageRelease, SourcePackageName])
             if not isinstance(name, (list, tuple)):
                 clauses.append(
-                    "SourcepackageName.name LIKE '%%%%' || %s || '%%%%'" % (
-                        quote_like(name)))
+                    SourcePackageName.name.contains_string(name))
             else:
                 clauses.append(SourcePackageName.name.is_in(name))
 

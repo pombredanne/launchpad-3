@@ -29,7 +29,6 @@ from lp.registry.interfaces.sourcepackagename import (
     )
 from lp.services.database.sqlbase import (
     cursor,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -83,11 +82,6 @@ class SourcePackageNameSet:
     def getAll(self):
         """See `ISourcePackageNameSet`."""
         return SourcePackageName.select()
-
-    def findByName(self, name):
-        """Find sourcepackagenames by its name or part of it."""
-        query = "name ILIKE '%%' || %s || '%%'" % quote_like(name)
-        return SourcePackageName.select(query)
 
     def queryByName(self, name):
         """See `ISourcePackageNameSet`."""

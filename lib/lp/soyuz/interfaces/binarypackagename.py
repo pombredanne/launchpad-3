@@ -41,9 +41,6 @@ class IBinaryPackageNameSet(Interface):
     def getAll():
         """return an iselectresults representing all package names"""
 
-    def findByName(name):
-        """Find binarypackagenames by its name or part of it"""
-
     def queryByName(name):
         """Return a binary package name.
 
