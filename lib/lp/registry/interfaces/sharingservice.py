@@ -17,8 +17,9 @@ from lazr.restful.declarations import (
     export_write_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
-    operation_returns_collection_of)
+    )
 from lazr.restful.fields import Reference
 from zope.schema import (
     Choice,

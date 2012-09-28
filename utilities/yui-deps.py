@@ -7,6 +7,7 @@
 
 from sys import argv
 
+
 yui_roots = {
     3: 'build/js/yui-3.3.0',
     2: 'build/js/yui2',

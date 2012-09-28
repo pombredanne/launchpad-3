@@ -8,18 +8,19 @@ import _pythonpath
 
 from datetime import datetime
 from optparse import OptionParser
-import psycopg2
 import sys
 
+import psycopg2
+
+from dbcontroller import DBController
 from lp.services.scripts import (
     logger,
     logger_options,
     )
-from dbcontroller import DBController
 from preflight import (
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,
-    SYSTEM_USERS
+    SYSTEM_USERS,
     )
 import security  # security.py script
 import upgrade  # upgrade.py script

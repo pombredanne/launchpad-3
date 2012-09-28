@@ -24,7 +24,10 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import DocTestMatches
-from lp.testing.pages import find_tag_by_id, extract_text
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,

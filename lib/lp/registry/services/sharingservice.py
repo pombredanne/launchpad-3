@@ -30,8 +30,8 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -68,8 +68,8 @@ from lp.registry.model.accesspolicy import (
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect

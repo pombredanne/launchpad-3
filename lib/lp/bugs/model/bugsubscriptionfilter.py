@@ -11,8 +11,8 @@ __all__ = [
     'BugSubscriptionFilterTag',
     ]
 
-from itertools import chain
 import httplib
+from itertools import chain
 
 from lazr.restful.declarations import error_status
 import pytz
