@@ -495,23 +495,18 @@ def _build_query(params):
         if is_not_bugtarget_search or params.distribution is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distribution_id,
-                Select(
-                    SS.distributionID,
-                    tables=[SS],
+                Select(SS.distributionID, tables=[SS],
                     where=(SS.sourcepackagenameID == None))))
             ss_clauses.append(In(
                 Row(BugTaskFlat.distribution_id,
                     BugTaskFlat.sourcepackagename_id),
                 Select(
-                    ((SS.distributionID,
-                     SS.sourcepackagenameID),),
+                    ((SS.distributionID, SS.sourcepackagenameID),),
                     tables=[SS])))
         if is_not_bugtarget_search or params.distroseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distroseries_id,
-                Select(
-                    SS.distroseriesID,
-                    tables=[SS],
+                Select(SS.distroseriesID, tables=[SS],
                     where=(SS.sourcepackagenameID == None))))
             # Structural subscriptions to DSPs are treated as subscriptions
             # to Distroseries SP bugs.
@@ -525,8 +520,7 @@ def _build_query(params):
                 Row(BugTaskFlat.distroseries_id,
                     BugTaskFlat.sourcepackagename_id),
                 Select(
-                    ((distroseries_id,
-                     SS.sourcepackagenameID),),
+                    ((distroseries_id, SS.sourcepackagenameID),),
                     tables=[SS],
                     where=And(
                         SS.distributionID == parent_distro_id,
@@ -534,21 +528,15 @@ def _build_query(params):
         if is_not_bugtarget_search or params.product is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
-                Select(
-                    SS.productID,
-                    tables=[SS])))
+                Select(SS.productID, tables=[SS])))
         if is_not_bugtarget_search or params.productseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.productseries_id,
-                Select(
-                    SS.productseriesID,
-                    tables=[SS])))
+                Select(SS.productseriesID, tables=[SS])))
         if is_not_bugtarget_search or params.project is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
-                Select(
-                    Product.id,
-                    tables=[SS, Product],
+                Select(Product.id, tables=[SS, Product],
                     where=And(
                         SS.projectID == Product.projectID,
                         Product.project == params.project,
@@ -556,9 +544,7 @@ def _build_query(params):
         if is_not_bugtarget_search or params.milestone is not None:
             ss_clauses.append(In(
                 BugTaskFlat.milestone_id,
-                Select(
-                    SS.milestoneID,
-                    tables=[SS])))
+                Select(SS.milestoneID, tables=[SS])))
         extra_clauses.append(Or(*ss_clauses))
 
     # Remove bugtasks from deactivated products.
