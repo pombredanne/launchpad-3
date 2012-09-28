@@ -206,6 +206,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
             BugTaskSearchParams(user=None))
         self.assertEqual(0, tasks.count())
 
+
 class TestQueryCountBase(TestCaseWithFactory):
 
     def assert_bugtasks_query_count(self, milestone, bugtask_count,
