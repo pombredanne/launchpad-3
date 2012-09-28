@@ -503,8 +503,7 @@ def _build_query(params):
                 Row(BugTaskFlat.distribution_id,
                     BugTaskFlat.sourcepackagename_id),
                 Select(
-                    ((SS.distributionID, SS.sourcepackagenameID),),
-                    tables=[SS])))
+                    (SS.distributionID, SS.sourcepackagenameID), tables=[SS])))
         if is_not_bugtarget_search or params.distroseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distroseries_id,
@@ -522,8 +521,7 @@ def _build_query(params):
                 Row(BugTaskFlat.distroseries_id,
                     BugTaskFlat.sourcepackagename_id),
                 Select(
-                    ((distroseries_id, SS.sourcepackagenameID),),
-                    tables=[SS],
+                    (distroseries_id, SS.sourcepackagenameID), tables=[SS],
                     where=And(
                         SS.distributionID == parent_distro_id,
                         SS.sourcepackagenameID != None))))
