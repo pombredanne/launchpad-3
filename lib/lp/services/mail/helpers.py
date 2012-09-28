@@ -21,6 +21,10 @@ from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+NO_KEY_TEMPLATE = 'key-not-registered.txt'
+NOT_SIGNED_TEMPLATE = 'not-signed.txt'
+
+
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
@@ -169,9 +173,7 @@ def get_person_or_team(person_name_or_email):
 
 
 def ensure_not_weakly_authenticated(signed_msg, context,
-                                    error_template='not-signed.txt',
-                                    no_key_template='key-not-registered.txt',
-                                    error_templates=None):
+                                    error_template='not-signed.txt'):
     """Make sure that the current principal is not weakly authenticated.
 
     NB: While handling an email, the authentication state is stored partly in
@@ -188,14 +190,12 @@ def ensure_not_weakly_authenticated(signed_msg, context,
     if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
         if signed_msg.signature is None:
             error_message = get_error_message(
-                error_template, error_templates=error_templates,
-                context=context)
+                NOT_SIGNED_TEMPLATE, None, context=context)
         else:
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                no_key_template, error_templates,
-                import_url=import_url, context=context)
+                NO_KEY_TEMPLATE, None, import_url=import_url, context=context)
         raise IncomingEmailError(error_message)
 
 
