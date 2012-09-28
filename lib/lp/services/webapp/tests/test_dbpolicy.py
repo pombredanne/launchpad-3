@@ -23,9 +23,7 @@ from zope.security.management import (
     endInteraction,
     newInteraction,
     )
-from zope.session.interfaces import (
-    ISession,
-    )
+from zope.session.interfaces import ISession
 
 from lp.layers import (
     FeedsLayer,
@@ -59,8 +57,8 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 from lp.testing.fixture import PGBouncerFixture
 from lp.testing.layers import (
-    DatabaseLayer,
     DatabaseFunctionalLayer,
+    DatabaseLayer,
     FunctionalLayer,
     )
 

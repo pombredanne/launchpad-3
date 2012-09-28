@@ -26,8 +26,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
-    Or,
     Not,
+    Or,
     Select,
     SQL,
     Sum,
