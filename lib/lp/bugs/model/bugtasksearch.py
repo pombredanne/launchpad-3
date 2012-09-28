@@ -475,7 +475,7 @@ def _build_query(params):
             BugTaskFlat.bug_id == BugSubscription.bug_id,
             BugSubscription.person == params.subscriber))
 
-    is_person_search = (
+    is_not_bugtarget_search = (
         params.product is None and
         params.distribution is None and
         params.productseries is None and
@@ -492,7 +492,7 @@ def _build_query(params):
 
         SS = ClassAlias(StructuralSubscriptionCTE)
         ss_clauses = []
-        if is_person_search or params.distribution is not None:
+        if is_not_bugtarget_search or params.distribution is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distribution_id,
                 Select(
@@ -506,7 +506,7 @@ def _build_query(params):
                     ((SS.distributionID,
                      SS.sourcepackagenameID),),
                     tables=[SS])))
-        if is_person_search or params.distroseries is not None:
+        if is_not_bugtarget_search or params.distroseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distroseries_id,
                 Select(
@@ -531,19 +531,19 @@ def _build_query(params):
                     where=And(
                         SS.distributionID == parent_distro_id,
                         SS.sourcepackagenameID != None))))
-        if is_person_search or params.product is not None:
+        if is_not_bugtarget_search or params.product is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(
                     SS.productID,
                     tables=[SS])))
-        if is_person_search or params.productseries is not None:
+        if is_not_bugtarget_search or params.productseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.productseries_id,
                 Select(
                     SS.productseriesID,
                     tables=[SS])))
-        if is_person_search or params.project is not None:
+        if is_not_bugtarget_search or params.project is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(
@@ -553,7 +553,7 @@ def _build_query(params):
                         SS.projectID == Product.projectID,
                         Product.project == params.project,
                         Product.active))))
-        if is_person_search or params.milestone is not None:
+        if is_not_bugtarget_search or params.milestone is not None:
             ss_clauses.append(In(
                 BugTaskFlat.milestone_id,
                 Select(
@@ -563,7 +563,7 @@ def _build_query(params):
 
     # Remove bugtasks from deactivated products.
     # This is needed for searches where people are the context.
-    if is_person_search:
+    if is_not_bugtarget_search:
         extra_clauses.append(
             Or(BugTaskFlat.product == None, Product.active == True))
         join_tables.append(
