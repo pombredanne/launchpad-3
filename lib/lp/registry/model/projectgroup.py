@@ -231,20 +231,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
         return query, ['Product', 'Specification', 'SprintSpecification']
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
 
@@ -644,23 +631,11 @@ class ProjectGroupSeries(HasSpecificationsMixin):
         self.project = project
         self.name = name
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         return self.project.specifications(
-            sort, quantity, filter, self.name, prejoin_people=prejoin_people)
-
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
+            user, sort, quantity, filter, self.name,
+            prejoin_people=prejoin_people)
 
     @property
     def title(self):

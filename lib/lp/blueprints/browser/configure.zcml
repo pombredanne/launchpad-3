@@ -488,14 +488,20 @@
             permission="zope.Public">
 
             <browser:page
+                name="+portlet-sprints"
+                template="../templates/specifications-portlet-sprints.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.blueprints.interfaces.specification.ISpecificationSet"
+            permission="zope.Public"
+            class="lp.blueprints.browser.specification.SpecificationSetView">
+
+            <browser:page
                 name="+portlet-latestcompleted"
                 template="../templates/specifications-portlet-latestcompleted.pt"/>
             <browser:page
                 name="+portlet-latestregistered"
                 template="../templates/specifications-portlet-latestregistered.pt"/>
-            <browser:page
-                name="+portlet-sprints"
-                template="../templates/specifications-portlet-sprints.pt"/>
             <browser:page
                 name="+portlet-stats"
                 template="../templates/specifications-portlet-stats.pt"/>

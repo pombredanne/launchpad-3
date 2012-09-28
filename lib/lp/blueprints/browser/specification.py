@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -110,7 +110,9 @@ from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationFilter,
     SpecificationImplementationStatus,
+    SpecificationSort,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -1034,7 +1036,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
         """Override the setup to define own fields."""
         if self.context.target is None:
             raise AssertionError("No target found for this spec.")
-        specs = sorted(self.context.target.specifications(),
+        specs = sorted(self.context.target.specifications(self.user),
                        key=attrgetter('name'))
         terms = [SimpleTerm(spec, spec.name, spec.title)
                  for spec in specs if spec != self.context]
@@ -1524,6 +1526,21 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
 
     label = 'Blueprints'
+
+    @property
+    def latest_specifications(self):
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5)
+
+    @property
+    def latest_completed_specifications(self):
+        return self.context.specifications(
+            self.user, sort=SpecificationSort.DATE, quantity=5,
+            filter=[SpecificationFilter.COMPLETE])
+
+    @property
+    def specification_count(self):
+        return self.context.specificationCount(self.user)
 
     @safe_action
     @action('Find blueprints', name="search")
