@@ -47,7 +47,7 @@ from lp.services.database.lpstorm import (
     )
 from lp.services.database.sqlbase import StupidCache
 from lp.services.webapp import LaunchpadView
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     DisallowedStore,
     IDatabasePolicy,
