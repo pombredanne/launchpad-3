@@ -107,7 +107,7 @@ propagated to the slaves.
 
 To test this, first we need to wind forward the database policy's clock.
 
-    >>> from lp.services.webapp import dbpolicy
+    >>> from lp.services.database import policy as dbpolicy
     >>> from datetime import timedelta
     >>> _original_now = dbpolicy._now
     >>> def _future_now():
