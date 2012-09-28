@@ -293,6 +293,7 @@ LOCAL_PACKAGES = (
     '.', 'canonical', 'lp', 'launchpad_loggerhead', 'devscripts',
     # database/* have some implicit relative imports.
     'fti', 'replication', 'preflight', 'security', 'upgrade',
+    'dbcontroller',
     )
 
 def format_imports(imports):

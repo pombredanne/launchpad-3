@@ -20,6 +20,10 @@ import time
 
 import psycopg2
 
+from dbcontroller import (
+    DBController,
+    streaming_sync,
+    )
 from lp.services.database.sqlbase import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
@@ -28,7 +32,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-from dbcontroller import DBController, streaming_sync
 from replication.helpers import Node
 import upgrade
 

@@ -14,7 +14,6 @@ from psycopg2.extras import NamedTupleConnection
 
 from lp.services.database.postgresql import ConnectionString
 
-
 # Increase this timeout once we are confident in the
 # implementation. We don't want to block rollouts
 # unnecessarily with slow timeouts and a flaky sync

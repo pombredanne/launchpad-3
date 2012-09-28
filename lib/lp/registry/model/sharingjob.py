@@ -42,10 +42,6 @@ from zope.interface import (
     )
 
 from lp.app.enums import InformationType
-from lp.bugs.interfaces.bug import (
-    IBug,
-    IBugSet,
-    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.model.specification import (
     get_specification_privacy_filter,
@@ -53,6 +49,10 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
+    )
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
     )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat

@@ -19,8 +19,8 @@ from storm.expr import (
     In,
     Min,
     Not,
-    Update,
     SQL,
+    Update,
     )
 from storm.locals import (
     Int,
@@ -35,8 +35,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import InformationType
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,

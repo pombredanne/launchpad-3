@@ -108,8 +108,8 @@ from zope.security.proxy import (
     )
 
 from lp import _
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
