@@ -494,7 +494,8 @@ def _build_query(params):
         ss_clauses = [
             In(BugTaskFlat.milestone_id,
                 Select(SS.milestoneID, tables=[SS]))]
-        if is_not_bugtarget_search or params.distribution is not None:
+        if params.product is None and params.productseries is None:
+            # This serch is *not* contrained to project bugs.
             ss_clauses.append(In(
                 BugTaskFlat.distribution_id,
                 Select(SS.distributionID, tables=[SS],
@@ -504,7 +505,6 @@ def _build_query(params):
                     BugTaskFlat.sourcepackagename_id),
                 Select(
                     (SS.distributionID, SS.sourcepackagenameID), tables=[SS])))
-        if is_not_bugtarget_search or params.distroseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distroseries_id,
                 Select(SS.distroseriesID, tables=[SS],
@@ -525,15 +525,14 @@ def _build_query(params):
                     where=And(
                         SS.distributionID == parent_distro_id,
                         SS.sourcepackagenameID != None))))
-        if is_not_bugtarget_search or params.product is not None:
+        if params.distribution is None and params.distroseries is None:
+            # This search is *not* contrained to distro bugs.
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(SS.productID, tables=[SS])))
-        if is_not_bugtarget_search or params.productseries is not None:
             ss_clauses.append(In(
                 BugTaskFlat.productseries_id,
                 Select(SS.productseriesID, tables=[SS])))
-        if is_not_bugtarget_search or params.project is not None:
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(Product.id, tables=[SS, Product],
