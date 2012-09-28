@@ -3576,7 +3576,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
             else:
                 project['bug_count'] = pillar.searchTasks(
                     BugTaskSet().open_bugtask_search).count()
-            project['spec_count'] = pillar.specifications().count()
+            project['spec_count'] = pillar.specifications(user).count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects
