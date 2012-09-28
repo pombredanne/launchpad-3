@@ -98,6 +98,16 @@ Person' will be an active member of that team.
     >>> marilize in ubuntu_translators.activemembers
     True
 
+marilize happens to have an LoginToken.
+
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
+    >>> from lp.services.verification.interfaces.authtoken import (
+    ...     LoginTokenType)
+    >>> token = getUtility(ILoginTokenSet).new(
+    ...     marilize, marilize.preferredemail.email, 'willdie@example.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+
 Do the merge!
 -------------
 
@@ -230,6 +240,11 @@ email and mailing list subscription settings.
 
         https://launchpad.net/name12/+editemails ...
 
+sample has not been transferred marilize's logintoken.
+
+    >>> list(getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+    ...     'willdie@example.com', sample, LoginTokenType.VALIDATEEMAIL))
+    []
 
 Person decoration
 -----------------
