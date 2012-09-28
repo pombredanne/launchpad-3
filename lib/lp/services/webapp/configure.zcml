@@ -433,7 +433,7 @@
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
-        class="lp.services.database.policy.WhichDbView"
+        class="lp.services.webapp.adapter.WhichDbView"
         layer="lp.layers.PageTestLayer"
         />
 

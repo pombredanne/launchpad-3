@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import sys
+from textwrap import dedent
 import thread
 import threading
 from time import time
@@ -82,6 +83,7 @@ from lp.services.timeline.requesttimeline import (
     set_request_timeline,
     )
 from lp.services.timeout import set_default_timeout_function
+from lp.services.webapp import LaunchpadView
 from lp.services.webapp.interaction import get_interaction_extras
 from lp.services.webapp.opstats import OpStats
 
@@ -845,3 +847,23 @@ def get_object_from_master_store(obj):
 def get_store_name(store):
     """Helper to retrieve the store name for a ZStorm Store."""
     return getUtility(IZStorm).get_name(store)
+
+
+class WhichDbView(LaunchpadView):
+    "A page that reports which database is being used by default."
+
+    def render(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        dbname = store.execute("SELECT current_database()").get_one()[0]
+        return dedent("""
+                <html>
+                <body>
+                <span id="dbname">
+                %s
+                </span>
+                <form method="post">
+                <input type="submit" value="Do Post" />
+                </form>
+                </body>
+                </html>
+                """ % dbname).strip()
