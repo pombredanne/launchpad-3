@@ -37,15 +37,6 @@ from zope.schema import (
 from zope.traversing.interfaces import IContainmentRoot
 
 from lp import _
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    DisallowedStore,
-    IDatabasePolicy,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
-    )
 
 
 class IAPIDocRoot(IContainmentRoot):
