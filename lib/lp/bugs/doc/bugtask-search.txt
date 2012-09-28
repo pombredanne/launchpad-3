@@ -954,55 +954,6 @@ private submission.
     >>> ubuntu.searchTasks(search_params).count()
     0
 
-== Searching for bugs affecting me ==
-
-The user searching for bugs can search for bugs affecting him.
-
-We search for bugs affecting foo_bar, then check that all the results
-return True for isUserAffected(foo_bar).
-
-    >>> search_params = BugTaskSearchParams(
-    ...     user=foo_bar, affects_me=True)
-    >>> print reduce(
-    ...     lambda x, y: x and y,
-    ...     [task.bug.isUserAffected(foo_bar)
-    ...      for task in firefox.searchTasks(search_params)])
-    True
-
-
-== Searching for bugs linked to branches ==
-
-We can search for bugs having branches linked to them.
-
-    >>> from lp.bugs.interfaces.bugtasksearch import BugBranchSearch
-    >>> search_params = BugTaskSearchParams(
-    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
-    >>> for task in firefox.searchTasks(search_params):
-    ...     print task.bug.id, task.bug.linked_branches.count()
-    4 2
-    5 1
-
-Similarly, we can search for bugs that do not have any linked branches.
-
-    >>> search_params = BugTaskSearchParams(
-    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
-    >>> for task in firefox.searchTasks(search_params):
-    ...     print task.bug.id, task.bug.linked_branches.count()
-    1 0
-    6 0
-    18 0
-    20 0
-    21 0
-
-And we can search for bugs linked to a specific branch.
-
-    >>> search_params = BugTaskSearchParams(
-    ...     user=None, linked_branches=1)
-    >>> for task in firefox.searchTasks(search_params):
-    ...     print task.bug.id
-    4
-    5
-
 
 == Ordering search results ==
 
