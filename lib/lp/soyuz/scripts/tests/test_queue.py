@@ -35,7 +35,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import filechunks
@@ -1080,11 +1079,6 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertBugChanges(self, series, spr, bug):
-        with celebrity_logged_in("admin"):
-            self.assertEqual(
-                BugTaskStatus.FIXRELEASED, bug.default_bugtask.status)
-
     def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
         # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
         # should work with private bugs where the person using the queue
@@ -1106,22 +1100,8 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             # But the bug closure should work.
             close_bugs_for_sourcepackagerelease(series, spr, changes)
 
-        # Verify it was closed.
-        self.assertBugChanges(series, spr, bug)
-
-
-class TestQueuePageClosingBugsJob(TestQueuePageClosingBugs):
-    # Repeat TestQueuePageClosingBugs, but with the feature flag set to
-    # cause close_bugs_for_sourcepackagerelease to create a job rather than
-    # closing bugs immediately.
-
-    def setUp(self):
-        super(TestQueuePageClosingBugsJob, self).setUp()
-        self.useFixture(FeatureFixture(
-            {"soyuz.processacceptedbugsjob.enabled": "on"},
-            ))
-
-    def assertBugChanges(self, series, spr, bug):
+        # Rather than closing the bugs immediately, this creates a
+        # ProcessAcceptedBugsJob.
         with celebrity_logged_in("admin"):
             self.assertEqual(BugTaskStatus.NEW, bug.default_bugtask.status)
         job_source = getUtility(IProcessAcceptedBugsJobSource)
