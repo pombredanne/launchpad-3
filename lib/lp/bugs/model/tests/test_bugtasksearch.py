@@ -2377,6 +2377,29 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
         self.assertContentEqual(bug1.bugtasks, tasks)
 
 
+class TargetLessTestCase(TestCaseWithFactory):
+    """Test that do not call setTarget() in the BugTaskSearchParams."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_project_group_structural_subscription(self):
+        # Search results can be limited to bugs without a bug target to which
+        # a given person has a structural subscription.
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.factory.makeBug(target=product)
+        with person_logged_in(product.owner):
+            project_group = self.factory.makeProject(owner=product.owner)
+            product.project = project_group
+        with person_logged_in(subscriber):
+            project_group.addBugSubscription(subscriber, subscriber)
+        params = BugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        bugtask_set = getUtility(IBugTaskSet)
+        found_bugtasks = bugtask_set.search(params)
+        self.assertEqual(1, found_bugtasks.count())
+
+
 class BaseGetBugPrivacyFilterTermsTests:
 
     layer = DatabaseFunctionalLayer

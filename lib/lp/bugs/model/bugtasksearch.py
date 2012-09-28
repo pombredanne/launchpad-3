@@ -87,11 +87,9 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
-    Array,
     ArrayAgg,
     ArrayIntersects,
     get_where_for_reference,
-    NullCount,
     Unnest,
     )
 from lp.services.propertycache import get_property_cache
@@ -478,8 +476,6 @@ def _build_query(params):
             BugSubscription.person == params.subscriber))
 
     if params.structural_subscriber is not None:
-        # See bug 787294 for the story that led to the query elements
-        # below.  Please change with care.
         with_clauses.append(
             '''ss as (SELECT * from StructuralSubscription
             WHERE StructuralSubscription.subscriber = %s)'''
@@ -488,79 +484,65 @@ def _build_query(params):
         class StructuralSubscriptionCTE(StructuralSubscription):
             __storm_table__ = 'ss'
 
-        join_tables.append(
-            (Product, LeftJoin(Product, And(
-                            BugTaskFlat.product_id == Product.id,
-                            Product.active))))
-        ProductSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            ProductSub,
-            LeftJoin(
-                ProductSub,
-                BugTaskFlat.product_id == ProductSub.productID)))
-        ProductSeriesSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            ProductSeriesSub,
-            LeftJoin(
-                ProductSeriesSub,
-                BugTaskFlat.productseries_id ==
-                    ProductSeriesSub.productseriesID)))
-        ProjectSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            ProjectSub,
-            LeftJoin(
-                ProjectSub,
-                Product.projectID == ProjectSub.projectID)))
-        DistributionSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            DistributionSub,
-            LeftJoin(
-                DistributionSub,
-                And(BugTaskFlat.distribution_id ==
-                        DistributionSub.distributionID,
-                    Or(
-                        DistributionSub.sourcepackagenameID ==
-                            BugTaskFlat.sourcepackagename_id,
-                        DistributionSub.sourcepackagenameID == None)))))
-        if params.distroseries is not None:
-            parent_distro_id = params.distroseries.distributionID
-        else:
-            parent_distro_id = 0
-        DistroSeriesSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            DistroSeriesSub,
-            LeftJoin(
-                DistroSeriesSub,
-                Or(BugTaskFlat.distroseries_id ==
-                        DistroSeriesSub.distroseriesID,
-                    # There is a mismatch between BugTask and
-                    # StructuralSubscription. SS does not support
-                    # distroseries. This clause works because other
-                    # joins ensure the match bugtask is the right
-                    # series.
-                    And(parent_distro_id == DistroSeriesSub.distributionID,
-                        BugTaskFlat.sourcepackagename_id ==
-                            DistroSeriesSub.sourcepackagenameID)))))
-        MilestoneSub = ClassAlias(StructuralSubscriptionCTE)
-        join_tables.append((
-            MilestoneSub,
-            LeftJoin(
-                MilestoneSub,
-                BugTaskFlat.milestone_id == MilestoneSub.milestoneID)))
-        extra_clauses.append(
-            NullCount(Array(
-                ProductSub.id, ProductSeriesSub.id, ProjectSub.id,
-                DistributionSub.id, DistroSeriesSub.id, MilestoneSub.id)) < 6)
-        has_duplicate_results = True
+        SS = ClassAlias(StructuralSubscriptionCTE)
+        # Milestones apply to all structural subscription searches.
+        ss_clauses = [
+            In(BugTaskFlat.milestone_id, Select(SS.milestoneID, tables=[SS]))]
+        if (params.project is None
+            and params.product is None and params.productseries is None):
+            # This search is *not* contrained to project related bugs, so
+            # include distro, distroseries, DSP and SP subscriptions.
+            ss_clauses.append(In(
+                BugTaskFlat.distribution_id,
+                Select(SS.distributionID, tables=[SS],
+                       where=(SS.sourcepackagenameID == None))))
+            ss_clauses.append(In(
+                Row(BugTaskFlat.distribution_id,
+                    BugTaskFlat.sourcepackagename_id),
+                Select((SS.distributionID, SS.sourcepackagenameID),
+                       tables=[SS])))
+            ss_clauses.append(In(
+                BugTaskFlat.distroseries_id,
+                Select(SS.distroseriesID, tables=[SS],
+                       where=(SS.sourcepackagenameID == None))))
+            # Users expect to find their DSP subscriptions when searching
+            # distroseries. We only include these when we need to.
+            if params.distroseries is not None:
+                distroseries_id = params.distroseries.id
+                parent_distro_id = params.distroseries.distributionID
+            else:
+                distroseries_id = 0
+                parent_distro_id = 0
+            ss_clauses.append(In(
+                Row(BugTaskFlat.distroseries_id,
+                    BugTaskFlat.sourcepackagename_id),
+                Select((distroseries_id, SS.sourcepackagenameID), tables=[SS],
+                       where=And(
+                           SS.distributionID == parent_distro_id,
+                           SS.sourcepackagenameID != None))))
+        if params.distribution is None and params.distroseries is None:
+            # This search is *not* contrained to distro related bugs so
+            # include products, productseries, and project group subscriptions.
+            project_match = True
+            if params.project is not None:
+                project_match = Product.project == params.project
+            ss_clauses.append(In(
+                BugTaskFlat.product_id,
+                Select(SS.productID, tables=[SS])))
+            ss_clauses.append(In(
+                BugTaskFlat.productseries_id,
+                Select(SS.productseriesID, tables=[SS])))
+            ss_clauses.append(In(
+                BugTaskFlat.product_id,
+                Select(Product.id, tables=[SS, Product],
+                       where=And(
+                           SS.projectID == Product.projectID,
+                           project_match,
+                           Product.active))))
+        extra_clauses.append(Or(*ss_clauses))
 
-    # Remove bugtasks from deactivated products, if necessary.
-    # We don't have to do this if
-    # 1) We're searching on bugtasks for a specific product
-    # 2) We're searching on bugtasks for a specific productseries
-    # 3) We're searching on bugtasks for a distribution
-    # 4) We're searching for bugtasks for a distroseries
-    # because in those instances we don't have arbitrary products which
-    # may be deactivated showing up in our search.
+    # Remove bugtasks from deactivated products. This is needed for searches
+    # where people or project groups are the context.
     if (params.product is None and
         params.distribution is None and
         params.productseries is None and
@@ -618,15 +600,10 @@ def _build_query(params):
         if tag_clause is not None:
             extra_clauses.append(tag_clause)
 
-    # XXX Tom Berger 2008-02-14:
-    # We use StructuralSubscription to determine
-    # the bug supervisor relation for distribution source
-    # packages, following a conversion to use this object.
-    # We know that the behaviour remains the same, but we
-    # should change the terminology, or re-instate
-    # PackageBugSupervisor, since the use of this relation here
-    # is not for subscription to notifications.
-    # See bug #191809
+    # XXX sinzui 2012-09-26:
+    # This uses StructuralSubscription to assume a bug supervisor relationship
+    # for distribution source packages to preserve historical behaviour.
+    # This also duplicates params.structural_subscriber code and behaviour.
     if params.bug_supervisor:
         extra_clauses.append(Or(
             In(
