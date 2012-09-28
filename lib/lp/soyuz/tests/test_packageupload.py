@@ -12,6 +12,7 @@ from urllib2 import (
     urlopen,
     )
 
+from debian.deb822 import Changes
 from lazr.restfulclient.errors import (
     BadRequest,
     Unauthorized,
@@ -37,6 +38,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
+from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -411,6 +413,203 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.overrideSource(None, new_section, [current_component])
         self.assertEqual(current_component, spr.component)
         self.assertEqual(new_section, spr.section)
+
+    def makeSourcePackageUpload(self, pocket=None, sourcepackagename=None,
+                                section_name=None, changes_dict=None):
+        """Make a useful source package upload for queue tests."""
+        distroseries = self.test_publisher.distroseries
+        distroseries.changeslist = "autotest_changes@ubuntu.com"
+        uploader = self.factory.makePerson()
+        key = self.factory.makeGPGKey(owner=uploader)
+        changes = Changes({"Changed-By": uploader.preferredemail.email})
+        if changes_dict is not None:
+            changes.update(changes_dict)
+        upload = self.factory.makePackageUpload(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            pocket=pocket, changes_file_content=changes.dump().encode("UTF-8"),
+            signing_key=key)
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename, distroseries=distroseries,
+            component="main", section_name=section_name,
+            changelog_entry="dummy")
+        upload.addSource(spr)
+        spr.addFile(self.factory.makeLibraryFileAlias(
+            filename="%s_%s.dsc" % (spr.name, spr.version)))
+        transaction.commit()
+        return upload, uploader
+
+    def makeBuildPackageUpload(self):
+        """Make a useful build package upload for queue tests."""
+        distroseries = self.test_publisher.distroseries
+        distroseries.changeslist = "autotest_changes@ubuntu.com"
+        uploader = self.factory.makePerson()
+        key = self.factory.makeGPGKey(owner=uploader)
+        changes = Changes({"Changed-By": uploader.preferredemail.email})
+        upload = self.factory.makePackageUpload(
+            archive=distroseries.main_archive, distroseries=distroseries,
+            changes_file_content=changes.dump().encode("UTF-8"),
+            signing_key=key)
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=self.test_publisher.breezy_autotest_i386)
+        upload.addBuild(build)
+        bpr = self.factory.makeBinaryPackageRelease(build=build)
+        bpr.addFile(self.factory.makeLibraryFileAlias(
+            filename="%s_%s_i386.deb" % (bpr.name, bpr.version)))
+        transaction.commit()
+        return upload, uploader
+
+    def assertEmail(self, expected_to_addrs):
+        """Pop an email from the stub queue and check its recipients."""
+        _, to_addrs, _ = stub.test_emails.pop()
+        self.assertEqual(expected_to_addrs, to_addrs)
+
+    def test_acceptFromQueue_source_sends_email(self):
+        # Accepting a source package sends emails to the announcement list
+        # and the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, uploader = self.makeSourcePackageUpload()
+        upload.acceptFromQueue()
+        self.assertEqual(2, len(stub.test_emails))
+        # Emails sent are the announcement and the uploader's notification:
+        self.assertEmail(["autotest_changes@ubuntu.com"])
+        self.assertEmail([format_address_for_person(uploader)])
+
+    def test_acceptFromQueue_source_backports_sends_no_announcement(self):
+        # Accepting a source package into BACKPORTS does not send an
+        # announcement email to the distroseries changeslist (see bug
+        # #59443).  It still sends an acknowledgement to the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        self.test_publisher.distroseries.status = SeriesStatus.CURRENT
+        upload, uploader = self.makeSourcePackageUpload(
+            pocket=PackagePublishingPocket.BACKPORTS)
+        upload.acceptFromQueue()
+        self.assertEqual(1, len(stub.test_emails))
+        # Only one email is sent, to the person in the changed-by field.  No
+        # announcement email is sent.
+        self.assertEmail([format_address_for_person(uploader)])
+
+    def test_acceptFromQueue_source_translations_sends_no_email(self):
+        # Accepting source packages in the "translations" section (i.e.
+        # language packs) does not send any email.  See bug #57708.
+        self.test_publisher.prepareBreezyAutotest()
+        self.test_publisher.distroseries.status = SeriesStatus.CURRENT
+        upload, _ = self.makeSourcePackageUpload(
+            pocket=PackagePublishingPocket.PROPOSED,
+            section_name="translations")
+        upload.acceptFromQueue()
+        self.assertEqual("DONE", upload.status.name)
+        self.assertEqual(0, len(stub.test_emails))
+
+    def test_acceptFromQueue_source_creates_builds(self):
+        # Accepting a source package creates build records.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeSourcePackageUpload()
+        upload.acceptFromQueue()
+        spr = upload.sourcepackagerelease
+        [build] = spr.builds
+        self.assertEqual(
+            "i386 build of %s %s in ubuntutest breezy-autotest RELEASE" % (
+                spr.name, spr.version),
+            build.title)
+
+    def test_acceptFromQueue_source_closes_bug(self):
+        # Accepting a source package closes bugs appropriately.
+        self.test_publisher.prepareBreezyAutotest()
+
+        # Upload the first version of a package.
+        upload_one, _ = self.makeSourcePackageUpload()
+        upload_one.setAccepted()
+        upload_one.realiseUpload()
+        spr = upload_one.sourcepackagerelease
+
+        # Make a new bug task for this package.  It starts life as NEW.
+        dsp = self.test_publisher.ubuntutest.getSourcePackage(spr.name)
+        task = self.factory.makeBugTask(target=dsp, publish=False)
+        self.assertEqual("NEW", task.status.name)
+
+        # Upload the next version of the same package, closing this bug.
+        changes = Changes({"Launchpad-Bugs-Fixed": str(task.bug.id)})
+        upload_two, _ = self.makeSourcePackageUpload(
+            sourcepackagename=spr.sourcepackagename, changes_dict=changes)
+
+        # Accept the new upload.  It should reach the DONE state, and should
+        # close the bug.
+        upload_two.acceptFromQueue()
+        self.assertEqual("DONE", upload_two.status.name)
+        self.assertEqual("FIXRELEASED", task.status.name)
+
+    def test_acceptFromQueue_binary_sends_no_email(self):
+        # Accepting a binary package does not send email.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeBuildPackageUpload()
+        upload.acceptFromQueue()
+        self.assertEqual(0, len(stub.test_emails))
+
+    def test_acceptFromQueue_handles_duplicates(self):
+        # Duplicate queue entries are handled sensibly.
+        self.test_publisher.prepareBreezyAutotest()
+        distroseries = self.test_publisher.distroseries
+        upload_one = self.factory.makePackageUpload(
+            archive=distroseries.main_archive, distroseries=distroseries)
+        upload_one.addSource(self.factory.makeSourcePackageRelease(
+            sourcepackagename="cnews", distroseries=distroseries,
+            component="main", version="1.0"))
+        upload_two = self.factory.makePackageUpload(
+            archive=distroseries.main_archive, distroseries=distroseries)
+        upload_two.addSource(self.factory.makeSourcePackageRelease(
+            sourcepackagename="cnews", distroseries=distroseries,
+            component="main", version="1.0"))
+        transaction.commit()
+        upload_one.setUnapproved()
+        upload_one.syncUpdate()
+        upload_two.setUnapproved()
+        upload_two.syncUpdate()
+
+        # There are now duplicate uploads in UNAPPROVED.
+        unapproved = distroseries.getPackageUploads(
+            status=PackageUploadStatus.UNAPPROVED, name=u"cnews")
+        self.assertEqual(2, unapproved.count())
+
+        # Accepting one of them works.  (Since it's a single source upload,
+        # it goes straight to DONE.)
+        upload_one.acceptFromQueue()
+        self.assertEqual("DONE", upload_one.status.name)
+        transaction.commit()
+
+        # Trying to accept the second fails.
+        self.assertRaises(
+            QueueInconsistentStateError, upload_two.acceptFromQueue)
+        self.assertEqual("UNAPPROVED", upload_two.status.name)
+
+        # Rejecting the second upload works.
+        upload_two.rejectFromQueue()
+        self.assertEqual("REJECTED", upload_two.status.name)
+
+    def test_rejectFromQueue_source_sends_email(self):
+        # Rejecting a source package sends an email to the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, uploader = self.makeSourcePackageUpload()
+        upload.rejectFromQueue()
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail([format_address_for_person(uploader)])
+
+    def test_rejectFromQueue_binary_sends_email(self):
+        # Rejecting a binary package sends an email to the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, uploader = self.makeBuildPackageUpload()
+        upload.rejectFromQueue()
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail([format_address_for_person(uploader)])
+
+    def test_rejectFromQueue_source_translations_sends_no_email(self):
+        # Rejecting a language pack sends no email.
+        self.test_publisher.prepareBreezyAutotest()
+        self.test_publisher.distroseries.status = SeriesStatus.CURRENT
+        upload, _ = self.makeSourcePackageUpload(
+            pocket=PackagePublishingPocket.PROPOSED,
+            section_name="translations")
+        upload.rejectFromQueue()
+        self.assertEqual(0, len(stub.test_emails))
 
 
 class TestPackageUploadPrivacy(TestCaseWithFactory):
