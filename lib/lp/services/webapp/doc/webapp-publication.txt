@@ -927,7 +927,7 @@ the OAuthNonce table.
 
     >>> from zope.component import getUtility
     >>> from lp.services.database.policy import MasterDatabasePolicy
-    >>> from lp.services.webapp.interfaces import IStoreSelector
+    >>> from lp.services.database.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
