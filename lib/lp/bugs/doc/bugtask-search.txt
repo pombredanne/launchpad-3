@@ -17,15 +17,6 @@ method accepts a single parameter; an BugTaskSearchParams instance.
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-
 
 == Searching using bug full-text index ==
 
@@ -37,6 +28,8 @@ expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> text_search = BugTaskSearchParams(user=None, searchtext=u'Fnord')
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> found_bugtasks.count()
@@ -121,6 +114,8 @@ a partner package:
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
     >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
     >>> cdrkit.component = getUtility(IComponentSet)['partner']
