@@ -456,78 +456,6 @@ will not be included in the results returned by the bug commenter search.
     2 ubuntu
 
 
-== Search for BugTasks assigned to milestones ==
-
-BugTaskSet.search() can return bugtasks associated with milestones.
-No BugTask is associated yet with firefox milestone 1.0.
-
-    >>> product_milestone = firefox.getMilestone('1.0')
-    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> print milestone_tasks.count()
-    0
-
-Similary, no BugTasks are associated with the project firexfox belongs to.
-
-    >>> mozilla = firefox.project
-    >>> project_milestone = mozilla.getMilestone('1.0')
-    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> print milestone_tasks.count()
-    0
-
-When a BugTask is associated with a milestone, it is returned in a search
-for bugs of this milestone.
-
-    >>> bugtask = firefox.searchTasks(BugTaskSearchParams(user=None))[0]
-    >>> print bugTaskInfo(bugtask)
-    2 1 Mozilla Firefox Firefox does not support SVG
-    >>> bugtask.milestone = product_milestone
-    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> for bugtask in milestone_tasks:
-    ...     print bugTaskInfo(bugtask)
-    2 1 Mozilla Firefox Firefox does not support SVG
-
-This BugTask is also a BugTask of the milestone of the mozilla project.
-
-    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> for bugtask in milestone_tasks:
-    ...     print bugTaskInfo(bugtask)
-    2 1 Mozilla Firefox Firefox does not support SVG
-
-If a bug has one bugtask associated with a product and another bugtask
-associated with a product series, and if both tasks are assigned to the
-same milestone...
-
-    >>> firefox_1_0 = firefox.getSeries("1.0")
-    >>> productseries_task = bugtask_set.createTask(
-    ...     bug_one, no_priv, firefox_1_0)
-    >>> productseries_task.milestone = product_milestone
-    >>> print bugTaskInfo(productseries_task)
-    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
-
-...both of them are returned, by a search for bugs associated with the
-product milestone...
-
-    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> for bugtask in milestone_tasks:
-    ...     print bugTaskInfo(bugtask)
-    2 1 Mozilla Firefox Firefox does not support SVG
-    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
-
-...as well as by a search for bugs associated with the project milestone.
-
-    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
-    >>> milestone_tasks = bugtask_set.search(params)
-    >>> for bugtask in milestone_tasks:
-    ...     print bugTaskInfo(bugtask)
-    2 1 Mozilla Firefox Firefox does not support SVG
-    40 1 Mozilla Firefox 1.0 Firefox does not support SVG
-
-
 == Bugs with partner packages ==
 
 Bugs may also be targeted to partner packages.  First turn "cdrkit" into
@@ -556,239 +484,6 @@ We can file a bug against it and see that show up in a search:
     >>> cdrkit_bugs = cdrkit.searchTasks(all_public)
     >>> cdrkit_bugs.count()
     1
-
-
-== Searching by tags ==
-
-It is possible to search for bugs by their tags. Tags in the search
-parameters can be combined using either ''any'' or ''all''.
-
-First, we create some test bugs.
-
-    >>> firefox = getUtility(IProductSet).get(4)
-    >>> foobar = getUtility(IPersonSet).get(16)
-
-The first bug is tagged with both 'test-tag-1' and 'test-tag-2'.
-
-    >>> params = CreateBugParams(
-    ...     title="test bug a", comment="test bug a", owner=foobar)
-    >>> test_bug_a = firefox.createBug(params)
-    >>> test_bug_a.tags = ['test-tag-1', 'test-tag-2']
-
-The second bug is tagged with only 'test-tag-1'.
-
-    >>> params = CreateBugParams(
-    ...     title="test bug b", comment="test bug b", owner=foobar)
-    >>> test_bug_b = firefox.createBug(params)
-    >>> test_bug_b.tags = ['test-tag-1']
-
-Searching for bugs with any of the tags returns both of them.
-
-    >>> from operator import attrgetter
-    >>> from lp.services.searchbuilder import all, any
-
-    >>> def search_tasks_and_print_bugs(user=None, **args):
-    ...     params = BugTaskSearchParams(user=user, **args)
-    ...     tasks = firefox.searchTasks(params)
-    ...     bugs = (task.bug for task in tasks)
-    ...     bugs = sorted(bugs, key=attrgetter('id'))
-    ...     for bug in bugs:
-    ...         print "%s [%s]" % (bug.title, ", ".join(bug.tags))
-
-    >>> search_tasks_and_print_bugs(
-    ...     tag=any('test-tag-1', 'test-tag-2'))
-    test bug a [test-tag-1, test-tag-2]
-    test bug b [test-tag-1]
-
-Searching for bugs with all of the tags returns only test bug a.
-
-    >>> search_tasks_and_print_bugs(
-    ...     tag=all('test-tag-1', 'test-tag-2'))
-    test bug a [test-tag-1, test-tag-2]
-
-Search for the absence of a tag is possible by prefixing the tag name
-with a minus.
-
-    >>> search_tasks_and_print_bugs(tag=any('-test-tag-2'))
-    Firefox does not support SVG []
-    Reflow problems with complex page layouts [layout-test]
-    Firefox install instructions should be complete [doc]
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-    test bug b [test-tag-1]
-
-The any() and all() search combinators are taken into consideration
-when searching for the absence of tags too. The following search says
-"give me bugs that don't have the test-tag-2 tag set *OR* that don't
-have the layout-test tag set". Only test-bug-1 is elimininated because
-it has no tags other than those requested in the search.
-
-    >>> search_tasks_and_print_bugs(
-    ...     tag=any('-test-tag-1', '-test-tag-2'))
-    Firefox does not support SVG []
-    Reflow problems with complex page layouts [layout-test]
-    Firefox install instructions should be complete [doc]
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-    test bug b [test-tag-1]
-
-Whereas the following search says "give me bugs that don't have the
-test-tag-2 tag set *AND* that don't have the layout-test tag set".
-
-    >>> search_tasks_and_print_bugs(
-    ...     tag=all('-test-tag-2', '-layout-test'))
-    Firefox does not support SVG []
-    Firefox install instructions should be complete [doc]
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-    test bug b [test-tag-1]
-
-Searching for the presence of any tags at all is also possible using a
-wildcard. If prefixed with a minus it searches for the absence of
-tags.
-
-    >>> search_tasks_and_print_bugs(tag=all('*'))
-    Reflow problems with complex page layouts [layout-test]
-    Firefox install instructions should be complete [doc]
-    test bug a [test-tag-1, test-tag-2]
-    test bug b [test-tag-1]
-
-    >>> search_tasks_and_print_bugs(tag=all('-*'))
-    Firefox does not support SVG []
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-
-Searching for the presence and absence of tags finds no
-matches. Unsurprisingly.
-
-    >>> search_tasks_and_print_bugs(tag=all('*', '-*'))
-
-Wildcards can be combined with non-wildcard tags. The following finds
-all bugs with tags, but without test-tag-1:
-
-    >>> search_tasks_and_print_bugs(tag=all('*', '-test-tag-1'))
-    Reflow problems with complex page layouts [layout-test]
-    Firefox install instructions should be complete [doc]
-
-The following is very similar; it finds all bugs with tags, *or*
-without test-tag-1:
-
-    >>> search_tasks_and_print_bugs(tag=any('*', '-test-tag-1'))
-    Firefox does not support SVG []
-    Reflow problems with complex page layouts [layout-test]
-    Firefox install instructions should be complete [doc]
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-    test bug a [test-tag-1, test-tag-2]
-    test bug b [test-tag-1]
-
-The following finds all untagged bugs and bugs with the doc tag.
-
-    >>> search_tasks_and_print_bugs(tag=any('-*', 'doc'))
-    Firefox does not support SVG []
-    Firefox install instructions should be complete [doc]
-    Firefox crashes when Save As dialog for a nonexistent window is closed []
-    Some bug []
-
-
-== Searching by date_closed ==
-
-It's possible to limit the search by date_closed, to get only bugs
-closed after a certain date. greater_than is used to search for bugs
-closed after a certain date.
-
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
-    >>> from lp.services.searchbuilder import greater_than
-    >>> product = factory.makeProduct()
-    >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
-    >>> not_closed_bug = factory.makeBug(target=product, title="Not closed")
-    >>> bug_closed_a_day_ago = factory.makeBug(
-    ...     target=product, date_closed=utc_now-timedelta(days=1),
-    ...     title="Closed a day ago")
-    >>> bug_closed_a_week_ago = factory.makeBug(
-    ...     target=product, date_closed=utc_now-timedelta(days=7),
-    ...     title="Closed a week ago")
-
-    >>> search_params = BugTaskSearchParams(
-    ...     user=None, orderby="-date_closed",
-    ...     date_closed=greater_than(utc_now))
-    >>> list(product.searchTasks(search_params))
-    []
-
-    >>> search_params.date_closed = greater_than(utc_now - timedelta(days=2))
-    >>> for bug_task in product.searchTasks(search_params):
-    ...     print bug_task.bug.title
-    Closed a day ago
-
-
-== Searching for bug with attachments ==
-
-It's possible to search for bugs with an attachment of a certain type.
-
-    >>> from StringIO import StringIO
-    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
-    >>> from lp.services.messages.interfaces.message import IMessageSet
-    >>> from lp.bugs.interfaces.bugattachment import (
-    ...     BugAttachmentType,
-    ...     IBugAttachmentSet,
-    ...     )
-    >>> product = factory.makeProduct()
-    >>> patch_bug = factory.makeBug(target=product)
-    >>> filecontent = 'Some diff data'
-    >>> filealias = getUtility(ILibraryFileAliasSet).create(
-    ...     name='patch.diff', size=len(filecontent),
-    ...     file=StringIO(filecontent), contentType='text/plain')
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     subject="title", content="added a patch.")
-    >>> attachmentset = getUtility(IBugAttachmentSet)
-    >>> attachment = attachmentset.create(
-    ...     bug=patch_bug, filealias=filealias, title='Patch',
-    ...     message=message, attach_type=BugAttachmentType.PATCH)
-    >>> patch_bug.attachments.count()
-    1
-
-We've added an attachment to our new bug with an attachment type
-PATCH. Searching for bugs with that attachment type we get one result.
-
-    >>> search_params = BugTaskSearchParams(
-    ...     user=None, attachmenttype=BugAttachmentType.PATCH)
-    >>> product.searchTasks(search_params).count()
-    1
-
-    >>> filecontent = 'Some more diff data'
-    >>> filealias = getUtility(ILibraryFileAliasSet).create(
-    ...     name='patch.diff', size=len(filecontent),
-    ...     file=StringIO(filecontent), contentType='text/plain')
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     subject="title", content="added another patch.")
-    >>> attachmentset = getUtility(IBugAttachmentSet)
-    >>> attachment = attachmentset.create(
-    ...     bug=patch_bug, filealias=filealias, title='Patch 2',
-    ...     message=message, attach_type=BugAttachmentType.PATCH)
-    >>> patch_bug.attachments.count()
-    2
-
-We've added another patch to the bug. Searching for bugs with patch
-attachments still returns a single result, since even though a new
-attachment was added, there is still only one bug with attachments.
-
-    >>> product.searchTasks(search_params).count()
-    1
-
-== Searching for bugs affecting a user ==
-
-We can search for bugs which a user marked as affecting them.
-
-    >>> affecting_bug = factory.makeBug(title='A bug affecting a user')
-    >>> affected_user = factory.makePerson(name='affected-user')
-    >>> affecting_bug.markUserAffected(affected_user)
-    >>> target = affecting_bug.bugtasks[0].target
-    >>> affecting_tasks = target.searchTasks(
-    ...     None, user=None, affected_user=affected_user)
-    >>> for task in affecting_tasks:
-    ...     print task.bug.title
-    A bug affecting a user
 
 
 == Searching for bugs related to hardware ==
@@ -975,7 +670,7 @@ Here is the list of bugs for Ubuntu.
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 None of these bugs have any duplicates.
 
@@ -1001,7 +696,7 @@ Searching again reveals bug #9 at the top of the list, since it now has a duplic
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 === Ordering by number of comments ===
@@ -1062,7 +757,7 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     23 9 thunderbird (Ubuntu) Thunderbird crashes
@@ -1082,70 +777,6 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-
-
-== Searching using a flat interface ==
-
-An alternative, simplified interface for searching bug tasks is available
-by passing all search parameters as function arguments to searchTasks.
-This interface corresponds to the search options available from the web
-search form and the public API.
-
-    >>> def print_bugtasks(bugtasks):
-    ...     for bugtask in bugtasks:
-    ...         print '%s %s %s %s %s' % (
-    ...             bugtask.bug.id, bugtask.bugtargetdisplayname,
-    ...             bugtask.bug.title, bugtask.status.title.upper(),
-    ...             bugtask.importance.title.upper())
-
-
-When we call the method on Ubuntu, without any parameters, the result is
-identical to calling searchTasks.
-
-    >>> print_bugtasks(ubuntu.searchTasks(None, user=None))
-    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
-    9 thunderbird (Ubuntu) Thunderbird crashes CONFIRMED MEDIUM
-    2 Ubuntu Blackhole Trash folder NEW MEDIUM
-    19 cdrkit (Ubuntu) Bug to be fixed in trunk NEW UNDECIDED
-
-If we want to restrict the search using certain parameters pass them to
-the function directly. Here we search Ubuntu again, but only bugs for
-the firefox package.
-
-    >>> from lp.registry.interfaces.sourcepackagename import (
-    ...     ISourcePackageNameSet)
-    >>> source_package_name_set = getUtility(ISourcePackageNameSet)
-    >>> firefox_source_package = source_package_name_set['mozilla-firefox']
-    >>> print_bugtasks(ubuntu.searchTasks(
-    ...     None, user=None, sourcepackagename=firefox_source_package))
-    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
-
-Or search for bugs on a distribution source package directly.
-
-    >>> print_bugtasks(ubuntu_firefox.searchTasks(None, user=None))
-    1 mozilla-firefox (Ubuntu) Firefox does not support SVG NEW MEDIUM
-
-Or we can search a certain milestone (only getting bugs targeted to it).
-
-    >>> firefox_milestone_1 = firefox.getMilestone('1.0')
-    >>> print_bugtasks(firefox_milestone_1.searchTasks(None, user=None))
-    1 Mozilla Firefox Firefox does not support SVG NEW LOW
-    1 Mozilla Firefox 1.0 Firefox does not support SVG NEW UNDECIDED
-
-We can restrict our search for firefox bugs with a text search.
-
-    >>> print_bugtasks(firefox.searchTasks(
-    ...     None, user=None, search_text=u'instructions'))
-    5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
-
-Or restrict our search (over the mozilla project this time) to a list of
-relevant importance values.
-
-    >>> print_bugtasks(mozilla.searchTasks(
-    ...     None, user=None,
-    ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
-    4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
-    1 Mozilla Firefox Firefox does not support SVG NEW LOW
