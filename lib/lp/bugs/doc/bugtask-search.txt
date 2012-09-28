@@ -373,88 +373,6 @@ of the single filters.
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
-The search filter can also return bugs that are related to CVE reports:
-
-    >>> from lp.bugs.interfaces.cve import ICveSet
-    >>> def getCves(bugtask):
-    ...     bug, cve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
-    ...     return cve.sequence
-    >>> params = BugTaskSearchParams(
-    ...     has_cve=True, orderby='id', user=None)
-    >>> tasks_with_cves = ubuntu.searchTasks(params)
-    >>> for bugtask in tasks_with_cves:
-    ...     print bugTaskInfo(bugtask), getCves(bugtask)
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
-    26 2 Ubuntu Blackhole Trash folder 1999-2345
-
-
-== Searching by bug commenter ==
-
-The 'bug_commenter' parameter allows you to search bugtasks on which a certain
-person has commented. No Privileges Person hasn't commented on any bugs, so no
-bugs are found for him:
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> transaction.abort()
-
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv_bug_commenter = BugTaskSearchParams(
-    ...     user=None, bug_commenter=no_priv)
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
-    >>> found_bugtasks.count()
-    0
-
-If No Privileges Person comments on some bugs, those bugs can then be found by
-a bug commenter search. There will be one bug task instance returned for each
-bug target that the task is registered against, so in the test below three
-comments will produce eight found bug tasks (three for bug 1, five for bug 2).
-
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_one.newMessage(no_priv, 'No subject', 'some comment')
-    <Message at ...>
-
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two.newMessage(no_priv, 'No subject', 'another comment')
-    <Message at ...>
-
-    >>> bug_two.newMessage(no_priv, 'No subject', 'yet another comment')
-    <Message at ...>
-
-    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
-    ...                                for bugtask in found_bugtasks):
-    ...     print bug_id, target
-    1 firefox
-    1 mozilla-firefox (Debian)
-    1 mozilla-firefox (Ubuntu)
-    2 Ubuntu Hoary
-    2 mozilla-firefox (Debian Woody)
-    2 mozilla-firefox (Debian)
-    2 tomcat
-    2 ubuntu
-
-If No Privileges Person reports a bug and does not comment on it, that bug
-will not be included in the results returned by the bug commenter search.
-
-    >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.interfaces.product import IProductSet
-
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox.createBug(
-    ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
-    <Bug at ...>
-
-    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
-    ...                                for bugtask in found_bugtasks):
-    ...     print bug_id, target
-    1 firefox
-    1 mozilla-firefox (Debian)
-    1 mozilla-firefox (Ubuntu)
-    2 Ubuntu Hoary
-    2 mozilla-firefox (Debian Woody)
-    2 mozilla-firefox (Debian)
-    2 tomcat
-    2 ubuntu
-
 
 == Bugs with partner packages ==
 
@@ -478,6 +396,8 @@ It starts off with no bugs:
 We can file a bug against it and see that show up in a search:
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = cdrkit.createBug(
     ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
     ...                     comment='Something'))
@@ -520,7 +440,7 @@ related parameters.
     9 Foo Bar
     10 Foo Bar
     2 Sample Person
-    19 No Privileges Person
+    18 No Privileges Person
 
 Similary, we can search for device drivers appearing in HWDB submissions
 of a bug reporter.
@@ -566,6 +486,8 @@ use the given device together with the given driver.
 The PCI device (0x10de, 0x0455) is not controlled in any HWDB submission
 by the sd driver, so we'll get an empty result set for this query.
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_driver_name='sd',
@@ -604,14 +526,14 @@ driver.
     >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
-    >>> bug_19 = getUtility(IBugSet).get(19)
-    >>> bug_19.linkHWSubmission(hw_submission)
+    >>> bug_18 = getUtility(IBugSet).get(18)
+    >>> bug_18.linkHWSubmission(hw_submission)
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    19
+    18
 
 If a device appears in a private submission, related bugs are shown
 only if the user running the request is the owner of the submission
@@ -625,14 +547,14 @@ or an admin.
     ...     hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    19
+    18
 
     >>> search_params = BugTaskSearchParams(
     ...     user=foo_bar, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    19
+    18
 
 Other users cannot see that a bug is related to a device from a
 private submission.
@@ -670,7 +592,7 @@ Here is the list of bugs for Ubuntu.
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 None of these bugs have any duplicates.
 
@@ -696,7 +618,7 @@ Searching again reveals bug #9 at the top of the list, since it now has a duplic
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 === Ordering by number of comments ===
@@ -712,11 +634,11 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     ...     bug = bugtask.bug
     ...     print '%s %s [%s comments]' % (
     ...     bug.id, bug.title, bug.message_count)
-    2 Blackhole Trash folder [5 comments]
-    1 Firefox does not support SVG [3 comments]
+    2 Blackhole Trash folder [3 comments]
+    1 Firefox does not support SVG [2 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
-    19 Bug to be fixed in trunk [1 comments]
+    18 Bug to be fixed in trunk [1 comments]
 
 
 === Ordering by bug heat ===
@@ -736,7 +658,7 @@ Another way of sorting searches is by bug heat.
     ...     bug = bugtask.bug
     ...     print '%s %s [heat: %s]' % (
     ...     bug.id, bug.title, bug.heat)
-    19 Bug to be fixed in trunk [heat: 19]
+    18 Bug to be fixed in trunk [heat: 18]
     10 another test bug [heat: 10]
     9 Thunderbird crashes [heat: 9]
     2 Blackhole Trash folder [heat: 2]
@@ -757,7 +679,7 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     23 9 thunderbird (Ubuntu) Thunderbird crashes
@@ -765,6 +687,7 @@ a "second level" sort order to ensure reliable sorting).
 
 If we add a patch attachment to bug 2 and bug 10, they are listed first.
 
+    >>> bug_two = getUtility(IBugSet).get(2)
     >>> patch_attachment_bug_2 = factory.makeBugAttachment(
     ...     bug=bug_two, is_patch=True)
     >>> transaction.commit()
@@ -777,6 +700,6 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    40 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
