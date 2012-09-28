@@ -488,7 +488,8 @@ def _build_query(params):
         # Milestones apply to all structural subscription searches.
         ss_clauses = [
             In(BugTaskFlat.milestone_id, Select(SS.milestoneID, tables=[SS]))]
-        if params.product is None and params.productseries is None:
+        if (params.project is None
+            and params.product is None and params.productseries is None):
             # This search is *not* contrained to project related bugs, so
             # include distro, distroseries, DSP and SP subscriptions.
             ss_clauses.append(In(
