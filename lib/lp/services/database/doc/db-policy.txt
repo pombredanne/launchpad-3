@@ -102,7 +102,7 @@ Database policies can also be installed and uninstalled using the
 IStoreSelector utility for cases where the 'with' syntax cannot
 be used.
 
-    >>> from lp.services.webapp.interfaces import IStoreSelector
+    >>> from lp.services.database.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SlaveDatabasePolicy())
     >>> try:
     ...     default_janitor = IStore(Person).find(
