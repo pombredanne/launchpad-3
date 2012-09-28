@@ -17,114 +17,15 @@ method accepts a single parameter; an BugTaskSearchParams instance.
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True
 
-
-== Searching by bug supervisor ==
-
-The 'bug_supervisor' parameter allows you to search bugtasks that a certain
-person is responsible for. A person can be a bug supervisor for a product,
-a distribution, or a distribution source package. No Privileges Person
-isn't a bug supervisor, so no bugs are found for him:
-
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv_bug_supervisor = BugTaskSearchParams(
-    ...     user=None, bug_supervisor=no_priv)
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
-    >>> found_bugtasks.count()
-    0
-
-== Product bugs ==
-
-Firefox has a few bugs:
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_bugs = firefox.searchTasks(all_public)
-    >>> firefox_public_bugs = firefox_bugs.count()
-    >>> firefox_public_bugs > 0
-    True
-
-== Distribution and package bugs ==
-
-Ubuntu does too:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> all_public = BugTaskSearchParams(user=None)
-    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
-    >>> ubuntu_bugs.count() > 0
-    True
 
-and in particular, mozilla-firefox in Ubuntu has 'em:
-
-    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
-    >>> ubuntu_firefox_bugs.count() > 0
-    True
-
-== Person bugs ==
-
-To get all related tasks to a person call searchTasks() on the person
-object:
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> user = getUtility(IPersonSet).getByName('name16')
-    >>> user_bugs = user.searchTasks(None, user=None)
-    >>> user_bugs.count() > 0
-    True
-
-== Dupes and Conjoined tasks ==
-
-You can set flags to omit duplicates:
-
-    >>> no_dupes = BugTaskSearchParams(user=None, omit_dupes=True)
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> sans_dupes = firefox.searchTasks(no_dupes)
-    >>> sans_dupes.count() < firefox_public_bugs
-    True
-
-and also series-targeted bugs:
-
-    >>> no_targeted = BugTaskSearchParams(user=None, omit_targeted=True)
-    >>> sans_targeted = ubuntu.searchTasks(no_targeted)
-    >>> sans_targeted.count() < ubuntu_bugs
-    True
-
-=== Product bug supervisor ===
-
-If No Privileges is specified as Firefox's bug supervisor, searching for his
-bugs return all of Firefox's bugs.
-
-    >>> login('foo.bar@canonical.com')
-    >>> firefox.bug_supervisor = no_priv
-
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
-    >>> found_bugtasks.count() == firefox_bugs.count()
-    True
-
-    >>> found_targets = set(
-    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
-    >>> for target_name in sorted(found_targets):
-    ...     print target_name
-    Mozilla Firefox
-
-
-=== Distribution bug supervisor ===
-
-If someone is bug supervisor for Firefox, Firefox in Ubuntu, and Ubuntu,
-all bugs in Firefox and Ubuntu are returned. Bugs in the Ubuntu Firefox
-package are included in the Ubuntu bugs, so they won't be returned
-twice.
-
-    >>> all_public = BugTaskSearchParams(user=None)
-    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
-    >>> ubuntu_bugs.count() > 0
-    True
-
-    >>> ubuntu.bug_supervisor = no_priv
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
-    >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
-    True
 
 == Searching using bug full-text index ==
 
@@ -144,6 +45,7 @@ For example, there are no bugs with the word 'Fnord' in Firefox.
 But if we put that word in the bug #4 description, it will be found.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> login('foo.bar@canonical.com')
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
@@ -209,27 +111,6 @@ Passing invalid tsquery expressions as fast_searchtext raises an exception.
     ...
 
     >>> import transaction
-    >>> transaction.abort()
-
-
-== Searching by bug reporter ==
-
-The 'bug_reporter' parameter allows you to search for bugs reported by a
-certain person.
-
-    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> reported_by_foo_bar = BugTaskSearchParams(
-    ...     user=None, bug_reporter=foo_bar)
-    >>> reported_by_foo_bar.setDistribution(ubuntu)
-    >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
-    >>> for bugtask in found_bugtasks:
-    ...     print "#%s in %s reported by %s" % (
-    ...         bugtask.bug.id, bugtask.bugtargetname,
-    ...         bugtask.bug.owner.displayname)
-    #9 in thunderbird (Ubuntu) reported by Foo Bar
-    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
-
-
     >>> transaction.abort()
 
 
@@ -356,7 +237,8 @@ by the sd driver, so we'll get an empty result set for this query.
 
 We can also search for device owners which are subscribed to a bug.
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455',
@@ -408,6 +290,7 @@ or an admin.
     ...     print bugtask.bug.id
     16
 
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> search_params = BugTaskSearchParams(
     ...     user=foo_bar, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
