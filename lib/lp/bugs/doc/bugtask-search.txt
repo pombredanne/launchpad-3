@@ -282,96 +282,7 @@ series.
     ...     print bugtask.bug.title
     Bug to be fixed in trunk
 
-== Filter by Upstream Status ==
-
-Add an Ubuntu bugtask for a bug that is confirmed upstream.
-
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskImportance,
-    ...     BugTaskStatus,
-    ...     )
-    >>> from lp.bugs.model.tests.test_bugtask import (
-    ...     BugTaskSearchBugsElsewhereTest)
-    >>> def bugTaskInfo(bugtask):
-    ...     return '%i %i %s %s' % (
-    ...         bugtask.id, bugtask.bug.id, bugtask.bugtargetdisplayname,
-    ...         bugtask.bug.title)
-    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
-    >>> bug_twelve =  getUtility(IBugSet).get(12)
-    >>> task_open_upstream = bugtask_set.createTask(
-    ...     bug_twelve, foo_bar, ubuntu,
-    ...     status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
-    >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
-
-Pass the resolved_upstream flag to include only bugtasks linked to
-watches that are rejected, fixed committed or fix released, or bugtasks
-related to upstream bugtasks (i.e. filed on the same bug) that are fix
-committed or fix released.
-
-    >>> test_helper.setUpBugsResolvedUpstreamTests()
-    >>> params = BugTaskSearchParams(
-    ...     resolved_upstream=True, orderby='id', user=None)
-    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
-    >>> for bugtask in closed_elsewhere_tasks:
-    ...     test_helper.assertBugTaskIsResolvedUpstream(bugtask)
-    ...     print bugTaskInfo(bugtask)
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    26 2 Ubuntu Blackhole Trash folder
-    23 9 thunderbird (Ubuntu) Thunderbird crashes
-
-
-Pass the open_upstream flag to include only bugtasks linked to those
-watches or those upstream bugtasks that have the status "unconfirmed",
-"needs info", "confirmed", "in progress" or "unknown". Note that a bug
-may be associated with three or more bugtasks. If one upstream task
-has a state associated with "open upstream", and another upstream task
-has a state associated with "resolved upstream", the bug is included
-in the results of the "open upstream" filter as well as the "resolved
-upstream" filter.
-
-(In the examples below, the last bugtask is ellipsized because its ID
- is generated here and therefore sampledata-dependent.)
-
-    >>> params = BugTaskSearchParams(
-    ...     open_upstream=True, orderby='id', user=None)
-    >>> open_elsewhere_tasks = ubuntu.searchTasks(params)
-    >>> for bugtask in open_elsewhere_tasks:
-    ...     test_helper.assertBugTaskIsOpenUpstream(bugtask)
-    ...     print bugTaskInfo(bugtask)
-    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    26  2 Ubuntu Blackhole Trash folder
-    ... ... Ubuntu Copy, Cut and Delete operations should work on selections
-
-
-We can also filter our search to include only bugs that are not known to
-affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
-
-    >>> params = BugTaskSearchParams(
-    ...     has_no_upstream_bugtask=True, orderby='id', user=None)
-    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
-    >>> for bugtask in tasks_with_no_upstreams:
-    ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
-    ...     print bugTaskInfo(bugtask)
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    ... ... Ubuntu Test nominated bug
-
-If we combine upstream-related filters, we get the union of the results
-of the single filters.
-
-    >>> params = BugTaskSearchParams(
-    ...     has_no_upstream_bugtask=True, resolved_upstream=True,
-    ...     orderby='id', user=None)
-    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
-    >>> for bugtask in tasks_with_no_upstreams:
-    ...     print bugTaskInfo(bugtask)
-    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    26  2 Ubuntu Blackhole Trash folder
-    23  9 thunderbird (Ubuntu) Thunderbird crashes
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    ... ... Ubuntu Test nominated bug
-
-
-    >>> test_helper.tearDownBugsElsewhereTests()
+    >>> transaction.abort()
 
 
 == Bugs with partner packages ==
@@ -583,6 +494,11 @@ It is possible to sort the results by the number of duplicates each bag has.
 
 Here is the list of bugs for Ubuntu.
 
+    >>> def bugTaskInfo(bugtask):
+    ...     return '%i %i %s %s' % (
+    ...         bugtask.id, bugtask.bug.id, bugtask.bugtargetdisplayname,
+    ...         bugtask.bug.title)
+
     >>> params = BugTaskSearchParams(
     ...     orderby='-number_of_duplicates', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
@@ -592,7 +508,7 @@ Here is the list of bugs for Ubuntu.
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 None of these bugs have any duplicates.
 
@@ -618,7 +534,7 @@ Searching again reveals bug #9 at the top of the list, since it now has a duplic
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 === Ordering by number of comments ===
@@ -679,7 +595,7 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     23 9 thunderbird (Ubuntu) Thunderbird crashes
@@ -700,6 +616,6 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    39 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
