@@ -39,6 +39,11 @@ from lp.services.config import (
     config,
     dbconfig,
     )
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.postgresql import ConnectionString
 from lp.services.librarian.interfaces.client import (
     DownloadFailed,
@@ -49,11 +54,6 @@ from lp.services.librarian.interfaces.client import (
     UploadFailed,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 
 
 def url_path_quote(filename):

@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

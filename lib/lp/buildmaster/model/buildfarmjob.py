@@ -16,9 +16,7 @@ import pytz
 from storm.expr import (
     Desc,
     LeftJoin,
-    Not,
     Or,
-    Select,
     )
 from storm.locals import (
     Bool,
@@ -53,18 +51,16 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 
 
@@ -418,9 +414,12 @@ class BuildFarmJobSet:
         """See `IBuildFarmJobSet`."""
         # Imported here to avoid circular imports.
         from lp.buildmaster.model.packagebuild import PackageBuild
-        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.archive import (
+            Archive, get_archive_privacy_filter)
 
-        clauses = [BuildFarmJob.builder == builder_id]
+        clauses = [
+            BuildFarmJob.builder == builder_id,
+            Or(PackageBuild.id == None, get_archive_privacy_filter(user))]
         if status is not None:
             clauses.append(BuildFarmJob.status == status)
 
@@ -433,24 +432,8 @@ class BuildFarmJobSet:
             LeftJoin(
                 PackageBuild,
                 PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
             ]
-
-        if user is None:
-            # Anonymous requests don't get to see private builds at all.
-            origin.append(
-                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            clauses.append(Or(PackageBuild.id == None, Not(Archive._private)))
-        elif not IPersonRoles(user).in_admin:
-            # Non-admin users see all public builds and the specific
-            # private builds to which they have access.
-            origin.append(
-                LeftJoin(Archive, Archive.id == PackageBuild.archive_id))
-            clauses.append(
-                Or(PackageBuild.id == None, Not(Archive._private),
-                    Archive.ownerID.is_in(
-                        Select(
-                            TeamParticipation.teamID,
-                            where=(TeamParticipation.person == user)))))
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(

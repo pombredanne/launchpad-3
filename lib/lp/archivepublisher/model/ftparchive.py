@@ -19,14 +19,14 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
-from lp.services.database.stormexpr import Concatenate
-from lp.services.librarian.model import LibraryFileAlias
-from lp.services.osutils import write_file
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.stormexpr import Concatenate
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.osutils import write_file
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName

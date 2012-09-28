@@ -39,6 +39,11 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
 from lp.services.oauth.interfaces import (
@@ -58,9 +63,6 @@ from lp.services.tokens import (
     )
 from lp.services.webapp.interfaces import (
     AccessLevel,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     OAuthPermission,
     )
 

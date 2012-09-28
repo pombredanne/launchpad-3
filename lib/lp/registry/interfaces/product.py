@@ -72,8 +72,8 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
-from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import InformationType
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -674,6 +674,14 @@ class IProductPublic(
         exported_as='bug_tracker')
 
     sourcepackages = Attribute(_("List of packages for this product"))
+
+    date_next_suggest_packaging = exported(
+        Datetime(
+            title=_('Next suggest packaging date'),
+            description=_(
+                "Obsolete. The date to resume Ubuntu package suggestions."),
+            required=False),
+        ('devel', dict(exported=False)))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))

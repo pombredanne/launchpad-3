@@ -5,8 +5,8 @@ __metaclass__ = type
 __all__ = []
 
 from textwrap import dedent
-import transaction
 
+import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.mailinglist import (

@@ -676,7 +676,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             archive=ubuntu.main_archive)
         sources = ubuntu.main_archive.getPublishedSources(
             distroseries=hoary, status=self.pending_statuses,
-            name='alsa-utils')
+            name=u'alsa-utils')
         for src in sources:
             if src.source_package_version != '2.0':
                 src.supersede()

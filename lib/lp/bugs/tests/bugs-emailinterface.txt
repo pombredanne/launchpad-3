@@ -469,17 +469,6 @@ The same will happen if we send the same email without signing it:
     >>> print bug_one.title
     Better summary
 
-A different error message is sent, though:
-
-    >>> print_latest_email()
-    Subject: Submit Request Failure
-    To: test@canonical.com
-    <BLANKLINE>
-    ...
-    The message you sent included commands to modify the bug report, but you
-    didn't sign the message with your OpenPGP key.
-    ...
-
 
 If we don't include any commands in the comment, it will be added
 to the bug:
@@ -1824,8 +1813,9 @@ signing the mail:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    To report bugs by e-mail, you need to sign the message with an OpenPGP key
-    that is registered in Launchpad.
+    The message you sent included commands to modify the bug report,
+    but you didn't sign the message with an OpenPGP key that is
+    registered in Launchpad.
     ...
 
 A submit without specifying on what we want to file the bug on:

@@ -17,8 +17,9 @@ from lazr.restful.declarations import (
     export_write_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
-    operation_returns_collection_of)
+    )
 from lazr.restful.fields import Reference
 from zope.schema import (
     Choice,
@@ -38,8 +39,10 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 
 
 class ISharingService(IService):
@@ -62,6 +65,37 @@ class ISharingService(IService):
         Returns a resultset of (InformationType, count) tuples, where count is
         the number of grantees who have an access policy grant for the
         information type.
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IProduct)
+    @operation_for_version('devel')
+    def getSharedProjects(person, user):
+        """Find projects for which person has one or more access policy grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all projects are returned, else only those for which the user is a
+            maintainer or driver.
+        :return: a collection of projects
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IDistribution)
+    @operation_for_version('devel')
+    def getSharedDistributions(person, user):
+        """Find distributions for which person has one or more access policy
+           grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all distributions are returned, else only those for which the user
+            is a maintainer or driver.
+        :return: a collection of distributions
         """
 
     @export_read_operation()
@@ -273,7 +307,8 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None):
+    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None,
+                           specifications=None):
         """Remove a grantee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
@@ -281,6 +316,7 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
+        :param specifications: the specifications for which to revoke access
         """
 
     @export_write_operation()

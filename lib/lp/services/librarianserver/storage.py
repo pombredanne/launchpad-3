@@ -13,12 +13,12 @@ from zope.component import getUtility
 
 from lp.services.config import dbconfig
 from lp.services.database import write_transaction
-from lp.services.database.postgresql import ConnectionString
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.postgresql import ConnectionString
 
 
 __all__ = [

@@ -452,7 +452,9 @@ have tasks, so we first add a publication.
     >>> print webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/debian/+source/evolution/+bug/1
     ...
 
 We can also PATCH the target attribute to accomplish the same thing.
@@ -483,7 +485,9 @@ We can change an upstream task to target a different project.
     >>> print webservice.named_post(
     ...     product_bugtask['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/bzr'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/bzr/+bug/14
     ...
 
 If the milestone of a task is on a target other than the new
@@ -506,7 +510,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     firefox_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/jokosher'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/jokosher/+bug/1
     ...
     <BLANKLINE>
     >>> jokosher_bugtask = webservice.get(
@@ -519,7 +525,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     jokosher_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/firefox'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/+bug/1
     ...
 
 We can change a distribution task to a task with a package from the same
@@ -537,7 +545,10 @@ distribution.
     >>> print webservice.named_post(
     ...     distro_bugtask_path, 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
-    HTTP/1.1 200 Ok ...
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/19
+    ...
 
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs

@@ -69,8 +69,8 @@ from zope.schema import (
     TextLine,
     )
 
-from lp.app.enums import InformationType
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
