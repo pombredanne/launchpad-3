@@ -11,13 +11,13 @@ __all__ = [
 from storm.expr import Desc
 from zope.component import getUtility
 
-from lp.services.librarian.interfaces.client import ILibrarianClient
-from lp.services.librarian.model import LibraryFileAlias
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.librarian.interfaces.client import ILibrarianClient
+from lp.services.librarian.model import LibraryFileAlias
 
 
 def get_newest_librarian_file():

@@ -26,7 +26,7 @@ from lp.registry.model.milestone import (
     MilestoneData,
     )
 from lp.registry.model.product import Product
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

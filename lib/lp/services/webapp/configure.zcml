@@ -36,23 +36,23 @@
 
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
-        provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
+        provides="lp.services.database.interfaces.IDatabasePolicy"
+        factory="lp.services.database.policy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
-        provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.MasterDatabasePolicy"
+        provides="lp.services.database.interfaces.IDatabasePolicy"
+        factory="lp.services.database.policy.MasterDatabasePolicy"
         />
     <adapter
         for="lp.layers.WebServiceLayer"
-        provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
+        provides="lp.services.database.interfaces.IDatabasePolicy"
+        factory="lp.services.database.policy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="lp.layers.FeedsLayer"
-        provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
+        provides="lp.services.database.interfaces.IDatabasePolicy"
+        factory="lp.services.database.policy.SlaveOnlyDatabasePolicy"
         />
     <adapter
         for="lp.layers.WebServiceLayer"
@@ -187,7 +187,7 @@
     <!-- Storm Store selector. -->
     <utility
         component="lp.services.webapp.adapter.StoreSelector"
-        provides="lp.services.webapp.interfaces.IStoreSelector">
+        provides="lp.services.database.interfaces.IStoreSelector">
     </utility>
 
     <!-- Storm Store adapters, adapting a Storm subclass or instance
@@ -433,7 +433,7 @@
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
-        class="lp.services.webapp.dbpolicy.WhichDbView"
+        class="lp.services.webapp.adapter.WhichDbView"
         layer="lp.layers.PageTestLayer"
         />
 

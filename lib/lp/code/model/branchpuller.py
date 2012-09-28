@@ -16,7 +16,7 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.model.branch import Branch
 from lp.services.database.constants import UTC_NOW
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

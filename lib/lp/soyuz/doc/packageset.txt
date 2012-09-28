@@ -88,7 +88,7 @@ Since we only have 2 package sets at this point only these will be shown.
 In a next step we will associate source package names with the package sets
 just created.
 
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

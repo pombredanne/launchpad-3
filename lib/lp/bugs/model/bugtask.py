@@ -131,6 +131,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
@@ -143,12 +148,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def bugtask_sort_key(bugtask):
