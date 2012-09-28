@@ -121,10 +121,10 @@ class MergePeopleViewTestCase(TestCaseWithFactory):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             '.*to merge the Launchpad account named.*claimer', view.render())
         view = create_initialized_view(
-            token, name="+accountmerge",
+            token, name="+accountmerge", principal=claimer,
             form={'VALIDATE': 'Confirm'}, method='POST')
         with person_logged_in(claimer):
-            view.processForm()
+            view.render()
         self.assertIs(True, view.mergeCompleted)
         notifications = view.request.notifications
         self.assertEqual(2, len(notifications))
