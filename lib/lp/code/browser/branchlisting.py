@@ -52,7 +52,6 @@ from zope.interface import (
 from zope.schema import Choice
 
 from lp import _
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
@@ -62,6 +61,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.tales import MenuAPI
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,

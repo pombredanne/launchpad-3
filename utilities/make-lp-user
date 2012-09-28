@@ -53,9 +53,6 @@ from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.timeout import set_default_timeout_function
 from lp.testing.factory import LaunchpadObjectFactory
 
-# Shut up, pyflakes.
-_pythonpath = _pythonpath
-
 
 factory = LaunchpadObjectFactory()
 

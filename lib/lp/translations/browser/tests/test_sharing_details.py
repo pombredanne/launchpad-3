@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 import re
+
 from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,

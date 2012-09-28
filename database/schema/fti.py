@@ -34,6 +34,7 @@ from lp.services.scripts import (
     logger_options,
     )
 
+
 PGSQL_BASE = '/usr/share/postgresql'
 
 # tsearch2 ranking constants:

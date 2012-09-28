@@ -17,7 +17,6 @@ import tempfile
 import unittest
 
 import transaction
-
 from zope.component import getUtility
 
 from lp.registry.enums import (

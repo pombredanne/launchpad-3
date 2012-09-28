@@ -102,9 +102,7 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
-from lp.app.enums import (
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    )
+from lp.app.enums import PUBLIC_PROPRIETARY_INFORMATION_TYPES
 from lp.app.utilities import json_dump_information_types
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
