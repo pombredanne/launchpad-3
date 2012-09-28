@@ -111,8 +111,8 @@ class MergePeopleViewTestCase(TestCaseWithFactory):
 
     def assertWorkflow(self, claimer, dupe):
         token = getUtility(ILoginTokenSet).new(
-            requester=claimer, requesteremail='me@eg.dom',
-            email="him@eg.dom", tokentype=LoginTokenType.ACCOUNTMERGE)
+            requester=claimer, requesteremail='me@example.com',
+            email="him@example.com", tokentype=LoginTokenType.ACCOUNTMERGE)
         view = create_initialized_view(token, name="+accountmerge")
         self.assertIs(False, view.mergeCompleted)
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -132,16 +132,18 @@ class MergePeopleViewTestCase(TestCaseWithFactory):
     def test_confirm_email_for_active_account(self):
         # Users can confirm they control an email address to merge a duplicate
         # profile.
-        claimer = self.factory.makePerson(email='me@eg.dom', name='claimer')
-        dupe = self.factory.makePerson(email='him@eg.dom', name='dupe')
+        claimer = self.factory.makePerson(
+            email='me@example.com', name='claimer')
+        dupe = self.factory.makePerson(email='him@example.com', name='dupe')
         self.assertWorkflow(claimer, dupe)
 
     def test_confirm_email_for_non_active_account(self):
         # Users can confirm they control an email address to merge a
         # non-active duplicate profile.
-        claimer = self.factory.makePerson(email='me@eg.dom', name='claimer')
+        claimer = self.factory.makePerson(
+            email='me@example.com', name='claimer')
         dupe = self.factory.makePerson(
-            email='him@eg.dom', name='dupe',
+            email='him@example.com', name='dupe',
             email_address_status=EmailAddressStatus.NEW,
             account_status=AccountStatus.NOACCOUNT)
         self.assertWorkflow(claimer, dupe)
