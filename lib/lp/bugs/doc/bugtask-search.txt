@@ -230,58 +230,6 @@ certain person.
     #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
 
 
-== Searching for nominated bugs ==
-
-We can search for bugs nominated to a distribution series by using the
-nominated_for parameter.
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> warty = ubuntu.getSeries('warty')
-
-    >>> from lp.bugs.model.bugnomination import BugNomination
-    >>> print list(BugNomination.selectBy(distroseries=warty))
-    []
-
-    >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> nominated_for_warty = BugTaskSearchParams(
-    ...     user=None, nominated_for=warty)
-    >>> list(ubuntu.searchTasks(nominated_for_warty))
-    []
-
-    >>> nominated_bug = ubuntu.createBug(
-    ...     CreateBugParams(owner=no_priv, title='Test nominated bug',
-    ...                     comment='Something'))
-    >>> BugNomination(
-    ...     owner=no_priv, distroseries=warty, bug=nominated_bug)
-    <BugNomination at ...>
-
-    >>> for bugtask in ubuntu.searchTasks(nominated_for_warty):
-    ...     print bugtask.bug.title
-    Test nominated bug
-
-The same parameter is used to search for bugs nominated to a product
-series.
-
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_trunk = firefox.getSeries('trunk')
-    >>> print list(BugNomination.selectBy(productseries=firefox_trunk))
-    []
-    >>> nominated_for_trunk = BugTaskSearchParams(
-    ...     user=None, nominated_for=firefox_trunk)
-    >>> list(firefox.searchTasks(nominated_for_trunk))
-    []
-
-    >>> nominated_bug = firefox.createBug(
-    ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
-    ...                     comment='Something'))
-    >>> BugNomination(
-    ...     owner=no_priv, productseries=firefox_trunk, bug=nominated_bug)
-    <BugNomination at ...>
-
-    >>> for bugtask in firefox.searchTasks(nominated_for_trunk):
-    ...     print bugtask.bug.title
-    Bug to be fixed in trunk
-
     >>> transaction.abort()
 
 
@@ -351,7 +299,7 @@ related parameters.
     9 Foo Bar
     10 Foo Bar
     2 Sample Person
-    18 No Privileges Person
+    16 No Privileges Person
 
 Similary, we can search for device drivers appearing in HWDB submissions
 of a bug reporter.
@@ -437,14 +385,14 @@ driver.
     >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
-    >>> bug_18 = getUtility(IBugSet).get(18)
-    >>> bug_18.linkHWSubmission(hw_submission)
+    >>> bug_16 = getUtility(IBugSet).get(16)
+    >>> bug_16.linkHWSubmission(hw_submission)
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    18
+    16
 
 If a device appears in a private submission, related bugs are shown
 only if the user running the request is the owner of the submission
@@ -458,14 +406,14 @@ or an admin.
     ...     hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    18
+    16
 
     >>> search_params = BugTaskSearchParams(
     ...     user=foo_bar, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
     ...     print bugtask.bug.id
-    18
+    16
 
 Other users cannot see that a bug is related to a device from a
 private submission.
@@ -508,7 +456,7 @@ Here is the list of bugs for Ubuntu.
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    36 16 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 None of these bugs have any duplicates.
 
@@ -525,7 +473,8 @@ We mark bug #10 as a duplicate of bug #9.
     >>> bug_ten.markAsDuplicate(bug_nine)
     >>> flush_database_updates()
 
-Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
+Searching again reveals bug #9 at the top of the list, since it now has
+a duplicate.
 
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
@@ -534,7 +483,7 @@ Searching again reveals bug #9 at the top of the list, since it now has a duplic
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     26 2 Ubuntu Blackhole Trash folder
-    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    36 16 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 === Ordering by number of comments ===
@@ -554,7 +503,7 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     1 Firefox does not support SVG [2 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
-    18 Bug to be fixed in trunk [1 comments]
+    16 Bug to be fixed in trunk [1 comments]
 
 
 === Ordering by bug heat ===
@@ -574,7 +523,7 @@ Another way of sorting searches is by bug heat.
     ...     bug = bugtask.bug
     ...     print '%s %s [heat: %s]' % (
     ...     bug.id, bug.title, bug.heat)
-    18 Bug to be fixed in trunk [heat: 18]
+    16 Bug to be fixed in trunk [heat: 16]
     10 another test bug [heat: 10]
     9 Thunderbird crashes [heat: 9]
     2 Blackhole Trash folder [heat: 2]
@@ -595,7 +544,7 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    36 16 cdrkit (Ubuntu) Bug to be fixed in trunk
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
     23 9 thunderbird (Ubuntu) Thunderbird crashes
@@ -616,6 +565,6 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+    36 16 cdrkit (Ubuntu) Bug to be fixed in trunk
     23 9 thunderbird (Ubuntu) Thunderbird crashes
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
