@@ -264,12 +264,6 @@ flag_info = sorted([
      'disabled',
      '',
      'https://dev.launchpad.net/LEP/PrivateProjects'),
-    ('soyuz.processacceptedbugsjob.enabled',
-     'boolean',
-     'If true, use a job to close bugs when accepting uploads from a queue.',
-     'disabled',
-     '',
-     ''),
 
     ])
 
