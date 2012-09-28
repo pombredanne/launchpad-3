@@ -57,7 +57,14 @@ from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services.database.interfaces import IRequestExpired
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IRequestExpired,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -76,13 +83,6 @@ from lp.services.timeline.requesttimeline import (
     )
 from lp.services.timeout import set_default_timeout_function
 from lp.services.webapp.interaction import get_interaction_extras
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
-    )
 from lp.services.webapp.opstats import OpStats
 
 

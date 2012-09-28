@@ -65,6 +65,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.config import config
+from lp.services.database.interfaces import (
+    IDatabasePolicy,
+    IStoreSelector,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.policy import LaunchpadDatabasePolicy
 from lp.services.features.flags import NullFeatureController
 from lp.services.oauth.interfaces import IOAuthSignedRequest
@@ -72,13 +77,10 @@ from lp.services.osutils import open_for_writing
 import lp.services.webapp.adapter as da
 from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
-    IDatabasePolicy,
     ILaunchpadRoot,
     IOpenLaunchBag,
     IPlacelessAuthUtility,
     IPrimaryContext,
-    IStoreSelector,
-    MASTER_FLAVOR,
     NoReferrerError,
     OffsiteFormPostError,
     StartRequestEvent,

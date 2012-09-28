@@ -63,6 +63,12 @@ from lp.buildmaster.model.buildqueue import (
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -79,12 +85,6 @@ from lp.services.propertycache import (
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.

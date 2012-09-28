@@ -32,6 +32,15 @@ from lp.layers import (
     )
 from lp.registry.model.person import Person
 from lp.services.config import config
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    DisallowedStore,
+    IDatabasePolicy,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
@@ -43,16 +52,7 @@ from lp.services.database.policy import (
     SlaveDatabasePolicy,
     SlaveOnlyDatabasePolicy,
     )
-from lp.services.webapp.interfaces import (
-    ALL_STORES,
-    DEFAULT_FLAVOR,
-    DisallowedStore,
-    IDatabasePolicy,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
-    )
+from lp.services.webapp.interfaces import ALL_STORES
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 from lp.testing.fixture import PGBouncerFixture

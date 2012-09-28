@@ -34,14 +34,14 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from lp.services.database.sqlbase import sqlvalues
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import clear_property_cache
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,

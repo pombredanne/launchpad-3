@@ -15,12 +15,12 @@ from zope.component import getUtility
 
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.config import config
-from lp.services.geoip.interfaces import IGeoIP
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.geoip.interfaces import IGeoIP
 
 
 parser = apachelog.parser(apachelog.formats['extended'])

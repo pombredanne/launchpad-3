@@ -224,6 +224,11 @@ from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -255,12 +260,7 @@ from lp.services.temporaryblobstorage.interfaces import (
     )
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    OAuthPermission,
-    )
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet

@@ -37,6 +37,11 @@ from lp.code.model.directbranchcommit import (
     )
 from lp.codehosting.vfs import get_rw_server
 from lp.services.config import config
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.helpers import shortlist
 from lp.services.mail.helpers import (
@@ -49,11 +54,6 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.webapp import errorlog
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 

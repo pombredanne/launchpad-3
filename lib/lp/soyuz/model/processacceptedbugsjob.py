@@ -27,15 +27,15 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
-from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.processacceptedbugsjob import (
     IProcessAcceptedBugsJob,
     IProcessAcceptedBugsJobSource,

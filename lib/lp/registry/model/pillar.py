@@ -45,16 +45,16 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.services.config import config
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
 from lp.services.helpers import ensure_unicode
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 
 
 __all__ = [
