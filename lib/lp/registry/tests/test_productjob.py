@@ -21,9 +21,11 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
-    InformationType,
+    BranchSharingPolicy,
+    BugSharingPolicy,
     ProductJobType,
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
@@ -723,6 +725,10 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         clear_property_cache(product)
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
+        self.assertEqual(
+            BranchSharingPolicy.FORBIDDEN, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.FORBIDDEN, product.bug_sharing_policy)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
         self.assertIs(None, product.commercial_subscription)

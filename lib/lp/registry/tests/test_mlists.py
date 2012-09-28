@@ -17,11 +17,13 @@ import tempfile
 import unittest
 
 import transaction
+from zope.component import getUtility
 
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
+from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import BufferLogger
@@ -90,7 +92,10 @@ class BaseMailingListImportTest(unittest.TestCase):
 
     def assertAddresses(self, *addresses):
         """Assert that `addresses` are subscribed to the mailing list."""
-        subscribers = set(self.mailing_list.getSubscribedAddresses())
+        subscribers = set([
+            address for (name, address) in
+            getUtility(IMailingListSet).getSubscribedAddresses(
+                [self.team.name]).get(self.team.name, [])])
         expected = set(addresses)
         self.assertEqual(subscribers, expected)
 

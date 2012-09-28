@@ -29,7 +29,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.enumcol import DBEnum
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

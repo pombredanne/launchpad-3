@@ -20,6 +20,7 @@ from storm.expr import (
     Min,
     Not,
     SQL,
+    Update,
     )
 from storm.locals import (
     Int,
@@ -35,6 +36,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -54,10 +56,10 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -76,6 +78,11 @@ from lp.services.database.constants import (
     SEVEN_DAYS_AGO,
     THIRTY_DAYS_AGO,
     UTC_NOW,
+    )
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.model import FeatureFlag
@@ -97,11 +104,6 @@ from lp.services.session.model import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
@@ -1056,6 +1058,23 @@ class TestGarbo(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
+
+    def test_SpecificationSharingPolicyDefault(self):
+        switch_dbuser('testadmin')
+        # Set all existing projects to something other than None or 1.
+        store = IMasterStore(Product)
+        store.execute(Update(
+            {Product.specification_sharing_policy: 2}))
+        store.flush()
+        # Make a new product without a specification_sharing_policy.
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).specification_sharing_policy = None
+        store.flush()
+        self.assertEqual(1, store.find(Product,
+            Product.specification_sharing_policy == None).count())
+        self.runDaily()
+        self.assertEqual(0, store.find(Product,
+            Product.specification_sharing_policy == None).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

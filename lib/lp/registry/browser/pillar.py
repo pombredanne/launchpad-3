@@ -56,6 +56,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.batching import (
     BatchNavigator,
@@ -291,6 +292,13 @@ class PillarSharingView(LaunchpadView):
         return self._getSharingService().getBranchSharingPolicies(self.context)
 
     @property
+    def specification_sharing_policies(self):
+        if getFeatureFlag('blueprints.information_type.enabled'):
+            return self._getSharingService().getSpecificationSharingPolicies(
+                self.context)
+        return None
+
+    @property
     def sharing_permissions(self):
         return self._getSharingService().getSharingPermissions()
 
@@ -344,6 +352,8 @@ class PillarSharingView(LaunchpadView):
         cache.objects['bug_sharing_policies'] = self.bug_sharing_policies
         cache.objects['branch_sharing_policies'] = (
             self.branch_sharing_policies)
+        cache.objects['specification_sharing_policies'] = (
+            self.specification_sharing_policies)
 
         view_names = set(reg.name for reg
             in iter_view_registrations(self.__class__))
@@ -411,7 +421,7 @@ class PillarPersonSharingView(LaunchpadView):
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
         # filter out dupes.
-        self.bugtasks, self.branches = (
+        self.bugtasks, self.branches, self.specifications = (
             self.sharing_service.getSharedArtifacts(
                 self.pillar, self.person, self.user))
         bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])

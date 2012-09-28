@@ -22,7 +22,10 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized as ZopeUnAuthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import (
@@ -57,7 +60,6 @@ from lp.bugs.scripts.bugtasktargetnamecaches import (
 from lp.bugs.tests.bug import create_old_bug
 from lp.registry.enums import (
     BugSharingPolicy,
-    InformationType,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -3054,6 +3056,18 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             IllegalTarget,
             "%s doesn't allow Public bugs." % commercial_prod.displayname,
             validate_target, bug, commercial_prod)
+
+    def test_illegal_information_type_allowed_if_pillar_not_new(self):
+        # The bug's current information_type does not have to be permitted if
+        # we already affect the pillar.
+        prod = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=prod)
+        bug = self.factory.makeBug(
+            target=prod, information_type=InformationType.USERDATA)
+        self.factory.makeCommercialSubscription(prod)
+        with person_logged_in(prod.owner):
+            prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            validate_target(bug, series)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):

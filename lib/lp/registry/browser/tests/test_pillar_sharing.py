@@ -19,16 +19,17 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -268,6 +269,9 @@ class PillarSharingViewTestMixin:
         self.assertIsNotNone(cache.objects.get('branch_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+        # Ensure we don't set specification_sharing_policies without the
+        # feature flag enabled.
+        self.assertIsNone(cache.objects.get('specification_sharing_policies'))
         batch_size = config.launchpad.default_batch_size
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
         grantees = apgfs.findGranteePermissionsByPolicy(
@@ -276,6 +280,18 @@ class PillarSharingViewTestMixin:
         grantee_data = sharing_service.jsonGranteeData(grantees)
         self.assertContentEqual(
             grantee_data, cache.objects.get('grantee_data'))
+
+    def test_view_date_model_adds_specification(self):
+        # This test can move up to the above test when not feature flagged,
+        # but for now, ensure specification_sharing_policies is added to
+        # the cache if the flag is set.
+        feature_flag = {
+           'blueprints.information_type.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertIsNotNone(
+                cache.objects.get('specification_sharing_policies'))
 
     def test_view_batch_data(self):
         # Test the expected batching data is in the json request cache.

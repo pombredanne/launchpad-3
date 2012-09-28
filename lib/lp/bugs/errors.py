@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'InvalidDuplicateValue',
+    'InvalidSearchParameters',
 ]
 
 import httplib
@@ -18,3 +19,8 @@ from lp.app.validators import LaunchpadValidationError
 @error_status(httplib.EXPECTATION_FAILED)
 class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class InvalidSearchParameters(ValueError):
+    """Invalid search parameters were passed to searchTasks."""

@@ -20,6 +20,13 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -48,12 +55,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
-    PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -78,7 +80,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.constants import UTC_NOW
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
@@ -93,6 +95,7 @@ BRANCH_POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    BranchSharingPolicy.FORBIDDEN: [],
     }
 
 BRANCH_POLICY_DEFAULT_TYPES = {
@@ -101,6 +104,7 @@ BRANCH_POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 BRANCH_POLICY_REQUIRED_GRANTS = {
@@ -109,6 +113,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.FORBIDDEN: None,
     }
 
 
@@ -142,7 +147,9 @@ class _BaseNamespace:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
 
-        information_type = self.getDefaultInformationType()
+        information_type = self.getDefaultInformationType(registrant)
+        if information_type is None:
+            raise BranchCreationForbidden()
 
         branch = Branch(
             registrant=registrant, name=name, owner=self.owner,
@@ -198,7 +205,7 @@ class _BaseNamespace:
                     "%s cannot create branches owned by %s"
                     % (registrant.displayname, owner.displayname))
 
-        if not self.getAllowedInformationTypes():
+        if not self.getAllowedInformationTypes(registrant):
             raise BranchCreationForbidden(
                 'You cannot create branches in "%s"' % self.name)
 
@@ -291,13 +298,13 @@ class _BaseNamespace:
         else:
             return True
 
-    def getAllowedInformationTypes(self):
+    def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         raise NotImplementedError
 
-    def getDefaultInformationType(self):
+    def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
-        if InformationType.USERDATA in self.getAllowedInformationTypes():
+        if InformationType.USERDATA in self.getAllowedInformationTypes(who):
             return InformationType.USERDATA
         return InformationType.PUBLIC
 
@@ -327,7 +334,7 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % self.owner.name
 
-    def getAllowedInformationTypes(self):
+    def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         # Private teams get private branches, everyone else gets public ones.
         if (self.owner.is_team
@@ -411,20 +418,23 @@ class ProductNamespace(_BaseNamespace):
         else:
             return None
 
-    def getAllowedInformationTypes(self):
+    def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
             # The project uses the new simplified branch_sharing_policy
             # rules, so check them.
 
-            # Some policies require that the owner have full access to
-            # an information type. If it's required and the owner
+            # Some policies require that the branch owner or current user have
+            # full access to an information type. If it's required and the user
             # doesn't hold it, no information types are legal.
             required_grant = BRANCH_POLICY_REQUIRED_GRANTS[
                 self.product.branch_sharing_policy]
             if (required_grant is not None
                 and not getUtility(IService, 'sharing').checkPillarAccess(
-                    self.product, required_grant, self.owner)):
+                    self.product, required_grant, self.owner)
+                and (who is None
+                    or not getUtility(IService, 'sharing').checkPillarAccess(
+                        self.product, required_grant, who))):
                 return []
 
             return BRANCH_POLICY_ALLOWED_TYPES[
@@ -463,16 +473,16 @@ class ProductNamespace(_BaseNamespace):
             types.extend(FREE_PRIVATE_INFORMATION_TYPES)
         return types
 
-    def getDefaultInformationType(self):
+    def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
             default_type = BRANCH_POLICY_DEFAULT_TYPES[
                 self.product.branch_sharing_policy]
-            if default_type not in self.getAllowedInformationTypes():
+            if default_type not in self.getAllowedInformationTypes(who):
                 return None
             return default_type
 
-        return super(ProductNamespace, self).getDefaultInformationType()
+        return super(ProductNamespace, self).getDefaultInformationType(who)
 
 
 class PackageNamespace(_BaseNamespace):
@@ -504,7 +514,7 @@ class PackageNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.sourcepackage)
 
-    def getAllowedInformationTypes(self):
+    def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         return PUBLIC_INFORMATION_TYPES
 

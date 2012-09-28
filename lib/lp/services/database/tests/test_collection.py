@@ -12,7 +12,7 @@ from storm.locals import (
 from zope.component import getUtility
 
 from lp.services.database.collection import Collection
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

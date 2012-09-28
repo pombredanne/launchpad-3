@@ -109,6 +109,7 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -152,7 +153,6 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
@@ -254,10 +254,10 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -310,7 +310,6 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
@@ -1117,7 +1116,7 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getOwnedOrDrivenPillars(self):
+    def getAffiliatedPillars(self):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
         origin = SQL("""
@@ -1128,7 +1127,8 @@ class Person(
                 WHERE
                     active = True AND
                     (driver = %(person)s
-                    OR owner = %(person)s)
+                    OR owner = %(person)s
+                    OR bug_supervisor = %(person)s)
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1142,6 +1142,7 @@ class Person(
                 WHERE
                     driver = %(person)s
                     OR owner = %(person)s
+                    OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
             """ % sqlvalues(person=self))
@@ -1159,29 +1160,23 @@ class Person(
         # Import here to work around a circular import problem.
         from lp.registry.model.product import Product
 
-        clauses = ["""
-            SELECT DISTINCT Product.id
-            FROM Product, TeamParticipation
-            WHERE TeamParticipation.person = %(person)s
-            AND owner = TeamParticipation.team
-            AND Product.active IS TRUE
-            """ % sqlvalues(person=self)]
+        clauses = [
+            Product.active == True,
+            Product._ownerID == TeamParticipation.teamID,
+            TeamParticipation.person == self,
+            ]
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
         if match_name:
-            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
-            quoted_query = quote(match_name)
             clauses.append(
-                """(Product.name LIKE %s OR
-                    Product.displayname LIKE %s OR
-                    fti @@ ftq(%s))""" % (like_query,
-                                          like_query,
-                                          quoted_query))
-        query = " AND ".join(clauses)
-        results = Product.select("""id IN (%s)""" % query,
-                                 orderBy=['displayname'])
-        return results
+                Or(
+                    Product.name.contains_string(match_name),
+                    Product.displayname.contains_string(match_name),
+                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
+        return IStore(Product).find(
+            Product, *clauses
+            ).config(distinct=True).order_by(Product.displayname)
 
     def isAnyPillarOwner(self):
         """See IPerson."""
@@ -2223,7 +2218,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getOwnedOrDrivenPillars():
+        for pillar_name in self.getAffiliatedPillars():
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
@@ -3779,6 +3774,11 @@ class PersonSet:
             naked_recipe.owner = to_person
             naked_recipe.name = new_name
 
+    def _mergeLoginTokens(self, cur, from_id, to_id):
+        # Remove all LoginTokens.
+        cur.execute('''
+            DELETE FROM LoginToken WHERE requester=%(from_id)d''' % vars())
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -4378,6 +4378,9 @@ class PersonSet:
         skip.append(('karmatotalcache', 'person'))
 
         self._mergeDateCreated(cur, from_id, to_id)
+
+        self._mergeLoginTokens(cur, from_id, to_id)
+        skip.append(('logintoken', 'requester'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

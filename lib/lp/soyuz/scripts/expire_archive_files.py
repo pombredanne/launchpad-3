@@ -7,13 +7,13 @@
 
 from zope.component import getUtility
 
-from lp.services.database.sqlbase import sqlvalues
-from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchivePurpose
 
 # PPAs that we never want to expire.

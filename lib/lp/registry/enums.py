@@ -10,20 +10,12 @@ __all__ = [
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'EXCLUSIVE_TEAM_POLICY',
-    'FREE_INFORMATION_TYPES',
-    'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
-    'InformationType',
-    'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
-    'PRIVATE_INFORMATION_TYPES',
-    'PROPRIETARY_INFORMATION_TYPES',
-    'PUBLIC_INFORMATION_TYPES',
-    'PUBLIC_PROPRIETARY_INFORMATION_TYPES',
     'ProductJobType',
-    'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
+    'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
     'TeamMembershipRenewalPolicy',
     ]
@@ -32,80 +24,6 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-
-
-class InformationType(DBEnumeratedType):
-    """Information Type.
-
-    The types used to control which users and teams can see various
-    Launchpad artifacts, including bugs and branches.
-    """
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Everyone can see this information.
-        """)
-
-    PUBLICSECURITY = DBItem(2, """
-        Public Security
-
-        Everyone can see this security related information.
-        """)
-
-    PRIVATESECURITY = DBItem(3, """
-        Private Security
-
-       Only the security group can see this information.
-        """)
-
-    USERDATA = DBItem(4, """
-        Private
-
-        Only shared with users permitted to see private user information.
-        """)
-
-    PROPRIETARY = DBItem(5, """
-        Proprietary
-
-        Only shared with users permitted to see proprietary information.
-        """)
-
-    EMBARGOED = DBItem(6, """
-        Embargoed
-
-        Only shared with users permitted to see embargoed information.
-        """)
-
-
-PUBLIC_INFORMATION_TYPES = (
-    InformationType.PUBLIC, InformationType.PUBLICSECURITY)
-
-PRIVATE_INFORMATION_TYPES = (
-    InformationType.PRIVATESECURITY, InformationType.USERDATA,
-    InformationType.PROPRIETARY, InformationType.EMBARGOED)
-
-NON_EMBARGOED_INFORMATION_TYPES = (
-    PUBLIC_INFORMATION_TYPES +
-    (InformationType.PRIVATESECURITY, InformationType.USERDATA,
-     InformationType.PROPRIETARY))
-
-SECURITY_INFORMATION_TYPES = (
-    InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
-
-FREE_PRIVATE_INFORMATION_TYPES = (
-    InformationType.PRIVATESECURITY, InformationType.USERDATA)
-
-FREE_INFORMATION_TYPES = (
-    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
-
-PROPRIETARY_INFORMATION_TYPES = (
-    InformationType.PROPRIETARY, InformationType.EMBARGOED)
-
-# The information types unrelated to user data or security
-PUBLIC_PROPRIETARY_INFORMATION_TYPES = (
-    (InformationType.PUBLIC,) + PROPRIETARY_INFORMATION_TYPES
-)
 
 
 class SharingPermission(DBEnumeratedType):
@@ -171,6 +89,13 @@ class BranchSharingPolicy(DBEnumeratedType):
         new branches.
         """)
 
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new branches may be created, but existing branches may still be
+        updated.
+        """)
+
 
 class BugSharingPolicy(DBEnumeratedType):
 
@@ -198,6 +123,58 @@ class BugSharingPolicy(DBEnumeratedType):
 
         Bugs are always proprietary.
         """)
+
+    FORBIDDEN = DBItem(5, """
+        Forbidden
+
+        No new bugs may be reported, but existing bugs may still be updated.
+        """)
+
+
+class SpecificationSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Specifications are public.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New specifications are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New specifications are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new specifications.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Specifications are always proprietary. Only people who can see the
+        project's proprietary information can create new specifications.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New specifications are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new specifications.
+        """)
+
+    FORBIDDEN = DBItem(6, """
+        Forbidden
+
+        No new specifications may be created, but existing specifications may
+        still be updated.
+        """)
+
 
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):

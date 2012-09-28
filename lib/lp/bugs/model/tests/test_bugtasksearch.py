@@ -17,13 +17,16 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTaskSet,
     )
 from lp.bugs.interfaces.bugtasksearch import (
@@ -46,10 +49,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enums import (
-    InformationType,
-    SharingPermission,
-    )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1772,6 +1772,13 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             'BugTask.status IN (13, 14)',
             self.searchClause(BugTaskStatus.INCOMPLETE))
 
+    def test_BugTaskStatusSearch_INCOMPLETE_query(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (13, 14)',
+            self.searchClause(BugTaskStatusSearch.INCOMPLETE))
+
     def test_negative_query(self):
         # If a negative is requested then the WHERE clause is simply wrapped
         # in a "NOT".
@@ -1800,16 +1807,24 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             self.searchClause(
                 any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
 
+    def test_any_query_with_BugTaskStatusSearch_INCOMPLETE(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (10, 13, 14)',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatusSearch.INCOMPLETE)))
+
     def test_all_query(self):
         # Since status is single-valued, asking for "all" statuses in a set
         # doesn't make any sense.
-        with ExpectedException(ValueError):
+        with ExpectedException(InvalidSearchParameters):
             self.searchClause(
                 all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
 
     def test_bad_value(self):
         # If an unrecognized status is provided then an error is raised.
-        with ExpectedException(ValueError):
+        with ExpectedException(InvalidSearchParameters):
             self.searchClause('this-is-not-a-status')
 
 

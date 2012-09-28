@@ -27,7 +27,11 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    In,
+    Select,
+    Update,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -61,6 +65,11 @@ from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -90,11 +99,6 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -906,6 +910,33 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
+class SpecificationSharingPolicyDefault(TunableLoop):
+    """Set all Product.specification_sharing_policy to Public."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SpecificationSharingPolicyDefault, self).__init__(
+            log, abort_time)
+        self.rows_updated = None
+        self.store = IMasterStore(Product)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.rows_updated == 0
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        subselect = Select(
+            Product.id, Product.specification_sharing_policy == None,
+            limit=chunk_size)
+        result = self.store.execute(
+            Update({Product.specification_sharing_policy: 1},
+            Product.id.is_in(subselect)))
+        transaction.commit()
+        self.rows_updated = result.rowcount
+
+
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -1300,6 +1331,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
+        SpecificationSharingPolicyDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnlinkedAccountPruner,

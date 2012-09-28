@@ -116,7 +116,7 @@ And then delete it.
 
 Populate the 'umbrella' package set with source packages.
 
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

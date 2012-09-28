@@ -5,10 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
     'recursive_dependent_query',
     'Specification',
+    'SPECIFICATION_POLICY_ALLOWED_TYPES',
+    'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     ]
 
@@ -25,6 +28,14 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm.expr import (
+    And,
+    In,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    )
 from storm.locals import (
     Desc,
     SQL,
@@ -34,7 +45,13 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.informationtype import IInformationType
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -66,18 +83,14 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    )
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -120,10 +133,33 @@ def recursive_dependent_query(spec):
         )""" % spec.id
 
 
+SPECIFICATION_POLICY_ALLOWED_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: [InformationType.PUBLIC],
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        [InformationType.PUBLIC, InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    }
+
+SPECIFICATION_POLICY_DEFAULT_TYPES = {
+    SpecificationSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY: (
+        InformationType.PUBLIC),
+    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        InformationType.PROPRIETARY),
+    SpecificationSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY: (
+        InformationType.EMBARGOED),
+    }
+
+
 class Specification(SQLBase, BugLinkTargetMixin):
     """See ISpecification."""
 
-    implements(ISpecification, IBugLinkTarget)
+    implements(ISpecification, IBugLinkTarget, IInformationType)
 
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
@@ -690,14 +726,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See ISpecification."""
         # see if a relevant subscription exists, and if so, delete it
         if person is None:
             person = unsubscribed_by
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                if (not sub.canBeUnsubscribedByUser(unsubscribed_by) and
+                    not ignore_permissions):
                     raise UserCannotUnsubscribePerson(
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
@@ -818,7 +855,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self.id, self.name, self.target.name)
 
     def getAllowedInformationTypes(self, who):
-        return set(PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        """See `ISpecification`."""
+        return self.target.getAllowedSpecificationInformationTypes()
 
     def transitionToInformationType(self, information_type, who):
         """See ISpecification."""
@@ -838,21 +876,62 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view the specifcation."""
+        return set()
+
     def userCanView(self, user):
         """See `ISpecification`."""
+        # Avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            AccessArtifact,
+            AccessPolicy,
+            AccessPolicyGrantFlat,
+            )
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
             return False
-        # Temporary: we should access the grant tables instead of
-        # checking if a given user has special roles.
-        # The following is basically copied from
-        # EditSpecificationByRelatedPeople.checkAuthenticated()
-        return (user.in_admin or
-                user.isOwner(self.target) or
-                user.isOneOfDrivers(self.target) or
-                user.isOneOf(
-                    self, ['owner', 'drafter', 'assignee', 'approver']))
+        if user.id in self._known_viewers:
+            return True
+
+        # Check if access has been granted to the user for either
+        # the pillar of this specification or the specification
+        # itself.
+        #
+        # A DB constraint ensures that either Specification.product or
+        # Specification.distribution is not null.
+        if self.product is not None:
+            pillar_clause = AccessPolicy.product == self.productID
+        else:
+            pillar_clause = AccessPolicy.distribution == self.distributionID
+        tables = (
+            AccessPolicyGrantFlat,
+            Join(
+                AccessPolicy,
+                AccessPolicyGrantFlat.policy_id == AccessPolicy.id),
+            Join(
+                TeamParticipation,
+                AccessPolicyGrantFlat.grantee == TeamParticipation.teamID)
+            )
+        grants = Store.of(self).using(*tables).find(
+            AccessPolicyGrantFlat,
+            pillar_clause,
+            Or(
+                And(
+                    AccessPolicyGrantFlat.abstract_artifact == None,
+                    AccessPolicy.type == self.information_type),
+                In(
+                    AccessPolicyGrantFlat.abstract_artifact_id,
+                    Select(
+                        AccessArtifact.id,
+                        AccessArtifact.specification_id == self.id))),
+            TeamParticipation.personID == user.id)
+        if grants.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
 
 
 class HasSpecificationsMixin:
@@ -1037,10 +1116,11 @@ class SpecificationSet(HasSpecificationsMixin):
         #
 
         # filter out specs on inactive products
-        base = """(Specification.product IS NULL OR
+        base = """((Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
+                   AND Specification.information_type = 1)
                 """
         query = base
         # look for informational specs
@@ -1112,12 +1192,13 @@ class SpecificationSet(HasSpecificationsMixin):
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
         definition_status = SpecificationDefinitionStatus.items[status_name]
-        return Specification(name=name, title=title, specurl=specurl,
+        spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
-            information_type=information_type)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+        spec.transitionToInformationType(information_type, None)
+        return spec
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
@@ -1148,3 +1229,55 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+
+
+def get_specification_privacy_filter(user):
+    """Return a Storm expression for filtering specifications by privacy.
+
+    :param user: A Person ID or a column reference.
+    :return: A Storm expression to check if a peron has access grants
+         for a specification.
+    """
+    # Avoid circular imports.
+    from lp.registry.model.accesspolicy import (
+        AccessArtifact,
+        AccessPolicy,
+        AccessPolicyGrantFlat,
+        )
+    public_specification_filter = (
+        Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+    if user is None:
+        return public_specification_filter
+    return Or(
+        public_specification_filter,
+        Specification.id.is_in(
+            Select(
+                Specification.id,
+                tables=(
+                    Specification,
+                    Join(
+                        AccessPolicy,
+                        And(
+                            Or(
+                                Specification.productID ==
+                                    AccessPolicy.product_id,
+                                Specification.distributionID ==
+                                    AccessPolicy.distribution_id),
+                            Specification.information_type ==
+                                AccessPolicy.type)),
+                    Join(
+                        AccessPolicyGrantFlat,
+                        AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
+                    LeftJoin(
+                        AccessArtifact,
+                        AccessPolicyGrantFlat.abstract_artifact_id ==
+                            AccessArtifact.id),
+                    Join(
+                        TeamParticipation,
+                        And(
+                            TeamParticipation.team ==
+                                AccessPolicyGrantFlat.grantee_id,
+                            TeamParticipation.person == user))),
+                where=Or(
+                    AccessPolicyGrantFlat.abstract_artifact_id == None,
+                    AccessArtifact.specification_id == Specification.id))))

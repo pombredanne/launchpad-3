@@ -114,7 +114,7 @@ The pmount source has no packageupload in the sampledata:
 
 The iceweasel source has good data:
 
-    >>> pub = spph.archive.getPublishedSources(name="iceweasel").first()
+    >>> pub = spph.archive.getPublishedSources(name=u"iceweasel").first()
     >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 

@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database classes for a distribution series."""
 
 __metaclass__ = type
@@ -17,6 +15,7 @@ from cStringIO import StringIO
 import logging
 
 import apt_pkg
+from lazr.delegates import delegates
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -26,10 +25,11 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.locals import (
+from storm.expr import (
     And,
     Desc,
     Join,
+    Or,
     SQL,
     )
 from storm.store import (
@@ -48,6 +48,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -100,12 +101,16 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -115,11 +120,6 @@ from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
     )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
@@ -200,6 +200,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         ICanPublishPackages, IBugSummaryDimension, IDistroSeries,
         IHasBuildRecords, IHasQueueItems, IServiceUsage,
         ISeriesBugTarget)
+
+    delegates(ISpecificationTarget, 'distribution')
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -685,15 +687,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    def priorReleasedSeries(self):
-        """See `IDistroSeries`."""
-        datereleased = self.datereleased
-        # if this one is unreleased, use the last released one
-        if not datereleased:
-            datereleased = UTC_NOW
-        return getUtility(IDistroSeriesSet).priorReleasedSeries(
-            self.distribution, datereleased)
-
     @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
@@ -907,10 +900,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.distribution.getSpecification(name)
 
     def getDistroSeriesLanguage(self, language):
         """See `IDistroSeries`."""
@@ -1250,13 +1239,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # raised.
         package_caches = store.using(*origin).find(
             find_spec,
-            """DistroSeriesPackageCache.distroseries = %s AND
-            DistroSeriesPackageCache.archive IN %s AND
-            (fti @@ ftq(%s) OR
-            DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self),
-                   quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
+            DistroSeriesPackageCache.distroseries == self,
+            DistroSeriesPackageCache.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            Or(
+                SQL("DistroSeriesPackageCache.fti @@ ftq(?)", params=(text,)),
+                DistroSeriesPackageCache.name.contains_string(text.lower())),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting
@@ -1657,17 +1645,14 @@ class DistroSeriesSet:
         result_set = result_set.config(distinct=True)
         return result_set
 
-    def findByName(self, name):
-        """See `IDistroSeriesSet`."""
-        return DistroSeries.selectBy(name=name)
-
     def queryByName(self, distribution, name):
         """See `IDistroSeriesSet`."""
         return DistroSeries.selectOneBy(distribution=distribution, name=name)
 
-    def findByVersion(self, version):
+    def queryByVersion(self, distribution, version):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.selectBy(version=version)
+        return DistroSeries.selectOneBy(
+            distribution=distribution, version=version)
 
     def _parseSuite(self, suite):
         """Parse 'suite' into a series name and a pocket."""
@@ -1728,15 +1713,3 @@ class DistroSeriesSet:
         else:
 
             return DistroSeries.select(where_clause)
-
-    def priorReleasedSeries(self, distribution, prior_to_date):
-            """See `IDistroSeriesSet`."""
-            store = Store.of(distribution)
-            results = store.find(
-                DistroSeries,
-                DistroSeries.distributionID == distribution.id,
-                DistroSeries.datereleased < prior_to_date,
-                DistroSeries.datereleased != None
-            ).order_by(Desc(DistroSeries.datereleased))
-
-            return results

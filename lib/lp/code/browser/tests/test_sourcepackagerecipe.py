@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
@@ -34,7 +35,6 @@ from lp.code.browser.sourcepackagerecipebuild import (
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -1275,6 +1275,15 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_status(build1, BuildStatus.FULLYBUILT)
         self.assertEqual(
             [build6, build5, build4, build3, build2], view.builds)
+
+    def test_request_builds_redirects_on_get(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        with person_logged_in(self.chef):
+            url = canonical_url(recipe)
+        browser = self.getViewBrowser(recipe, '+request-daily-build')
+        self.assertEqual(url, browser.url)
 
     def test_request_daily_builds_button_stale(self):
         # Recipes that are stale and are built daily have a build now link

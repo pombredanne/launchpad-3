@@ -44,15 +44,11 @@ __all__ = [
     ]
 
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-import pytz
+from lazr.restful.interfaces import IJSONRequestCache
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -72,10 +68,6 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Bool,
     Choice,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    SimpleVocabulary,
     )
 
 from lp import _
@@ -106,14 +98,20 @@ from lp.app.browser.tales import (
     format_link,
     MenuAPI,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.utilities import json_dump_information_types
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -171,6 +169,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -1175,18 +1174,10 @@ class ProductPackagesView(LaunchpadView):
         return results
 
 
-class ProductPackagesPortletView(LaunchpadFormView):
+class ProductPackagesPortletView(LaunchpadView):
     """View class for product packaging portlet."""
 
     schema = Interface
-    package_field_name = 'distributionsourcepackage'
-    custom_widget(
-        package_field_name, LaunchpadRadioWidget, orientation='vertical')
-    suggestions = None
-    max_suggestions = 8
-    other_package = object()
-    not_packaged = object()
-    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
@@ -1202,89 +1193,6 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """Are there packages, or can packages be suggested."""
         if len(self.sourcepackages) > 0:
             return True
-        if self.user is None:
-            return False
-        date_next_suggest_packaging = self.context.date_next_suggest_packaging
-        return (
-            date_next_suggest_packaging is None
-            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
-
-    @property
-    def initial_values(self):
-        """See `LaunchpadFormView`."""
-        return {self.package_field_name: self.other_package}
-
-    def initialize(self):
-        # The template only shows the form if the portlet is shown and
-        # there aren't any linked sourcepackages. If either of those
-        # conditions fails, there's no point setting up the widgets
-        # (with the expensive FTI query that entails).
-        if self.can_show_portlet and not self.sourcepackages:
-            super(ProductPackagesPortletView, self).initialize()
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProductPackagesPortletView, self).setUpFields()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        distro_source_packages = ubuntu.searchSourcePackages(
-            self.context.name, has_packaging=False,
-            publishing_distroseries=ubuntu.currentseries)
-        # Based upon the matches, create a new vocabulary with
-        # term descriptions that include a link to the source package.
-        self.suggestions = []
-        vocab_terms = []
-        for package in distro_source_packages[:self.max_suggestions]:
-            if package.development_version.currentrelease is not None:
-                self.suggestions.append(package)
-                item_url = canonical_url(package)
-                description = structured(
-                    '<a href="%s">%s</a>', item_url, package.name)
-                vocab_terms.append(
-                    SimpleTerm(package, package.name, description))
-        # Add an option to represent the user's decision to choose a
-        # different package. Note that source packages cannot have uppercase
-        # names with underscores, so the name is safe to use.
-        description = 'Choose another Ubuntu package'
-        vocab_terms.append(
-            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        # Add an option to represent that the project is not packaged in
-        # Ubuntu.
-        description = 'This project is not packaged in Ubuntu'
-        vocab_terms.append(
-            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        series_display_name = ubuntu.currentseries.displayname
-        self.form_fields = form.Fields(
-            Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages') % series_display_name,
-                   default=None,
-                   vocabulary=vocabulary,
-                   required=True))
-
-    @action(_('Set Ubuntu Package Information'), name='link')
-    def link(self, action, data):
-        product = self.context
-        dsp = data.get(self.package_field_name)
-        product_series = product.development_focus
-        if dsp is self.other_package:
-            # The user wants to link an alternate package to this project.
-            self.next_url = canonical_url(
-                product_series, view_name="+ubuntupkg")
-            return
-        if dsp is self.not_packaged:
-            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
-            self.context.date_next_suggest_packaging = year_from_now
-            self.next_url = self.request.getURL()
-            return
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        product_series.setPackaging(ubuntu.currentseries,
-                                    dsp.sourcepackagename,
-                                    self.user)
-        self.request.response.addInfoNotification(
-            'This project was linked to the source package "%s"' %
-            dsp.displayname)
-        self.next_url = self.request.getURL()
 
 
 class SeriesReleasePair:
@@ -1986,9 +1894,9 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'homepageurl', 'licenses', 'license_info',
-                    'owner',
+    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+                    'homepageurl', 'information_type', 'licenses',
+                    'license_info', 'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2002,11 +1910,29 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
         show_create_team_link=True)
     custom_widget(
+        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'driver', PersonPickerWidget, header="Set a driver",
+        required=True, show_create_team_link=True)
+    custom_widget(
         'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        if IProductSet.providedBy(self.context):
+            cache = IJSONRequestCache(self.request)
+            json_dump_information_types(cache,
+                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProjectAddStepTwo, self).initialize()
 
     @property
     def main_action_label(self):
@@ -2036,13 +1962,24 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     @property
     def initial_values(self):
-        return {'owner': self.user.name}
+        return {
+            'driver': self.user.name,
+            'bug_supervisor': self.user.name,
+            'owner': self.user.name,
+        }
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        hidden_names = ('__visited_steps__', 'license_info')
+        hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects or not IProductSet.providedBy(self.context):
+            hidden_names.extend([
+                'information_type', 'bug_supervisor', 'driver'])
+
         visible_fields = self.form_fields.omit(*hidden_names)
         self.form_fields = (visible_fields +
                             self._createDisclaimMaintainerField() +
@@ -2056,7 +1993,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2079,9 +2015,14 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].hint = ('When published, '
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
-
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+
+        if private_projects and IProductSet.providedBy(self.context):
+            self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
@@ -2150,6 +2091,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             for error in errors:
                 self.errors.remove(error)
 
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if private_projects:
+            if data.get('information_type') != InformationType.PUBLIC:
+                for required_field in ('bug_supervisor', 'driver'):
+                    if data.get(required_field) is None:
+                        self.setFieldError(
+                            required_field,
+                            'Select a user or team.')
+
     @property
     def label(self):
         """See `LaunchpadFormView`."""
@@ -2169,6 +2120,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
+            bug_supervisor=data.get('bug_supervisor', None),
+            driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],

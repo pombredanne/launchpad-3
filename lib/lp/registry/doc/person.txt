@@ -1031,48 +1031,6 @@ alphabetically by package name.
     [u'mozilla-firefox', u'pmount']
 
 
-Pillars owned or driven by a person or team
--------------------------------------------
-
-To obtain all distributions, project groups and projects owned or driven
-by a person or team, we can use the getOwnedOrDrivenPillars() method of
-IPerson. This method returns PillarNames ordered by distribution,
-project groups and projects.
-
-    >>> login(ANONYMOUS)
-
-    >>> from lp.registry.interfaces.distribution import IDistribution
-    >>> from lp.registry.interfaces.product import IProduct
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
-
-    >>> def print_pillar(pillarname):
-    ...     pillar = pillarname.pillar
-    ...     if IDistribution.providedBy(pillar):
-    ...         pillar_type = 'distribution'
-    ...     elif IProjectGroup.providedBy(pillar):
-    ...         pillar_type = 'project group'
-    ...     elif IProduct.providedBy(pillar):
-    ...         pillar_type = 'project'
-    ...     print "%s: %s (%s)" % (
-    ...         pillar_type, pillar.displayname, pillar.name)
-
-    >>> for pillarname in mark.getOwnedOrDrivenPillars():
-    ...     print_pillar(pillarname)
-    distribution: Debian (debian)
-    distribution: Gentoo (gentoo)
-    distribution: Kubuntu (kubuntu)
-    distribution: Red Hat (redhat)
-    project group: Apache (apache)
-    project: Derby (derby)
-    project: alsa-utils (alsa-utils)
-
-    >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
-    ...     print_pillar(pillarname)
-    distribution: Ubuntu (ubuntu)
-    distribution: ubuntutest (ubuntutest)
-    project: Tomcat (tomcat)
-
-
 Project owned by a person or team
 ---------------------------------
 
@@ -1115,13 +1073,13 @@ David does not own any projects.
 The results returned can be filtered by providing a token to refine the
 search.
 
-    >>> for project in mark.getOwnedProjects(match_name='java'):
+    >>> for project in mark.getOwnedProjects(match_name=u'java'):
     ...     print project.displayname
     Tomcat
 
 Searching for a non-existent project returns no matches.
 
-    >>> list(mark.getOwnedProjects(match_name='nosuchthing'))
+    >>> list(mark.getOwnedProjects(match_name=u'nosuchthing'))
     []
 
 

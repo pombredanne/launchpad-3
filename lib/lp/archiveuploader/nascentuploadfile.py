@@ -335,9 +335,9 @@ class PackageUploadFile(NascentUploadFile):
         SourcePackageRelease creation, so component and section need to exist.
         Even if they might be overridden in the future.
         """
-        NascentUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
-            priority_name, policy, logger)
+        super(PackageUploadFile, self).__init__(
+            filepath, digest, size, component_and_section, priority_name,
+            policy, logger)
         self.package = package
         self.version = version
         self.changes = changes

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from storm.store import Store
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -17,7 +18,13 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.security import IAuthorization
+from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -25,9 +32,13 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    Specification,
+    )
 from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
+    SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.security import (
     AdminSpecification,
@@ -35,6 +46,7 @@ from lp.security import (
     EditWhiteboardSpecification,
     ViewSpecification,
     )
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
@@ -256,7 +268,7 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         all_types = specification.getAllowedInformationTypes(ANONYMOUS)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -270,7 +282,7 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         all_types = specification.getAllowedInformationTypes(ANONYMOUS)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.write_access_to_ISpecificationView(
@@ -289,7 +301,7 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -306,7 +318,7 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             error_expected = information_type not in PUBLIC_INFORMATION_TYPES
@@ -317,20 +329,74 @@ class SpecificationTests(TestCaseWithFactory):
                 user, specification, error_expected=True,
                 attribute='name', value='foo')
 
-    def test_special_user_read_access(self):
-        # Users with special privileges can aceess the attributes
-        # of public and private specifcations.
+    def test_user_with_grant_for_target_read_access(self):
+        # Users with a grant for the specification's target
+        # have access to a specification if the information_type
+        # of the specification matches the type if the grant.
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
             PRIVATE_INFORMATION_TYPES)
-        all_types = specification.getAllowedInformationTypes(
-            specification.owner)
+        user = self.factory.makePerson()
+        permissions = {
+            InformationType.PROPRIETARY: SharingPermission.ALL,
+            }
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                specification.target, user, specification.target.owner,
+                permissions)
+        all_types = specification.getAllowedInformationTypes(user)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            error_expected = (
+                information_type not in PUBLIC_INFORMATION_TYPES and
+                information_type not in permissions)
+            self.read_access_to_ISpecificationView(
+                user, specification, error_expected)
+            del get_property_cache(specification)._known_viewers
+
+    def test_user_with_grant_for_specification_read_access(self):
+        # Users with a grant for the specification have access to this
+        # specification.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        user = self.factory.makePerson()
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], specification.target.owner,
+                specifications=[specification], ignore_permissions=True)
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.read_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False)
+                user, specification, error_expected=False)
+
+    def test_user_with_grant_for_specification_write_access(self):
+        # Users with a grant for the specification can change the whiteboard
+        # but no other attributes.
+        specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
+        user = self.factory.makePerson()
+        with person_logged_in(specification.target.owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], specification.target.owner,
+                specifications=[specification], ignore_permissions=True)
+        all_types = specification.getAllowedInformationTypes(user)
+        for information_type in all_types:
+            with person_logged_in(specification.target.owner):
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
+            self.write_access_to_ISpecificationView(
+                user, specification, error_expected=False,
+                attribute='whiteboard', value='foo')
+            self.write_access_to_ISpecificationView(
+                user, specification, error_expected=True,
+                attribute='name', value='foo')
 
     def test_special_user_write_access(self):
         # Users with special privileges can change the attributes
@@ -341,15 +407,58 @@ class SpecificationTests(TestCaseWithFactory):
         all_types = specification.getAllowedInformationTypes(
             specification.owner)
         for information_type in all_types:
-            with person_logged_in(specification.owner):
+            with person_logged_in(specification.target.owner):
                 specification.transitionToInformationType(
                     information_type, specification.owner)
             self.write_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False,
-                attribute='whiteboard', value='foo')
+                specification.target.owner, specification,
+                error_expected=False, attribute='whiteboard', value='foo')
             self.write_access_to_ISpecificationView(
-                specification.owner, specification, error_expected=False,
-                attribute='name', value='foo')
+                specification.target.owner, specification,
+                error_expected=False, attribute='name', value='foo')
+
+    def test_get_specification_privacy_filter(self):
+        # get_specification_privacy_filter() returns a Storm expression
+        # that can be used to filter specifications by their visibility-
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        public_spec = self.factory.makeSpecification(product=product)
+        proprietary_spec_1 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        proprietary_spec_2 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        all_specs = [
+            public_spec, proprietary_spec_1, proprietary_spec_2]
+        store = Store.of(product)
+        specs_for_anon = store.find(
+            Specification, get_specification_privacy_filter(None),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_anon)
+        # Product owners havae grants on the product, the privacy
+        # filter returns thus all specifications for them.
+        specs_for_owner = store.find(
+            Specification, get_specification_privacy_filter(owner.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(all_specs, specs_for_owner)
+        # The filter returns only public specs for ordinary users.
+        user = self.factory.makePerson()
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_other_user)
+        # If the user has a grant for a specification, the filter returns
+        # this specification too.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, specifications=[proprietary_spec_1])
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(
+            [public_spec, proprietary_spec_1], specs_for_other_user)
 
 
 class TestSpecificationSet(TestCaseWithFactory):

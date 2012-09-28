@@ -30,6 +30,11 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -48,11 +53,6 @@ from lp.services.verification.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 
 
 MAIL_APP = 'services/verification'
@@ -186,7 +186,8 @@ class LoginToken(SQLBase):
         template = get_email_template('request-merge.txt', app=MAIL_APP)
         from_name = "Launchpad Account Merge"
 
-        dupe = getUtility(IPersonSet).getByEmail(self.email)
+        dupe = getUtility(IPersonSet).getByEmail(
+            self.email, filter_status=False)
         replacements = {'dupename': "%s (%s)" % (dupe.displayname, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,

@@ -74,6 +74,25 @@
                  ></div>
            </td>
         </tr>
+
+
+        <tr id="specification-sharing-policy-row"
+           tal:condition="view/specification_sharing_policies">
+           <td id="specification-sharing-policy">
+             Specification sharing policy:&nbsp;
+             <strong><span class="value"
+                 tal:content="context/specification_sharing_policy/title|string:Legacy policy"
+                 ></span></strong>
+             <a class="editicon sprite edit action-icon hidden" href="#"
+                 style="padding-bottom: 0;">Edit</a>
+             <div id="specification-sharing-policy-description" class="formHelp"
+                 tal:content="context/specification_sharing_policy/description|
+                 string:Legacy project sharing policy will continue to be used until
+                 a new policy is configured."
+                 ></div>
+           </td>
+        </tr>
+
       </table>
     <h2>Who it's shared with</h2>
     <div id="sharing-header">

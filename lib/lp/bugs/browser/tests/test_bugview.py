@@ -6,11 +6,11 @@ __metaclass__ = type
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bug import (
     BugInformationTypePortletView,
     BugView,
     )
-from lp.registry.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
@@ -104,4 +104,4 @@ class TestBugInformationTypePortletView(TestCaseWithFactory):
             InformationType.USERDATA.name]
         self.assertContentEqual(expected, [
             type['value']
-            for type in cache.objects['information_type_data']])
+            for type in cache.objects['information_type_data'].values()])

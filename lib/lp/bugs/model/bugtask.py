@@ -67,7 +67,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
@@ -93,10 +96,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.registry.enums import (
-    PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -132,6 +131,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
@@ -144,12 +148,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def bugtask_sort_key(bugtask):
@@ -338,7 +337,8 @@ def validate_target(bug, target, retarget_existing=True):
                 raise IllegalTarget(e[0])
 
     legal_types = target.pillar.getAllowedBugInformationTypes()
-    if bug.information_type not in legal_types:
+    new_pillar = target.pillar not in bug.affected_pillars
+    if new_pillar and bug.information_type not in legal_types:
         raise IllegalTarget(
             "%s doesn't allow %s bugs." % (
             target.pillar.bugtargetdisplayname, bug.information_type.title))

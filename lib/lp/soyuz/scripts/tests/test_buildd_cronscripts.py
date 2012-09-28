@@ -18,13 +18,13 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
-from lp.services.log.logger import BufferLogger
-from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.log.logger import BufferLogger
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.scripts.buildd import (

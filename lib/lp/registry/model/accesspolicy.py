@@ -10,6 +10,7 @@ __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
+    'AccessPolicyGrantFlat',
     'reconcile_access_for_artifact',
     ]
 
@@ -33,11 +34,11 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import (
+from lp.app.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
-    SharingPermission,
     )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -261,13 +262,6 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(
             cls,
             Or(*(cls.person == team for team in teams)))
-
-    @classmethod
-    def findByPillarAndGrantee(cls, pillars):
-        """See `IAccessPolicySource`."""
-        return IStore(cls).find(
-            cls,
-            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
     def delete(cls, pillars_and_types):

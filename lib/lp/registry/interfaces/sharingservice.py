@@ -17,6 +17,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -27,17 +28,21 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 
 
 class ISharingService(IService):
@@ -65,6 +70,37 @@ class ISharingService(IService):
     @export_read_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IProduct)
+    @operation_for_version('devel')
+    def getSharedProjects(person, user):
+        """Find projects for which person has one or more access policy grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all projects are returned, else only those for which the user is a
+            maintainer or driver.
+        :return: a collection of projects
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IDistribution)
+    @operation_for_version('devel')
+    def getSharedDistributions(person, user):
+        """Find distributions for which person has one or more access policy
+           grants.
+
+        :param user: the user making the request. If the user is an admin, then
+            all distributions are returned, else only those for which the user
+            is a maintainer or driver.
+        :return: a collection of distributions
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         person=Reference(IPerson, title=_('Person'), required=True))
     @operation_for_version('devel')
@@ -78,17 +114,58 @@ class ISharingService(IService):
 
         :param user: the user making the request. Only artifacts visible to the
              user will be included in the result.
-        :return: a (bugtasks, branches) tuple
+        :return: a (bugtasks, branches, specifications) tuple
         """
 
     @export_read_operation()
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True),
-        branches=List(
-            Reference(schema=IBranch), title=_('Branches'), required=False),
-        bugs=List(
-            Reference(schema=IBug), title=_('Bugs'), required=False))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBug)
     @operation_for_version('devel')
+    def getSharedBugs(pillar, person, user):
+        """Return the bugs shared between the pillar and person.
+
+        The result includes bugtasks rather than bugs since this is what the
+        pillar filtering is applied to. The shared bug can be obtained simply
+        by reading the bugtask.bug attribute.
+
+        :param user: the user making the request. Only bugs visible to the
+             user will be included in the result.
+        :return: a collection of bug tasks.
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(IBranch)
+    @operation_for_version('devel')
+    def getSharedBranches(pillar, person, user):
+        """Return the branches shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of branches
+        """
+
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_returns_collection_of(ISpecification)
+    @operation_for_version('devel')
+    def getSharedSpecifications(pillar, person, user):
+        """Return the specifications shared between the pillar and person.
+
+        :param user: the user making the request. Only branches visible to the
+             user will be included in the result.
+        :return: a collection of specifications.
+        """
+
     def getVisibleArtifacts(person, branches=None, bugs=None):
         """Return the artifacts shared with person.
 
@@ -147,6 +224,9 @@ class ISharingService(IService):
 
     def getBranchSharingPolicies(pillar):
         """Return the allowed branch sharing policies for the given pillar."""
+
+    def getSpecificationSharingPolicies(pillar):
+        """Return specification sharing policies for a given pillar."""
 
     def getSharingPermissions():
         """Return the information sharing permissions."""
@@ -227,7 +307,8 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None):
+    def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None,
+                           specifications=None):
         """Remove a grantee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
@@ -235,6 +316,7 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
+        :param specifications: the specifications for which to revoke access
         """
 
     @export_write_operation()
@@ -262,13 +344,17 @@ class ISharingService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         branch_sharing_policy=Choice(vocabulary=BranchSharingPolicy),
-        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy))
+        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy),
+        specification_sharing_policy=Choice(
+            vocabulary=SpecificationSharingPolicy))
     @operation_for_version('devel')
     def updatePillarSharingPolicies(pillar, branch_sharing_policy=None,
-                                    bug_sharing_policy=None):
+                                    bug_sharing_policy=None,
+                                    specification_sharing_policy=None):
         """Update the sharing policies for a pillar.
 
         :param pillar: the pillar to update
         :param branch_sharing_policy: the new branch sharing policy
         :param bug_sharing_policy: the new bug sharing policy
+        :param specification_sharing_policy: new specification sharing policy
         """

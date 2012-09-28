@@ -66,6 +66,7 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.attachment import attachment_size_constraint
@@ -81,7 +82,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,

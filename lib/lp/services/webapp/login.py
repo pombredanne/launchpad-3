@@ -48,12 +48,12 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.services.config import config
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import AccountSuspendedError
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp import canonical_url
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     CookieAuthLoggedInEvent,

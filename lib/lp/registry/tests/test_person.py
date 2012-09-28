@@ -22,6 +22,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtasksearch import (
@@ -30,7 +31,6 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.bugs.model.bug import Bug
 from lp.registry.enums import (
-    InformationType,
     PersonVisibility,
     TeamMembershipPolicy,
     )
@@ -318,7 +318,37 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(None, person.homepage_content)
         self.assertEqual(None, person.teamdescription)
 
-    def test_getOwnedOrDrivenPillars(self):
+    def test_getAffiliatedPillars_kinds(self):
+        # Distributions, project groups, and projects are returned in this
+        # same order.
+        user = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=user)
+        project_group = self.factory.makeProject(owner=user)
+        distribution = self.factory.makeDistribution(owner=user)
+        expected_pillars = [
+            distribution.name, project_group.name, project.name]
+        received_pillars = [
+            pillar.name for pillar in  user.getAffiliatedPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_roles(self):
+        # owned, driven, and supervised pillars are returned ordered by
+        # display name.
+        user = self.factory.makePerson()
+        owned_project = self.factory.makeProduct(owner=user, name="cat")
+        driven_project = self.factory.makeProduct(name="bat")
+        supervised_project = self.factory.makeProduct(name='nat')
+        with celebrity_logged_in('admin'):
+            driven_project.driver = user
+            supervised_project.bug_supervisor = user
+        expected_pillars = [
+            driven_project.name, owned_project.name, supervised_project.name]
+        received_pillars = [
+            pillar.name for pillar in  user.getAffiliatedPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_active_pillars(self):
+        # Only active pillars are returned.
         user = self.factory.makePerson()
         active_project = self.factory.makeProject(owner=user)
         inactive_project = self.factory.makeProject(owner=user)
@@ -326,7 +356,7 @@ class TestPerson(TestCaseWithFactory):
             inactive_project.active = False
         expected_pillars = [active_project.name]
         received_pillars = [pillar.name for pillar in
-            user.getOwnedOrDrivenPillars()]
+            user.getAffiliatedPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):

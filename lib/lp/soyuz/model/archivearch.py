@@ -16,7 +16,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

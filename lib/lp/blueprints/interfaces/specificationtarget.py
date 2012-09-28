@@ -110,6 +110,12 @@ class ISpecificationTarget(IHasSpecifications):
         or None.
         """
 
+    def getAllowedSpecificationInformationTypes():
+        """Get the InformationTypes for this target's specifications."""
+
+    def getDefaultSpecificationInformationType():
+        """Get the default InformationType for the target's specifications."""
+
 
 class ISpecificationGoal(ISpecificationTarget):
     """An interface for those things which can have specifications proposed

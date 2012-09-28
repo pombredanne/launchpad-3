@@ -21,13 +21,13 @@ from lp.services.apachelogparser.base import (
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.config import config
-from lp.services.librarianserver.apachelogparser import DBUSER
-from lp.services.log.logger import BufferLogger
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.librarianserver.apachelogparser import DBUSER
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (

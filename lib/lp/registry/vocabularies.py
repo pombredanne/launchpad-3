@@ -39,7 +39,6 @@ __all__ = [
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
-    'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NewPillarGranteeVocabulary',
@@ -65,7 +64,6 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -170,6 +168,11 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     quote,
@@ -193,12 +196,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import nearest
 from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
@@ -533,6 +531,7 @@ class ValidPersonOrTeamVocabulary(
     # This is what subclasses must change if they want any extra filtering of
     # results.
     extra_clause = True
+    extra_tables = ()
 
     # Subclasses should override this property to allow null searches to
     # return all results.  If false, an empty result set is returned.
@@ -611,6 +610,7 @@ class ValidPersonOrTeamVocabulary(
                      SQL("%s.id = Person.id" % self.cache_table_name)),
                 ]
             tables.extend(private_tables)
+            tables.extend(self.extra_tables)
             result = self.store.using(*tables).find(
                 Person,
                 And(
@@ -718,6 +718,7 @@ class ValidPersonOrTeamVocabulary(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, Account.id == Person.accountID),
                 ]
+            public_tables.extend(self.extra_tables)
 
             # If private_tables is empty, we are searching for all private
             # teams. We can simply append the private query component to the
@@ -836,7 +837,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             Person.merged == None
             )
 
-        tables = [Person] + private_tables
+        tables = [Person] + private_tables + list(self.extra_tables)
 
         if not text:
             query = And(base_query,
@@ -1018,10 +1019,14 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
         if user is None:
             self.extra_clause = False
         else:
-            self.extra_clause = AND(
-                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
-                TeamParticipation.person == user.id,
-                TeamParticipation.team == Person.id)
+            # TeamParticipation might already be used for private team
+            # access checks, so alias and join it separately here.
+            tp_alias = ClassAlias(TeamParticipation)
+            self.extra_tables = [
+                Join(
+                    tp_alias,
+                    And(tp_alias.teamID == Person.id,
+                        tp_alias.personID == user.id))]
 
 
 class PersonActiveMembershipVocabulary:
@@ -2252,17 +2257,3 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SQL('DistributionSourcePackage.id = SearchableDSP.id'))
 
         return CountableIterator(dsps.count(), dsps, self.toTerm)
-
-
-class InformationTypeVocabulary(SimpleVocabulary):
-
-    implements(IEnumeratedType)
-
-    def __init__(self, types):
-        terms = []
-        for type in types:
-            term = SimpleTerm(type, type.name, type.title)
-            term.name = type.name
-            term.description = type.description
-            terms.append(term)
-        super(InformationTypeVocabulary, self).__init__(terms)

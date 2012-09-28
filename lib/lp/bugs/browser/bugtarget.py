@@ -60,7 +60,13 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -69,7 +75,9 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
@@ -115,12 +123,6 @@ from lp.registry.browser.product import (
     ProductConfigureBase,
     ProductPrivateBugsMixin,
     )
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -131,10 +133,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    ValidPersonOrTeamVocabulary,
-    )
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -259,17 +258,13 @@ class FileBugViewBase(LaunchpadFormView):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invokved.
         cache = IJSONRequestCache(self.request)
-        cache.objects['private_types'] = [
-            type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
             self.context.pillar.getDefaultBugInformationType() in
             PRIVATE_INFORMATION_TYPES)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in
-            self.context.pillar.getAllowedBugInformationTypes()]
+        json_dump_information_types(
+            cache,
+            self.context.pillar.getAllowedBugInformationTypes())
+
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
@@ -484,6 +479,10 @@ class FileBugViewBase(LaunchpadFormView):
         """Does the context use Malone as its official bugtracker?"""
         bug_tracking_usage = self.getMainContext().bug_tracking_usage
         return bug_tracking_usage == ServiceUsage.LAUNCHPAD
+
+    def contextAllowsNewBugs(self):
+        return (self.contextUsesMalone() and
+                self.getMainContext().getAllowedBugInformationTypes())
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -1064,6 +1063,9 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
 
     def contextUsesMalone(self):
         return self.default_product is not None
+
+    def contextAllowsNewBugs(self):
+        return True
 
     def contextIsProduct(self):
         return False

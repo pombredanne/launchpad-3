@@ -14,6 +14,7 @@ from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
@@ -23,7 +24,6 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.registry.enums import InformationType
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -199,8 +199,7 @@ class TestMerges(BrowserTestCase):
         """The merges view should be enabled for PersonProduct."""
         personproduct = PersonProduct(
             self.factory.makePerson(), self.factory.makeProduct())
-        self.getViewBrowser(personproduct, '+merges',
-                rootsite='code')
+        self.getViewBrowser(personproduct, '+merges', rootsite='code')
 
     def test_DistributionSourcePackage(self):
         """The merges view should be enabled for DistributionSourcePackage."""
@@ -437,9 +436,6 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         return recorder, view
 
     def test_person_activereviews_query_count(self):
-        # Note that we keep the number of bmps created small (3 and 7)
-        # so that the all the per-cached objects will fit into the cache
-        # used in tests (storm_cache_size: 100).
         base_bmps = 3
         added_bmps = 4
         recorder1, view1 = self.createUserBMPsAndRecordQueries(base_bmps)

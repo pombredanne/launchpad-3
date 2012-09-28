@@ -66,6 +66,9 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -86,6 +89,8 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    SPECIFICATION_POLICY_DEFAULT_TYPES,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -119,9 +124,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
+    SpecificationSharingPolicy,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
@@ -169,6 +172,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     quote,
@@ -180,11 +188,6 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -393,7 +396,34 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    date_next_suggest_packaging = UtcDateTimeCol(default=None)
+
+    @property
+    def date_next_suggest_packaging(self):
+        """See `IProduct`
+
+        Returns None; exists only to maintain API compatability.
+        """
+        return None
+
+    @date_next_suggest_packaging.setter
+    def date_next_suggest_packaging(self, value):
+        """See `IProduct`
+
+        Ignores supplied value; exists only to maintain API compatability.
+        """
+        pass
+
+    @property
+    def information_type(self):
+        """See `IProduct`
+
+        Place holder for a db column.
+        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
+        into place.
+        """
+        pass
+
+    security_contact = None
 
     @property
     def pillar(self):
@@ -476,6 +506,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         enum=BugSharingPolicy, notNull=False, default=None)
     branch_sharing_policy = EnumCol(
         enum=BranchSharingPolicy, notNull=False, default=None)
+    specification_sharing_policy = EnumCol(
+        enum=SpecificationSharingPolicy, notNull=False, default=None)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -565,7 +597,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.private_bugs = private_bugs
 
     def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
-        if var != enum.PUBLIC and not self.has_current_commercial_subscription:
+        if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
+            not self.has_current_commercial_subscription):
             raise CommercialSubscribersOnly(
                 "A current commercial subscription is required to use "
                 "proprietary %s." % kind)
@@ -589,6 +622,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_sharing_policy = bug_sharing_policy
         self._pruneUnusedPolicies()
 
+    def setSpecificationSharingPolicy(self, specification_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            specification_sharing_policy, SpecificationSharingPolicy,
+            'specifications', SPECIFICATION_POLICY_ALLOWED_TYPES)
+        self.specification_sharing_policy = specification_sharing_policy
+        self._pruneUnusedPolicies()
+
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
@@ -603,6 +644,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
+
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_ALLOWED_TYPES[
+                self.specification_sharing_policy]
+        return [InformationType.PUBLIC]
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_DEFAULT_TYPES[
+                self.specification_sharing_policy]
+        return InformationType.PUBLIC
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
@@ -1557,7 +1612,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1572,7 +1627,8 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
+            bug_supervisor=bug_supervisor, driver=driver)
 
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC

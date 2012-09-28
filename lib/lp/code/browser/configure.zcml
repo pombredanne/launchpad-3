@@ -141,14 +141,6 @@
         name="+index"
         template="../templates/bazaar-index.pt" />
     <browser:page
-        for="lp.services.webapp.interfaces.ILaunchpadRoot"
-        layer="lp.code.publisher.CodeLayer"
-        permission="zope.Public"
-        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
-        name="+daily-builds"
-        template="../templates/daily-builds-listing.pt" />
-
-    <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         layer="lp.code.publisher.CodeLayer"
         name="+hierarchy"

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
@@ -22,7 +22,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.scripts.processaccepted import (
-    get_bugs_from_changes_file,
+    get_bug_ids_from_changes_file,
     ProcessAccepted,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -41,7 +41,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.stp = SoyuzTestPublisher()
         self.stp.prepareBreezyAutotest()
-        self.test_package_name = "accept-test"
+        self.test_package_name = u"accept-test"
         self.distro = self.factory.makeDistribution()
 
     def getScript(self, test_args=None):
@@ -221,54 +221,55 @@ class TestProcessAccepted(TestCaseWithFactory):
             dsp.derived_series.distribution, script.findTargetDistros())
 
 
-class TestBugsFromChangesFile(TestCaseWithFactory):
-    """Test get_bugs_from_changes_file."""
+class TestBugIDsFromChangesFile(TestCaseWithFactory):
+    """Test get_bug_ids_from_changes_file."""
 
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
     def setUp(self):
-        super(TestBugsFromChangesFile, self).setUp()
+        super(TestBugIDsFromChangesFile, self).setUp()
         self.changes = Changes({
             'Format': '1.8',
             'Source': 'swat',
             })
 
-    def getBugs(self):
-        """Serialize self.changes and use get_bugs_from_changes_file to
-        extract bugs from it.
+    def getBugIDs(self):
+        """Serialize self.changes and use get_bug_ids_from_changes_file to
+        extract bug IDs from it.
         """
         stream = StringIO()
         self.changes.dump(stream)
         stream.seek(0)
-        return get_bugs_from_changes_file(stream)
+        return get_bug_ids_from_changes_file(stream)
 
     def test_no_bugs(self):
         # An empty list is returned if there are no bugs
         # mentioned.
-        self.assertEquals([], self.getBugs())
+        self.assertEqual([], self.getBugIDs())
 
     def test_invalid_bug_id(self):
         # Invalid bug ids (i.e. containing non-digit characters) are ignored.
         self.changes["Launchpad-Bugs-Fixed"] = "bla"
-        self.assertEquals([], self.getBugs())
+        self.assertEqual([], self.getBugIDs())
 
     def test_unknown_bug_id(self):
-        # Unknown bug ids are ignored.
+        # Unknown bug ids are passed through; they will be ignored later, by
+        # close_bug_ids_for_sourcepackagerelease.
         self.changes["Launchpad-Bugs-Fixed"] = "45120"
-        self.assertEquals([], self.getBugs())
+        self.assertEqual([45120], self.getBugIDs())
 
     def test_valid_bug(self):
         # For valid bug ids the bug object is returned.
         bug = self.factory.makeBug()
         self.changes["Launchpad-Bugs-Fixed"] = "%d" % bug.id
-        self.assertEquals([bug], self.getBugs())
+        self.assertEqual([bug.id], self.getBugIDs())
 
     def test_case_sensitivity(self):
         # The spelling of Launchpad-Bugs-Fixed is case-insensitive.
         bug = self.factory.makeBug()
         self.changes["LaUnchpad-Bugs-fixed"] = "%d" % bug.id
-        self.assertEquals([bug], self.getBugs())
+        self.assertEqual([bug.id], self.getBugIDs())
 
     def test_multiple_bugs(self):
         # Multiple bug ids can be specified, separated by spaces.
@@ -276,4 +277,4 @@ class TestBugsFromChangesFile(TestCaseWithFactory):
         bug2 = self.factory.makeBug()
         self.changes["Launchpad-Bugs-Fixed"] = "%d invalid %d" % (
             bug1.id, bug2.id)
-        self.assertEquals([bug1, bug2], self.getBugs())
+        self.assertEqual([bug1.id, bug2.id], self.getBugIDs())

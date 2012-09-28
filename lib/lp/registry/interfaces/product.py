@@ -73,6 +73,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import InformationType
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -108,6 +109,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -448,6 +450,13 @@ class IProductPublic(
                 'and security policy will apply to this project.')),
         exported_as='project_group')
 
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True,
+            description=_(
+                'The type of of data contained in this project.')))
+
     owner = exported(
         PersonChoice(
             title=_('Maintainer'),
@@ -640,6 +649,11 @@ class IProductPublic(
         description=_("Sharing policy for this project's bugs."),
         required=False, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Specification sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        as_of='devel')
 
     licenses = exported(
         Set(title=_('Licences'),
@@ -665,11 +679,9 @@ class IProductPublic(
         Datetime(
             title=_('Next suggest packaging date'),
             description=_(
-                "The date when Launchpad can resume suggesting Ubuntu "
-                "packages that the project provides. The default value is "
-                "one year after a user states the project is not packaged "
-                "in Ubuntu."),
-            required=False))
+                "Obsolete. The date to resume Ubuntu package suggestions."),
+            required=False),
+        ('devel', dict(exported=False)))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
@@ -766,6 +778,12 @@ class IProductPublic(
         _("Series that are active and/or have been packaged."))
 
     packagings = Attribute(_("All the packagings for the project."))
+
+    security_contact = exported(
+        TextLine(
+            title=_('Security contact'), required=False, readonly=True,
+            description=_('Security contact (obsolete; always None)')),
+            ('devel', dict(exported=False)), as_of='1.0')
 
     def checkPrivateBugsTransitionAllowed(private_bugs, user):
         """Can the private_bugs attribute be changed to the value by the user?
@@ -898,6 +916,18 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
+    @mutator_for(IProductPublic['specification_sharing_policy'])
+    @operation_parameters(
+        specification_sharing_policy=copy_field(
+            IProductPublic['specification_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setSpecificationSharingPolicy(specification_sharing_policy):
+        """Mutator for specification_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
@@ -980,7 +1010,7 @@ class IProductSet(Interface):
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
-                   'registrant'])
+                   'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -989,7 +1019,7 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """Create and return a brand new Product.
 
         See `IProduct` for a description of the parameters.

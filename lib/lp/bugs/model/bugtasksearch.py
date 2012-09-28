@@ -38,9 +38,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.bugs.errors import InvalidSearchParameters
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
@@ -67,7 +69,6 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -383,7 +384,7 @@ def _build_query(params):
                 'Excluding conjoined tasks is not currently supported '
                 'for milestone tags')
         if not params.milestone:
-            raise ValueError(
+            raise InvalidSearchParameters(
                 "BugTaskSearchParam.exclude_conjoined cannot be True if "
                 "BugTaskSearchParam.milestone is not set")
 
@@ -578,7 +579,7 @@ def _build_query(params):
         elif params.distroseries:
             distroseries = params.distroseries
         if distroseries is None:
-            raise ValueError(
+            raise InvalidSearchParameters(
                 "Search by component requires a context with a "
                 "distribution or distroseries.")
 
@@ -699,10 +700,11 @@ def _build_query(params):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
-    if clause:
-        extra_clauses.append(clause)
-        decorators.append(decorator)
+    if not params.ignore_privacy:
+        clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
+        if clause:
+            extra_clauses.append(clause)
+            decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
@@ -827,13 +829,18 @@ def _process_order_by(params):
         if isinstance(orderby_col, SQLConstant):
             orderby_arg.append(orderby_col)
             continue
+        desc_search = False
         if orderby_col.startswith("-"):
-            col, sort_joins = orderby_expression[orderby_col[1:]]
-            extra_joins.extend(sort_joins)
+            orderby_col = orderby_col[1:]
+            desc_search = True
+        if orderby_col not in orderby_expression:
+            raise InvalidSearchParameters(
+                "Unrecognized order_by: %r" % (orderby_col,))
+        col, sort_joins = orderby_expression[orderby_col]
+        extra_joins.extend(sort_joins)
+        if desc_search:
             order_clause = Desc(col)
         else:
-            col, sort_joins = orderby_expression[orderby_col]
-            extra_joins.extend(sort_joins)
             order_clause = col
         if col in unambiguous_cols:
             ambiguous = False
@@ -888,13 +895,16 @@ def _build_status_clause(col, status):
     """Return the SQL query fragment for search by status.
 
     Called from `_build_query` or recursively."""
+
     if zope_isinstance(status, any):
         values = list(status.query_values)
-        # Since INCOMPLETE isn't stored as a single value we need to
+        # Since INCOMPLETE isn't stored as a single value any more, we need to
         # expand it before generating the SQL.
-        if BugTaskStatus.INCOMPLETE in values:
-            values.remove(BugTaskStatus.INCOMPLETE)
-            values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+        old = set([BugTaskStatus.INCOMPLETE, BugTaskStatusSearch.INCOMPLETE])
+        accepted_values = list(set(values) - old)
+        if len(accepted_values) < len(values):
+            accepted_values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+            values = accepted_values
         return search_value_to_storm_where_condition(col, any(*values))
     elif zope_isinstance(status, not_equals):
         return Not(_build_status_clause(col, status.value))
@@ -902,11 +912,15 @@ def _build_status_clause(col, status):
         # INCOMPLETE is not stored in the DB, instead one of
         # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
         # search for INCOMPLETE should instead search for those values.
-        if status == BugTaskStatus.INCOMPLETE:
+        # BugTaskStatus is used internally, BugTaskStatusSearch is used
+        # externally, such as API.
+        if (status == BugTaskStatus.INCOMPLETE
+            or status == BugTaskStatusSearch.INCOMPLETE):
             status = any(*DB_INCOMPLETE_BUGTASK_STATUSES)
         return search_value_to_storm_where_condition(col, status)
     else:
-        raise ValueError('Unrecognized status value: %r' % (status,))
+        raise InvalidSearchParameters(
+            'Unrecognized status value: %r' % (status,))
 
 
 def _build_exclude_conjoined_clause(milestone):

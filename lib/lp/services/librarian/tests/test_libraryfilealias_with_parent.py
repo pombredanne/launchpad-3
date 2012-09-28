@@ -8,7 +8,7 @@ __all__ = []
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.testing import (
     login_person,
