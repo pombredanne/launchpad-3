@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from textwrap import dedent
-
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
@@ -20,7 +18,6 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
-from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
@@ -234,13 +231,6 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestProjectMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.owner = self.factory.makePerson(name='product-owner')
         self.product = self.factory.makeProduct(owner=self.owner)
         login_person(self.product.owner)
@@ -355,13 +345,6 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestProjectGroupMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.owner = self.factory.makePerson(name='product-owner')
         self.project_group = self.factory.makeProject(owner=self.owner)
         login_person(self.owner)
@@ -420,13 +403,6 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestDistributionMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.owner = self.factory.makePerson(name='test-owner')
         login_team(self.ubuntu.owner)
