@@ -1017,3 +1017,10 @@ class TestArchivePermissionSet(TestCaseWithFactory):
         self.assertTrue(
             self.ap_set.packagesetsForUploader(
                 self.archive, self.person).is_empty())
+
+    def test_delete_packageset(self):
+        # Packagesets can't be deleted as long as they have uploaders
+        self.ap_set.newPackagesetUploader(
+            self.archive, self.person, self.packageset)
+
+        self.assertRaises(Exception, self.packageset.destroySelf)
