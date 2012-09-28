@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -71,7 +72,7 @@ class IPackagesetViewOnly(IHasOwner):
         description=_("The creation date/time for the package set at hand.")))
 
     owner = exported(Reference(
-        IPerson, title=_("Person"), required=True, readonly=True,
+        IPerson, title=_("Person"), required=True,
         description=_("The person who owns this package set.")))
 
     name = exported(TextLine(
@@ -79,7 +80,7 @@ class IPackagesetViewOnly(IHasOwner):
         required=True, constraint=name_validator))
 
     description = exported(TextLine(
-        title=_("Description"), required=True, readonly=True,
+        title=_("Description"), required=True,
         description=_("The description for the package set at hand.")))
 
     distroseries = exported(Reference(
@@ -346,6 +347,12 @@ class IPackagesetEdit(Interface):
 
         :param names: an iterable with string package set names
         """
+
+    @export_write_operation()
+    @export_operation_as('delete')
+    @operation_for_version('devel')
+    def destroySelf():
+        """Delete the package set."""
 
 
 class IPackagesetRestricted(Interface):
