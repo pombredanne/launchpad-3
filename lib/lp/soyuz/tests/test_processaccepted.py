@@ -41,7 +41,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.stp = SoyuzTestPublisher()
         self.stp.prepareBreezyAutotest()
-        self.test_package_name = "accept-test"
+        self.test_package_name = u"accept-test"
         self.distro = self.factory.makeDistribution()
 
     def getScript(self, test_args=None):

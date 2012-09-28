@@ -700,10 +700,11 @@ def _build_query(params):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
-    if clause:
-        extra_clauses.append(clause)
-        decorators.append(decorator)
+    if not params.ignore_privacy:
+        clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
+        if clause:
+            extra_clauses.append(clause)
+            decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
@@ -894,13 +895,16 @@ def _build_status_clause(col, status):
     """Return the SQL query fragment for search by status.
 
     Called from `_build_query` or recursively."""
+
     if zope_isinstance(status, any):
         values = list(status.query_values)
-        # Since INCOMPLETE isn't stored as a single value we need to
+        # Since INCOMPLETE isn't stored as a single value any more, we need to
         # expand it before generating the SQL.
-        if BugTaskStatus.INCOMPLETE in values:
-            values.remove(BugTaskStatus.INCOMPLETE)
-            values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+        old = set([BugTaskStatus.INCOMPLETE, BugTaskStatusSearch.INCOMPLETE])
+        accepted_values = list(set(values) - old)
+        if len(accepted_values) < len(values):
+            accepted_values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
+            values = accepted_values
         return search_value_to_storm_where_condition(col, any(*values))
     elif zope_isinstance(status, not_equals):
         return Not(_build_status_clause(col, status.value))
@@ -908,7 +912,10 @@ def _build_status_clause(col, status):
         # INCOMPLETE is not stored in the DB, instead one of
         # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
         # search for INCOMPLETE should instead search for those values.
-        if status == BugTaskStatus.INCOMPLETE:
+        # BugTaskStatus is used internally, BugTaskStatusSearch is used
+        # externally, such as API.
+        if (status == BugTaskStatus.INCOMPLETE
+            or status == BugTaskStatusSearch.INCOMPLETE):
             status = any(*DB_INCOMPLETE_BUGTASK_STATUSES)
         return search_value_to_storm_where_condition(col, status)
     else:

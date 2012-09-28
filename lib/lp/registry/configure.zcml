@@ -501,6 +501,7 @@
                 drivers
                 findRelatedArchivePublications
                 findRelatedArchives
+                getBranches
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTagsWithOpenCounts

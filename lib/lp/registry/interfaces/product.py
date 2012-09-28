@@ -72,8 +72,8 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
-from lp.app.enums import InformationType
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.enums import InformationType
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -679,11 +679,9 @@ class IProductPublic(
         Datetime(
             title=_('Next suggest packaging date'),
             description=_(
-                "The date when Launchpad can resume suggesting Ubuntu "
-                "packages that the project provides. The default value is "
-                "one year after a user states the project is not packaged "
-                "in Ubuntu."),
-            required=False))
+                "Obsolete. The date to resume Ubuntu package suggestions."),
+            required=False),
+        ('devel', dict(exported=False)))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))

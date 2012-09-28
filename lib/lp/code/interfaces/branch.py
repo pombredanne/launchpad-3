@@ -69,8 +69,8 @@ from zope.schema import (
     TextLine,
     )
 
-from lp.app.enums import InformationType
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
@@ -980,7 +980,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
-    def getAllowedInformationTypes(user):
+    def getAllowedInformationTypes(who):
         """Get a list of acceptable `InformationType`s for this branch.
 
         If the user is a Launchpad admin, any type is acceptable. Otherwise

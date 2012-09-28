@@ -102,12 +102,12 @@ class TestProcessDeathRow(TestCase):
 
         cprov = getUtility(IPersonSet).getByName('cprov')
         removeSecurityProxy(cprov.archive).distribution = ubuntutest
-        ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = cprov.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
         mark = getUtility(IPersonSet).getByName('mark')
         removeSecurityProxy(mark.archive).distribution = ubuntutest
-        ppa_pubrecs = mark.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = mark.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
 
         # Fill one of the files in cprov PPA just to ensure that deathrow

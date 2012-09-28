@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Database class for table Archive."""
 
 __metaclass__ = type
@@ -10,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'Archive',
     'ArchiveSet',
+    'get_archive_privacy_filter',
     'validate_ppa',
     ]
 
@@ -27,6 +26,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
+    Not,
     Or,
     Select,
     SQL,
@@ -68,7 +68,10 @@ from lp.registry.interfaces.person import (
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -125,7 +128,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
     ArchiveNotPrivate,
     CannotCopy,
-    CannotRestrictArchitectures,
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -168,7 +170,6 @@ from lp.soyuz.interfaces.component import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
@@ -497,8 +498,7 @@ class Archive(SQLBase):
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
         # callers are problematic. (Migrate them and test to see).
-        clauses = []
-        storm_clauses = [
+        clauses = [
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
@@ -513,27 +513,24 @@ class Archive(SQLBase):
         if name is not None:
             if type(name) in (str, unicode):
                 if exact_match:
-                    storm_clauses.append(SourcePackageName.name == name)
+                    clauses.append(SourcePackageName.name == name)
                 else:
                     clauses.append(
-                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                        % quote_like(name))
+                        SourcePackageName.name.contains_string(name))
             elif len(name) != 0:
-                clauses.append(
-                    "SourcePackageName.name IN %s"
-                    % sqlvalues(name))
+                clauses.append(SourcePackageName.name.is_in(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version == version)
+            clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
         if component_name is not None:
-            storm_clauses.extend(
+            clauses.extend(
                 [SourcePackagePublishingHistory.componentID == Component.id,
                  Component.name == component_name,
                  ])
@@ -543,12 +540,10 @@ class Archive(SQLBase):
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append(
-                "SourcePackagePublishingHistory.status IN %s "
-                % sqlvalues(status))
+            clauses.append(SourcePackagePublishingHistory.status.is_in(status))
 
         if distroseries is not None:
-            storm_clauses.append(
+            clauses.append(
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id)
 
@@ -557,21 +552,17 @@ class Archive(SQLBase):
                 pockets = tuple(pocket)
             except TypeError:
                 pockets = (pocket,)
-            storm_clauses.append(
-                "SourcePackagePublishingHistory.pocket IN %s " %
-                   sqlvalues(pockets))
+            clauses.append(
+                SourcePackagePublishingHistory.pocket.is_in(pockets))
 
         if created_since_date is not None:
             clauses.append(
-                "SourcePackagePublishingHistory.datecreated >= %s"
-                % sqlvalues(created_since_date))
+                SourcePackagePublishingHistory.datecreated >=
+                    created_since_date)
 
         store = Store.of(self)
-        if clauses:
-            storm_clauses.append(SQL(' AND '.join(clauses)))
-        resultset = store.find(SourcePackagePublishingHistory,
-            *storm_clauses).order_by(
-            *orderBy)
+        resultset = store.find(
+            SourcePackagePublishingHistory, *clauses).order_by(*orderBy)
         if not eager_load:
             return resultset
 
@@ -2033,28 +2024,14 @@ class Archive(SQLBase):
     def _getEnabledRestrictedFamilies(self):
         """Retrieve the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted
-        # architectures if require_virtualized is False.
-        if self.is_main and not self.require_virtualized:
-            return getUtility(IProcessorFamilySet).getRestricted()
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        return [family for (family, archive_arch) in restricted_families
-                if archive_arch is not None]
+        families = getUtility(IArchiveArchSet).getRestrictedFamilies(self)
+        return [
+            family for (family, archive_arch) in families
+            if archive_arch is not None]
 
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are not allowed to build on restricted
-        # architectures unless they are set to build on virtualized
-        # builders.
-        if (self.is_main and not self.require_virtualized):
-            proc_family_set = getUtility(IProcessorFamilySet)
-            if set(value) != set(proc_family_set.getRestricted()):
-                raise CannotRestrictArchitectures(
-                    "Main archives can not be restricted to certain "
-                    "architectures unless they are set to build on "
-                    "virtualized builders")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
@@ -2590,3 +2567,18 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
+
+
+def get_archive_privacy_filter(user):
+    if user is None:
+        privacy_filter = Not(Archive._private)
+    elif IPersonRoles(user).in_admin:
+        privacy_filter = True
+    else:
+        privacy_filter = Or(
+            Not(Archive._private),
+            Archive.ownerID.is_in(
+                Select(
+                    TeamParticipation.teamID,
+                    where=(TeamParticipation.person == user))))
+    return privacy_filter

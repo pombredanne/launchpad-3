@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including and related to IDistroSeries."""
 
 __metaclass__ = type
@@ -144,15 +142,10 @@ class DistroSeriesVersionField(UniqueField):
         The distribution is the context's distribution (which may
         the context itself); A version is unique to a distribution.
         """
-        found_series = None
-        for series in getUtility(IDistroSeriesSet).findByVersion(version):
-            if (series.distribution == self._distribution
-                and series != self.context):
-                # A version is unique to a distribution, but a distroseries
-                # may edit itself.
-                found_series = series
-                break
-        return found_series
+        existing = getUtility(IDistroSeriesSet).queryByVersion(
+            self._distribution, version)
+        if existing != self.context:
+            return existing
 
     def _getByAttribute(self, version):
         """Return the content object with the given attribute."""
@@ -379,9 +372,6 @@ class IDistroSeriesPublic(
                 file reduces the bandwidth footprint of enabling multiarch
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
-
-    def priorReleasedSeries():
-        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
@@ -1019,12 +1009,6 @@ class IDistroSeriesSet(Interface):
         """Return a set of distroseriess that can be translated in
         rosetta."""
 
-    def findByName(name):
-        """Find a DistroSeries by name.
-
-        Returns a list of matching distributions, which may be empty.
-        """
-
     def queryByName(distribution, name):
         """Query a DistroSeries by name.
 
@@ -1034,10 +1018,13 @@ class IDistroSeriesSet(Interface):
         Returns the matching DistroSeries, or None if not found.
         """
 
-    def findByVersion(version):
-        """Find a DistroSeries by version.
+    def queryByVersion(distribution, version):
+        """Query a DistroSeries by version.
 
-        Returns a list of matching distributions, which may be empty.
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroSeries, or None if not found.
         """
 
     def fromSuite(distribution, suite):
@@ -1071,24 +1058,8 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(distribution, prior_to_date):
-        """Find distroseries for the supplied distro  released before a
-        certain date.
-
-        :param distribution: An `IDistribution` in which to search for its
-            series.
-        :param prior_to_date: A `datetime`
-
-        :return: `IResultSet` of `IDistroSeries` that were released before
-            prior_to_date, ordered in increasing order of age.
-        """
-
 
 @error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
     _message_prefix = "Error deriving distro series"
-
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py
