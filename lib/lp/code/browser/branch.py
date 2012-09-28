@@ -40,11 +40,11 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from lazr.restful.fields import Reference
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -74,7 +74,6 @@ from zope.schema.vocabulary import (
 from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
-from lp.app.enums import InformationType
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
@@ -84,6 +83,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.vocabularies import InformationTypeVocabulary

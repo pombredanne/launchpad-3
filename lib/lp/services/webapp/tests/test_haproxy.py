@@ -11,11 +11,11 @@ from textwrap import dedent
 from zope.app.testing.functional import HTTPCaller
 
 from lp.services.config import config
-from lp.services.webapp import haproxy
-from lp.services.webapp.dbpolicy import (
+from lp.services.database.policy import (
     DatabaseBlockedPolicy,
     LaunchpadDatabasePolicyFactory,
     )
+from lp.services.webapp import haproxy
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 from lp.testing.layers import FunctionalLayer

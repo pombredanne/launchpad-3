@@ -56,7 +56,18 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import dbconfig
-from lp.services.database.interfaces import ISQLBase
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    DisallowedStore,
+    ISQLBase,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
 from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -109,10 +120,6 @@ class StupidCache:
 
 def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
-    # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
-    # around a particularly convoluted circular import.
-    from lp.services.webapp.interfaces import (
-            IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
 
@@ -169,7 +176,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         We refetch any parameters from different stores from the
         correct master Store.
         """
-        from lp.services.database.lpstorm import IMasterStore
         # Make it simple to write dumb-invalidators - initialized
         # _cached_properties to a valid list rather than just-in-time
         # creation.
@@ -206,7 +212,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @classmethod
     def _get_store(cls):
-        from lp.services.database.lpstorm import IStore
         return IStore(cls)
 
     def __repr__(self):
@@ -216,7 +221,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
     def destroySelf(self):
-        from lp.services.database.lpstorm import IMasterObject
         my_master = IMasterObject(self)
         if self is my_master:
             super(SQLBase, self).destroySelf()
@@ -534,7 +538,6 @@ def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
 
     def block_implicit_flushes_decorator(*args, **kwargs):
-        from lp.services.webapp.interfaces import DisallowedStore
         try:
             store = _get_sqlobject_store()
         except DisallowedStore:

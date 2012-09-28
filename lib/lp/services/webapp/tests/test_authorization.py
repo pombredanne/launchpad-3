@@ -25,6 +25,7 @@ from lp.app.interfaces.security import IAuthorization
 from lp.app.security import AuthorizationBase
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
+from lp.services.database.interfaces import IStoreSelector
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.authorization import (
@@ -39,7 +40,6 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
-    IStoreSelector,
     )
 from lp.services.webapp.metazcml import ILaunchpadPermission
 from lp.services.webapp.servers import (

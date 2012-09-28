@@ -8,9 +8,7 @@ __all__ = [
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import (
-    InputWidget,
-    )
+from zope.app.form import InputWidget
 from zope.app.form.browser.widget import (
     BrowserWidget,
     renderElement,
@@ -25,9 +23,7 @@ from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from lp.app.errors import (
-    UnexpectedFormData,
-    )
+from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPerson

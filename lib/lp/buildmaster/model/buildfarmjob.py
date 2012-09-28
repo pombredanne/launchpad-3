@@ -53,14 +53,14 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 
 

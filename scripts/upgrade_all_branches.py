@@ -3,13 +3,14 @@
 __metaclass__ = type
 
 import _pythonpath
-#quiet pyflakes
-_pythonpath
 
-from lp.codehosting.upgrade import Upgrader
 from lp.codehosting.bzrutils import server
+from lp.codehosting.upgrade import Upgrader
 from lp.codehosting.vfs.branchfs import get_rw_server
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class UpgradeAllBranches(LaunchpadScript):

@@ -7,14 +7,14 @@ import _pythonpath
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.looptuner import (
-    DBLoopTuner,
-    ITunableLoop,
-    )
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
+    )
+from lp.services.looptuner import (
+    DBLoopTuner,
+    ITunableLoop,
     )
 from lp.services.scripts.base import LaunchpadScript
 

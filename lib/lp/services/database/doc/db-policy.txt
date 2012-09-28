@@ -62,7 +62,7 @@ replication was implemented to keep working.
 
 To alter this behavior, you can install a different database policy.
 
-    >>> from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
+    >>> from lp.services.database.policy import SlaveDatabasePolicy
     >>> with SlaveDatabasePolicy():
     ...     default_janitor = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -76,7 +76,7 @@ code we want to prove only accesses slave database resources, we can
 raise an exception if an attempt is made to access master database
 resources.
 
-    >>> from lp.services.webapp.dbpolicy import (
+    >>> from lp.services.database.policy import (
     ...     SlaveOnlyDatabasePolicy)
     >>> with SlaveOnlyDatabasePolicy():
     ...     whoops = IMasterStore(Person).find(
@@ -90,7 +90,7 @@ if we need to guarantee a potentially long running call doesn't access
 the database at all starting a new and potentially long running
 database transaction.
 
-    >>> from lp.services.webapp.dbpolicy import DatabaseBlockedPolicy
+    >>> from lp.services.database.policy import DatabaseBlockedPolicy
     >>> with DatabaseBlockedPolicy():
     ...     whoops = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -102,7 +102,7 @@ Database policies can also be installed and uninstalled using the
 IStoreSelector utility for cases where the 'with' syntax cannot
 be used.
 
-    >>> from lp.services.webapp.interfaces import IStoreSelector
+    >>> from lp.services.database.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SlaveDatabasePolicy())
     >>> try:
     ...     default_janitor = IStore(Person).find(

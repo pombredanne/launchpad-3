@@ -6,13 +6,13 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from lp.services.librarian.model import LibraryFileContent
-from lp.services.librarianserver import db
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.librarian.model import LibraryFileContent
+from lp.services.librarianserver import db
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 

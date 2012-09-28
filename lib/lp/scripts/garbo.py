@@ -65,6 +65,11 @@ from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -94,11 +99,6 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation

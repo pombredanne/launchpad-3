@@ -581,7 +581,7 @@ We need some files to test different ways of accessing them.
     # record. Such records are considered as being deleted.
 
     >>> from lp.services.librarian.model import LibraryFileAlias
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

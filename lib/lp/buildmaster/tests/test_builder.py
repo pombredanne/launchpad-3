@@ -61,14 +61,14 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.database.sqlbase import flush_database_updates
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.log.logger import BufferLogger
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,

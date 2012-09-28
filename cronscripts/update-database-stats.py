@@ -10,13 +10,13 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from lp.services.scripts import db_options
-from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.services.scripts import db_options
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class UpdateDatabaseStats(LaunchpadCronScript):

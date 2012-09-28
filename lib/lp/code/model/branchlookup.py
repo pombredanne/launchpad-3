@@ -68,13 +68,13 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp.authorization import check_permission
 
 
 def adapt(provided, interface):

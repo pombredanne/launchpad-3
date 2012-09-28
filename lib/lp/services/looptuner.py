@@ -22,12 +22,12 @@ from zope.interface import (
     Interface,
     )
 
-import lp.services.scripts
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+import lp.services.scripts
 
 
 class ITunableLoop(Interface):
