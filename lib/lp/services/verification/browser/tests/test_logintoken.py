@@ -18,6 +18,7 @@ from lp.testing import (
     )
 from lp.testing.deprecated import LaunchpadFormHarness
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.views import create_initialized_view
 
 
 class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
@@ -100,3 +101,33 @@ class TestClaimTeamView(TestCaseWithFactory):
         msgs = self._claimToken(token2)
         self.assertEquals(
             [u'claimee has already been converted to a team.'], msgs)
+
+
+class MergePeopleViewTestCase(TestCaseWithFactory):
+    """Test the view for conforming a merge via login token."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_confirm_email_for_active_account(self):
+        # Users can confirm they control an email address to merge a duplicate
+        # profile.
+        claimer = self.factory.makePerson(email='me@eg.dom', name='claimer')
+        self.factory.makePerson(email='him@eg.dom', name='dupe')
+        token = getUtility(ILoginTokenSet).new(
+            requester=claimer, requesteremail='me@eg.dom',
+            email="him@eg.dom", tokentype=LoginTokenType.ACCOUNTMERGE)
+        view = create_initialized_view(token, name="+accountmerge")
+        self.assertIs(False, view.mergeCompleted)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*to merge the Launchpad account named.*claimer', view.render())
+        view = create_initialized_view(
+            token, name="+accountmerge",
+            form={'VALIDATE': 'Confirm'}, method='POST')
+        with person_logged_in(claimer):
+            view.processForm()
+        self.assertIs(True, view.mergeCompleted)
+        notifications = view.request.notifications
+        self.assertEqual(2, len(notifications))
+        text = notifications[0].message
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "A merge is queued.*", text)
