@@ -418,6 +418,15 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
 
+    def test_secrecy_view_ajax_can_add_tasks(self):
+        # The return data contains flags indicating whether project and package
+        # tasks can be added.
+        bug = self.factory.makeBug()
+        result_data = self._assert_secrecy_view_ajax_render(
+            bug, 'USERDATA', True)
+        self.assertTrue(result_data['can_add_project_task'])
+        self.assertTrue(result_data['can_add_package_task'])
+
     def test_secrecy_view_ajax_render_no_check(self):
         # An information type change request is processed as expected when the
         # bug will become invisible but and no visibility check is performed.
