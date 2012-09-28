@@ -37,22 +37,22 @@
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
+        factory="lp.services.database.policy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
         provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="lp.services.database.policy.MasterDatabasePolicy"
         />
     <adapter
         for="lp.layers.WebServiceLayer"
         provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
+        factory="lp.services.database.policy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="lp.layers.FeedsLayer"
         provides="lp.services.webapp.interfaces.IDatabasePolicy"
-        factory="lp.services.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
+        factory="lp.services.database.policy.SlaveOnlyDatabasePolicy"
         />
     <adapter
         for="lp.layers.WebServiceLayer"
@@ -433,7 +433,7 @@
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
-        class="lp.services.webapp.dbpolicy.WhichDbView"
+        class="lp.services.database.policy.WhichDbView"
         layer="lp.layers.PageTestLayer"
         />
 

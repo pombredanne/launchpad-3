@@ -228,6 +228,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.identity.interfaces.account import (
@@ -254,7 +255,6 @@ from lp.services.temporaryblobstorage.interfaces import (
     )
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

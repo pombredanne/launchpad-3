@@ -62,6 +62,7 @@ from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
     )
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.postgresql import ConnectionString
 from lp.services.log.loglevels import DEBUG2
 from lp.services.stacktrace import (
@@ -74,7 +75,6 @@ from lp.services.timeline.requesttimeline import (
     set_request_timeline,
     )
 from lp.services.timeout import set_default_timeout_function
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interaction import get_interaction_extras
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,

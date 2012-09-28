@@ -926,7 +926,7 @@ the OAuthNonce table.
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> from zope.component import getUtility
-    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.database.policy import MasterDatabasePolicy
     >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 

@@ -274,7 +274,7 @@ Let's make the iceweasel package available in breezy-autotest.
 First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.database.policy import MasterDatabasePolicy
     >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
