@@ -523,6 +523,9 @@ def _build_query(params):
         if params.distribution is None and params.distroseries is None:
             # This search is *not* contrained to distro related bugs so
             # include products, productseries, and project group subscriptions.
+            project_match = True
+            if params.project is not None:
+                project_match = Product.project == params.project
             ss_clauses.append(In(
                 BugTaskFlat.product_id,
                 Select(SS.productID, tables=[SS])))
@@ -534,7 +537,7 @@ def _build_query(params):
                 Select(Product.id, tables=[SS, Product],
                        where=And(
                            SS.projectID == Product.projectID,
-                           Product.project == params.project,
+                           project_match,
                            Product.active))))
         extra_clauses.append(Or(*ss_clauses))
 
