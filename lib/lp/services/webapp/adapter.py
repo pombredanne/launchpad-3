@@ -766,7 +766,7 @@ install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:
-    """See `lp.services.webapp.interfaces.IStoreSelector`."""
+    """See `lp.services.database.interfaces.IStoreSelector`."""
     classProvides(IStoreSelector)
 
     @staticmethod
