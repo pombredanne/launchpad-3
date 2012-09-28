@@ -436,9 +436,6 @@ class PersonActiveReviewsPerformance(TestCaseWithFactory):
         return recorder, view
 
     def test_person_activereviews_query_count(self):
-        # Note that we keep the number of bmps created small (3 and 7)
-        # so that the all the per-cached objects will fit into the cache
-        # used in tests (storm_cache_size: 100).
         base_bmps = 3
         added_bmps = 4
         recorder1, view1 = self.createUserBMPsAndRecordQueries(base_bmps)
