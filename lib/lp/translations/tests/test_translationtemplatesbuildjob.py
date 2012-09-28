@@ -18,12 +18,12 @@ from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
-from lp.services.job.model.job import Job
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.job.model.job import Job
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (

@@ -18,6 +18,12 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
@@ -26,12 +32,6 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     )
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequest,

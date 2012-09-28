@@ -11,12 +11,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
-from lp.services.database.sqlbase import sqlvalues
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 from lp.testing import TestCaseWithFactory

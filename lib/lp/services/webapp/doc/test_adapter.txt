@@ -11,7 +11,7 @@ Imports and test setup:
     >>> from zope.component import getUtility
     >>> from lazr.restful.utils import get_current_browser_request
     >>> from storm.zope.interfaces import IZStorm
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> from lp.services.config import config
     >>> import lp.services.webapp.adapter

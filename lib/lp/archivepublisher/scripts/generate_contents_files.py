@@ -23,15 +23,15 @@ from lp.services.command_spawner import (
     ReturnCodeReceiver,
     )
 from lp.services.config import config
+from lp.services.database.policy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
-from lp.services.webapp.dbpolicy import (
-    DatabaseBlockedPolicy,
-    SlaveOnlyDatabasePolicy,
-    )
 
 
 COMPONENTS = [

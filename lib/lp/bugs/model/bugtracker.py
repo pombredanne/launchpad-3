@@ -76,6 +76,11 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
@@ -83,11 +88,6 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.database.stormbase import StormBase
 from lp.services.helpers import shortlist
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 
 
 def normalise_leading_slashes(rest):

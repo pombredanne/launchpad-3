@@ -17,7 +17,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from textwrap import dedent
 
 import psycopg2
 from storm.cache import (
@@ -41,13 +40,7 @@ from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from lp.services.database.sqlbase import StupidCache
-from lp.services.webapp import LaunchpadView
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     DisallowedStore,
     IDatabasePolicy,
@@ -56,6 +49,11 @@ from lp.services.webapp.interfaces import (
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from lp.services.database.sqlbase import StupidCache
 
 
 def _now():
@@ -389,23 +387,3 @@ def WebServiceDatabasePolicyFactory(request):
         return LaunchpadDatabasePolicy(request)
     # Otherwise, use the master only web service database policy.
     return MasterDatabasePolicy(request)
-
-
-class WhichDbView(LaunchpadView):
-    "A page that reports which database is being used by default."
-
-    def render(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        dbname = store.execute("SELECT current_database()").get_one()[0]
-        return dedent("""
-                <html>
-                <body>
-                <span id="dbname">
-                %s
-                </span>
-                <form method="post">
-                <input type="submit" value="Do Post" />
-                </form>
-                </body>
-                </html>
-                """ % dbname).strip()

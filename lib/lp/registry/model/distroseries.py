@@ -101,6 +101,11 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_caches,
@@ -115,11 +120,6 @@ from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
     )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (

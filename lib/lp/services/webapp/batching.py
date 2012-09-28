@@ -39,16 +39,18 @@ from zope.security.proxy import (
 
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     sqlvalues,
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import (
-    IStoreSelector,
     ITableBatchNavigator,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
     StormRangeFactoryError,
     )
 from lp.services.webapp.publisher import LaunchpadView
