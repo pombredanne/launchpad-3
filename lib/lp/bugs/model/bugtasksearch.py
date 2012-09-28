@@ -491,7 +491,9 @@ def _build_query(params):
             __storm_table__ = 'ss'
 
         SS = ClassAlias(StructuralSubscriptionCTE)
-        ss_clauses = []
+        ss_clauses = [
+            In(BugTaskFlat.milestone_id,
+                Select(SS.milestoneID, tables=[SS]))]
         if is_not_bugtarget_search or params.distribution is not None:
             ss_clauses.append(In(
                 BugTaskFlat.distribution_id,
@@ -541,10 +543,6 @@ def _build_query(params):
                         SS.projectID == Product.projectID,
                         Product.project == params.project,
                         Product.active))))
-        if is_not_bugtarget_search or params.milestone is not None:
-            ss_clauses.append(In(
-                BugTaskFlat.milestone_id,
-                Select(SS.milestoneID, tables=[SS])))
         extra_clauses.append(Or(*ss_clauses))
 
     # Remove bugtasks from deactivated products.
