@@ -419,16 +419,15 @@ class TestProduct(TestCaseWithFactory):
     expected_get_permissions = {
         #xxxxxx BAD:
         CheckerPublic: set((
-            'bug_supervisor',
+            
             'createCustomLanguageCode', 'custom_language_codes',
             'findSimilarFAQs',
             'getBugSummaryContextWhereClause', 'getCustomLanguageCode',
             'getFAQ',
             'has_custom_language_codes', 'id',
-            'information_type', 
+            'information_type',
             'qualifies_for_free_hosting', 'removeCustomLanguageCode',
             'searchFAQs',
-            
             'userCanView',)),
         'launchpad.LimitedView': set((
             '_getOfficialTagClause', 'active', 'active_or_packaged_series',
@@ -437,7 +436,7 @@ class TestProduct(TestCaseWithFactory):
             'announce', 'answer_contacts', 'answers_usage', 'autoupdate', 'blueprints_usage',
             'branch_sharing_policy', 'bug_reported_acknowledgement',
             'bug_reporting_guidelines', 'bug_sharing_policy',
-            'bug_subscriptions',
+            'bug_subscriptions', 'bug_supervisor',
             'bug_tracking_usage', 'bugtargetdisplayname', 'bugtargetname',
             'bugtracker', 'canUserAlterAnswerContact', 'checkPrivateBugsTransitionAllowed',
             'codehosting_usage', 'coming_sprints',

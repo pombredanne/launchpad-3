@@ -1369,7 +1369,8 @@
 
         <!-- IHasBugSupervisor -->
 
-        <allow
+        <require
+            permission="launchpad.LimitedView"
             attributes="
                 bug_supervisor"/>
         <require
