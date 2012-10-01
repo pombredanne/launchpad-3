@@ -417,7 +417,7 @@ class TestProduct(TestCaseWithFactory):
     expected_get_permissions = {
         #xxxxxx BAD:
         CheckerPublic: set((
-            'aliases', 'answer_contacts', 'bug_subscriptions',
+            'answer_contacts', 'bug_subscriptions',
             'bug_supervisor', 'canUserAlterAnswerContact',
             'createCustomLanguageCode', 'custom_language_codes',
             'direct_answer_contacts', 'findSimilarFAQs',
@@ -434,7 +434,7 @@ class TestProduct(TestCaseWithFactory):
             'userCanView', 'userHasBugSubscriptions')),
         'launchpad.LimitedView': set((
             '_getOfficialTagClause', 'active', 'active_or_packaged_series',
-            'all_milestones', 'all_specifications',
+            'aliases', 'all_milestones', 'all_specifications',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',
             'announce', 'answers_usage', 'autoupdate', 'blueprints_usage',
             'branch_sharing_policy', 'bug_reported_acknowledgement',
@@ -560,7 +560,7 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_public_project(self):
+    def test_access_launchpad_LimitedView_public_product(self):
         # Everybody, including anonymous users, has access to
         # properties of public products that require the permission
         # launchpad.LimitedView
@@ -584,7 +584,7 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_private_project(self):
+    def test_access_launchpad_LimitedView_private_product(self):
         # Everybody, including anonymous users, has access to
         # properties of public products that require the permission
         # launchpad.LimitedView

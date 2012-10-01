@@ -1329,7 +1329,8 @@
 
         <!-- IHasAliases -->
 
-        <allow
+        <require
+            permission="launchpad.LimitedView"
             attributes="
                 aliases"/>
         <require
