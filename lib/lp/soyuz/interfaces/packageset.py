@@ -350,7 +350,6 @@ class IPackagesetEdit(Interface):
         """
 
     @export_destructor_operation()
-    @export_operation_as('delete')
     @operation_for_version('devel')
     def destroySelf():
         """Delete the package set."""
