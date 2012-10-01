@@ -11,6 +11,10 @@ from testtools.matchers import MatchesAll
 import transaction
 from zope.component import getUtility
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.security.checker import (
+    CheckerPublic,
+    getChecker,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -389,6 +393,157 @@ class TestProduct(TestCaseWithFactory):
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def check_permissions(self, expected_permissions, used_permissions,
+                          type_):
+        expected = set(expected_permissions.keys())
+        self.assertEqual(
+            expected, set(used_permissions.values()),
+            'Unexpected %s permissions' % type_)
+        for permission in expected_permissions:
+            attribute_names = set(
+                name for name, value in used_permissions.items()
+                if value == permission)
+            self.assertEqual(
+                expected_permissions[permission], attribute_names,
+                'Unexpected set of attributes with %s permission %s:\n'
+                'Defined but not expected: %s\n'
+                'Expected but not defined: %s'
+                % (
+                    type_, permission,
+                    attribute_names - expected_permissions[permission],
+                    expected_permissions[permission] - attribute_names))
+
+    def test_get_permissions(self):
+        expected_get_permissions = {
+            #xxxxxx BAD:
+            CheckerPublic: set((
+                '_getOfficialTagClause', 'active', 'active_or_packaged_series',
+                'aliases', 'all_milestones', 'all_specifications',
+                'allowsTranslationEdits', 'allowsTranslationSuggestions',
+                'announce', 'answer_contacts', 'answers_usage', 'autoupdate',
+                'blueprints_usage', 'branch_sharing_policy',
+                'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+                'bug_sharing_policy', 'bug_subscriptions', 'bug_supervisor',
+                'bug_tracking_usage', 'bugtargetdisplayname', 'bugtargetname',
+                'bugtracker', 'canUserAlterAnswerContact',
+                'checkPrivateBugsTransitionAllowed', 'codehosting_usage',
+                'coming_sprints', 'commercial_subscription',
+                'commercial_subscription_is_due', 'createBug',
+                'createCustomLanguageCode', 'custom_language_codes',
+                'date_next_suggest_packaging', 'datecreated', 'description',
+                'development_focus', 'development_focusID',
+                'direct_answer_contacts', 'displayname',
+                'distrosourcepackages', 'downloadurl', 'driver', 'drivers',
+                'enable_bug_expiration', 'enable_bugfiling_duplicate_search',
+                'findReferencedOOPS', 'findSimilarFAQs',
+                'findSimilarQuestions', 'freshmeatproject',
+                'getAllowedBugInformationTypes',
+                'getAllowedSpecificationInformationTypes', 'getAnnouncement',
+                'getAnnouncements', 'getAnswerContactRecipients',
+                'getAnswerContactsForLanguage', 'getBaseBranchVisibilityRule',
+                'getBranchVisibilityRuleForBranch',
+                'getBranchVisibilityRuleForTeam',
+                'getBranchVisibilityTeamPolicies', 'getBranches',
+                'getBugSummaryContextWhereClause', 'getBugTaskWeightFunction',
+                'getCustomLanguageCode', 'getDefaultBugInformationType',
+                'getDefaultSpecificationInformationType',
+                'getEffectiveTranslationPermission', 'getExternalBugTracker',
+                'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
+                'getMergeProposals', 'getMilestone',
+                'getMilestonesAndReleases', 'getPackage', 'getQuestion',
+                'getQuestionLanguages', 'getRelease', 'getSeries',
+                'getSpecification', 'getSubscription', 'getSubscriptions',
+                'getSupportedLanguages', 'getTimeline', 'getTopContributors',
+                'getTopContributorsGroupedByCategory', 'getTranslationGroups',
+                'getTranslationImportQueueEntries', 'getTranslators',
+                'getUsedBugTagsWithOpenCounts', 'getVersionSortedSeries',
+                'has_any_specifications',
+                'has_current_commercial_subscription',
+                'has_custom_language_codes', 'has_milestones',
+                'homepage_content', 'homepageurl', 'icon', 'id',
+                'information_type', 'invitesTranslationEdits',
+                'invitesTranslationSuggestions',
+                'isUsingInheritedBranchVisibilityPolicy',
+                'latest_completed_specifications', 'latest_specifications',
+                'license_info', 'license_status', 'licenses', 'logo',
+                'milestones', 'mugshot', 'name', 'name_with_project',
+                'newCodeImport', 'obsolete_translatable_series',
+                'official_answers', 'official_anything', 'official_blueprints',
+                'official_bug_tags', 'official_codehosting', 'official_malone',
+                'owner', 'packagedInDistros', 'packagings',
+                'parent_subscription_target', 'past_sprints',
+                'personHasDriverRights', 'pillar', 'pillar_category',
+                'primary_translatable', 'private_bugs', 'programminglang',
+                'project', 'qualifies_for_free_hosting', 'recipes',
+                'redeemSubscriptionVoucher', 'registrant', 'releases',
+                'remote_product', 'removeCustomLanguageCode',
+                'removeTeamFromBranchVisibilityPolicy', 'screenshotsurl',
+                'searchFAQs', 'searchQuestions', 'searchTasks',
+                'security_contact', 'series', 'setBranchVisibilityTeamPolicy',
+                'setPrivateBugs', 'sharesTranslationsWithOtherSide',
+                'sourceforgeproject', 'sourcepackages',
+                'specification_sharing_policy', 'specifications', 'sprints',
+                'summary', 'target_type_display', 'title',
+                'translatable_packages', 'translatable_series',
+                'translation_focus', 'translationgroup', 'translationgroups',
+                'translationpermission', 'translations_usage',
+                'ubuntu_packages', 'userCanAlterBugSubscription',
+                'userCanAlterSubscription', 'userCanEdit',
+                'userHasBugSubscriptions', 'uses_launchpad',
+                'valid_specifications', 'wikiurl')),
+            #xxxxxx BAD:
+            'launchpad.AnyPerson': set((
+                'addAnswerContact', 'addBugSubscription',
+                'addBugSubscriptionFilter', 'addSubscription',
+                'createQuestionFromBug', 'newQuestion', 'removeAnswerContact',
+                'removeBugSubscription')),
+            'launchpad.Append': set(('newFAQ', )),
+            'launchpad.Driver': set(('newSeries', )),
+            'launchpad.Edit': set((
+                'addOfficialBugTag', 'removeOfficialBugTag',
+                'setBranchSharingPolicy', 'setBugSharingPolicy',
+                'setSpecificationSharingPolicy')),
+            'launchpad.Moderate': set((
+                'is_permitted', 'license_approved', 'project_reviewed',
+                'reviewer_whiteboard', 'setAliases')),
+            }
+        product = self.factory.makeProduct()
+        checker = getChecker(product)
+        self.check_permissions(
+            expected_get_permissions, checker.get_permissions, 'get')
+
+    def test_set_permissions(self):
+        expected_get_permissions = {
+            'launchpad.BugSupervisor': set((
+                'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+                'bugtracker', 'enable_bug_expiration',
+                'enable_bugfiling_duplicate_search', 'official_bug_tags',
+                'official_malone', 'remote_product')),
+            'launchpad.Edit': set((
+                'answers_usage', 'blueprints_usage', 'bug_supervisor',
+                'bug_tracking_usage', 'codehosting_usage',
+                'commercial_subscription', 'description', 'development_focus',
+                'displayname', 'downloadurl', 'driver', 'freshmeatproject',
+                'homepage_content', 'homepageurl', 'icon', 'license_info',
+                'licenses', 'logo', 'mugshot', 'official_answers',
+                'official_blueprints', 'official_codehosting', 'owner',
+                'programminglang', 'project', 'redeemSubscriptionVoucher',
+                'releaseroot', 'screenshotsurl', 'sourceforgeproject',
+                'summary', 'title', 'uses_launchpad', 'wikiurl')),
+            'launchpad.Moderate': set((
+                'active', 'autoupdate', 'license_approved', 'name',
+                'project_reviewed', 'registrant', 'reviewer_whiteboard')),
+            'launchpad.TranslationsAdmin': set((
+                'translation_focus', 'translationgroup',
+                'translationpermission', 'translations_usage')),
+            # xxxxxx BAD
+            'launchpad.View': set(('date_next_suggest_packaging', )),
+            }
+        product = self.factory.makeProduct()
+        checker = getChecker(product)
+        self.check_permissions(
+            expected_get_permissions, checker.set_permissions, 'set')
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
