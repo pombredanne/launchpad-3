@@ -442,6 +442,19 @@ class ViewProduct(AuthorizationBase):
         return self.obj.information_type in PUBLIC_INFORMATION_TYPES
 
 
+class ChangeProduct(ViewProduct):
+    """Used for attributes of IProduct that are accessible to any logged
+    in user for public product but only to persons with access grants
+    for private products.
+    """
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProduct
+
+    def checkUnauthenticated(self):
+        return False
+
+
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 

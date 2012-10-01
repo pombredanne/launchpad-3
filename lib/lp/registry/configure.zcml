@@ -1232,7 +1232,9 @@
         <require
             permission="launchpad.LimitedView"
             interface="lp.registry.interfaces.product.IProductLimitedView"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.LimitedView"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <require
             permission="launchpad.LimitedView"
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
@@ -1315,7 +1317,7 @@
                 translationpermission
                 translations_usage"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.LimitedView"
             attributes="
                 qualifies_for_free_hosting"/>
         <require
@@ -1345,7 +1347,7 @@
             permission="launchpad.LimitedView"
             interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-          permission="launchpad.AnyPerson"
+          permission="launchpad.AnyAllowedPerson"
           interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->

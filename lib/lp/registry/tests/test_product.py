@@ -417,98 +417,83 @@ class TestProduct(TestCaseWithFactory):
                         expected_permissions[permission] - attribute_names)))
 
     expected_get_permissions = {
-        #xxxxxx BAD:
-        CheckerPublic: set((
-            
-            
-            'getBugSummaryContextWhereClause',
-            
-            'id',
-            'information_type',
-            'qualifies_for_free_hosting',
-            
-            'userCanView',)),
+        CheckerPublic: set(('id', 'information_type', 'userCanView',)),
         'launchpad.LimitedView': set((
             '_getOfficialTagClause', 'active', 'active_or_packaged_series',
             'aliases', 'all_milestones', 'all_specifications',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',
-            'announce', 'answer_contacts', 'answers_usage', 'autoupdate', 'blueprints_usage',
-            'branch_sharing_policy', 'bug_reported_acknowledgement',
-            'bug_reporting_guidelines', 'bug_sharing_policy',
-            'bug_subscriptions', 'bug_supervisor',
+            'announce', 'answer_contacts', 'answers_usage', 'autoupdate',
+            'blueprints_usage', 'branch_sharing_policy',
+            'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+            'bug_sharing_policy', 'bug_subscriptions', 'bug_supervisor',
             'bug_tracking_usage', 'bugtargetdisplayname', 'bugtargetname',
-            'bugtracker', 'canUserAlterAnswerContact', 'checkPrivateBugsTransitionAllowed',
-            'codehosting_usage', 'coming_sprints',
-            'commercial_subscription', 'commercial_subscription_is_due',
-            'createBug', 'createCustomLanguageCode', 'custom_language_codes',
-            'date_next_suggest_packaging', 'datecreated',
-            'description', 'development_focus', 'development_focusID', 'direct_answer_contacts',
-            'displayname', 'distrosourcepackages', 'downloadurl', 'driver',
-            'drivers', 'enable_bug_expiration',
+            'bugtracker', 'canUserAlterAnswerContact',
+            'checkPrivateBugsTransitionAllowed', 'codehosting_usage',
+            'coming_sprints', 'commercial_subscription',
+            'commercial_subscription_is_due', 'createBug',
+            'createCustomLanguageCode', 'custom_language_codes',
+            'date_next_suggest_packaging', 'datecreated', 'description',
+            'development_focus', 'development_focusID',
+            'direct_answer_contacts', 'displayname', 'distrosourcepackages',
+            'downloadurl', 'driver', 'drivers', 'enable_bug_expiration',
             'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
-            'findSimilarFAQs', 'findSimilarQuestions',
-            'freshmeatproject', 'getAllowedBugInformationTypes',
+            'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',
+            'getAllowedBugInformationTypes',
             'getAllowedSpecificationInformationTypes', 'getAnnouncement',
             'getAnnouncements', 'getAnswerContactsForLanguage',
-            'getAnswerContactRecipients',
-            'getBaseBranchVisibilityRule',
+            'getAnswerContactRecipients', 'getBaseBranchVisibilityRule',
             'getBranchVisibilityRuleForBranch',
             'getBranchVisibilityRuleForTeam',
             'getBranchVisibilityTeamPolicies', 'getBranches',
-            'getBugTaskWeightFunction', 'getCustomLanguageCode',
-            'getDefaultBugInformationType',
+            'getBugSummaryContextWhereClause', 'getBugTaskWeightFunction',
+            'getCustomLanguageCode', 'getDefaultBugInformationType',
             'getDefaultSpecificationInformationType',
             'getEffectiveTranslationPermission', 'getExternalBugTracker',
             'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
-            'getMergeProposals', 'getMilestone',
-            'getMilestonesAndReleases', 'getQuestion', 'getQuestionLanguages',
-            'getPackage',
-            'getRelease',
+            'getMergeProposals', 'getMilestone', 'getMilestonesAndReleases',
+            'getQuestion', 'getQuestionLanguages', 'getPackage', 'getRelease',
             'getSeries', 'getSpecification', 'getSubscription',
-            'getSubscriptions', 'getSupportedLanguages',
-            'getTimeline',
+            'getSubscriptions', 'getSupportedLanguages', 'getTimeline',
             'getTopContributors', 'getTopContributorsGroupedByCategory',
             'getTranslationGroups', 'getTranslationImportQueueEntries',
             'getTranslators', 'getUsedBugTagsWithOpenCounts',
             'getVersionSortedSeries', 'has_any_specifications',
-            'has_current_commercial_subscription', 'has_custom_language_codes',
-            'has_milestones',
-            'homepage_content', 'homepageurl', 'icon',
-            'invitesTranslationEdits', 'invitesTranslationSuggestions',
+            'has_current_commercial_subscription',
+            'has_custom_language_codes', 'has_milestones', 'homepage_content',
+            'homepageurl', 'icon', 'invitesTranslationEdits',
+            'invitesTranslationSuggestions',
             'isUsingInheritedBranchVisibilityPolicy',
             'latest_completed_specifications', 'latest_specifications',
-            'license_info', 'license_status', 'licenses', 'logo',
-            'milestones', 'mugshot', 'name', 'name_with_project',
-            'newCodeImport', 'obsolete_translatable_series',
-            'official_answers', 'official_anything', 'official_blueprints',
-            'official_bug_tags', 'official_codehosting', 'official_malone',
-            'owner', 'parent_subscription_target', 'packagedInDistros', 'packagings', 'past_sprints',
-            'personHasDriverRights', 'pillar', 'pillar_category',
-            'primary_translatable', 'private_bugs', 'programminglang',
-            'project', 'recipes', 'redeemSubscriptionVoucher',
-            'registrant', 'releases', 'remote_product',
-            'removeCustomLanguageCode',
+            'license_info', 'license_status', 'licenses', 'logo', 'milestones',
+            'mugshot', 'name', 'name_with_project', 'newCodeImport',
+            'obsolete_translatable_series', 'official_answers',
+            'official_anything', 'official_blueprints', 'official_bug_tags',
+            'official_codehosting', 'official_malone', 'owner',
+            'parent_subscription_target', 'packagedInDistros', 'packagings',
+            'past_sprints', 'personHasDriverRights', 'pillar',
+            'pillar_category', 'primary_translatable', 'private_bugs',
+            'programminglang', 'project', 'qualifies_for_free_hosting',
+            'recipes', 'redeemSubscriptionVoucher', 'registrant', 'releases',
+            'remote_product', 'removeCustomLanguageCode',
             'removeTeamFromBranchVisibilityPolicy', 'screenshotsurl',
-            'searchFAQs', 'searchQuestions', 'searchTasks',
-            'security_contact', 'series',
-            'setBranchVisibilityTeamPolicy', 'setPrivateBugs',
+            'searchFAQs', 'searchQuestions', 'searchTasks', 'security_contact',
+            'series', 'setBranchVisibilityTeamPolicy', 'setPrivateBugs',
             'sharesTranslationsWithOtherSide', 'sourceforgeproject',
-            'sourcepackages', 'specification_sharing_policy',
-            'specifications', 'sprints', 'summary', 'target_type_display',
-            'title',
+            'sourcepackages', 'specification_sharing_policy', 'specifications',
+            'sprints', 'summary', 'target_type_display', 'title',
             'translatable_packages', 'translatable_series',
             'translation_focus', 'translationgroup', 'translationgroups',
-            'translationpermission', 'translations_usage',
-            'ubuntu_packages', 'userCanAlterBugSubscription',
-            'userCanAlterSubscription', 'userCanEdit',
-            'userHasBugSubscriptions',
-            'uses_launchpad',
+            'translationpermission', 'translations_usage', 'ubuntu_packages',
+            'userCanAlterBugSubscription', 'userCanAlterSubscription',
+            'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
             'valid_specifications', 'wikiurl')),
+        'launchpad.AnyAllowedPerson': set((
+            'addAnswerContact', 'createQuestionFromBug',
+            'newQuestion', 'removeAnswerContact')),
         #xxxxxx BAD:
         'launchpad.AnyPerson': set((
-            'addAnswerContact', 'addBugSubscription',
+            'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',
-            'createQuestionFromBug', 'newQuestion', 'removeAnswerContact',
             'removeBugSubscription')),
         'launchpad.Append': set(('newFAQ', )),
         'launchpad.Driver': set(('newSeries', )),
@@ -559,9 +544,12 @@ class TestProduct(TestCaseWithFactory):
         self.check_permissions(
             expected_set_permissions, checker.set_permissions, 'set')
 
-    def check_access_to_attributes_of_public_product(self, product, names):
-        # Try to access the given property. NO Unauthorized errors are
-        # raised.
+    def test_access_launchpad_LimitedView_public_product(self):
+        # Everybody, including anonymous users, has access to
+        # properties of public products that require the permission
+        # launchpad.LimitedView
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.LimitedView']
         with person_logged_in(None):
             for attribute_name in names:
                 getattr(product, attribute_name)
@@ -573,17 +561,12 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_public_product(self):
-        # Everybody, including anonymous users, has access to
-        # properties of public products that require the permission
-        # launchpad.LimitedView
-        product = self.factory.makeProduct()
+    def test_access_launchpad_LimitedView_private_product(self):
+        # Only people with grants for a prviate product can access
+        # attributes protected by the permission launchapd.LimitedView.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
         names = self.expected_get_permissions['launchpad.LimitedView']
-        self.check_access_to_attributes_of_public_product(product, names)
-
-    def check_access_to_attributes_of_private_product(self, product, names):
-        # Try to access the given property. Users without access grants
-        # see an Unauthorized exception.
         with person_logged_in(None):
             for attribute_name in names:
                 self.assertRaises(
@@ -597,14 +580,41 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_private_product(self):
-        # Everybody, including anonymous users, has access to
-        # properties of public products that require the permission
-        # launchpad.LimitedView
+    def test_access_launchpad_AnyAllowedPerson_public_product(self):
+        # Only logged in persons hav access to properties of public products
+        # that require the permission launchpad.AnyAllowedPerson.
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(product.owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_launchpad_AnyAllowedPerson_private_product(self):
+        # Only people with grants for a prviate product can access
+        # attributes protected by the permission launchapd.AnyAllowedPerson.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
-        names = self.expected_get_permissions['launchpad.LimitedView']
-        self.check_access_to_attributes_of_private_product(product, names)
+        names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        with person_logged_in(removeSecurityProxy(product).owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
