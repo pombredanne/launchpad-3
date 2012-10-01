@@ -69,6 +69,7 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -413,15 +414,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
-    @property
-    def information_type(self):
-        """See `IProduct`
+    # Place holder for a db column.
+    # XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
+    # into place.
+    def _get_information_type(self):
+        return getattr(
+            self, '_information_type', InformationType.PUBLIC)
 
-        Place holder for a db column.
-        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
-        into place.
-        """
-        pass
+    def _set_information_type(self, value):
+        self._information_type = value
+
+    information_type = property(_get_information_type, _set_information_type)
 
     security_contact = None
 
@@ -1533,7 +1536,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanView(self, user):
         """See `IProductPublic`."""
-        return True #xxxxxxxxxxxxxx
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        # xxxxxxxxx should use policy grants
+        return user.inTeam(self.owner)
 
 
 class ProductSet:
