@@ -108,8 +108,8 @@ We can modify it, and even give it away.
 
 And then delete it.
 
-    >>> response = webservice.named_post(
-    ...     '/package-sets/hoary/renamed', 'delete', {}, api_version='devel')
+    >>> response = webservice.delete(
+    ...     '/package-sets/hoary/renamed', {}, api_version='devel')
     >>> print response
     HTTP/1.1 200 Ok
     ...
