@@ -1050,8 +1050,6 @@ class TestSlave(TestCase):
     def test_resumeHost_timeout(self):
         # On a resume timeouts, 'resumeHost' fires the returned deferred
         # errorback with the `TimeoutError` failure.
-        self.slave_helper.getServerSlave()
-        slave = self.slave_helper.getClientSlave()
 
         # Override the configuration command-line with one that will timeout.
         timeout_config = """
@@ -1061,6 +1059,9 @@ class TestSlave(TestCase):
         """
         config.push('timeout_resume_command', timeout_config)
         self.addCleanup(config.pop, 'timeout_resume_command')
+
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
 
         # On timeouts, the response is a twisted `Failure` object containing
         # a `TimeoutError` error.
@@ -1130,9 +1131,6 @@ class TestSlaveConnectionTimeouts(TestCase):
         super(TestSlaveConnectionTimeouts, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
         self.clock = Clock()
-        self.proxy = ProxyWithConnectionTimeout("fake_url")
-        self.slave = self.slave_helper.getClientSlave(
-            reactor=self.clock, proxy=self.proxy)
 
     def tearDown(self):
         # We need to remove any DelayedCalls that didn't actually get called.
@@ -1144,7 +1142,8 @@ class TestSlaveConnectionTimeouts(TestCase):
         # only the config value should.
         self.pushConfig('builddmaster', socket_timeout=180)
 
-        d = self.slave.echo()
+        slave = self.slave_helper.getClientSlave(reactor=self.clock)
+        d = slave.echo()
         # Advance past the 30 second timeout.  The real reactor will
         # never call connectTCP() since we're not spinning it up.  This
         # avoids "connection refused" errors and simulates an

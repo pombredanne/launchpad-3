@@ -108,10 +108,7 @@ class ProxyWithConnectionTimeout(xmlrpc.Proxy):
                  useDateTime=False, timeout=None):
         xmlrpc.Proxy.__init__(
             self, url, user, password, allowNone, useDateTime)
-        if timeout is None:
-            self.timeout = config.builddmaster.socket_timeout
-        else:
-            self.timeout = timeout
+        self.timeout = timeout
 
     def callRemote(self, method, *args):
         """Basically a carbon copy of the parent but passes the timeout
@@ -160,6 +157,7 @@ class BuilderSlave(object):
         self._vm_host = vm_host
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
+        self.timeout = config.builddmaster.socket_timeout
 
         if reactor is None:
             self.reactor = default_reactor
@@ -178,16 +176,17 @@ class BuilderSlave(object):
         :param proxy: Used By tests to override the xmlrpc.Proxy.
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
+        timeout = config.builddmaster.socket_timeout
         if proxy is None:
-            server_proxy = ProxyWithConnectionTimeout(rpc_url, allowNone=True)
+            server_proxy = ProxyWithConnectionTimeout(
+                rpc_url, allowNone=True, timeout=timeout)
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
         return cls(server_proxy, builder_url, vm_host, reactor)
 
     def _with_timeout(self, d):
-        TIMEOUT = config.builddmaster.socket_timeout
-        return cancel_on_timeout(d, TIMEOUT, self.reactor)
+        return cancel_on_timeout(d, self.timeout, self.reactor)
 
     def abort(self):
         """Abort the current build."""
@@ -266,8 +265,7 @@ class BuilderSlave(object):
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]
         d = defer.Deferred()
-        p = ProcessWithTimeout(
-            d, config.builddmaster.socket_timeout, clock=clock)
+        p = ProcessWithTimeout(d, self.timeout, clock=clock)
         p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
