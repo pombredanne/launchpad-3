@@ -413,15 +413,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
-    @property
-    def information_type(self):
-        """See `IProduct`
-
-        Place holder for a db column.
-        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
-        into place.
-        """
-        pass
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     security_contact = None
 
