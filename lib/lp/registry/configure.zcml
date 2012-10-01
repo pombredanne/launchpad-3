@@ -1340,7 +1340,9 @@
 
         <!-- IQuestionTarget -->
 
-        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
+        <require
+            permission="launchpad.LimitedView"
+            interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
           permission="launchpad.AnyPerson"
           interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
