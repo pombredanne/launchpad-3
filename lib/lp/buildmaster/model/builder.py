@@ -145,7 +145,7 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    def __init__(self, proxy, builder_url, vm_host, reactor=None):
+    def __init__(self, proxy, builder_url, vm_host, timeout, reactor):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
@@ -157,12 +157,8 @@ class BuilderSlave(object):
         self._vm_host = vm_host
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
-        self.timeout = config.builddmaster.socket_timeout
-
-        if reactor is None:
-            self.reactor = default_reactor
-        else:
-            self.reactor = reactor
+        self.timeout = timeout
+        self.reactor = reactor
 
     @classmethod
     def makeBuilderSlave(cls, builder_url, vm_host, reactor=None, proxy=None):
@@ -183,7 +179,7 @@ class BuilderSlave(object):
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
-        return cls(server_proxy, builder_url, vm_host, reactor)
+        return cls(server_proxy, builder_url, vm_host, timeout, reactor)
 
     def _with_timeout(self, d):
         return cancel_on_timeout(d, self.timeout, self.reactor)
