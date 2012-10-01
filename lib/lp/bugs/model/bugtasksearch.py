@@ -242,29 +242,20 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
                 orig_pre_iter_hook(rows)
 
     if len(alternatives) == 1:
-        [query, clauseTables, bugtask_decorator, join_tables,
-         has_duplicate_results, with_clause] = _build_query(alternatives[0])
+        [query, clauseTables, bugtask_decorator, join_tables, with_clause] = (
+            _build_query(alternatives[0]))
         if with_clause:
             store = store.with_(with_clause)
         decorators.append(bugtask_decorator)
-
-        if has_duplicate_results:
-            origin = _build_origin(join_tables, clauseTables, start)
-            outer_origin = _build_origin(orderby_joins, [], start)
-            subquery = Select(
-                BugTaskFlat.bugtask_id, where=query, tables=origin)
-            result = store.using(*outer_origin).find(
-                want, In(BugTaskFlat.bugtask_id, subquery))
-        else:
-            origin = _build_origin(
-                join_tables + orderby_joins, clauseTables, start)
-            result = store.using(*origin).find(want, query)
+        origin = _build_origin(
+            join_tables + orderby_joins, clauseTables, start)
+        result = store.using(*origin).find(want, query)
     else:
         results = []
 
         for params in alternatives:
-            [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(params)
+            [query, clauseTables, decorator, join_tables, with_clause] = (
+                _build_query(params))
             origin = _build_origin(join_tables, clauseTables, start)
             localstore = store
             if with_clause:
@@ -331,7 +322,6 @@ def _build_query(params):
     join_tables = []
 
     decorators = []
-    has_duplicate_results = False
     with_clauses = []
 
     # These arguments can be processed in a loop without any other
@@ -740,9 +730,7 @@ def _build_query(params):
         with_clause = SQL(', '.join(with_clauses))
     else:
         with_clause = None
-    return (
-        query, clauseTables, decorator, join_tables,
-        has_duplicate_results, with_clause)
+    return (query, clauseTables, decorator, join_tables, with_clause)
 
 
 def _process_order_by(params):
