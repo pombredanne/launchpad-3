@@ -1531,6 +1531,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return weight_function
 
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        return True #xxxxxxxxxxxxxx
+
 
 class ProductSet:
     implements(IProductSet)

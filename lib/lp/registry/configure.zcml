@@ -1229,6 +1229,9 @@
         class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
+        <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.product.IProductLimitedView"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
