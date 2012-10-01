@@ -1350,7 +1350,8 @@
 
         <!-- IFAQTarget -->
 
-        <allow
+        <require
+            permission="launchpad.LimitedView"
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>

@@ -420,13 +420,13 @@ class TestProduct(TestCaseWithFactory):
         #xxxxxx BAD:
         CheckerPublic: set((
             
-            'findSimilarFAQs',
+            
             'getBugSummaryContextWhereClause',
-            'getFAQ',
+            
             'id',
             'information_type',
             'qualifies_for_free_hosting',
-            'searchFAQs',
+            
             'userCanView',)),
         'launchpad.LimitedView': set((
             '_getOfficialTagClause', 'active', 'active_or_packaged_series',
@@ -445,7 +445,8 @@ class TestProduct(TestCaseWithFactory):
             'description', 'development_focus', 'development_focusID', 'direct_answer_contacts',
             'displayname', 'distrosourcepackages', 'downloadurl', 'driver',
             'drivers', 'enable_bug_expiration',
-            'enable_bugfiling_duplicate_search', 'findReferencedOOPS', 'findSimilarQuestions',
+            'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
+            'findSimilarFAQs', 'findSimilarQuestions',
             'freshmeatproject', 'getAllowedBugInformationTypes',
             'getAllowedSpecificationInformationTypes', 'getAnnouncement',
             'getAnnouncements', 'getAnswerContactsForLanguage',
@@ -458,7 +459,7 @@ class TestProduct(TestCaseWithFactory):
             'getDefaultBugInformationType',
             'getDefaultSpecificationInformationType',
             'getEffectiveTranslationPermission', 'getExternalBugTracker',
-            'getFirstEntryToImport', 'getLinkedBugWatches',
+            'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
             'getMergeProposals', 'getMilestone',
             'getMilestonesAndReleases', 'getQuestion', 'getQuestionLanguages',
             'getPackage',
@@ -488,7 +489,8 @@ class TestProduct(TestCaseWithFactory):
             'registrant', 'releases', 'remote_product',
             'removeCustomLanguageCode',
             'removeTeamFromBranchVisibilityPolicy', 'screenshotsurl',
-            'searchQuestions', 'searchTasks', 'security_contact', 'series',
+            'searchFAQs', 'searchQuestions', 'searchTasks',
+            'security_contact', 'series',
             'setBranchVisibilityTeamPolicy', 'setPrivateBugs',
             'sharesTranslationsWithOtherSide', 'sourceforgeproject',
             'sourcepackages', 'specification_sharing_policy',
