@@ -283,8 +283,14 @@ class TestBuilder(TestCaseWithFactory):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
         # security context.
-        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(virtualized=False))
         self.assertEqual(builder.url, builder.slave.url)
+        self.assertEqual(10, builder.slave.timeout)
+
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(virtualized=True))
+        self.assertEqual(5, builder.slave.timeout)
 
     def test_recovery_of_aborted_virtual_slave(self):
         # If a virtual_slave is in the ABORTED state,

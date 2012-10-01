@@ -533,8 +533,11 @@ class Builder(SQLBase):
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        return BuilderSlave.makeBuilderSlave(
-            self.url, self.vm_host, config.builddmaster.socket_timeout)
+        if self.virtualized:
+            timeout = config.builddmaster.virtualized_socket_timeout
+        else:
+            timeout = config.builddmaster.socket_timeout
+        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host, timeout)
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
