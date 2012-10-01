@@ -1233,7 +1233,8 @@
             permission="launchpad.LimitedView"
             interface="lp.registry.interfaces.product.IProductLimitedView"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+        <require
+            permission="launchpad.LimitedView"
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.View"
