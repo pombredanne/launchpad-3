@@ -488,12 +488,9 @@ class TestProduct(TestCaseWithFactory):
             'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
             'valid_specifications', 'wikiurl')),
         'launchpad.AnyAllowedPerson': set((
-            'addAnswerContact', 'createQuestionFromBug',
-            'newQuestion', 'removeAnswerContact')),
-        #xxxxxx BAD:
-        'launchpad.AnyPerson': set((
-            'addBugSubscription',
+            'addAnswerContact', 'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',
+            'createQuestionFromBug', 'newQuestion', 'removeAnswerContact',
             'removeBugSubscription')),
         'launchpad.Append': set(('newFAQ', )),
         'launchpad.Driver': set(('newSeries', )),
