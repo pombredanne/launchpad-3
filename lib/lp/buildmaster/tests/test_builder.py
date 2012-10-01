@@ -1157,7 +1157,8 @@ class TestSlaveConnectionTimeouts(TestCase):
 
     def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
         # Make sure that BuilderSlaves use the custom proxy class.
-        slave = BuilderSlave.makeBuilderSlave("url", "host")
+        slave = BuilderSlave.makeBuilderSlave(
+            "url", "host", config.builddmaster.socket_timeout)
         self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 

@@ -41,6 +41,7 @@ from lp.buildmaster.model.builder import (
     rescueBuilderIfLost,
     updateBuilderStatus,
     )
+from lp.services.config import config
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
@@ -319,7 +320,8 @@ class SlaveTestHelpers(fixtures.Fixture):
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
-            self.BASE_URL, 'vmhost', reactor, proxy)
+            self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
+            reactor, proxy)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.

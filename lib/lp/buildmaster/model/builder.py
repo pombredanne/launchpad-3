@@ -161,7 +161,8 @@ class BuilderSlave(object):
         self.reactor = reactor
 
     @classmethod
-    def makeBuilderSlave(cls, builder_url, vm_host, reactor=None, proxy=None):
+    def makeBuilderSlave(cls, builder_url, vm_host, timeout, reactor=None,
+                         proxy=None):
         """Create and return a `BuilderSlave`.
 
         :param builder_url: The URL of the slave buildd machine,
@@ -172,7 +173,6 @@ class BuilderSlave(object):
         :param proxy: Used By tests to override the xmlrpc.Proxy.
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
-        timeout = config.builddmaster.socket_timeout
         if proxy is None:
             server_proxy = ProxyWithConnectionTimeout(
                 rpc_url, allowNone=True, timeout=timeout)
@@ -533,7 +533,8 @@ class Builder(SQLBase):
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
+        return BuilderSlave.makeBuilderSlave(
+            self.url, self.vm_host, config.builddmaster.socket_timeout)
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
