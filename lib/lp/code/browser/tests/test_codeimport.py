@@ -61,7 +61,7 @@ class TestImportDetails(TestCaseWithFactory):
             svn_details, RevisionControlSystems.SVN)
 
     def test_branch_owner_of_import_forbidden(self):
-        # The branch owner is forbidden to edit an import.
+        # Unauthorized users are forbidden to edit an import.
         cimport = self.factory.makeCodeImport()
         with person_logged_in(cimport.branch.owner):
             self.assertRaises(
