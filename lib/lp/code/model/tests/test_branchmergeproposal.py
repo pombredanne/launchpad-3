@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -1521,13 +1519,11 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         reference = merge_proposal.nominateReviewer(
-            reviewer=reviewer,
-            registrant=merge_proposal.source_branch.owner,
+            reviewer=reviewer, registrant=merge_proposal.source_branch.owner,
             review_type='General')
         self.assertEqual('general', reference.review_type)
         merge_proposal.nominateReviewer(
-            reviewer=reviewer,
-            registrant=merge_proposal.source_branch.owner,
+            reviewer=reviewer, registrant=merge_proposal.source_branch.owner,
             review_type='Specific')
         # Note we're using the reference from the first call
         self.assertEqual('specific', reference.review_type)
@@ -1539,11 +1535,9 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             BranchSubscriptionNotificationLevel.NOEMAIL,
             sub.notification_level)
         self.assertEqual(
-            BranchSubscriptionDiffSize.NODIFF,
-            sub.max_diff_lines)
+            BranchSubscriptionDiffSize.NODIFF, sub.max_diff_lines)
         self.assertEqual(
-            CodeReviewNotificationLevel.FULL,
-            sub.review_level)
+            CodeReviewNotificationLevel.FULL, sub.review_level)
         # The reviewer can see the branch.
         self.assertTrue(branch.visibleByUser(reviewer))
         if branch.stacked_on is not None:
@@ -1585,6 +1579,14 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
+    def _assertVoteReference(self, votes, reviewer, comment):
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertIsNone(vote_reference.review_type)
+        self.assertEqual(comment, vote_reference.comment)
+
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""
         reviewer = self.factory.makePerson()
@@ -1594,12 +1596,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertEqual(1, len(votes))
-        vote_reference = votes[0]
-        self.assertEqual(reviewer, vote_reference.reviewer)
-        self.assertEqual(reviewer, vote_reference.registrant)
-        self.assertTrue(vote_reference.review_type is None)
-        self.assertEqual(comment, vote_reference.comment)
+        self._assertVoteReference(votes, reviewer, comment)
 
     def test_comment_without_a_vote_does_not_create_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -1621,12 +1618,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertEqual(1, len(votes))
-        vote_reference = votes[0]
-        self.assertEqual(reviewer, vote_reference.reviewer)
-        self.assertEqual(reviewer, vote_reference.registrant)
-        self.assertTrue(vote_reference.review_type is None)
-        self.assertEqual(comment2, vote_reference.comment)
+        self._assertVoteReference(votes, reviewer, comment2)
 
     def test_vote_by_nominated_reuses_reference(self):
         """A comment with a vote for a nominated reviewer alters reference."""
@@ -2086,3 +2078,11 @@ class TestWebservice(WebServiceTestCase):
             BadRequest,
             '(.|\n)*Invalid state transition for merge proposal(.|\n)*'):
             ws_bmp.setStatus(status='Approved')
+
+    def test_previewdiff_with_null_diffstat(self):
+        # A previewdiff with an empty diffstat doesn't crash when fetched.
+        previewdiff = self.factory.makePreviewDiff()
+        previewdiff.diff.diffstat = None
+        user = previewdiff.branch_merge_proposal.target_branch.owner
+        ws_previewdiff = self.wsObject(previewdiff, user=user)
+        self.assertIsNone(ws_previewdiff.diffstat)
