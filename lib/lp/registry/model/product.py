@@ -409,7 +409,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         return None
 
-    @date_next_suggest_packaging.setter
+    @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):
         """See `IProduct`
 
