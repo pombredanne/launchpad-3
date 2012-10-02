@@ -255,7 +255,7 @@ class DatabasePreflight:
                     max_lag = max(max_lag, lag)
             if max_lag < MAX_LAG:
                 break
-            time.sleep(0.2)
+            time.sleep(0.1)
 
         if max_lag < timedelta(0):
             streaming_lagged = False
@@ -331,19 +331,23 @@ class KillConnectionsPreflight(DatabasePreflight):
     def check_open_connections(self):
         """Kill all non-system connections to Launchpad databases.
 
-        We only check on subscribed nodes, as there will be active systems
-        connected to other nodes in the replication cluster (such as the
-        SSO servers).
+        If replication is paused, only connections on the master database
+        are killed.
 
         System users are defined by SYSTEM_USERS.
         """
         # We keep trying to terminate connections every 0.5 seconds for
         # up to 10 seconds.
         num_tries = 20
-        seconds_to_pause = 0.5
+        seconds_to_pause = 0.1
+        if self.replication_paused:
+            nodes = set([self.lpmain_master_node])
+        else:
+            nodes = self.lpmain_nodes
+
         for loop_count in range(num_tries):
             all_clear = True
-            for node in self.lpmain_nodes:
+            for node in nodes:
                 cur = node.con.cursor()
                 cur.execute("""
                     SELECT
