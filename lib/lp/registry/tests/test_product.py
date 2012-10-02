@@ -533,8 +533,8 @@ class TestProduct(TestCaseWithFactory):
             'launchpad.TranslationsAdmin': set((
                 'translation_focus', 'translationgroup',
                 'translationpermission', 'translations_usage')),
-            # xxxxxx BAD
-            'launchpad.View': set(('date_next_suggest_packaging', )),
+            'launchpad.AnyAllowedPerson': set((
+                'date_next_suggest_packaging', )),
             }
         product = self.factory.makeProduct()
         checker = getChecker(product)
@@ -558,7 +558,7 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_private_product(self):
+    def test_access_launchpad_LimitedView_proprietary_product(self):
         # Only people with grants for a prviate product can access
         # attributes protected by the permission launchapd.LimitedView.
         product = self.factory.makeProduct(
@@ -594,7 +594,7 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_AnyAllowedPerson_private_product(self):
+    def test_access_launchpad_AnyAllowedPerson_proprietary_product(self):
         # Only people with grants for a prviate product can access
         # attributes protected by the permission launchapd.AnyAllowedPerson.
         product = self.factory.makeProduct(
@@ -612,6 +612,37 @@ class TestProduct(TestCaseWithFactory):
         with person_logged_in(removeSecurityProxy(product).owner):
             for attribute_name in names:
                 getattr(product, attribute_name)
+
+    def test_set_launchpad_AnyAllowedPerson_public_product(self):
+        # Only logged in users can set attributes protected by the
+        # permission launchapd.AnyAllowedPerson.
+        product = self.factory.makeProduct()
+        with person_logged_in(None):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+        with person_logged_in(product.owner):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+
+    def test_set_launchpad_AnyAllowedPerson_proprietary_product(self):
+        # Only people with grants for a prviate product can set
+        # attributes protected by the permission launchapd.AnyAllowedPerson.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        with person_logged_in(removeSecurityProxy(product).owner):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

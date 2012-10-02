@@ -1239,7 +1239,7 @@
             permission="launchpad.LimitedView"
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
-            permission="launchpad.View"
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="date_next_suggest_packaging"/>
         <require
             permission="launchpad.Driver"
