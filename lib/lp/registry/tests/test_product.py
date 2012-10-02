@@ -544,7 +544,7 @@ class TestProduct(TestCaseWithFactory):
     def test_access_launchpad_View_public_product(self):
         # Everybody, including anonymous users, has access to
         # properties of public products that require the permission
-        # launchpad.LimitedView
+        # launchpad.View
         product = self.factory.makeProduct()
         names = self.expected_get_permissions['launchpad.View']
         with person_logged_in(None):
@@ -560,7 +560,7 @@ class TestProduct(TestCaseWithFactory):
 
     def test_access_launchpad_View_proprietary_product(self):
         # Only people with grants for a prviate product can access
-        # attributes protected by the permission launchapd.LimitedView.
+        # attributes protected by the permission launchapd.View.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         names = self.expected_get_permissions['launchpad.View']
