@@ -2016,17 +2016,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # count with single task
         url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        self.assertThat(recorder, HasQueryCount(LessThan(32)))
         # count with many tasks
         buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
-
-    def test_mustache_model_missing_if_no_flag(self):
-        """The IJSONRequestCache should contain mustache_model."""
-        view = self.makeView()
-        cache = IJSONRequestCache(view.request)
-        self.assertIs(None, cache.objects.get('mustache_model'))
+        self.assertThat(recorder, HasQueryCount(LessThan(32)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.
@@ -2227,13 +2221,6 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """Bug numbers with a leading hash are unique to new rendering."""
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
         return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
-
-    def test_mustache_rendering_missing_if_no_flag(self):
-        """If the flag is missing, then no mustache features appear."""
-        bug_task, browser = self.getBugtaskBrowser()
-        number_tag = self.getBugNumberTag(bug_task)
-        self.assertHTML(browser, number_tag, invert=True)
-        self.assertHTML(browser, self.client_listing, invert=True)
 
     def test_mustache_rendering(self):
         """If the flag is present, then all mustache features appear."""
