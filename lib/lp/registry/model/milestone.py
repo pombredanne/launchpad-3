@@ -31,6 +31,8 @@ from storm.expr import (
     Join,
     LeftJoin,
     Or,
+    Select,
+    Union,
     )
 from storm.locals import Store
 from storm.zope import IResultSet
@@ -195,18 +197,23 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         store = Store.of(self)
         origin = [
             Specification,
-            LeftJoin(
-                SpecificationWorkItem,
-                SpecificationWorkItem.specification_id == Specification.id),
             LeftJoin(Person, Specification.assigneeID == Person.id),
             ]
 
         results = store.using(*origin).find(
             (Specification, Person),
-            Or(Specification.milestoneID == self.id,
-               SpecificationWorkItem.milestone_id == self.id),
-            Or(SpecificationWorkItem.deleted == None,
-               SpecificationWorkItem.deleted == False))
+            Specification.id.is_in(
+                Union(
+                    Select(
+                        Specification.id, tables=[Specification],
+                        where=(Specification.milestone == self)),
+                    Select(
+                        SpecificationWorkItem.specification_id,
+                        tables=[SpecificationWorkItem],
+                        where=And(
+                            SpecificationWorkItem.milestone == self,
+                            SpecificationWorkItem.deleted == False)),
+                    all=True)))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
