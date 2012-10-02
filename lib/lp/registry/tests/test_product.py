@@ -418,7 +418,7 @@ class TestProduct(TestCaseWithFactory):
 
     expected_get_permissions = {
         CheckerPublic: set(('id', 'information_type', 'userCanView',)),
-        'launchpad.LimitedView': set((
+        'launchpad.View': set((
             '_getOfficialTagClause', 'active', 'active_or_packaged_series',
             'aliases', 'all_milestones', 'all_specifications',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',
@@ -541,12 +541,12 @@ class TestProduct(TestCaseWithFactory):
         self.check_permissions(
             expected_set_permissions, checker.set_permissions, 'set')
 
-    def test_access_launchpad_LimitedView_public_product(self):
+    def test_access_launchpad_View_public_product(self):
         # Everybody, including anonymous users, has access to
         # properties of public products that require the permission
         # launchpad.LimitedView
         product = self.factory.makeProduct()
-        names = self.expected_get_permissions['launchpad.LimitedView']
+        names = self.expected_get_permissions['launchpad.View']
         with person_logged_in(None):
             for attribute_name in names:
                 getattr(product, attribute_name)
@@ -558,12 +558,12 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
-    def test_access_launchpad_LimitedView_proprietary_product(self):
+    def test_access_launchpad_View_proprietary_product(self):
         # Only people with grants for a prviate product can access
         # attributes protected by the permission launchapd.LimitedView.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
-        names = self.expected_get_permissions['launchpad.LimitedView']
+        names = self.expected_get_permissions['launchpad.View']
         with person_logged_in(None):
             for attribute_name in names:
                 self.assertRaises(

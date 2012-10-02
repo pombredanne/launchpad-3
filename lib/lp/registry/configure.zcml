@@ -1230,13 +1230,13 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.registry.interfaces.product.IProductLimitedView"/>
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.AnyAllowedPerson"
@@ -1317,7 +1317,7 @@
                 translationpermission
                 translations_usage"/>
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             attributes="
                 qualifies_for_free_hosting"/>
         <require
@@ -1333,7 +1333,7 @@
         <!-- IHasAliases -->
 
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             attributes="
                 aliases"/>
         <require
@@ -1344,7 +1344,7 @@
         <!-- IQuestionTarget -->
 
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
           permission="launchpad.AnyAllowedPerson"
@@ -1353,7 +1353,7 @@
         <!-- IFAQTarget -->
 
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
@@ -1365,7 +1365,7 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyAllowedPerson"
@@ -1374,7 +1374,7 @@
         <!-- IHasBugSupervisor -->
 
         <require
-            permission="launchpad.LimitedView"
+            permission="launchpad.View"
             attributes="
                 bug_supervisor"/>
         <require

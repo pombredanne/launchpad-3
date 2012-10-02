@@ -432,7 +432,7 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
 
 class ViewProduct(AuthorizationBase):
-    permission = 'launchpad.LimitedView'
+    permission = 'launchpad.View'
     usedfor = IProduct
 
     def checkAuthenticated(self, user):
