@@ -691,10 +691,7 @@
 
 <metal:listing_navigator define-macro="activate_listing_js">
   <script type="text/javascript"
-    tal:define="
-      show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
-      advanced_search view/shouldShowAdvancedForm"
-    tal:condition="python: show_new_listings and not advanced_search">
+    tal:condition="not: view/shouldShowAdvancedForm">
     LPJS.use('lp.bugs.buglisting', function(Y) {
         Y.on('domready', function() {
             var view = new Y.lp.bugs.buglisting.TableView({
