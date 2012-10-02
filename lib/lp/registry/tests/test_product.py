@@ -40,6 +40,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     BranchSharingPolicy,
     BugSharingPolicy,
+    SharingPermission,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
@@ -67,6 +68,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -563,6 +565,7 @@ class TestProduct(TestCaseWithFactory):
         # attributes protected by the permission launchpad.View.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
         names = self.expected_get_permissions['launchpad.View']
         with person_logged_in(None):
             for attribute_name in names:
@@ -573,7 +576,16 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 self.assertRaises(
                     Unauthorized, getattr, product, attribute_name)
-        with person_logged_in(removeSecurityProxy(product).owner):
+        with person_logged_in(owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
@@ -599,6 +611,7 @@ class TestProduct(TestCaseWithFactory):
         # attributes protected by the permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
         names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
         with person_logged_in(None):
             for attribute_name in names:
@@ -609,7 +622,16 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 self.assertRaises(
                     Unauthorized, getattr, product, attribute_name)
-        with person_logged_in(removeSecurityProxy(product).owner):
+        with person_logged_in(owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
@@ -632,6 +654,7 @@ class TestProduct(TestCaseWithFactory):
         # attributes protected by the permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
         with person_logged_in(None):
             self.assertRaises(
                 Unauthorized, setattr, product, 'date_next_suggest_packaging',
@@ -641,8 +664,37 @@ class TestProduct(TestCaseWithFactory):
             self.assertRaises(
                 Unauthorized, setattr, product, 'date_next_suggest_packaging',
                 'foo')
-        with person_logged_in(removeSecurityProxy(product).owner):
+        with person_logged_in(owner):
             setattr(product, 'date_next_suggest_packaging', 'foo')
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+
+    def test_userCanView_caches_known_users(self):
+        # userCanView() maintains a cache of users known to have the
+        # permission to access a product.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
+        user = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            with StormStatementRecorder() as recorder:
+                # The first access to a property of the product from
+                # a user requires a DB query.
+                product.homepageurl
+                self.assertEqual(1, len(recorder.queries))
+                # The second access does not require another query.
+                product.description
+                self.assertEqual(1, len(recorder.queries))
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

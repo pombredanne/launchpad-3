@@ -149,6 +149,10 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import(
+    AccessPolicy,
+    AccessPolicyGrant,
+    )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -1534,11 +1538,34 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return weight_function
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
     def userCanView(self, user):
         """See `IProductPublic`."""
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
-        return user.inTeam(self.owner)
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        store = Store.of(self)
+        grants_for_user = store.using(
+            AccessPolicy,
+            Join(
+                AccessPolicyGrant,
+                And(
+                    AccessPolicyGrant.policy_id == AccessPolicy.id,
+                    AccessPolicyGrant.grantee_id == user.id))).find(
+            AccessPolicyGrant,
+            AccessPolicy.product_id == self.id,
+            AccessPolicy.type == self.information_type)
+        if grants_for_user.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
 
 
 class ProductSet:

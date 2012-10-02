@@ -65,6 +65,7 @@ from zope.security.proxy import (
 
 from lp.app.enums import (
     InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
@@ -1024,7 +1025,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
         if information_type is not None:
+            owner = product.owner
             naked_product.information_type = information_type
+            if information_type in PROPRIETARY_INFORMATION_TYPES:
+                policy = self.makeAccessPolicy(product, information_type)
+                self.makeAccessPolicyGrant(policy, grantee=owner)
 
         return product
 
