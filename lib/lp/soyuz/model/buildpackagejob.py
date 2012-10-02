@@ -7,9 +7,6 @@ __all__ = [
     ]
 
 
-from datetime import datetime
-
-import pytz
 from storm.locals import (
     Int,
     Reference,
@@ -76,18 +73,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         """See `IBuildPackageJob`."""
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
         score = 0
 
         # Private builds get uber score.
@@ -121,14 +106,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             distroseries=self.build.distro_series)
         if not self.build.archive.is_ppa and not package_sets.is_empty():
             score += package_sets.max(Packageset.relative_build_score)
-
-        # Calculates the build queue time component of the score.
-        right_now = datetime.now(pytz.timezone('UTC'))
-        eta = right_now - self.job.date_created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                break
 
         return score
 

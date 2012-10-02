@@ -246,8 +246,7 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeBuildJob(self, purpose=None, private=False, component="main",
-                     urgency="high", pocket="RELEASE", section_name=None,
-                     age=None):
+                     urgency="high", pocket="RELEASE", section_name=None):
         if purpose is not None or private:
             archive = self.factory.makeArchive(
                 purpose=purpose, private=private)
@@ -260,11 +259,7 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(
             source_package_release=naked_spph.sourcepackagerelease,
             pocket=pocket)
-        job = removeSecurityProxy(build).makeJob()
-        if age is not None:
-            removeSecurityProxy(job).job.date_created = (
-                datetime.now(pytz.timezone("UTC")) - timedelta(seconds=age))
-        return job
+        return removeSecurityProxy(build).makeJob()
 
     # The defaults for pocket, component, and urgency here match those in
     # makeBuildJob.
@@ -322,32 +317,29 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             job, "RELEASE", "main", "high", PRIVATE_ARCHIVE_SCORE_BONUS)
 
     def test_main_release_low_recent_score(self):
-        # Builds created less than five minutes ago get no bonus.
-        job = self.makeBuildJob(component="main", urgency="low", age=290)
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
+        job = self.makeBuildJob(component="main", urgency="low")
         self.assertCorrectScore(job, "RELEASE", "main", "low")
 
     def test_universe_release_high_five_minutes_score(self):
-        # 1500 (RELEASE) + 250 (universe) + 15 (high) + 5 (>300s) = 1770.
-        job = self.makeBuildJob(component="universe", urgency="high", age=310)
-        self.assertCorrectScore(job, "RELEASE", "universe", "high", 5)
+        # 1500 (RELEASE) + 250 (universe) + 15 (high) = 1765.
+        job = self.makeBuildJob(component="universe", urgency="high")
+        self.assertCorrectScore(job, "RELEASE", "universe", "high")
 
     def test_multiverse_release_medium_fifteen_minutes_score(self):
-        # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) + 10 (>900s) = 1520.
-        job = self.makeBuildJob(
-            component="multiverse", urgency="medium", age=1000)
-        self.assertCorrectScore(job, "RELEASE", "multiverse", "medium", 10)
+        # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) = 1510.
+        job = self.makeBuildJob(component="multiverse", urgency="medium")
+        self.assertCorrectScore(job, "RELEASE", "multiverse", "medium")
 
     def test_main_release_emergency_thirty_minutes_score(self):
-        # 1500 (RELEASE) + 1000 (main) + 20 (emergency) + 15 (>1800s) = 2535.
-        job = self.makeBuildJob(
-            component="main", urgency="emergency", age=1801)
-        self.assertCorrectScore(job, "RELEASE", "main", "emergency", 15)
+        # 1500 (RELEASE) + 1000 (main) + 20 (emergency) = 2520.
+        job = self.makeBuildJob(component="main", urgency="emergency")
+        self.assertCorrectScore(job, "RELEASE", "main", "emergency")
 
     def test_restricted_release_low_one_hour_score(self):
-        # 1500 (RELEASE) + 750 (restricted) + 5 (low) + 20 (>3600s) = 2275.
-        job = self.makeBuildJob(
-            component="restricted", urgency="low", age=4000)
-        self.assertCorrectScore(job, "RELEASE", "restricted", "low", 20)
+        # 1500 (RELEASE) + 750 (restricted) + 5 (low) = 2255.
+        job = self.makeBuildJob(component="restricted", urgency="low")
+        self.assertCorrectScore(job, "RELEASE", "restricted", "low")
 
     def test_backports_score(self):
         # BACKPORTS is the lowest-priority pocket.
