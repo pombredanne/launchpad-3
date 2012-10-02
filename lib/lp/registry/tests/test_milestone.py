@@ -230,7 +230,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(
             product=self.factory.makeProduct())
         specification = self.factory.makeSpecification(
-            milestone=milestone, product=milestone.product)
+            product=milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
         self.assertEqual([], list(milestone.specifications))
