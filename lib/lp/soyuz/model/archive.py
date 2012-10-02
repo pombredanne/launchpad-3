@@ -1540,7 +1540,7 @@ class Archive(SQLBase):
                     BinaryPackageFile.binarypackagereleaseID,
                 BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
                 )
-        elif filename.endswith('_source.changes'):
+        elif filename.endswith('.changes'):
             clauses = (
                 SourcePackagePublishingHistory.archive == self.id,
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
