@@ -445,12 +445,29 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
             LeftJoin(Person, Specification.assigneeID == Person.id),
             ]
 
+        milestones = Select(
+            Milestone.id,
+            tables=[Milestone, Product],
+            where=And(
+                Milestone.name == self.name,
+                Milestone.productID == Product.id,
+                Product.project == self.target))
+
         results = store.using(*origin).find(
             (Specification, Person),
-            Product.projectID == self.target.id,
-            Milestone.name == self.name,
-            Or(SpecificationWorkItem.deleted == None,
-               SpecificationWorkItem.deleted == False))
+            Specification.id.is_in(
+                Union(
+                    Select(
+                        Specification.id, tables=[Specification],
+                        where=(Specification.milestoneID.is_in(milestones))),
+                    Select(
+                        SpecificationWorkItem.specification_id,
+                        tables=[SpecificationWorkItem],
+                        where=And(
+                            SpecificationWorkItem.milestone_id.is_in(
+                                milestones),
+                            SpecificationWorkItem.deleted == False)),
+                    all=True)))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
