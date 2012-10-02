@@ -42,8 +42,9 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
         return result
 
     def getPillarOnWebservice(self, pillar_obj):
+        pillar_name = pillar_obj.name
         launchpadlib = self.getLaunchpadlib()
-        return launchpadlib.load(pillar_obj.name)
+        return launchpadlib.load(pillar_name)
 
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
