@@ -29,11 +29,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import BugAttachmentChange
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
-from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -417,6 +417,15 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.assertEqual(
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
+
+    def test_secrecy_view_ajax_can_add_tasks(self):
+        # The return data contains flags indicating whether project and package
+        # tasks can be added.
+        bug = self.factory.makeBug()
+        result_data = self._assert_secrecy_view_ajax_render(
+            bug, 'USERDATA', True)
+        self.assertTrue(result_data['can_add_project_task'])
+        self.assertTrue(result_data['can_add_package_task'])
 
     def test_secrecy_view_ajax_render_no_check(self):
         # An information type change request is processed as expected when the

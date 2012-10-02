@@ -13,8 +13,6 @@ lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 """
 
 import _pythonpath
-# quiet pyflakes
-_pythonpath
 
 import os
 import sys

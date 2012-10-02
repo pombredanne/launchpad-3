@@ -44,7 +44,7 @@
 
       <tal:participants repeat="member members_batch">
 
-        <tal:specs define="specifications member/specifications">
+        <tal:specs define="specifications member/@@+specworkload/specifications">
 
           <div style="margin-bottom: 1em;" tal:condition="specifications">
             <p>

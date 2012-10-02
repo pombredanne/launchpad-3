@@ -26,8 +26,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
-    Or,
     Not,
+    Or,
     Select,
     SQL,
     Sum,
@@ -81,6 +81,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -103,12 +108,7 @@ from lp.services.tokens import (
     create_unique_token_for_table,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.url import urlappend
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation

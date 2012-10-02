@@ -10,13 +10,13 @@ from lp.services.database import (
     read_transaction,
     write_transaction,
     )
-from lp.services.librarian.model import LibraryFileContent
-from lp.services.librarianserver import db
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.librarian.model import LibraryFileContent
+from lp.services.librarianserver import db
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 

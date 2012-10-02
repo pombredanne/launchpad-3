@@ -801,7 +801,8 @@
             interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+            interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"
+            set_attributes="name description owner"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>

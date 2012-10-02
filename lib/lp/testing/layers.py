@@ -113,6 +113,11 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
@@ -135,12 +140,7 @@ from lp.services.timeout import (
     set_default_timeout_function,
     )
 from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IOpenLaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.servers import (
     LaunchpadAccessLogger,
     register_launchpad_request_publication_factories,

@@ -30,6 +30,11 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -48,11 +53,6 @@ from lp.services.verification.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 
 
 MAIL_APP = 'services/verification'

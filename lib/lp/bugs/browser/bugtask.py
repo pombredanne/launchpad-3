@@ -31,6 +31,8 @@ __all__ = [
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
+    'can_add_package_task_to_bug',
+    'can_add_project_task_to_bug',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
@@ -3890,34 +3892,40 @@ class BugTasksAndNominationsView(LaunchpadView):
             return None
 
     def canAddProjectTask(self):
-        """Can a new bug task on a project be added to this bug?
-
-        If a bug has any bug tasks already, were it to be Proprietary or
-        Embargoed, it cannot be marked as also affecting any other
-        project, so return False.
-        """
-        bug = self.context
-        if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-            return True
-        return len(bug.bugtasks) == 0
+        return can_add_project_task_to_bug(self.context)
 
     def canAddPackageTask(self):
-        """Can a new bug task on a src pkg be added to this bug?
+        return can_add_package_task_to_bug(self.context)
 
-        If a bug has any existing bug tasks on a project, were it to
-        be Proprietary or Embargoed, then it cannot be marked as
-        affecting a package, so return False.
 
-        A task on a given package may still be illegal to add, but
-        this will be caught when bug.addTask() is attempted.
-        """
-        bug = self.context
-        if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-            return True
-        for pillar in bug.affected_pillars:
-            if IProduct.providedBy(pillar):
-                return False
+def can_add_project_task_to_bug(bug):
+    """Can a new bug task on a project be added to this bug?
+
+    If a bug has any bug tasks already, were it to be Proprietary or
+    Embargoed, it cannot be marked as also affecting any other
+    project, so return False.
+    """
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
         return True
+    return len(bug.bugtasks) == 0
+
+
+def can_add_package_task_to_bug(bug):
+    """Can a new bug task on a src pkg be added to this bug?
+
+    If a bug has any existing bug tasks on a project, were it to
+    be Proprietary or Embargoed, then it cannot be marked as
+    affecting a package, so return False.
+
+    A task on a given package may still be illegal to add, but
+    this will be caught when bug.addTask() is attempted.
+    """
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
+        return True
+    for pillar in bug.affected_pillars:
+        if IProduct.providedBy(pillar):
+            return False
+    return True
 
 
 class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,

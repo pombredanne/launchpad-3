@@ -1146,7 +1146,7 @@ First, Carlos does not have any completed specifications assigned to
 him:
 
     >>> from lp.blueprints.enums import SpecificationFilter
-    >>> carlos.specifications(filter=[
+    >>> carlos.specifications(None, filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()
     0
@@ -1154,7 +1154,7 @@ him:
 Next, Carlos has two incomplete specs *related* to him:
 
     >>> filter = []
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.specifications(None, filter=filter):
     ...     print spec.name, spec.is_complete, spec.informational
     svg-support False False
     extension-manager-upgrades False True
@@ -1177,39 +1177,39 @@ is the approver.
 
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> filter = [SpecificationFilter.APPROVER]
-    >>> for spec in mark.specifications(filter=filter):
+    >>> for spec in mark.specifications(None, filter=filter):
     ...     print spec.name
     extension-manager-upgrades
 
 But has registered 5 of them:
 
     >>> filter = [SpecificationFilter.CREATOR]
-    >>> print foobar.specifications(filter=filter).count()
+    >>> print foobar.specifications(None, filter=filter).count()
     5
 
 Now Celso, on the other hand, has 2 specs related to him:
 
     >>> cprov = personset.getByName('cprov')
-    >>> cprov.specifications().count()
+    >>> cprov.specifications(None).count()
     2
 
 On one of those, he is the approver:
 
     >>> filter = [SpecificationFilter.APPROVER]
-    >>> for spec in cprov.specifications(filter=filter):
+    >>> for spec in cprov.specifications(None, filter=filter):
     ...     print spec.name
     svg-support
 
 And on another one, he is the drafter
 
     >>> filter = [SpecificationFilter.DRAFTER]
-    >>> for spec in cprov.specifications(filter=filter):
+    >>> for spec in cprov.specifications(None, filter=filter):
     ...     print spec.name
     e4x
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in cprov.specifications(filter=['svg']):
+    >>> for spec in cprov.specifications(None, filter=['svg']):
     ...     print spec.name
     svg-support
 
@@ -1225,7 +1225,7 @@ Inactive products are excluded from the listings.
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
-    >>> cprov.specifications(filter=['svg']).count()
+    >>> cprov.specifications(None, filter=['svg']).count()
     0
 
 Reset firefox so we don't mess up later tests.

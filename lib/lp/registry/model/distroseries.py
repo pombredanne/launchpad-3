@@ -101,6 +101,11 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_caches,
@@ -115,11 +120,6 @@ from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
     )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
@@ -777,16 +777,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
 
-    @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 
@@ -1029,7 +1020,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
-        sourcepackagerelease.sourcepackagename=%s AND
+        sourcepackagepublishinghistory.sourcepackagename=%s AND
         distroseries=%s
         """ % sqlvalues(spn.id, self.id)]
 
