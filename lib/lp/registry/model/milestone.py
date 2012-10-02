@@ -28,9 +28,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
-    Join,
     LeftJoin,
-    Or,
     Select,
     Union,
     )
