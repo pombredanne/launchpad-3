@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from contextlib import contextmanager
 from datetime import (
     datetime,
     timedelta,
@@ -77,11 +76,9 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     celebrity_logged_in,
-    feature_flags,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -104,14 +101,13 @@ from lp.testing.views import create_initialized_view
 
 def getFeedViewCache(target, feed_cls):
     """Return JSON cache for a feed's delegate view."""
-    with dynamic_listings():
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
-        setFirstLayer(request, FeedsLayer)
-        feed = feed_cls(target, request)
-        delegate_view = feed._createView()
-        delegate_view.initialize()
-        return IJSONRequestCache(delegate_view.request)
+    request = LaunchpadTestRequest(
+        SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+    setFirstLayer(request, FeedsLayer)
+    feed = feed_cls(target, request)
+    delegate_view = feed._createView()
+    delegate_view.initialize()
+    return IJSONRequestCache(delegate_view.request)
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -1960,14 +1956,6 @@ def make_bug_task_listing_item(
         target_context=target_context)
 
 
-@contextmanager
-def dynamic_listings():
-    """Context manager to enable new bug listings."""
-    with feature_flags():
-        set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
-        yield
-
-
 class TestBugTaskSearchListingView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -2028,17 +2016,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # count with single task
         url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        self.assertThat(recorder, HasQueryCount(LessThan(32)))
         # count with many tasks
         buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
-
-    def test_mustache_model_missing_if_no_flag(self):
-        """The IJSONRequestCache should contain mustache_model."""
-        view = self.makeView()
-        cache = IJSONRequestCache(view.request)
-        self.assertIs(None, cache.objects.get('mustache_model'))
+        self.assertThat(recorder, HasQueryCount(LessThan(32)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.
@@ -2048,12 +2030,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         owner, item = make_bug_task_listing_item(self.factory)
         self.useContext(person_logged_in(owner))
-        with dynamic_listings():
-            view = self.makeView(item.bugtask)
-            cache = IJSONRequestCache(view.request)
-            items = cache.objects['mustache_model']['items']
-            self.assertEqual(1, len(items))
-            self.assertEqual(item.model, items[0])
+        view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        items = cache.objects['mustache_model']['items']
+        self.assertEqual(1, len(items))
+        self.assertEqual(item.model, items[0])
 
     def test_no_next_prev_for_single_batch(self):
         """The IJSONRequestCache should contain data about ajacent batches.
@@ -2063,8 +2044,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         owner, item = make_bug_task_listing_item(self.factory)
         self.useContext(person_logged_in(owner))
-        with dynamic_listings():
-            view = self.makeView(item.bugtask)
+        view = self.makeView(item.bugtask)
         cache = IJSONRequestCache(view.request)
         self.assertIs(None, cache.objects.get('next'))
         self.assertIs(None, cache.objects.get('prev'))
@@ -2077,8 +2057,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         task = self.factory.makeBugTask()
         self.factory.makeBugTask(target=task.target)
-        with dynamic_listings():
-            view = self.makeView(task, size=1)
+        view = self.makeView(task, size=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 1}, cache.objects.get('next'))
 
@@ -2090,14 +2069,12 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         task = self.factory.makeBugTask()
         task2 = self.factory.makeBugTask(target=task.target)
-        with dynamic_listings():
-            view = self.makeView(task2, size=1, memo=1)
+        view = self.makeView(task2, size=1, memo=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
 
     def test_provides_view_name(self):
         """The IJSONRequestCache should provide the view's name."""
-        self.useContext(dynamic_listings())
         view = self.makeView()
         cache = IJSONRequestCache(view.request)
         self.assertEqual('+bugs', cache.objects['view_name'])
@@ -2111,16 +2088,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_default_order_by(self):
         """order_by defaults to '-importance in JSONRequestCache"""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task)
+        view = self.makeView(task)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('-importance', cache.objects['order_by'])
 
     def test_order_by_importance(self):
         """order_by follows query params in JSONRequestCache"""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, orderby='importance')
+        view = self.makeView(task, orderby='importance')
         cache = IJSONRequestCache(view.request)
         self.assertEqual('importance', cache.objects['order_by'])
 
@@ -2130,8 +2105,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         order_by, memo, start, forwards.  These default to sane values.
         """
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task)
+        view = self.makeView(task)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('-importance', cache.objects['order_by'])
         self.assertIs(None, cache.objects['memo'])
@@ -2145,8 +2119,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         order_by, memo, start, forwards.  These are calculated appropriately.
         """
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('1', cache.objects['memo'])
         self.assertEqual(0, cache.objects['start'])
@@ -2156,8 +2129,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_field_visibility(self):
         """Cache contains sane-looking field_visibility values."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_id'])
@@ -2165,8 +2137,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_cookie_name(self):
         """The cookie name should be in cache for js code access."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         cookie_name = cache.objects['cbl_cookie_name']
         self.assertEqual('anon-buglist-fields', cookie_name)
@@ -2181,9 +2152,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true'
             '&show_information_type=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_tag'])
@@ -2198,9 +2168,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true'
             '&show_information_type=true&show_title=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertNotIn('show_title', field_visibility)
@@ -2215,9 +2184,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_title=true'
             '&show_information_type=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertIn('show_status', field_visibility)
@@ -2225,8 +2193,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_field_visibility_defaults(self):
         """Cache contains sane-looking field_visibility_defaults values."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility_defaults = cache.objects['field_visibility_defaults']
         self.assertTrue(field_visibility_defaults['show_id'])
@@ -2255,24 +2222,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
         return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
-    def test_mustache_rendering_missing_if_no_flag(self):
-        """If the flag is missing, then no mustache features appear."""
-        bug_task, browser = self.getBugtaskBrowser()
-        number_tag = self.getBugNumberTag(bug_task)
-        self.assertHTML(browser, number_tag, invert=True)
-        self.assertHTML(browser, self.client_listing, invert=True)
-
     def test_mustache_rendering(self):
         """If the flag is present, then all mustache features appear."""
-        with dynamic_listings():
-            bug_task, browser = self.getBugtaskBrowser()
+        bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
 
     def test_mustache_rendering_obfuscation(self):
         """For anonymous users, email addresses are obfuscated."""
-        with dynamic_listings():
-            bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
+        bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
                 no_login=True)
         self.assertNotIn('a@example.com', browser.contents)
 
@@ -2405,8 +2363,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The JSON cache of a search listing view provides a sequence
         # that describes all sort orders implemented by
         # BugTaskSet.search() and no sort orders that are not implemented.
-        with dynamic_listings():
-            view = self.makeView()
+        view = self.makeView()
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
@@ -2421,8 +2378,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The entry 'sort_keys' in the JSON cache of a search listing
         # view is a sequence of 3-tuples (name, title, order), where
         # order is one of the string 'asc' or 'desc'.
-        with dynamic_listings():
-            view = self.makeView()
+        view = self.makeView()
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         for key in json_sort_keys:
@@ -2436,8 +2392,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The tag name is encoded properly in the JSON.
         product = self.factory.makeProduct(name='foobar')
         bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
-        with dynamic_listings():
-            view = self.makeView(bugtask=bug.default_bugtask)
+        view = self.makeView(bugtask=bug.default_bugtask)
         cache = IJSONRequestCache(view.request)
         tags = cache.objects['mustache_model']['items'][0]['tags']
         expected_url = (
@@ -2461,10 +2416,9 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
             target=product,
             status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
-        with dynamic_listings():
-            content = self.getMainContent(
-                bug.default_bugtask.target, "+expirable-bugs")
-            self.assertIn(title, str(content))
+        content = self.getMainContent(
+            bug.default_bugtask.target, "+expirable-bugs")
+        self.assertIn(title, str(content))
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):

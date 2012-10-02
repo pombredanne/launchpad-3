@@ -50,4 +50,4 @@ He sees one match.
     >>> browser.getControl('Search', index=0).click()
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(browser.contents)
-    16  Test Bug 1  Undecided   New
+    16  Test Bug 1 alsa-utils Undecided New
