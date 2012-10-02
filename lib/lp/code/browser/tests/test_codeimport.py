@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import browser code."""
@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 import re
+
+from zope.security.interfaces import Unauthorized
 
 from lp.code.enums import RevisionControlSystems
 from lp.services.webapp import canonical_url
@@ -53,3 +55,9 @@ class TestImportDetails(TestCaseWithFactory):
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
             svn_details, RevisionControlSystems.SVN)
+
+    def test_branch_owner_of_import_forbidden(self):
+        cimport = self.factory.makeCodeImport()
+        url = canonical_url(cimport.branch, view_name='+edit-import')
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser(url, user=cimport.branch.owner))
