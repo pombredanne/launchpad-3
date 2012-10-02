@@ -110,7 +110,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         package_sets = getUtility(IPackagesetSet).setsIncludingSource(
             self.build.source_package_release.name,
             distroseries=self.build.distro_series)
-        if not package_sets.is_empty():
+        if not self.build.archive.is_ppa and not package_sets.is_empty():
             score += package_sets.max(Packageset.relative_build_score)
 
         # Calculates the build queue time component of the score.

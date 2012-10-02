@@ -374,13 +374,27 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         self.assertCorrectScore(job, "SECURITY")
 
     def test_score_packageset(self):
-        job = self.makeBuildJob(component="main", urgency="low")
+        # Package sets alter the score of official packages for their
+        # series.
+        job = self.makeBuildJob(
+            component="main", urgency="low", purpose=ArchivePurpose.PRIMARY)
         packageset = self.factory.makePackageset(
             distroseries=job.build.distro_series)
         removeSecurityProxy(packageset).add(
             [job.build.source_package_release.sourcepackagename])
         removeSecurityProxy(packageset).relative_build_score = 100
         self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
+
+    def test_score_packageset_in_ppa(self):
+        # Package set score boosts don't affect PPA packages.
+        job = self.makeBuildJob(
+            component="main", urgency="low", purpose=ArchivePurpose.PPA)
+        packageset = self.factory.makePackageset(
+            distroseries=job.build.distro_series)
+        removeSecurityProxy(packageset).add(
+            [job.build.source_package_release.sourcepackagename])
+        removeSecurityProxy(packageset).relative_build_score = 100
+        self.assertCorrectScore(job, "RELEASE", "main", "low", 0)
 
     def assertScoreReadableByAnyone(self, obj):
         """An object's build score is readable by anyone."""
