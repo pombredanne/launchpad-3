@@ -70,7 +70,7 @@ class Diff(SQLBase):
 
     def _get_diffstat(self):
         if self._diffstat is None:
-            return {}
+            return None
         return dict((key, tuple(value))
                     for key, value
                     in simplejson.loads(self._diffstat).items())

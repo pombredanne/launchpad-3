@@ -2085,4 +2085,4 @@ class TestWebservice(WebServiceTestCase):
         previewdiff.diff.diffstat = None
         user = previewdiff.branch_merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
-        self.assertEqual({}, ws_previewdiff.diffstat)
+        self.assertIsNone(ws_previewdiff.diffstat)
