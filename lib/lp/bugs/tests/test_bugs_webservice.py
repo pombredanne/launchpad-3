@@ -404,12 +404,13 @@ class BugSetTestCase(TestCaseWithFactory):
         # to the project's bugs are private by default rule.
         project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
+        target_url = api_url(project)
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc')
+            target=target_url, title='title', description='desc')
         self.assertEqual('Private', bug.information_type)
 
     def test_explicit_private_private_bugs_true(self):
@@ -418,12 +419,13 @@ class BugSetTestCase(TestCaseWithFactory):
         # user commands it.
         project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
+        target_url = api_url(project)
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc',
+            target=target_url, title='title', description='desc',
             private=True)
         self.assertEqual('Private', bug.information_type)
 
@@ -433,13 +435,14 @@ class BugSetTestCase(TestCaseWithFactory):
         # to the project's bug sharing policy.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
+        target_url = api_url(project)
         with person_logged_in(project.owner):
             project.setBugSharingPolicy(
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc')
+            target=target_url, title='title', description='desc')
         self.assertEqual('Proprietary', bug.information_type)
 
 
