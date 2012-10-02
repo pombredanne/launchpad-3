@@ -1538,7 +1538,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProductPublic`."""
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
-        # xxxxxxxxx should use policy grants
         return user.inTeam(self.owner)
 
 
