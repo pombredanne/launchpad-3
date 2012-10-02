@@ -108,8 +108,8 @@ from zope.security.proxy import (
     )
 
 from lp import _
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -254,6 +254,7 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -309,7 +310,6 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
@@ -821,20 +821,7 @@ class Person(
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 

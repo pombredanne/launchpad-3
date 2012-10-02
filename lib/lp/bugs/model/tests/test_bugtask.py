@@ -504,7 +504,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
             ' has_specification: False'])
 
         # a specification gets linked...
-        spec = getUtility(ISpecificationSet).all_specifications[0]
+        spec = getUtility(ISpecificationSet)._all_specifications[0]
         spec.linkBug(bug_two)
 
         # or a branch gets linked to the bug...

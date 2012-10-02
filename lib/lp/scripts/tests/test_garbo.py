@@ -19,8 +19,8 @@ from storm.expr import (
     In,
     Min,
     Not,
-    Update,
     SQL,
+    Update,
     )
 from storm.locals import (
     Int,
@@ -35,8 +35,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import InformationType
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -79,6 +79,11 @@ from lp.services.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
@@ -99,11 +104,6 @@ from lp.services.session.model import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,

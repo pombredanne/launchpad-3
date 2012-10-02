@@ -5,9 +5,7 @@
 
 import _pythonpath
 
-from lp.bugs.scripts.bugsummaryrebuild import (
-    BugSummaryRebuildTunableLoop,
-    )
+from lp.bugs.scripts.bugsummaryrebuild import BugSummaryRebuildTunableLoop
 from lp.services.scripts.base import LaunchpadScript
 
 

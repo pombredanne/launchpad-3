@@ -15,12 +15,12 @@ from lp.code.model.branchjob import (
     BranchJobType,
     )
 from lp.services.config import config
-from lp.services.scripts.tests import run_script
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessAppServerLayer
 

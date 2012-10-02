@@ -878,17 +878,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(IDistributionSet).getCurrentSourceReleases(
             {self: source_package_names})
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`.
 

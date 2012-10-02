@@ -50,6 +50,11 @@ from lp.buildmaster.model.packagebuild import (
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import (
     IMasterObject,
     ISlaveStore,
@@ -74,11 +79,6 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,

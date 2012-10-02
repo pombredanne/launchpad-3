@@ -18,11 +18,11 @@ from lp.app.errors import NotFoundError
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.registry.interfaces.personproduct import IPersonProduct
 from lp.services.webapp import (
+    canonical_url,
     Link,
     Navigation,
     StandardLaunchpadFacets,
     )
-from lp.services.webapp import canonical_url
 from lp.services.webapp.breadcrumb import Breadcrumb
 
 

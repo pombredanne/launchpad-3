@@ -384,7 +384,7 @@ informational.
 First, there should be only one informational spec for firefox:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
     extension-manager-upgrades
 
@@ -392,19 +392,19 @@ First, there should be only one informational spec for firefox:
 There are no completed specs for firefox:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
 
 
 And there are five incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> firefox.specifications(filter=filter).count()
+    >>> firefox.specifications(None, filter=filter).count()
     5
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in firefox.specifications(filter=['new']):
+    >>> for spec in firefox.specifications(None, filter=['new']):
     ...     print spec.name
     canvas
     e4x

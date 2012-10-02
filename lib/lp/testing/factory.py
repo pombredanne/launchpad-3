@@ -50,7 +50,6 @@ from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
 import simplejson
-import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -132,7 +131,6 @@ from lp.code.model.diff import (
     Diff,
     PreviewDiff,
     )
-from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -224,10 +222,16 @@ from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.identity.interfaces.account import (
@@ -254,13 +258,7 @@ from lp.services.temporaryblobstorage.interfaces import (
     )
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    OAuthPermission,
-    )
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -2094,8 +2092,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param product: The product to make the blueprint on.  If one is
             not specified, an arbitrary product is created.
         """
+        proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
+            information_type is not None)
         if distribution is None and product is None:
-            product = self.makeProduct()
+            if proprietary:
+                specification_sharing_policy = (
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            else:
+                specification_sharing_policy = None
+            product = self.makeProduct(
+                specification_sharing_policy=specification_sharing_policy)
         if name is None:
             name = self.getUniqueString('name')
         if summary is None:
@@ -2128,7 +2134,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
         if information_type is not None:
-            if information_type not in PUBLIC_INFORMATION_TYPES:
+            if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
                 information_type, spec.target.owner)
@@ -2902,121 +2908,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
-
-    def makeRecipeBuildRecords(self, num_recent_records=1,
-                               num_records_outside_epoch=0, epoch_days=30):
-        """Create some recipe build records.
-
-        A RecipeBuildRecord is a named tuple. Some records will be created
-        with archive of type ArchivePurpose.PRIMARY, others with type
-        ArchivePurpose.PPA. Some build records with be created with a build
-        status of fully built and some will be created with the daily build
-        option set to True and False. Only those records with daily build set
-        to True and build status to fully built are returned.
-        :param num_recent_records: the number of records within the specified
-         time window.
-        :param num_records_outside_epoch: the number of records outside the
-         specified time window.
-        :param epoch_days: the time window to use when creating records.
-        """
-
-        distroseries = self.makeDistroSeries()
-        sourcepackagename = self.makeSourcePackageName()
-        sourcepackage = self.makeSourcePackage(
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries)
-
-        records_inside_epoch = []
-        all_records = []
-        for x in range(num_recent_records + num_records_outside_epoch):
-
-            # We want some different source package names occasionally
-            if not x % 3:
-                sourcepackagename = self.makeSourcePackageName()
-                sourcepackage = self.makeSourcePackage(
-                    sourcepackagename=sourcepackagename,
-                    distroseries=distroseries)
-
-            # Ensure we have both ppa and primary archives
-            if not x % 2:
-                purpose = ArchivePurpose.PPA
-            else:
-                purpose = ArchivePurpose.PRIMARY
-            archive = self.makeArchive(
-                purpose=purpose, distribution=distroseries.distribution)
-            # Make some daily and non-daily recipe builds.
-            for daily in (True, False):
-                recipeowner = self.makePerson()
-                recipe = self.makeSourcePackageRecipe(
-                    build_daily=daily,
-                    owner=recipeowner,
-                    name="Recipe_%s_%d" % (sourcepackagename.name, x),
-                    daily_build_archive=archive,
-                    distroseries=distroseries)
-                sprb = self.makeSourcePackageRecipeBuild(
-                    requester=recipeowner,
-                    recipe=recipe,
-                    sourcepackage=sourcepackage,
-                    distroseries=distroseries)
-                spr = self.makeSourcePackageRelease(
-                    source_package_recipe_build=sprb,
-                    sourcepackagename=sourcepackagename,
-                    distroseries=distroseries, archive=archive)
-                self.makeSourcePackagePublishingHistory(
-                    sourcepackagerelease=spr, archive=archive,
-                    distroseries=distroseries)
-
-                # Make some complete and incomplete builds.
-                for build_status in (
-                    BuildStatus.FULLYBUILT,
-                    BuildStatus.NEEDSBUILD,
-                    ):
-                    binary_build = self.makeBinaryPackageBuild(
-                            source_package_release=spr)
-                    naked_build = removeSecurityProxy(binary_build)
-                    naked_build.queueBuild()
-                    naked_build.status = build_status
-
-                    now = datetime.now(UTC)
-                    # We want some builds to be created in ascending order
-                    if x < num_recent_records:
-                        naked_build.date_finished = (
-                            now - timedelta(
-                                days=epoch_days - 1,
-                                hours=-x))
-                    # And others is descending order
-                    else:
-                        days_offset = epoch_days + 1 + x
-                        naked_build.date_finished = (
-                            now - timedelta(days=days_offset))
-
-                    naked_build.date_started = (
-                        naked_build.date_finished - timedelta(minutes=5))
-                    rbr = RecipeBuildRecord(
-                        removeSecurityProxy(sourcepackagename),
-                        removeSecurityProxy(recipeowner),
-                        removeSecurityProxy(archive),
-                        removeSecurityProxy(recipe),
-                        naked_build.date_finished.replace(tzinfo=None))
-
-                    # Only return fully completed daily builds.
-                    if daily and build_status == BuildStatus.FULLYBUILT:
-                        if x < num_recent_records:
-                            records_inside_epoch.append(rbr)
-                        all_records.append(rbr)
-        # We need to explicitly commit because if don't, the records don't
-        # appear in the slave datastore.
-        transaction.commit()
-
-        # We need to ensure our results are sorted by correctly
-        def _sort_records(records):
-            records.sort(lambda x, y:
-                cmp(x.sourcepackagename.name, y.sourcepackagename.name) or
-                -cmp(x.most_recent_build_time, y.most_recent_build_time))
-
-        _sort_records(all_records)
-        _sort_records(records_inside_epoch)
-        return all_records, records_inside_epoch
 
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.
@@ -4343,9 +4234,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return link
 
     def makeAccessArtifactGrant(self, artifact=None, grantee=None,
-                                grantor=None):
+                                grantor=None, concrete_artifact=None):
         if artifact is None:
-            artifact = self.makeAccessArtifact()
+            artifact = self.makeAccessArtifact(concrete_artifact)
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:
