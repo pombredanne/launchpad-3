@@ -29,7 +29,6 @@ from storm.expr import (
     Not,
     Or,
     Select,
-    SQL,
     Sum,
     )
 from storm.locals import (
