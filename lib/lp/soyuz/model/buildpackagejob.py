@@ -88,13 +88,22 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             (300, 5),
         ]
 
-        # Please note: the score for language packs is to be zero because
-        # they unduly delay the building of packages in the main component
-        # otherwise.
-        if self.build.source_package_release.section.name == 'translations':
-            return 0
-
         score = 0
+
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.build.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        score += self.build.archive.relative_build_score
+
+        # Language packs don't get any of the usual package-specific
+        # score bumps, as they unduly delay the building of packages in
+        # the main component otherwise.
+        if self.build.source_package_release.section.name == 'translations':
+            return score
 
         # Calculates the urgency-related part of the score.
         score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
@@ -120,18 +129,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             if eta.seconds > limit:
                 score += dep_score
                 break
-
-        # Private builds get uber score.
-        if self.build.archive.private:
-            score += PRIVATE_ARCHIVE_SCORE_BONUS
-
-        if self.build.archive.is_copy:
-            score -= COPY_ARCHIVE_SCORE_PENALTY
-
-        # Lastly, apply the archive score delta.  This is to boost
-        # or retard build scores for any build in a particular
-        # archive.
-        score += self.build.archive.relative_build_score
 
         return score
 

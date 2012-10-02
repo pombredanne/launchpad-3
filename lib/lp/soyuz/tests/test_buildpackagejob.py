@@ -246,14 +246,16 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeBuildJob(self, purpose=None, private=False, component="main",
-                     urgency="high", pocket="RELEASE", age=None):
+                     urgency="high", pocket="RELEASE", section_name=None,
+                     age=None):
         if purpose is not None or private:
             archive = self.factory.makeArchive(
                 purpose=purpose, private=private)
         else:
             archive = None
         spph = self.factory.makeSourcePackagePublishingHistory(
-            archive=archive, component=component, urgency=urgency)
+            archive=archive, component=component, urgency=urgency,
+            section_name=section_name)
         naked_spph = removeSecurityProxy(spph)  # needed for private archives
         build = self.factory.makeBinaryPackageBuild(
             source_package_release=naked_spph.sourcepackagerelease,
@@ -395,6 +397,14 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             [job.build.source_package_release.sourcepackagename])
         removeSecurityProxy(packageset).relative_build_score = 100
         self.assertCorrectScore(job, "RELEASE", "main", "low", 0)
+
+    def test_translations_score(self):
+        # Language packs (the translations section) don't get any
+        # package-specific score bumps. They always have the archive's
+        # base score.
+        job = self.makeBuildJob(section_name='translations')
+        removeSecurityProxy(job.build.archive).relative_build_score = 666
+        self.assertEqual(666, job.score())
 
     def assertScoreReadableByAnyone(self, obj):
         """An object's build score is readable by anyone."""
