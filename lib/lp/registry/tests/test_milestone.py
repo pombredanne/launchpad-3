@@ -201,16 +201,14 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         return specification, target_milestone
 
     def test_milestones_on_product(self):
-        specification, target_milestone = self._create_milestones_on_target(
+        spec, target_milestone = self._create_milestones_on_target(
             product=self.factory.makeProduct())
-        self.assertEqual([specification],
-                         list(target_milestone.specifications))
+        self.assertContentEqual([spec], target_milestone.specifications)
 
     def test_milestones_on_distribution(self):
-        specification, target_milestone = self._create_milestones_on_target(
+        spec, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
-        self.assertEqual([specification],
-                         list(target_milestone.specifications))
+        self.assertContentEqual([spec], target_milestone.specifications)
 
     def test_milestones_on_project(self):
         # A Project (Project Group) milestone contains all specifications
@@ -218,11 +216,10 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # a certain name.
         projectgroup = self.factory.makeProject()
         product = self.factory.makeProduct(project=projectgroup)
-        specification, target_milestone = self._create_milestones_on_target(
+        spec, target_milestone = self._create_milestones_on_target(
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
-        self.assertEqual([specification],
-                         list(milestone.specifications))
+        self.assertContentEqual([spec], milestone.specifications)
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
@@ -230,7 +227,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(
             product=self.factory.makeProduct())
         specification = self.factory.makeSpecification(
-            milestone=milestone, product=milestone.product)
+            product=milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
-        self.assertEqual([], list(milestone.specifications))
+        self.assertContentEqual([], milestone.specifications)
