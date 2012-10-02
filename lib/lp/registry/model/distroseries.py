@@ -1020,7 +1020,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
-        sourcepackagerelease.sourcepackagename=%s AND
+        sourcepackagepublishinghistory.sourcepackagename=%s AND
         distroseries=%s
         """ % sqlvalues(spn.id, self.id)]
 
