@@ -1579,7 +1579,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
-    def assertVoteReference(self, votes, reviewer, comment):
+    def _assertVoteReference(self, votes, reviewer, comment):
         self.assertEqual(1, len(votes))
         vote_reference = votes[0]
         self.assertEqual(reviewer, vote_reference.reviewer)
@@ -1596,7 +1596,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertVoteReference(votes, reviewer, comment)
+        self._assertVoteReference(votes, reviewer, comment)
 
     def test_comment_without_a_vote_does_not_create_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -1618,7 +1618,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.APPROVE)
         votes = list(merge_proposal.votes)
-        self.assertVoteReference(votes, reviewer, comment2)
+        self._assertVoteReference(votes, reviewer, comment2)
 
     def test_vote_by_nominated_reuses_reference(self):
         """A comment with a vote for a nominated reviewer alters reference."""
