@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -27,7 +27,6 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
-from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -36,6 +35,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -67,7 +67,6 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -156,8 +155,9 @@ class CodeImportBaseView(LaunchpadFormView):
     @cachedproperty
     def _super_user(self):
         """Is the user an admin or member of vcs-imports?"""
-        role = IPersonRoles(self.user)
-        return role.in_admin or role.in_vcs_imports
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.vcs_imports))
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
@@ -217,7 +217,9 @@ class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
     use_template(IBranch, ['owner'])
-    use_template(ICodeImport, ['rcs_type', 'cvs_root', 'cvs_module'])
+    use_template(
+        ICodeImport,
+        ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -304,10 +306,10 @@ class CodeImportNewView(CodeImportBaseView):
 
     @property
     def label(self):
-        label = 'Request a code import'
         if self.context_is_product:
-            label += ' for %s' % self.context.displayname
-        return label
+            return 'Request a code import for %s' % self.context.displayname
+        else:
+            return 'Request a code import'
 
     @property
     def cancel_url(self):
@@ -336,7 +338,7 @@ class CodeImportNewView(CodeImportBaseView):
             self.form_fields = any_owner_field + self.form_fields
 
     def setUpWidgets(self):
-        super(CodeImportNewView, self).setUpWidgets()
+        CodeImportBaseView.setUpWidgets(self)
 
         # Extract the radio buttons from the rcs_type widget, so we can
         # display them separately in the form.
@@ -540,11 +542,9 @@ class CodeImportEditView(CodeImportBaseView):
         self.code_import = self.context.code_import
         if self.code_import is None:
             raise NotFoundError
-        if not self._super_user:
-            raise Unauthorized
         # The next and cancel location is the branch details page.
         self.cancel_url = self.next_url = canonical_url(self.context)
-        super(CodeImportEditView, self).initialize()
+        CodeImportBaseView.initialize(self)
 
     @property
     def adapters(self):
