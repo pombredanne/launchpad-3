@@ -82,6 +82,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -324,7 +325,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, InformationTypeMixin,
+              TranslationPolicyMixin):
     """A Product."""
 
     implements(

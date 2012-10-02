@@ -29,6 +29,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -112,6 +113,7 @@ class TestProduct(TestCaseWithFactory):
             IHasLogo,
             IHasMugshot,
             IHasOOPSReferences,
+            IInformationType,
             ILaunchpadUsage,
             IServiceUsage,
             ]
