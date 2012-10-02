@@ -559,8 +559,8 @@ class TestProduct(TestCaseWithFactory):
                 getattr(product, attribute_name)
 
     def test_access_launchpad_View_proprietary_product(self):
-        # Only people with grants for a prviate product can access
-        # attributes protected by the permission launchapd.View.
+        # Only people with grants for a private product can access
+        # attributes protected by the permission launchpad.View.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         names = self.expected_get_permissions['launchpad.View']
@@ -578,7 +578,7 @@ class TestProduct(TestCaseWithFactory):
                 getattr(product, attribute_name)
 
     def test_access_launchpad_AnyAllowedPerson_public_product(self):
-        # Only logged in persons hav access to properties of public products
+        # Only logged in persons have access to properties of public products
         # that require the permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct()
         names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
@@ -595,8 +595,8 @@ class TestProduct(TestCaseWithFactory):
                 getattr(product, attribute_name)
 
     def test_access_launchpad_AnyAllowedPerson_proprietary_product(self):
-        # Only people with grants for a prviate product can access
-        # attributes protected by the permission launchapd.AnyAllowedPerson.
+        # Only people with grants for a private product can access
+        # attributes protected by the permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
@@ -615,7 +615,7 @@ class TestProduct(TestCaseWithFactory):
 
     def test_set_launchpad_AnyAllowedPerson_public_product(self):
         # Only logged in users can set attributes protected by the
-        # permission launchapd.AnyAllowedPerson.
+        # permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct()
         with person_logged_in(None):
             self.assertRaises(
@@ -628,8 +628,8 @@ class TestProduct(TestCaseWithFactory):
             setattr(product, 'date_next_suggest_packaging', 'foo')
 
     def test_set_launchpad_AnyAllowedPerson_proprietary_product(self):
-        # Only people with grants for a prviate product can set
-        # attributes protected by the permission launchapd.AnyAllowedPerson.
+        # Only people with grants for a private product can set
+        # attributes protected by the permission launchpad.AnyAllowedPerson.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(None):
