@@ -149,10 +149,6 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.model.accesspolicy import(
-    AccessPolicy,
-    AccessPolicyGrant,
-    )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
