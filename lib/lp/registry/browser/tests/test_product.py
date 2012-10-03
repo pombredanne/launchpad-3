@@ -28,6 +28,7 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -215,18 +216,37 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
 
-    def test_information_type_saved(self):
+    def test_information_type_saved_default(self):
         # information_type should only ever be PUBLIC if the private
         # projects feature flag is not set.
         registrant = self.factory.makePerson()
         login_person(registrant)
         form = self.makeForm(action=2)
-        form['field.information_type'] = 3
-        form['field.disclaim_maintainer'] = 'on'
+        form['field.information_type'] = 'PROPRIETARY'
+        form['field.owner'] = registrant.name
         view = create_initialized_view(self.product_set, '+new', form=form)
         self.assertEqual(0, len(view.view.errors))
         product = self.product_set.getByName('fnord')
         self.assertEqual(InformationType.PUBLIC, product.information_type)
+
+    def test_information_type_saved_private_projects(self):
+        # information_type should only ever be PUBLIC if the private
+        # projects feature flag is not set.
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            registrant = self.factory.makePerson()
+            login_person(registrant)
+            form = self.makeForm(action=2)
+            form['field.information_type'] = 'PROPRIETARY'
+            form['field.owner'] = registrant.name
+            form['field.driver'] = registrant.name
+            form['field.maintainer'] = registrant.name
+            form['field.bug_supervisor'] = registrant.name
+            view = create_initialized_view(
+                self.product_set, '+new', form=form)
+            self.assertEqual(0, len(view.view.errors))
+            product = self.product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PROPRIETARY, product.information_type)
 
 
 class TestProductView(TestCaseWithFactory):
