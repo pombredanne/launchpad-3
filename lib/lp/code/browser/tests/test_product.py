@@ -31,6 +31,7 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     time_counter,
     )
@@ -196,6 +197,20 @@ class TestProductCodeIndexView(ProductTestBase):
         content = view()
         self.assertIn('bzr push lp:~', content)
 
+    def test_product_code_index_with_private_imported_branch(self):
+        # Product:+code-index will not crash if the devfoocs is a private
+        # imported branch.
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            information_type=InformationType.USERDATA,
+            branch_type=BranchType.IMPORTED)
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            view = create_initialized_view(
+                product, '+code-index', rootsite='code', principal=user)
+            html = view()
+        expected = 'There are no branches for %s' % product.displayname
+        self.assertIn(expected, html)
+
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
@@ -209,8 +224,9 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login_person(product.owner)
         product.development_focus.branch = code_import.branch
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        product_url = canonical_url(product, rootsite='code')
         logout()
-        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        browser = self.getUserBrowser(product_url)
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')
         text = extract_text(content)
@@ -247,10 +263,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         # A remote branch says code is hosted externally, and displays
         # upstream data.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            branch_type=BranchType.REMOTE,
-            url="http://example.com/mybranch")
-        self.assertEqual(ServiceUsage.EXTERNAL,
-                         product.codehosting_usage)
+            branch_type=BranchType.REMOTE, url="http://example.com/mybranch")
+        self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')
@@ -305,10 +319,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         # Mirrors show the correct upstream url as the mirror location.
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            branch_type=BranchType.MIRRORED,
-            url=url)
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+            branch_type=BranchType.MIRRORED, url=url)
+        view = create_initialized_view(product, '+code-index', rootsite='code')
         self.assertEqual(url, view.mirror_location)
 
 
@@ -343,8 +355,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         # If the BranchUsage is EXTERNAL then the portlets are shown.
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            branch_type=BranchType.MIRRORED,
-            url=url)
+            branch_type=BranchType.MIRRORED, url=url)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         contents = browser.contents
         self.assertIsNot(None, find_tag_by_id(contents, 'branch-portlet'))
@@ -373,6 +384,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
 
     def test_is_public(self):
         product = self.factory.makeProduct()
+        product_displayname = product.displayname
         branch = self.factory.makeProductBranch(product=product)
         login_person(product.owner)
         product.development_focus.branch = branch
@@ -380,7 +392,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
         expected = (
             "New branches for %(name)s are Public.*"
-            % dict(name=product.displayname))
+            % dict(name=product_displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
 
@@ -397,4 +409,4 @@ class TestCanConfigureBranches(TestCaseWithFactory):
         product = self.factory.makeProduct()
         login_person(product.owner)
         view = create_view(product, '+branches', layer=CodeLayer)
-        self.assertEqual(True, view.can_configure_branches())
+        self.assertTrue(view.can_configure_branches())

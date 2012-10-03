@@ -902,20 +902,6 @@ class BinaryPackageBuildSet:
         return DecoratedResultSet(
             resultset, pre_iter_hook=self.preloadBuildsData)
 
-    def getPendingBuildsForArchSet(self, archseries):
-        """See `IBinaryPackageBuildSet`."""
-        if not archseries:
-            return None
-
-        archseries_ids = [d.id for d in archseries]
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            BinaryPackageBuild,
-            BinaryPackageBuild.distro_arch_series_id.is_in(archseries_ids),
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
-
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
         arch_tag=None):
@@ -1326,30 +1312,3 @@ class BinaryPackageBuildSet:
             BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set
-
-    def calculateCandidates(self, archseries):
-        """See `IBinaryPackageBuildSet`."""
-        if not archseries:
-            raise AssertionError("Given 'archseries' cannot be None/empty.")
-
-        arch_ids = [d.id for d in archseries]
-
-        query = """
-           BinaryPackageBuild.distro_arch_series IN %s AND
-           BinaryPackageBuild.package_build = PackageBuild.id AND
-           PackageBuild.build_farm_job = BuildFarmJob.id AND
-           BuildFarmJob.status = %s AND
-           BuildQueue.job_type = %s AND
-           BuildQueue.job = BuildPackageJob.job AND
-           BuildPackageJob.build = BinaryPackageBuild.id AND
-           BuildQueue.builder IS NULL
-        """ % sqlvalues(
-            arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
-
-        candidates = BuildQueue.select(
-            query, clauseTables=[
-                'BinaryPackageBuild', 'PackageBuild', 'BuildFarmJob',
-                'BuildPackageJob'],
-            orderBy=['-BuildQueue.lastscore'])
-
-        return candidates
