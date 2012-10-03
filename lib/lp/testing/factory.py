@@ -1062,7 +1062,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         if owner is None:
-            owner = product.owner
+            owner = removeSecurityProxy(product).owner
         if name is None:
             name = self.getUniqueString()
         if summary is None:
@@ -1839,7 +1839,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(owner, target)
+        return removeSecurityProxy(bug).addTask(
+            owner, removeSecurityProxy(target))
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
