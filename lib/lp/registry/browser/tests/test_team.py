@@ -880,7 +880,7 @@ class TestTeamIndexView(TestCaseWithFactory):
             archive.newSubscription(user, registrant=owner)
         with person_logged_in(user):
             for rootsite, view_name in [
-                (None, '+index'), ('code', '+branches'),
+                (None, '+index'), ('code', '+branches'), ('bugs', '+bugs'),
                 ('blueprints', '+specs'), ('answers', '+questions'),
                 ('translations', '+translations')]:
                 view = create_initialized_view(
