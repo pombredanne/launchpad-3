@@ -74,7 +74,10 @@ from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    NotFoundError,
+    ServiceUsageForbidden,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -866,6 +869,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._answers_usage
 
     def _set_answers_usage(self, val):
+        if val == ServiceUsage.LAUNCHPAD:
+            if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+                raise ServiceUsageForbidden(
+                    "Answers not allowed for non-public projects.")
         self._answers_usage = val
         if val == ServiceUsage.LAUNCHPAD:
             self.official_answers = True

@@ -24,6 +24,7 @@ from lp.app.enums import (
     PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
+from lp.app.errors import ServiceUsageForbidden
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -527,6 +528,30 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             product = self.createProduct(info_type, License.OTHER_PROPRIETARY)
             self.assertEqual(info_type, product.information_type)
+
+    def test_no_answers_for_proprietary(self):
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.factory.makeProduct(information_type=info_type)
+            self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
+            with person_logged_in(product.owner):
+                for usage in ServiceUsage.items:
+                    if usage == ServiceUsage.LAUNCHPAD:
+                        with ExpectedException(
+                            ServiceUsageForbidden,
+                            "Answers not allowed for non-public projects."):
+                            product.answers_usage = ServiceUsage.LAUNCHPAD
+                    else:
+                        # all other values are permitted.
+                        product.answers_usage = usage
+
+    def test_answers_for_public(self):
+        product = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
+        with person_logged_in(product.owner):
+            for usage in ServiceUsage.items:
+                # all values are permitted.
+                product.answers_usage = usage
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
