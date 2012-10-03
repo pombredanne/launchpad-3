@@ -376,6 +376,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                       date_expires=expiration_date)
         except OAuthValidationError as e:
             self.request.response.addErrorNotification(str(e))
+            return
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
