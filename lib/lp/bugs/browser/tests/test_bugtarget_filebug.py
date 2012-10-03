@@ -509,7 +509,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     @staticmethod
-    def process_attachment(extra_data):
+    def process_attachment(raw_data):
+        extra_data = dedent(raw_data)
         temp_storage_manager = getUtility(ITemporaryStorageManager)
         token = temp_storage_manager.new(extra_data)
         transaction.commit()
@@ -520,9 +521,10 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         job.job.complete()
         return token
 
-    @staticmethod
-    def make_extra_data():
-        return dedent("""\
+    def test_description_and_comments(self):
+        # The first extra text part is added to the desciption, all other
+        # extra parts become additional bug messages.
+        token = self.process_attachment("""\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
 
@@ -540,12 +542,6 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
             --boundary--
             """)
-
-    def test_description_and_comments(self):
-        # The first extra text part is added to the desciption, all other
-        # extra parts become additional bug messages.
-        extra_data = self.make_extra_data()
-        token = self.process_attachment(extra_data)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
         form = {
@@ -581,9 +577,9 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             'to the bug report.',
             notifications[2].message)
 
-    @staticmethod
-    def make_extra_data_attachment():
-        return dedent("""\
+    def test_attachments(self):
+        # The attachment comment has no content and it does not notify.
+        token = self.process_attachment("""\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
 
@@ -602,11 +598,6 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
             --boundary--
             """)
-
-    def test_attachments(self):
-        # The attachment comment has no content and it does not notify.
-        extra_data = self.make_extra_data_attachment()
-        token = self.process_attachment(extra_data)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
         form = {
