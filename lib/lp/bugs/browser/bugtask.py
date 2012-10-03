@@ -2715,8 +2715,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-        if (check_permission('launchpad.View', self.context)
-            and not FeedsLayer.providedBy(self.request)):
+        if not FeedsLayer.providedBy(self.request):
             cache = IJSONRequestCache(self.request)
             view_names = set(reg.name for reg
                 in iter_view_registrations(self.__class__))
