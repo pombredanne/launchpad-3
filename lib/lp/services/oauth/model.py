@@ -8,7 +8,9 @@ __all__ = [
     'OAuthConsumerSet',
     'OAuthNonce',
     'OAuthRequestToken',
-    'OAuthRequestTokenSet']
+    'OAuthRequestTokenSet',
+    'OAuthValidationError',
+    ]
 
 from datetime import (
     datetime,
@@ -84,6 +86,10 @@ TIMESTAMP_ACCEPTANCE_WINDOW = 60  # seconds
 # concept of "now".  We also reject timestamps that are too old by the same
 # amount.
 TIMESTAMP_SKEW_WINDOW = 60 * 60  # seconds, +/-
+
+
+class OAuthValidationError(Exception):
+    """Raised when the OAuth token cannot be validated."""
 
 
 class OAuthBase:
@@ -335,10 +341,10 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
         if self.is_reviewed:
-            raise AssertionError(
+            raise OAuthValidationError(
                 "Request tokens can be reviewed only once.")
         if self.is_expired:
-            raise AssertionError(
+            raise OAuthValidationError(
                 'This request token has expired and can no longer be '
                 'reviewed.')
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
@@ -360,14 +366,14 @@ class OAuthRequestToken(OAuthBase, SQLBase):
     def createAccessToken(self):
         """See `IOAuthRequestToken`."""
         if not self.is_reviewed:
-            raise AssertionError(
+            raise OAuthValidationError(
                 'Cannot create an access token from an unreviewed request '
                 'token.')
         if self.permission == OAuthPermission.UNAUTHORIZED:
-            raise AssertionError(
+            raise OAuthValidationError(
                 'The user did not grant access to this consumer.')
         if self.is_expired:
-            raise AssertionError(
+            raise OAuthValidationError(
                 'This request token has expired and can no longer be '
                 'exchanged for an access token.')
 

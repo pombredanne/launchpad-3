@@ -34,6 +34,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestTokenSet,
     OAUTH_CHALLENGE,
     )
+from lp.services.oauth.model import OAuthValidationError
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.authentication import (
     check_oauth_signature,
@@ -373,7 +374,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             self.token.review(
                 self.user, permission, self.token_context,
                       date_expires=expiration_date)
-        except AssertionError as e:
+        except OAuthValidationError as e:
             self.request.response.addNotification(str(e))
         callback = self.request.form.get('oauth_callback')
         if callback:
@@ -433,7 +434,7 @@ class OAuthAccessTokenView(LaunchpadView):
 
         try:
             access_token = token.createAccessToken()
-        except AssertionError as e:
+        except OAuthValidationError as e:
             self.request.response.setStatus(403)
             return unicode(e)
 
