@@ -37,7 +37,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
@@ -275,9 +278,8 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIs(None, find_tag_by_id(html, 'filebug-search-form'))
 
 
-class TestFileBugViewBase(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class FileBugViewMixin:
+    """Provide a FileBugView subclass that is easy to test."""
 
     class FileBugTestView(FileBugViewBase):
         """A simple subclass."""
@@ -288,7 +290,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
             pass
 
     def setUp(self):
-        super(TestFileBugViewBase, self).setUp()
+        super(FileBugViewMixin, self).setUp()
         self.target = self.factory.makeProduct()
         transaction.commit()
         login_person(self.target.owner)
@@ -307,6 +309,11 @@ class TestFileBugViewBase(TestCaseWithFactory):
         view = self.FileBugTestView(self.target, request)
         view.initialize()
         return view
+
+
+class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_submit_comment_empty_error(self):
         # The comment cannot be an empty string.
@@ -489,6 +496,71 @@ class TestFileBugViewBase(TestCaseWithFactory):
             html = view.render()
         self.assertIn("Reporting new bugs for", html)
         self.assertIn("This can be fixed by changing", html)
+
+
+class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    @staticmethod
+    def process_attachment(bug_data):
+        from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+        from lp.services.temporaryblobstorage.interfaces import (
+            ITemporaryStorageManager)
+        temp_storage_manager = getUtility(ITemporaryStorageManager)
+        token = temp_storage_manager.new(bug_data)
+        transaction.commit()
+        blob = temp_storage_manager.fetch(token)
+        job = getUtility(IProcessApportBlobJobSource).create(blob)
+        job.job.start()
+        job.run()
+        job.job.complete()
+        return token
+
+    def test_attachment_comment(self):
+        # The attachment comment has no content and it does not notify.
+        from textwrap import dedent
+
+        bug_data = dedent("""\
+        MIME-Version: 1.0
+        Content-type: multipart/mixed; boundary=boundary
+
+        --boundary
+        Content-disposition: attachment; filename='attachment1'
+        Content-type: text/plain; charset=utf-8
+
+        This is an attachment.
+
+        --boundary
+        Content-disposition: attachment; filename='attachment2'
+        Content-description: Attachment description.
+        Content-type: text/plain; charset=ISO-8859-1
+
+        This is another attachment, with a description.
+
+        --boundary--
+        """)
+        token = self.process_attachment(bug_data)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        form = {
+            'title': 'test title',
+            'comment': 'test_comment',
+            'actions.submit_bug': 'Submit Bug Request',
+            }
+        view.submit_bug_action.success(form)
+        transaction.commit()
+        bug = view.added_bug
+        attachments = [at for at in bug.attachments_unpopulated]
+        self.assertEqual(2, len(attachments))
+        attachment = attachments[0]
+        self.assertEqual('attachment1', attachment.title)
+        self.assertEqual('attachment1', attachment.libraryfile.filename)
+        self.assertEqual(
+            'text/plain; charset=utf-8', attachment.libraryfile.mimetype)
+        self.assertEqual(
+            'This is an attachment.\n\n', attachment.libraryfile.read())
+        self.assertEqual(2, bug.bug_messages.count())
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
