@@ -11,7 +11,10 @@ from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -106,6 +109,7 @@ class TestProductAddView(TestCaseWithFactory):
                 'field.licenses': ['MIT'],
                 'field.license_info': '',
                 'field.disclaim_maintainer': 'off',
+                'field.information_type': 0,
                 }
 
     def test_view_data_model(self):
@@ -210,6 +214,19 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertEqual(0, len(view.view.errors))
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
+
+    def test_information_type_saved(self):
+        # information_type should only ever be PUBLIC if the private
+        # projects feature flag is not set.
+        registrant = self.factory.makePerson()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.information_type'] = 3
+        form['field.disclaim_maintainer'] = 'on'
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = self.product_set.getByName('fnord')
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
 
 
 class TestProductView(TestCaseWithFactory):
