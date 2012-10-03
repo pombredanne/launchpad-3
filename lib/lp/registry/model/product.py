@@ -73,7 +73,6 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -332,8 +331,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage,
-        IInformationType,)
+        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
