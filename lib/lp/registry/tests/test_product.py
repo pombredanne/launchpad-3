@@ -447,10 +447,11 @@ class TestProduct(TestCaseWithFactory):
 
     expected_get_permissions = {
         CheckerPublic: set((
-            'id', 'information_type', 'private', 'userCanView',)),
+            'active', 'id', 'information_type', 'pillar_category', 'private',
+            'userCanView',)),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
-            '_valid_specifications', 'active', 'active_or_packaged_series',
+            '_valid_specifications', 'active_or_packaged_series',
             'aliases', 'all_milestones',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',
             'announce', 'answer_contacts', 'answers_usage', 'autoupdate',
@@ -501,7 +502,7 @@ class TestProduct(TestCaseWithFactory):
             'official_codehosting', 'official_malone', 'owner',
             'parent_subscription_target', 'packagedInDistros', 'packagings',
             'past_sprints', 'personHasDriverRights', 'pillar',
-            'pillar_category', 'primary_translatable', 'private_bugs',
+            'primary_translatable', 'private_bugs',
             'programminglang', 'project', 'qualifies_for_free_hosting',
             'recipes', 'redeemSubscriptionVoucher', 'registrant', 'releases',
             'remote_product', 'removeCustomLanguageCode',

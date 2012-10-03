@@ -436,7 +436,7 @@ class IProductLimitedView(
     IHasLogo, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences,
     ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
@@ -932,7 +932,7 @@ class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType):
+    IStructuralSubscriptionTarget, IInformationType, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
