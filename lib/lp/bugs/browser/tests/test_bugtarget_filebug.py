@@ -36,6 +36,7 @@ from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager)
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    EventRecorder,
     login,
     login_person,
     person_logged_in,
@@ -502,7 +503,8 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
         self.assertIn("This can be fixed by changing", html)
 
 
-class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
+class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
+    """FileBugView handles extra data from blobs created by apport."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -540,7 +542,7 @@ class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
 
-    def test_attachment_comment(self):
+    def test_attachments(self):
         # The attachment comment has no content and it does not notify.
         bug_data = self.get_raw_data()
         token = self.process_attachment(bug_data)
@@ -551,7 +553,12 @@ class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
             'comment': 'test_comment',
             'actions.submit_bug': 'Submit Bug Request',
             }
-        view.submit_bug_action.success(form)
+        with EventRecorder() as recorder:
+            view.submit_bug_action.success(form)
+            # Subscribers are only notified about the new bug event;
+            # The extra comment for the attchments was silent.
+            self.assertEqual(1, len(recorder.events))
+            self.assertEqual(view.added_bug, recorder.events[0].object)
         transaction.commit()
         bug = view.added_bug
         attachments = [at for at in bug.attachments_unpopulated]
