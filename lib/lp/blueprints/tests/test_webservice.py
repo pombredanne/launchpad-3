@@ -75,9 +75,9 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     def test_representation_contains_target(self):
         spec = self.factory.makeSpecification(
             product=self.factory.makeProduct())
-        spec_target = spec.target
+        spec_target_name = spec.target.name
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(spec_target.name, spec_webservice.target.name)
+        self.assertEqual(spec_target_name, spec_webservice.target.name)
 
     def test_representation_contains_title(self):
         spec = self.factory.makeSpecification(title='Foo')
