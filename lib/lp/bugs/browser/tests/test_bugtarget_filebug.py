@@ -517,11 +517,12 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             }
 
     @staticmethod
-    def process_extra_data(raw_data=None):
+    def process_extra_data(raw_data=None, command=''):
         if raw_data is None:
             raw_data = """\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
+            %s
 
             --boundary
             Content-disposition: inline
@@ -530,7 +531,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             Added to the description.
 
             --boundary--
-            """
+            """ % command
         extra_data = dedent(raw_data)
         temp_storage_manager = getUtility(ITemporaryStorageManager)
         token = temp_storage_manager.new(extra_data)
@@ -544,13 +545,12 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
     def test_publish_traverse_token(self):
         # The publish_traverse() method uses a token to lookup the extra_data.
-        token = self.process_extra_data()
+        token = self.process_extra_data(command="not-requred: ignore")
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
 
     def test_publish_traverse_token_error(self):
         # The publish_traverse() method uses a token to lookup the extra_data.
-        self.process_extra_data()
         view = self.create_initialized_view()
         self.assertRaises(
             NotFound, view.publishTraverse, view.request, 'no-such-token')
@@ -610,19 +610,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
     def test_private_yes(self):
         # The extra data can specify the bug is private.
-        token = self.process_extra_data("""\
-            MIME-Version: 1.0
-            Content-type: multipart/mixed; boundary=boundary
-            Private: yes
-
-            --boundary
-            Content-disposition: inline
-            Content-type: text/plain; charset=utf-8
-
-            Added to the description.
-
-            --boundary--
-            """)
+        token = self.process_extra_data(command='Private: yes')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
         view.submit_bug_action.success(self.get_form())
@@ -633,19 +621,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
     def test_private_no(self):
         # The extra data can specify the bug is public.
-        token = self.process_extra_data("""\
-            MIME-Version: 1.0
-            Content-type: multipart/mixed; boundary=boundary
-            Private: no
-
-            --boundary
-            Content-disposition: inline
-            Content-type: text/plain; charset=utf-8
-
-            Added to the description.
-
-            --boundary--
-            """)
+        token = self.process_extra_data(command='Private: no')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
         view.submit_bug_action.success(self.get_form())
@@ -658,19 +634,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         # The extra data can add bug subscribers via email address.
         subscriber_1 = self.factory.makePerson(email='me@eg.dom')
         subscriber_2 = self.factory.makePerson(email='him@eg.dom')
-        token = self.process_extra_data("""\
-            MIME-Version: 1.0
-            Content-type: multipart/mixed; boundary=boundary
-            Subscribers: me@eg.dom him@eg.dom
-
-            --boundary
-            Content-disposition: inline
-            Content-type: text/plain; charset=utf-8
-
-            Added to the description.
-
-            --boundary--
-            """)
+        token = self.process_extra_data(
+            command='Subscribers: me@eg.dom him@eg.dom')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
         self.assertEqual(2, len(view.extra_data.subscribers))
@@ -686,19 +651,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         # The extra data can add bug subscribers via Launchpad Id..
         subscriber_1 = self.factory.makePerson(name='me')
         subscriber_2 = self.factory.makePerson(name='him')
-        token = self.process_extra_data("""\
-            MIME-Version: 1.0
-            Content-type: multipart/mixed; boundary=boundary
-            Subscribers: me him
-
-            --boundary
-            Content-disposition: inline
-            Content-type: text/plain; charset=utf-8
-
-            Added to the description.
-
-            --boundary--
-            """)
+        token = self.process_extra_data(command='Subscribers: me him')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
         self.assertEqual(2, len(view.extra_data.subscribers))
