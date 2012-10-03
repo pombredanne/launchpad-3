@@ -1998,6 +1998,17 @@ class TestGetFileByName(TestCaseWithFactory):
         pub.sourcepackagerelease.addFile(new_dsc)
         self.assertEqual(new_dsc, self.archive.getFileByName(dsc.filename))
 
+    def test_oddly_named_files_are_found(self):
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pu = self.factory.makePackageUpload(
+            changes_filename='foo-bar-baz_amd64.changes')
+        pu.setDone()
+        pu.addSource(pub.sourcepackagerelease)
+        self.assertEqual(
+            pu.changesfile,
+            self.archive.getFileByName(pu.changesfile.filename))
+
 
 class TestGetPublishedSources(TestCaseWithFactory):
 

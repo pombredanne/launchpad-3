@@ -6,14 +6,10 @@ There are currently four bugs open in Ubuntu.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox Medium New
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    10 another test bug
-       linux-source-2.6.15 Medium New
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the bugs with tasks in other contexts that
@@ -33,8 +29,7 @@ doesn't have a bug watch.
     ...     'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 There's an exception to what's shown on this filter though: if all the
 bugtasks on contexts that don't use Launchpad are Invalid, those bugs
@@ -87,8 +82,7 @@ on upstream, to focus instead on things they need to work on.
     ...     'Show bugs that are not known to affect upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    10 another test bug
-       linux-source-2.6.15 Medium New
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
 
 We can also show only the bugs that have a resolved upstream task. For
 our purposes, this means:
@@ -119,12 +113,9 @@ modified and the sampledata we created above will show up.
     ...     'Show bugs that are resolved upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox Medium New
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    2 Blackhole Trash folder Ubuntu Medium New
 
 If more than one filter for upstream status is selected, the search
 returns the union of the results for the individual filters.
@@ -139,14 +130,10 @@ returns the union of the results for the individual filters.
 
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox Medium New
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    10 another test bug
-       linux-source-2.6.15 Medium New
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 
 Backward-compatibility for old bookmars
@@ -182,14 +169,10 @@ The user opens a bookmark for "upstream status doesn't matter"
     ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
     ...         bookmark_params, True))
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox Medium New
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    10 another test bug
-       linux-source-2.6.15 Medium New
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 The user opens a bookmark for "upstream status: Show only bugs that need
 to be forwarded to an upstream bug tracker".
@@ -208,8 +191,7 @@ not known to affect upstream".
     ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
     ...         bookmark_params, True))
     >>> print_bugtasks(anon_browser.contents)
-    10 another test bug
-       linux-source-2.6.15 Medium New
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
 
 The user opens a bookmark for "upstream status: Show only bugs that are
 resolved upstream".
@@ -219,12 +201,9 @@ resolved upstream".
     ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
     ...         bookmark_params, True))
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox Medium New
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    2 Blackhole Trash folder Ubuntu Medium New
 
 Other values for status_upstream lead to an error.
 

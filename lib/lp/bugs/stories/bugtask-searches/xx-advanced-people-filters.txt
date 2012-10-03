@@ -41,7 +41,7 @@ results when we use a valid assignee.
     >>> anon_browser.getControl(name='field.assignee').value = 'name12'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    2 Blackhole Trash folder mozilla-firefox Low Confirmed
+    2 Blackhole Trash folder mozilla-firefox (Debian) Low Confirmed
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/~name12/+reportedbugs?advanced=1')
@@ -77,8 +77,8 @@ Valid searches work:
     >>> anon_browser.getControl(name='field.bug_reporter').value = 'name12'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG mozilla-firefox Low Confirmed
-    2 Blackhole Trash folder mozilla-firefox Low Confirmed
+    1 Firefox does not support SVG mozilla-firefox (Debian) Low Confirmed
+    2 Blackhole Trash folder mozilla-firefox (Debian) Low Confirmed
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12/+assignedbugs')
     >>> anon_browser.getControl(name='field.bug_reporter').value = 'name12'
@@ -130,7 +130,7 @@ Entering an existing person shows all bugs that person has commented on.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-      linux-source-2.6.15 Medium New
+      linux-source-2.6.15 (Ubuntu) Medium New
 
 
 Searching for a package subscriber's bugs
@@ -156,7 +156,7 @@ aren't any bugs open for pmount.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
-      mozilla-firefox Medium New
+      mozilla-firefox (Ubuntu) Medium New
 
 
 Searching for a bug subscriber's bugs

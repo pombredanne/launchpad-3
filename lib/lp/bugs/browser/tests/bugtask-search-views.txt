@@ -191,6 +191,9 @@ in each series. In this case, the component search widget is hidden.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
 
+    >>> from lp.testing import login
+    >>> login("test@canonical.com")
+
     >>> form_values = {
     ...     'search': 'Search bugs in Gentoo',
     ...     'advanced': 1,
@@ -231,7 +234,6 @@ And now we'll change the status of one of the bugtasks, but first we
 need to be logged in.
 
     >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> from lp.testing import login
 
     >>> login("test@canonical.com")
 
