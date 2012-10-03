@@ -369,8 +369,12 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                 datetime.now(pytz.timezone('UTC')) + duration_delta)
         else:
             expiration_date = None
-        self.token.review(self.user, permission, self.token_context,
-                          date_expires=expiration_date)
+        try:
+            self.token.review(
+                self.user, permission, self.token_context,
+                      date_expires=expiration_date)
+        except AssertionError as e:
+            self.request.response.addNotification(str(e))
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
@@ -427,16 +431,12 @@ class OAuthAccessTokenView(LaunchpadView):
             return (
                 u"Request token has not yet been reviewed. Try again later.")
 
-        if token.permission == OAuthPermission.UNAUTHORIZED:
-            # The end-user explicitly refused to authorize this
-            # token. We send 403 ("Forbidden") instead of 401
-            # ("Unauthorized") to distinguish this case and to
-            # indicate that, as RFC2616 says, "authorization will not
-            # help."
+        try:
+            access_token = token.createAccessToken()
+        except AssertionError as e:
             self.request.response.setStatus(403)
-            return u'End-user refused to authorize request token.'
+            return unicode(e)
 
-        access_token = token.createAccessToken()
         context_name = None
         if access_token.context is not None:
             context_name = access_token.context.name

@@ -275,6 +275,24 @@ the success message is printed.
     ...
     See all applications authorized to access Launchpad on your behalf.
 
+If the token has expired, we notify the user.
+
+    >>> token = request_token_for(consumer)
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> date_created = datetime.now(UTC) - timedelta(hours=3)
+    >>> removeSecurityProxy(token).date_created = date_created
+    >>> params = dict(oauth_token=token.key)
+    >>> browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
+    >>> browser.getControl('Read Anything').click()
+    >>> browser.url
+    'http://launchpad.dev/+authorize-token'
+    >>> [tag] = find_tags_by_class(browser.contents, 'informational message')
+    >>> print extract_text(tag)
+    This request token has expired and can no longer be reviewed.
+
 Desktop integration
 ===================
 
