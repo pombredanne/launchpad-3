@@ -1538,17 +1538,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         if user.id in self._known_viewers:
             return True
-        store = Store.of(self)
-        grants_for_user = store.using(
-            AccessPolicy,
-            Join(
-                AccessPolicyGrant,
-                And(
-                    AccessPolicyGrant.policy_id == AccessPolicy.id,
-                    AccessPolicyGrant.grantee_id == user.id))).find(
-            AccessPolicyGrant,
-            AccessPolicy.product_id == self.id,
-            AccessPolicy.type == self.information_type)
+        # We want an actual Storm Person.
+        if IPersonRoles.providedBy(user):
+            user = user.person
+        policy = getUtility(IAccessPolicySource).find(
+            [(self, self.information_type)]).one()
+        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
+            [(policy, user)])
         if grants_for_user.is_empty():
             return False
         self._known_viewers.add(user.id)

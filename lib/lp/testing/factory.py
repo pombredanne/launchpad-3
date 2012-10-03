@@ -1023,11 +1023,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
         if information_type is not None:
-            owner = product.owner
             naked_product.information_type = information_type
             if information_type in PROPRIETARY_INFORMATION_TYPES:
                 policy = self.makeAccessPolicy(product, information_type)
-                self.makeAccessPolicyGrant(policy, grantee=owner)
+                self.makeAccessPolicyGrant(
+                    policy, grantee=naked_product.owner)
 
         return product
 

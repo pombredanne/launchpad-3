@@ -691,10 +691,11 @@ class TestProduct(TestCaseWithFactory):
                 # The first access to a property of the product from
                 # a user requires a DB query.
                 product.homepageurl
-                self.assertEqual(1, len(recorder.queries))
+                queries_for_first_user_access = len(recorder.queries)
                 # The second access does not require another query.
                 product.description
-                self.assertEqual(1, len(recorder.queries))
+                self.assertEqual(
+                queries_for_first_user_access, len(recorder.queries))
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
