@@ -431,15 +431,19 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class ViewProduct(AuthorizationBase):
+class ViewProduct(ViewPillar):
     permission = 'launchpad.View'
     usedfor = IProduct
 
     def checkAuthenticated(self, user):
-        return self.obj.userCanView(user)
+        return (
+            super(ViewProduct, self).checkAuthenticated(user) and
+            self.obj.userCanView(user))
 
     def checkUnauthenticated(self):
-        return self.obj.information_type in PUBLIC_INFORMATION_TYPES
+        return (
+            self.obj.information_type in PUBLIC_INFORMATION_TYPES and
+            super(ViewProduct, self).checkUnauthenticated())
 
 
 class ChangeProduct(ViewProduct):

@@ -10,6 +10,7 @@ from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.errors import (
     AddAnswerContactError,
@@ -157,7 +158,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         # End any open lplib instance.
         logout()
         lp = launchpadlib_for("test", user)
-        return ws_object(lp, self.question)
+        return ws_object(lp, removeSecurityProxy(self.question))
 
     def _set_visibility(self, question):
         """Method to set visibility; needed for assertRaises."""

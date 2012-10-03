@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import transaction
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.services.webapp.interaction import ANONYMOUS
@@ -272,7 +273,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # setup a new one.
         endInteraction()
         lplib = launchpadlib_for('lplib-test', person=None, version='devel')
-        ws_product = ws_object(lplib, product)
+        ws_product = ws_object(lplib, removeSecurityProxy(product))
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"], ws_product.all_specifications)
 
