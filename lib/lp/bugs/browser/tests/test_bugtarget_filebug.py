@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 
+from textwrap import dedent
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import transaction
@@ -19,6 +20,7 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.bugs.browser.bugtarget import FileBugViewBase
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
@@ -30,6 +32,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager)
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
@@ -504,9 +508,6 @@ class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
 
     @staticmethod
     def process_attachment(bug_data):
-        from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
-        from lp.services.temporaryblobstorage.interfaces import (
-            ITemporaryStorageManager)
         temp_storage_manager = getUtility(ITemporaryStorageManager)
         token = temp_storage_manager.new(bug_data)
         transaction.commit()
@@ -517,29 +518,31 @@ class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
         job.job.complete()
         return token
 
+    @staticmethod
+    def get_raw_data():
+        return dedent("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: attachment; filename='attachment1'
+            Content-type: text/plain; charset=utf-8
+
+            This is an attachment.
+
+            --boundary
+            Content-disposition: attachment; filename='attachment2'
+            Content-description: Attachment description.
+            Content-type: text/plain; charset=ISO-8859-1
+
+            This is another attachment, with a description.
+
+            --boundary--
+            """)
+
     def test_attachment_comment(self):
         # The attachment comment has no content and it does not notify.
-        from textwrap import dedent
-
-        bug_data = dedent("""\
-        MIME-Version: 1.0
-        Content-type: multipart/mixed; boundary=boundary
-
-        --boundary
-        Content-disposition: attachment; filename='attachment1'
-        Content-type: text/plain; charset=utf-8
-
-        This is an attachment.
-
-        --boundary
-        Content-disposition: attachment; filename='attachment2'
-        Content-description: Attachment description.
-        Content-type: text/plain; charset=ISO-8859-1
-
-        This is another attachment, with a description.
-
-        --boundary--
-        """)
+        bug_data = self.get_raw_data()
         token = self.process_attachment(bug_data)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
@@ -560,7 +563,19 @@ class FileBugViewBaseAttachments(FileBugViewMixin, TestCaseWithFactory):
             'text/plain; charset=utf-8', attachment.libraryfile.mimetype)
         self.assertEqual(
             'This is an attachment.\n\n', attachment.libraryfile.read())
-        self.assertEqual(2, bug.bug_messages.count())
+        self.assertEqual(2, bug.messages.count())
+        self.assertEqual(2, len(bug.messages[1].bugattachments))
+        notifications = view.request.response.notifications
+        self.assertEqual(3, len(notifications))
+        self.assertEqual(
+            '<p class="last">Thank you for your bug report.</p>',
+            notifications[0].message)
+        self.assertEqual(
+            'The file "attachment1" was attached to the bug report.',
+            notifications[1].message)
+        self.assertEqual(
+            'The file "attachment2" was attached to the bug report.',
+            notifications[2].message)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
