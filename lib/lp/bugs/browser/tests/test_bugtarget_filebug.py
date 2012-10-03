@@ -509,9 +509,9 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     @staticmethod
-    def process_attachment(bug_data):
+    def process_attachment(extra_data):
         temp_storage_manager = getUtility(ITemporaryStorageManager)
-        token = temp_storage_manager.new(bug_data)
+        token = temp_storage_manager.new(extra_data)
         transaction.commit()
         blob = temp_storage_manager.fetch(token)
         job = getUtility(IProcessApportBlobJobSource).create(blob)
@@ -521,7 +521,68 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         return token
 
     @staticmethod
-    def get_raw_data():
+    def make_extra_data():
+        return dedent("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            A bug comment.
+
+            --boundary--
+            """)
+
+    def test_description_and_comments(self):
+        # The first extra text part is added to the desciption, all other
+        # extra parts become additional bug messages.
+        extra_data = self.make_extra_data()
+        token = self.process_attachment(extra_data)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        form = {
+            'title': 'test title',
+            'comment': 'test description',
+            'actions.submit_bug': 'Submit Bug Request',
+            }
+        with EventRecorder() as recorder:
+            view.submit_bug_action.success(form)
+            # Subscribers are only notified about the new bug event;
+            # The extra comment for the attchments was silent.
+            self.assertEqual(2, len(recorder.events))
+            bug_event, message_event = recorder.events
+        transaction.commit()
+        bug = view.added_bug
+        self.assertEqual(bug, bug_event.object)
+        self.assertEqual(
+            'test description\n\n'
+            'Added to the description.',
+            bug.description)
+        self.assertEqual(2, bug.messages.count())
+        self.assertEqual(bug.bug_messages[-1], message_event.object)
+        notifications = view.request.response.notifications
+        self.assertEqual(3, len(notifications))
+        self.assertEqual(
+            '<p class="last">Thank you for your bug report.</p>',
+            notifications[0].message)
+        self.assertEqual(
+            'Additional information was added to the bug description.',
+            notifications[1].message)
+        self.assertEqual(
+            'A comment with additional information was added '
+            'to the bug report.',
+            notifications[2].message)
+
+    @staticmethod
+    def make_extra_data_attachment():
         return dedent("""\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
@@ -544,8 +605,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
 
     def test_attachments(self):
         # The attachment comment has no content and it does not notify.
-        bug_data = self.get_raw_data()
-        token = self.process_attachment(bug_data)
+        extra_data = self.make_extra_data_attachment()
+        token = self.process_attachment(extra_data)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
         form = {

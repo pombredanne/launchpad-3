@@ -94,32 +94,9 @@ The uploaded debug information should be MIME multipart message, where
 the Content-Disposition header tells Launchpad what to do with the
 different parts.
 
-
-First inline part
-.................
-
-The first inline part will be appended to the bug description.
-
-    >>> debug_data = """MIME-Version: 1.0
-    ... Content-type: multipart/mixed; boundary=boundary
-    ...
-    ... --boundary
-    ... Content-disposition: inline
-    ... Content-type: text/plain; charset=utf-8
-    ... 
-    ... This should be added to the description.
-    ...
-    ... --boundary--
-    ... """
     >>> import transaction
     >>> from lp.services.temporaryblobstorage.interfaces import (
     ...     ITemporaryStorageManager)
-    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
-
-We need to commit the transaction since the data will be stored in the
-Librarian.
-
-    >>> transaction.commit()
 
 The data is processed by a ProcessApportBlobJob, which the filebug view
 can then access to get the parsed data. We'll define a helper method for
@@ -134,106 +111,6 @@ processing the blob.
     ...     job.job.start()
     ...     job.run()
     ...     job.job.complete()
-    >>> process_blob(token)
-
-Now, if we pass the token to the filebug view, the extra_data attribute
-will be set with the actual data.
-
-    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
-    >>> filebug_view.publishTraverse(
-    ...     filebug_view.request, token) is filebug_view
-    True
-
-    >>> filebug_view.extra_data.extra_description
-    u'This should be added to the description.'
-
-    >>> filebug_view.validate(bug_data) is None
-    True
-
-    >>> filebug_view.submit_bug_action.success(bug_data)
-    >>> filebug_view.added_bug.title
-    u'Test Title'
-
-    >>> description = filebug_view.added_bug.description
-    >>> print description #doctest: -NORMALIZE_WHITESPACE
-    Test description.
-    <BLANKLINE>
-    This should be added to the description.
-
-A notification was added to inform the user about what happened.
-
-    >>> for notification in filebug_view.request.response.notifications:
-    ...     print notification.message
-    <p class="last">Thank you for your bug report.</p>
-    Additional information was added to the bug description.
-
-
-Other inline parts
-..................
-
-If there are more than one inline part, those will be added as comments
-to the bug.
-
-    >>> debug_data = """MIME-Version: 1.0
-    ... Content-type: multipart/mixed; boundary=boundary
-    ...
-    ... --boundary
-    ... Content-disposition: inline
-    ... Content-type: text/plain; charset=utf-8
-    ... 
-    ... This should be added to the description.
-    ...
-    ... --boundary
-    ... Content-disposition: inline
-    ... Content-type: text/plain; charset=utf-8
-    ... 
-    ... This should be added as a comment.
-    ...
-    ... --boundary
-    ... Content-disposition: inline
-    ... Content-type: text/plain; charset=utf-8
-    ... 
-    ... This should be added as another comment.
-    ...
-    ... --boundary--
-    ... """
-    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
-    >>> transaction.commit()
-
-    >>> process_blob(token)
-    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
-    >>> filebug_view.publishTraverse(filebug_view.request,
-    ...     token) is filebug_view
-    True
-
-    >>> filebug_view.validate(bug_data) is None
-    True
-
-    >>> filebug_view.submit_bug_action.success(bug_data)
-
-    >>> filebug_view.added_bug.title
-    u'Test Title'
-
-    >>> description = filebug_view.added_bug.description
-    >>> print description #doctest: -NORMALIZE_WHITESPACE
-    Test description.
-    <BLANKLINE>
-    This should be added to the description.
-
-    >>> for comment in filebug_view.added_bug.messages[1:]:
-    ...     print "Comment by %s: %s" % (
-    ...         comment.owner.displayname, comment.text_contents)
-    Comment by No Privileges Person: This should be added as a comment.
-    Comment by No Privileges Person: This should be added as another comment.
-
-Notifications were added to inform the user about what happened.
-
-    >>> for notification in filebug_view.request.response.notifications:
-    ...     print notification.message
-    <p class="last">Thank you for your bug report.</p>
-    Additional information was added to the bug description.
-    A comment with additional information was added to the bug report.
-    A comment with additional information was added to the bug report.
 
 
 Private Bugs
