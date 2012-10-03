@@ -7,6 +7,7 @@ from cStringIO import StringIO
 import datetime
 
 import pytz
+from storm.locals import Store
 from testtools.matchers import MatchesAll
 import transaction
 from zope.component import getUtility
@@ -28,6 +29,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -111,6 +113,7 @@ class TestProduct(TestCaseWithFactory):
             IHasLogo,
             IHasMugshot,
             IHasOOPSReferences,
+            IInformationType,
             ILaunchpadUsage,
             IServiceUsage,
             ]
@@ -389,6 +392,29 @@ class TestProduct(TestCaseWithFactory):
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_product_information_type(self):
+        # Product is created with specified information_type
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        self.assertEqual(InformationType.EMBARGOED, product.information_type)
+        # Owner can set information_type
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        # Database persists information_type value
+        store = Store.of(product)
+        store.flush()
+        store.reset()
+        product = store.get(Product, product.id)
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+
+    def test_product_information_type_default(self):
+        # Default information_type is PUBLIC
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

@@ -964,7 +964,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None, specification_sharing_policy=None):
+        branch_sharing_policy=None, specification_sharing_policy=None,
+        information_type=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -993,7 +994,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 licenses=licenses,
                 project=project,
                 registrant=registrant,
-                icon=icon)
+                icon=icon,
+                information_type=information_type)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
