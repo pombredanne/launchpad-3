@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -61,7 +61,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.tales import MenuAPI
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
@@ -1405,6 +1408,12 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure code hosting'
         return set_branch
+
+    @property
+    def external_visible(self):
+        return (
+            self.context.codehosting_usage == ServiceUsage.EXTERNAL
+            and self.branch)
 
 
 class ProductBranchesView(ProductBranchListingView):
