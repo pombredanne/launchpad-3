@@ -7,6 +7,7 @@ from cStringIO import StringIO
 import datetime
 
 import pytz
+from storm.locals import Store
 from testtools.matchers import MatchesAll
 import transaction
 from zope.component import getUtility
@@ -32,6 +33,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -117,6 +119,7 @@ class TestProduct(TestCaseWithFactory):
             IHasLogo,
             IHasMugshot,
             IHasOOPSReferences,
+            IInformationType,
             ILaunchpadUsage,
             IServiceUsage,
             ]
@@ -396,6 +399,30 @@ class TestProduct(TestCaseWithFactory):
         expected = [InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
+    def test_product_information_type(self):
+        # Product is created with specified information_type
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        self.assertEqual(InformationType.EMBARGOED, product.information_type)
+        # Owner can set information_type
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        # Database persists information_type value
+        store = Store.of(product)
+        store.flush()
+        store.reset()
+        product = store.get(Product, product.id)
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+
+    def test_product_information_type_default(self):
+        # Default information_type is PUBLIC
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
+
     def check_permissions(self, expected_permissions, used_permissions,
                           type_):
         expected = set(expected_permissions.keys())
@@ -419,7 +446,8 @@ class TestProduct(TestCaseWithFactory):
                         expected_permissions[permission] - attribute_names)))
 
     expected_get_permissions = {
-        CheckerPublic: set(('id', 'information_type', 'userCanView',)),
+        CheckerPublic: set((
+            'id', 'information_type', 'private', 'userCanView',)),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active', 'active_or_packaged_series',
@@ -523,9 +551,10 @@ class TestProduct(TestCaseWithFactory):
                 'bug_tracking_usage', 'codehosting_usage',
                 'commercial_subscription', 'description', 'development_focus',
                 'displayname', 'downloadurl', 'driver', 'freshmeatproject',
-                'homepage_content', 'homepageurl', 'icon', 'license_info',
-                'licenses', 'logo', 'mugshot', 'official_answers',
-                'official_blueprints', 'official_codehosting', 'owner',
+                'homepage_content', 'homepageurl', 'icon', 'information_type',
+                'license_info', 'licenses', 'logo', 'mugshot',
+                'official_answers', 'official_blueprints',
+                'official_codehosting', 'owner', 'private',
                 'programminglang', 'project', 'redeemSubscriptionVoucher',
                 'releaseroot', 'screenshotsurl', 'sourceforgeproject',
                 'summary', 'title', 'uses_launchpad', 'wikiurl')),

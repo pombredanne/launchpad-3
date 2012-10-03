@@ -910,13 +910,13 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
-class SpecificationSharingPolicyDefault(TunableLoop):
-    """Set all Product.specification_sharing_policy to Public."""
+class ProductInformationTypeDefault(TunableLoop):
+    """Set all Product.information_type to Public."""
 
     maximum_chunk_size = 1000
 
     def __init__(self, log, abort_time=None):
-        super(SpecificationSharingPolicyDefault, self).__init__(
+        super(ProductInformationTypeDefault, self).__init__(
             log, abort_time)
         self.rows_updated = None
         self.store = IMasterStore(Product)
@@ -928,10 +928,10 @@ class SpecificationSharingPolicyDefault(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         subselect = Select(
-            Product.id, Product.specification_sharing_policy == None,
+            Product.id, Product.information_type == None,
             limit=chunk_size)
         result = self.store.execute(
-            Update({Product.specification_sharing_policy: 1},
+            Update({Product.information_type: 1},
             Product.id.is_in(subselect)))
         transaction.commit()
         self.rows_updated = result.rowcount
@@ -1331,7 +1331,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        SpecificationSharingPolicyDefault,
+        ProductInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnlinkedAccountPruner,

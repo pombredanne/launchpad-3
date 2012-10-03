@@ -73,9 +73,9 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import InformationType
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -425,13 +425,6 @@ class IProductModerateRestricted(Interface):
 class IProductPublic(Interface):
 
     id = Int(title=_('The Project ID'))
-
-    information_type = exported(
-        Choice(
-            title=_('Information Type'), vocabulary=InformationType,
-            required=True, readonly=True,
-            description=_(
-                'The type of of data contained in this project.')))
 
     def userCanView(user):
         """True if the given user has access to this product."""
@@ -939,7 +932,7 @@ class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget):
+    IStructuralSubscriptionTarget, IInformationType):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
