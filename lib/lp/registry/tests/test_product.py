@@ -388,13 +388,30 @@ class TestProduct(TestCaseWithFactory):
         with person_logged_in(owner):
             product = getUtility(IProductSet).createProduct(
                 owner, 'carrot', 'Carrot', 'Carrot', 'testing',
-                licenses=[License.OTHER_PROPRIETARY])
+                licenses=[License.OTHER_PROPRIETARY],
+                information_type=InformationType.PROPRIETARY)
         self.assertEqual(
             BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_other_proprietary_product_creation_sharing_policies(self):
+        # Creating a new product with other/proprietary license leaves bug
+        # and branch sharing polices at their default.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY])
+        self.assertEqual(
+            BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def createProduct(self, information_type=None, license=None):
