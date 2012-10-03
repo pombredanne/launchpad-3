@@ -9,7 +9,9 @@ from operator import attrgetter
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -231,3 +233,17 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
         self.assertContentEqual([], milestone.specifications)
+
+
+class TestMilestoneInformationType(TestCaseWithFactory):
+    """Tests for information_type and Milestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_from_product(self):
+        # Milestones should inherit information_type from its product."""
+        product = self.factory.makeProduct()
+        information_type = InformationType.PROPRIETARY
+        removeSecurityProxy(product).information_type = information_type
+        milestone = self.factory.makeMilestone(product=product)
+        self.assertEqual(milestone.information_type, information_type)
