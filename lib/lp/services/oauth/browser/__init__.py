@@ -405,6 +405,10 @@ def lookup_oauth_context(context):
 class OAuthAccessTokenView(LaunchpadView):
     """Where consumers may exchange a request token for an access token."""
 
+    def _set_status_and_error(self, error):
+        self.request.response.setStatus(403)
+        return unicode(error)
+
     def __call__(self):
         """Create an access token and respond with its key/secret/context.
 
@@ -433,11 +437,14 @@ class OAuthAccessTokenView(LaunchpadView):
             return (
                 u"Request token has not yet been reviewed. Try again later.")
 
+        if token.permission == OAuthPermission.UNAUTHORIZED:
+            return self._set_status_and_error(
+                'End-user refused to authorize request token.')
+
         try:
             access_token = token.createAccessToken()
         except OAuthValidationError as e:
-            self.request.response.setStatus(403)
-            return unicode(e)
+            return self._set_status_and_error(e)
 
         context_name = None
         if access_token.context is not None:
