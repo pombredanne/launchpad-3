@@ -373,7 +373,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         try:
             self.token.review(
                 self.user, permission, self.token_context,
-                      date_expires=expiration_date)
+                date_expires=expiration_date)
         except OAuthValidationError as e:
             self.request.response.addErrorNotification(str(e))
             return
