@@ -381,18 +381,14 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def edit_import(self):
         text = 'Edit import source or review import'
-        enabled = True
         enabled = (
             self.context.branch_type == BranchType.IMPORTED and
             check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
+        return Link('+edit-import', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def upgrade_branch(self):
-        enabled = False
-        if self.context.needs_upgrading:
-            enabled = True
+        enabled = self.context.needs_upgrading
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 

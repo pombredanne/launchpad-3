@@ -70,7 +70,7 @@ will cause this spec to be reassigned.
     >>> personset = getUtility(IPersonSet)
     >>> foobar_preferredemail = emailset.getByEmail('foo.bar@canonical.com')
     >>> foobar = personset.get(foobar_preferredemail.personID)
-    >>> foobar.specifications().count() > 0
+    >>> foobar.specifications(None).count() > 0
     True
 
     >>> from lp.blueprints.model.specification import Specification

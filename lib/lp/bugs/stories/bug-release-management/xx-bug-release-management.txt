@@ -394,6 +394,6 @@ targeted to it.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-      Undecided New
+      Mozilla Firefox 1.0 Undecided New
     1 Firefox does not support SVG
-      Undecided Confirmed
+      Mozilla Firefox 1.0 Undecided Confirmed

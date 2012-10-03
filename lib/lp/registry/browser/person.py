@@ -1219,8 +1219,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from lp.services.database.lpstorm import IMasterObject
-        self.context = IMasterObject(self.context.account)
+        self.context = self.person.account
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
         if self.viewed_by_admin:
@@ -1303,6 +1302,9 @@ class PersonSpecWorkloadView(LaunchpadView):
         batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
+    def specifications(self):
+        return self.context.specifications(self.user)
+
 
 class PersonSpecWorkloadTableView(LaunchpadView):
     """View to render the specification workload table for a person.
@@ -1331,7 +1333,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
         approver, the assignee or the drafter.
         """
         return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
-                for spec in self.context.specifications()]
+                for spec in self.context.specifications(self.user)]
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -3573,7 +3575,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
             else:
                 project['bug_count'] = pillar.searchTasks(
                     BugTaskSet().open_bugtask_search).count()
-            project['spec_count'] = pillar.specifications().count()
+            project['spec_count'] = pillar.specifications(user).count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects

@@ -16,10 +16,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
@@ -56,10 +53,10 @@ def transfer_email(job):
 
     IPersonSet.merge() does not (yet) promise to do this.
     """
-    from_email = IMasterObject(job.from_person.preferredemail)
-    removeSecurityProxy(from_email).personID = job.to_person.id
-    removeSecurityProxy(from_email).accountID = job.to_person.accountID
-    removeSecurityProxy(from_email).status = EmailAddressStatus.NEW
+    from_email = removeSecurityProxy(job.from_person.preferredemail)
+    from_email.personID = job.to_person.id
+    from_email.accountID = job.to_person.accountID
+    from_email.status = EmailAddressStatus.NEW
     IStore(from_email).flush()
 
 

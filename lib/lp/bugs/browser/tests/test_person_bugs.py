@@ -75,34 +75,30 @@ class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):
     def test_current_package_missing_distribution(self):
         # UnexpectedFormData is raised if the distribution is not provided.
         form = self.makeForm(self.spn.name, '')
-        view = create_initialized_view(
-            self.person, name='+packagebugs-search', form=form)
         self.assertRaises(
-            UnexpectedFormData, getattr, view, 'current_package')
+            UnexpectedFormData, create_initialized_view, self.person,
+            name='+packagebugs-search', form=form)
 
     def test_current_package_unknown_distribution(self):
         # UnexpectedFormData is raised if the distribution is not known.
         form = self.makeForm(self.spn.name, 'unknown-distribution')
-        view = create_initialized_view(
-            self.person, name='+packagebugs-search', form=form)
         self.assertRaises(
-            UnexpectedFormData, getattr, view, 'current_package')
+            UnexpectedFormData, create_initialized_view, self.person,
+            name='+packagebugs-search', form=form)
 
     def test_current_package_missing_sourcepackagename(self):
         # UnexpectedFormData is raised if the package name is not provided.
         form = self.makeForm('', self.distribution.name)
-        view = create_initialized_view(
-            self.person, name='+packagebugs-search', form=form)
         self.assertRaises(
-            UnexpectedFormData, getattr, view, 'current_package')
+            UnexpectedFormData, create_initialized_view, self.person,
+            name='+packagebugs-search', form=form)
 
     def test_current_package_unknown_sourcepackagename(self):
         # UnexpectedFormData is raised if the package name is not known.
         form = self.makeForm('unknown-package', self.distribution.name)
-        view = create_initialized_view(
-            self.person, name='+packagebugs-search', form=form)
         self.assertRaises(
-            UnexpectedFormData, getattr, view, 'current_package')
+            UnexpectedFormData, create_initialized_view, self.person,
+            name='+packagebugs-search', form=form)
 
     def test_one_call_of_canonical_url(self):
         # canonical_url(self.context) is frequently needed to build

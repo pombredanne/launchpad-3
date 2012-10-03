@@ -117,8 +117,7 @@ Do the merge!
 
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> from lp.services.database.lpstorm import IMasterObject
-    >>> email = IMasterObject(marilize.preferredemail)
+    >>> email = marilize.preferredemail
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
     >>> import transaction

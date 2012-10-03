@@ -158,12 +158,6 @@ special = {
         setUp=manageChrootSetup,
         layer=LaunchpadZopelessLayer,
         ),
-    'queuebuilder.txt': LayeredDocFileSuite(
-        '../doc/queuebuilder.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING,
-        ),
     }
 
 

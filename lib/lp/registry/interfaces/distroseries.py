@@ -628,22 +628,6 @@ class IDistroSeriesPublic(
         Return publications in the main archives only.
         """
 
-    def getSourcesPublishedForAllArchives():
-        """Return all sourcepackages published across all the archives.
-
-        It's only used in the buildmaster/master.py context for calculating
-        the publication that are still missing build records.
-
-        It will consider all publishing records in PENDING or PUBLISHED status
-        as part of the 'build-unpublished-source' specification.
-
-        For 'main_archive' candidates it will automatically exclude RELEASE
-        pocket records of released distroseries (ensuring that we won't waste
-        time with records that can't be accepted).
-
-        Return a SelectResult of SourcePackagePublishingHistory.
-        """
-
     def getDistroSeriesLanguage(language):
         """Return the DistroSeriesLanguage for this distroseries and the
         given language, or None if there's no DistroSeriesLanguage for this
