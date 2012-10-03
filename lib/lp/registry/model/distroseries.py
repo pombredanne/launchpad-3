@@ -127,7 +127,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -777,16 +776,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
 
-    @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 
@@ -1029,7 +1019,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
-        sourcepackagerelease.sourcepackagename=%s AND
+        sourcepackagepublishinghistory.sourcepackagename=%s AND
         distroseries=%s
         """ % sqlvalues(spn.id, self.id)]
 
@@ -1105,30 +1095,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getAllUncondemnedBinaries(self):
         """See `IDistroSeries`."""
         return self._getAllBinaries().find(scheduleddeletiondate=None)
-
-    def getSourcesPublishedForAllArchives(self):
-        """See `IDistroSeries`."""
-        query = """
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.status in %s AND
-            Archive.purpose != %s
-         """ % sqlvalues(self, active_publishing_status, ArchivePurpose.COPY)
-
-        if not self.isUnstable():
-            # Stable distroseries don't allow builds for the release
-            # pockets for the primary archives, but they do allow them for
-            # the PPA and PARTNER archives.
-
-            # XXX: Julian 2007-09-14: this should come from a single
-            # location where this is specified, not sprinkled around the code.
-            query += ("""AND (Archive.purpose in %s OR
-                            SourcePackagePublishingHistory.pocket != %s)""" %
-                      sqlvalues(ALLOW_RELEASE_BUILDS,
-                                PackagePublishingPocket.RELEASE))
-
-        return SourcePackagePublishingHistory.select(
-            query, clauseTables=['Archive'], orderBy="id")
 
     def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""

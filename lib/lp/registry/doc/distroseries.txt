@@ -850,14 +850,14 @@ informational.
 First, there should be one informational specs for krunch:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> krunch.specifications(filter=filter).count()
+    >>> krunch.specifications(None, filter=filter).count()
     1
 
 
 There are 2 completed specs for Krunch:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in kubuntu.specifications(filter=filter):
+    >>> for spec in kubuntu.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete
     thinclient-local-devices True
     usplash-on-hibernation True
@@ -866,7 +866,7 @@ There are 2 completed specs for Krunch:
 And there are 2 incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -875,7 +875,7 @@ And there are 2 incomplete specs:
 If we ask for all specs, we get them in the order of priority.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...    print spec.priority.title, spec.name
     Essential cluster-installation
     High revu
@@ -888,7 +888,7 @@ If we ask for all specs, we get them in the order of priority.
 With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
     >>> filter=[SpecificationFilter.ACCEPTED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     cluster-installation Accepted
     revu Accepted
@@ -896,12 +896,12 @@ With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
     usplash-on-hibernation Accepted
 
     >>> filter=[SpecificationFilter.PROPOSED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     kde-desktopfile-langpacks Proposed
 
     >>> filter=[SpecificationFilter.DECLINED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     krunch-desktop-plan Declined
 
@@ -909,7 +909,7 @@ With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 And if we ask just for specs, we get BOTH the incomplete and the complete
 ones that have been accepted.
 
-    >>> for spec in krunch.specifications():
+    >>> for spec in krunch.specifications(None):
     ...     print spec.name, spec.is_complete, spec.goalstatus.title
     cluster-installation False Accepted
     revu False Accepted
@@ -918,7 +918,7 @@ ones that have been accepted.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in krunch.specifications(filter=['usb']):
+    >>> for spec in krunch.specifications(None, filter=['usb']):
     ...     print spec.name
     thinclient-local-devices
 

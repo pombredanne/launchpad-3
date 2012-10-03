@@ -329,6 +329,16 @@ class Packageset(Storm):
             Packageset.id != self.id)
         return _order_result_set(result_set)
 
+    def destroySelf(self):
+        store = IStore(Packageset)
+        sources = store.find(
+            PackagesetSources,
+            PackagesetSources.packageset == self)
+        sources.remove()
+        store.remove(self)
+        if self.relatedSets().is_empty():
+            store.remove(self.packagesetgroup)
+
 
 class PackagesetSet:
     """See `IPackagesetSet`."""

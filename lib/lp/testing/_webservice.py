@@ -190,6 +190,10 @@ class QueryCollector:
         ztapi.subscribe((IEndRequestEvent, ), None, self)
         self._active = True
 
+    def __enter__(self):
+        self.register()
+        return self
+
     def __call__(self, event):
         if self._active:
             self.queries = get_request_statements()
@@ -197,3 +201,6 @@ class QueryCollector:
 
     def unregister(self):
         self._active = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.unregister()

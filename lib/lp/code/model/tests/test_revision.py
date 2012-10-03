@@ -34,7 +34,6 @@ from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.database.lpstorm import IMasterObject
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger
@@ -130,7 +129,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        IMasterObject(author.account).status = AccountStatus.SUSPENDED
+        author.account.status = AccountStatus.SUSPENDED
         branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)

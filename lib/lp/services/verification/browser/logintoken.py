@@ -535,7 +535,8 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
-        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
+        self.dupe = getUtility(IPersonSet).getByEmail(
+            self.context.email, filter_status=False)
 
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect

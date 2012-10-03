@@ -108,10 +108,7 @@ class ProxyWithConnectionTimeout(xmlrpc.Proxy):
                  useDateTime=False, timeout=None):
         xmlrpc.Proxy.__init__(
             self, url, user, password, allowNone, useDateTime)
-        if timeout is None:
-            self.timeout = config.builddmaster.socket_timeout
-        else:
-            self.timeout = timeout
+        self.timeout = timeout
 
     def callRemote(self, method, *args):
         """Basically a carbon copy of the parent but passes the timeout
@@ -148,7 +145,7 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    def __init__(self, proxy, builder_url, vm_host, reactor=None):
+    def __init__(self, proxy, builder_url, vm_host, timeout, reactor):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
@@ -160,14 +157,12 @@ class BuilderSlave(object):
         self._vm_host = vm_host
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
-
-        if reactor is None:
-            self.reactor = default_reactor
-        else:
-            self.reactor = reactor
+        self.timeout = timeout
+        self.reactor = reactor
 
     @classmethod
-    def makeBuilderSlave(cls, builder_url, vm_host, reactor=None, proxy=None):
+    def makeBuilderSlave(cls, builder_url, vm_host, timeout, reactor=None,
+                         proxy=None):
         """Create and return a `BuilderSlave`.
 
         :param builder_url: The URL of the slave buildd machine,
@@ -179,15 +174,15 @@ class BuilderSlave(object):
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
         if proxy is None:
-            server_proxy = ProxyWithConnectionTimeout(rpc_url, allowNone=True)
+            server_proxy = ProxyWithConnectionTimeout(
+                rpc_url, allowNone=True, timeout=timeout)
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
-        return cls(server_proxy, builder_url, vm_host, reactor)
+        return cls(server_proxy, builder_url, vm_host, timeout, reactor)
 
     def _with_timeout(self, d):
-        TIMEOUT = config.builddmaster.socket_timeout
-        return cancel_on_timeout(d, TIMEOUT, self.reactor)
+        return cancel_on_timeout(d, self.timeout, self.reactor)
 
     def abort(self):
         """Abort the current build."""
@@ -266,8 +261,7 @@ class BuilderSlave(object):
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]
         d = defer.Deferred()
-        p = ProcessWithTimeout(
-            d, config.builddmaster.socket_timeout, clock=clock)
+        p = ProcessWithTimeout(d, self.timeout, clock=clock)
         p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
@@ -539,7 +533,11 @@ class Builder(SQLBase):
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
+        if self.virtualized:
+            timeout = config.builddmaster.virtualized_socket_timeout
+        else:
+            timeout = config.builddmaster.socket_timeout
+        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host, timeout)
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
