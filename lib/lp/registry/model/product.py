@@ -1656,6 +1656,12 @@ class ProductSet:
             branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
             specification_sharing_policy_to_use = (
                 SpecificationSharingPolicy.PROPRIETARY)
+        if information_type == InformationType.EMBARGOED:
+            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+            branch_sharing_policy_to_use = (
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            specification_sharing_policy_to_use = (
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         product.setBugSharingPolicy(bug_sharing_policy_to_use)
         product.setBranchSharingPolicy(branch_sharing_policy_to_use)
         product.setSpecificationSharingPolicy(

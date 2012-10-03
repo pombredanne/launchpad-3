@@ -385,8 +385,8 @@ class TestProduct(TestCaseWithFactory):
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def test_proprietary_product_creation_sharing_policies(self):
-        # Creating a new proprietary product sets the bug and branch sharing
-        # polices to proprietary.
+        # Creating a new proprietary product sets the bug, branch, and
+        # specification sharing polices to proprietary.
         owner = self.factory.makePerson()
         with person_logged_in(owner):
             product = getUtility(IProductSet).createProduct(
@@ -402,6 +402,29 @@ class TestProduct(TestCaseWithFactory):
             product.specification_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_embargoed_product_creation_sharing_policies(self):
+        # Creating a new embargoed product sets the branch and
+        # specification sharing polices to embargoed or proprietary, and the
+        # bug sharing policy to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY],
+                information_type=InformationType.EMBARGOED)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY,
+            product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            product.branch_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            product.specification_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.PROPRIETARY, InformationType.EMBARGOED]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def test_other_proprietary_product_creation_sharing_policies(self):
