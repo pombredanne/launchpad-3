@@ -1064,17 +1064,17 @@ class TestGarbo(TestCaseWithFactory):
         # Set all existing projects to something other than None or 1.
         store = IMasterStore(Product)
         store.execute(Update(
-            {Product.information_type: 2}))
+            {Product._information_type: 2}))
         store.flush()
         # Make a new product without an information_type.
         product = self.factory.makeProduct()
         removeSecurityProxy(product).information_type = None
         store.flush()
         self.assertEqual(1, store.find(Product,
-            Product.information_type == None).count())
+            Product._information_type == None).count())
         self.runDaily()
         self.assertEqual(0, store.find(Product,
-            Product.information_type == None).count())
+            Product._information_type == None).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):
