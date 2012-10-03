@@ -1647,13 +1647,19 @@ class ProductSet:
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
         branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
+        specification_sharing_policy_to_use = (
+            SpecificationSharingPolicy.PUBLIC)
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
         if information_type == InformationType.PROPRIETARY:
             bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
             branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+            specification_sharing_policy_to_use = (
+                SpecificationSharingPolicy.PROPRIETARY)
         product.setBugSharingPolicy(bug_sharing_policy_to_use)
         product.setBranchSharingPolicy(branch_sharing_policy_to_use)
+        product.setSpecificationSharingPolicy(
+            specification_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

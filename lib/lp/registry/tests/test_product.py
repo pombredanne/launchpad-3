@@ -376,6 +376,9 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PUBLIC,
+            product.specification_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [
             InformationType.USERDATA, InformationType.PRIVATESECURITY]
@@ -394,6 +397,9 @@ class TestProduct(TestCaseWithFactory):
             BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PROPRIETARY,
+            product.specification_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
