@@ -602,7 +602,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         self.assertIs(view, view.publishTraverse(view.request, token))
         form = {
             'title': 'test title',
-            'comment': 'test_comment',
+            'comment': 'test description',
             'actions.submit_bug': 'Submit Bug Request',
             }
         with EventRecorder() as recorder:
