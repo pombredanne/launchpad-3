@@ -509,6 +509,14 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     @staticmethod
+    def get_form():
+        return {
+            'title': 'test title',
+            'comment': 'test description',
+            'actions.submit_bug': 'Submit Bug Request',
+            }
+
+    @staticmethod
     def process_attachment(raw_data):
         extra_data = dedent(raw_data)
         temp_storage_manager = getUtility(ITemporaryStorageManager)
@@ -544,13 +552,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             """)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
-        form = {
-            'title': 'test title',
-            'comment': 'test description',
-            'actions.submit_bug': 'Submit Bug Request',
-            }
         with EventRecorder() as recorder:
-            view.submit_bug_action.success(form)
+            view.submit_bug_action.success(self.get_form())
             # Subscribers are only notified about the new bug event;
             # The extra comment for the attchments was silent.
             self.assertEqual(2, len(recorder.events))
@@ -577,6 +580,52 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             'to the bug report.',
             notifications[2].message)
 
+    def test_private_yes(self):
+        # The extra text can specify the bug is private.
+        token = self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+            Private: yes
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        self.assertIs(True, bug.private)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_private_no(self):
+        # The extra text can specify the bug is public.
+        token = self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+            Private: no
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        self.assertIs(False, bug.private)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
     def test_attachments(self):
         # The attachment comment has no content and it does not notify.
         token = self.process_attachment("""\
@@ -600,13 +649,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             """)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
-        form = {
-            'title': 'test title',
-            'comment': 'test description',
-            'actions.submit_bug': 'Submit Bug Request',
-            }
         with EventRecorder() as recorder:
-            view.submit_bug_action.success(form)
+            view.submit_bug_action.success(self.get_form())
             # Subscribers are only notified about the new bug event;
             # The extra comment for the attchments was silent.
             self.assertEqual(1, len(recorder.events))
