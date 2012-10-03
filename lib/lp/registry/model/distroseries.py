@@ -127,7 +127,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -1096,30 +1095,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getAllUncondemnedBinaries(self):
         """See `IDistroSeries`."""
         return self._getAllBinaries().find(scheduleddeletiondate=None)
-
-    def getSourcesPublishedForAllArchives(self):
-        """See `IDistroSeries`."""
-        query = """
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.status in %s AND
-            Archive.purpose != %s
-         """ % sqlvalues(self, active_publishing_status, ArchivePurpose.COPY)
-
-        if not self.isUnstable():
-            # Stable distroseries don't allow builds for the release
-            # pockets for the primary archives, but they do allow them for
-            # the PPA and PARTNER archives.
-
-            # XXX: Julian 2007-09-14: this should come from a single
-            # location where this is specified, not sprinkled around the code.
-            query += ("""AND (Archive.purpose in %s OR
-                            SourcePackagePublishingHistory.pocket != %s)""" %
-                      sqlvalues(ALLOW_RELEASE_BUILDS,
-                                PackagePublishingPocket.RELEASE))
-
-        return SourcePackagePublishingHistory.select(
-            query, clauseTables=['Archive'], orderBy="id")
 
     def getSourcePackagePublishing(self, pocket, component, archive):
         """See `IDistroSeries`."""
