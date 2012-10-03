@@ -198,7 +198,7 @@ class TestProductCodeIndexView(ProductTestBase):
         self.assertIn('bzr push lp:~', content)
 
     def test_product_code_index_with_private_imported_branch(self):
-        # Product:+code-index will not crash if the devfoocs is an private
+        # Product:+code-index will not crash if the devfoocs is a private
         # imported branch.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             information_type=InformationType.USERDATA,
