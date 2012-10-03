@@ -203,10 +203,6 @@ it'll say so.
 
 We display bug badges for associated branches, specifications, patches, etc.
 
-XXX wallyworld 2012-10-02 bug=1060014
-The dynamic bug listings feature has broken the rendering of branch links.
-Some doc tests have been altered till the functionality is restored.
-
     >>> def names_and_branches(contents):
     ...     listing = find_tag_by_id(contents, 'bugs-table-listing')
     ...     for row in listing.fetch(None, {'class': 'buglisting-row'}):

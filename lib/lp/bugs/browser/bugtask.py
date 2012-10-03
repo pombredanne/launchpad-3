@@ -150,6 +150,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
+    IPrivacy,
     IServiceUsage,
     )
 from lp.app.vocabularies import InformationTypeVocabulary
@@ -2715,7 +2716,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-        if not FeedsLayer.providedBy(self.request):
+        can_view = (IPrivacy(self.context, None) is None
+            or check_permission('launchpad.View', self.context))
+        if can_view and not FeedsLayer.providedBy(self.request):
             cache = IJSONRequestCache(self.request)
             view_names = set(reg.name for reg
                 in iter_view_registrations(self.__class__))
