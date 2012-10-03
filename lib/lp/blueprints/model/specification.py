@@ -47,11 +47,11 @@ from zope.interface import implements
 
 from lp.app.enums import (
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.informationtype import IInformationType
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -157,7 +157,7 @@ SPECIFICATION_POLICY_DEFAULT_TYPES = {
     }
 
 
-class Specification(SQLBase, BugLinkTargetMixin):
+class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     """See ISpecification."""
 
     implements(ISpecification, IBugLinkTarget, IInformationType)
@@ -890,10 +890,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self.information_type = information_type
         reconcile_access_for_artifact(self, information_type, [self.target])
         return True
-
-    @property
-    def private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
 
     @cachedproperty
     def _known_viewers(self):

@@ -81,6 +81,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -323,7 +324,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, InformationTypeMixin,
+              TranslationPolicyMixin):
     """A Product."""
 
     implements(
@@ -405,7 +407,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         return None
 
-    @date_next_suggest_packaging.setter
+    @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):
         """See `IProduct`
 
@@ -413,15 +415,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
-    @property
-    def information_type(self):
-        """See `IProduct`
-
-        Place holder for a db column.
-        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
-        into place.
-        """
-        pass
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     security_contact = None
 
@@ -1599,12 +1594,15 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None, bug_supervisor=None, driver=None):
+                      registrant=None, bug_supervisor=None, driver=None,
+                      information_type=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
         if licenses is None:
             licenses = set()
+        if information_type is None:
+            information_type = InformationType.PUBLIC
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1615,7 +1613,8 @@ class ProductSet:
             programminglang=programminglang,
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
-            bug_supervisor=bug_supervisor, driver=driver)
+            bug_supervisor=bug_supervisor, driver=driver,
+            information_type=information_type)
 
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
