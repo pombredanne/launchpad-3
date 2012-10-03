@@ -587,7 +587,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         self.assertEqual(
             'Added to the description.', view.extra_data.extra_description)
         with EventRecorder() as recorder:
@@ -634,7 +634,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         view.submit_bug_action.success(self.get_form())
         transaction.commit()
         bug = view.added_bug
@@ -657,7 +657,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         view.submit_bug_action.success(self.get_form())
         transaction.commit()
         bug = view.added_bug
@@ -682,7 +682,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         self.assertEqual(2, len(view.extra_data.subscribers))
         self.assertContentEqual(
             ['me@eg.dom', 'him@eg.dom'], view.extra_data.subscribers)
@@ -710,7 +710,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         self.assertEqual(2, len(view.extra_data.subscribers))
         self.assertContentEqual(['me', 'him'], view.extra_data.subscribers)
         view.submit_bug_action.success(self.get_form())
@@ -741,7 +741,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             --boundary--
             """)
         view = self.create_initialized_view()
-        self.assertIs(view, view.publishTraverse(view.request, token))
+        view.publishTraverse(view.request, token)
         with EventRecorder() as recorder:
             view.submit_bug_action.success(self.get_form())
             # Subscribers are only notified about the new bug event;
