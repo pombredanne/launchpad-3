@@ -9,6 +9,7 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import transaction
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import (
     TooLong,
     TooShort,
@@ -529,6 +530,41 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         job.job.complete()
         return token
 
+    def test_publish_traverse_token(self):
+        # The publish_traverse() method uses a token to lookup the extra_data.
+        token = self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+
+    def test_publish_traverse_token_error(self):
+        # The publish_traverse() method uses a token to lookup the extra_data.
+        self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertRaises(
+            NotFound, view.publishTraverse, view.request, 'no-such-token')
+
     def test_description_and_comments(self):
         # The first extra text part is added to the desciption, all other
         # extra parts become additional bug messages.
@@ -552,6 +588,8 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             """)
         view = self.create_initialized_view()
         self.assertIs(view, view.publishTraverse(view.request, token))
+        self.assertEqual(
+            'Added to the description.', view.extra_data.extra_description)
         with EventRecorder() as recorder:
             view.submit_bug_action.success(self.get_form())
             # Subscribers are only notified about the new bug event;
@@ -581,7 +619,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             notifications[2].message)
 
     def test_private_yes(self):
-        # The extra text can specify the bug is private.
+        # The extra data can specify the bug is private.
         token = self.process_attachment("""\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
@@ -604,7 +642,7 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_private_no(self):
-        # The extra text can specify the bug is public.
+        # The extra data can specify the bug is public.
         token = self.process_attachment("""\
             MIME-Version: 1.0
             Content-type: multipart/mixed; boundary=boundary
@@ -625,6 +663,61 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         bug = view.added_bug
         self.assertIs(False, bug.private)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_subscribers_with_email_address(self):
+        # The extra data can add bug subscribers via email address.
+        subscriber_1 = self.factory.makePerson(email='me@eg.dom')
+        subscriber_2 = self.factory.makePerson(email='him@eg.dom')
+        token = self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+            Subscribers: me@eg.dom him@eg.dom
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        self.assertEqual(2, len(view.extra_data.subscribers))
+        self.assertContentEqual(
+            ['me@eg.dom', 'him@eg.dom'], view.extra_data.subscribers)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        subscribers = [subscriber_1, subscriber_2, bug.owner]
+        self.assertContentEqual(subscribers, bug.getDirectSubscribers())
+
+    def test_subscribers_with_name(self):
+        # The extra data can add bug subscribers via Launchpad Id..
+        subscriber_1 = self.factory.makePerson(name='me')
+        subscriber_2 = self.factory.makePerson(name='him')
+        token = self.process_attachment("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+            Subscribers: me him
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+        self.assertEqual(2, len(view.extra_data.subscribers))
+        self.assertContentEqual(['me', 'him'], view.extra_data.subscribers)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        subscribers = [subscriber_1, subscriber_2, bug.owner]
+        self.assertContentEqual(subscribers, bug.getDirectSubscribers())
 
     def test_attachments(self):
         # The attachment comment has no content and it does not notify.
