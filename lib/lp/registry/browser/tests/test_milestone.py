@@ -85,6 +85,9 @@ class TestMilestoneViews(BrowserTestCase):
         information_type = InformationType.PROPRIETARY
         removeSecurityProxy(product).information_type = information_type
         milestone = self.factory.makeMilestone(product=product)
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        grant = self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=owner)
         privacy_portlet = soupmatchers.Tag(
             'info-type-portlet', 'span',
             attrs={'id': 'information-type-summary'})
