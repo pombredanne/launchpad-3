@@ -6,12 +6,20 @@
 __metaclass__ = type
 
 from lazr.restful.interfaces import IJSONRequestCache
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import Not
 import transaction
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -43,7 +51,7 @@ from lp.testing.views import (
     )
 
 
-class TestProductConfiguration(TestCaseWithFactory):
+class TestProductConfiguration(BrowserTestCase):
     """Tests the configuration links and helpers."""
 
     layer = DatabaseFunctionalLayer
@@ -72,6 +80,24 @@ class TestProductConfiguration(TestCaseWithFactory):
             translations_usage="NOT_APPLICABLE")
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
+
+
+    lp_tag = Tag('lp_tag', 'input', attrs={'value': 'LAUNCHPAD'})
+
+    def test_configure_answers_has_launchpad_for_public(self):
+        # Public projects support LAUNCHPAD for answers.
+        browser = self.getViewBrowser(self.product, '+configure-answers',
+            user=self.product.owner)
+        self.assertThat(browser.contents, HTMLContains(self.lp_tag))
+
+    def test_configure_answers_skips_launchpad_for_proprietary(self):
+        # Proprietary projects forbid LAUNCHPAD for answers.
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.factory.makeProduct(information_type=info_type)
+            with person_logged_in(None):
+                browser = self.getViewBrowser(product, '+configure-answers',
+                    user=product.owner)
+            self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
 
 
 class TestProductAddView(TestCaseWithFactory):

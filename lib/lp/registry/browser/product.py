@@ -69,6 +69,10 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -101,6 +105,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     InformationType,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -1325,6 +1330,14 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
                 field.description = (
                     field.description.replace('pillar', 'project'))
                 usage_field.field = field
+                if (self.usage_fieldname == 'answers_usage' and
+                    self.context.information_type in
+                    PROPRIETARY_INFORMATION_TYPES):
+                    values = usage_field.field.vocabulary.items
+                    terms = [SimpleTerm(value, value.name, value.title)
+                             for value in values
+                             if value != ServiceUsage.LAUNCHPAD]
+                    usage_field.field.vocabulary = SimpleVocabulary(terms)
 
     @property
     def field_names(self):
