@@ -28,6 +28,7 @@ from lp.app.enums import (
     PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
+from lp.app.errors import ServiceUsageForbidden
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -382,25 +383,71 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PUBLIC,
+            product.specification_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [
             InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def test_proprietary_product_creation_sharing_policies(self):
-        # Creating a new proprietary product sets the bug and branch sharing
-        # polices to proprietary.
+        # Creating a new proprietary product sets the bug, branch, and
+        # specification sharing polices to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY],
+                information_type=InformationType.PROPRIETARY)
+            self.assertEqual(
+                BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+            self.assertEqual(
+                BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+            self.assertEqual(
+                SpecificationSharingPolicy.PROPRIETARY,
+                product.specification_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_embargoed_product_creation_sharing_policies(self):
+        # Creating a new embargoed product sets the branch and
+        # specification sharing polices to embargoed or proprietary, and the
+        # bug sharing policy to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY],
+                information_type=InformationType.EMBARGOED)
+            self.assertEqual(
+                BugSharingPolicy.PROPRIETARY,
+                product.bug_sharing_policy)
+            self.assertEqual(
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.branch_sharing_policy)
+            self.assertEqual(
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.specification_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.PROPRIETARY, InformationType.EMBARGOED]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_other_proprietary_product_creation_sharing_policies(self):
+        # Creating a new product with other/proprietary license leaves bug
+        # and branch sharing polices at their default.
         owner = self.factory.makePerson()
         with person_logged_in(owner):
             product = getUtility(IProductSet).createProduct(
                 owner, 'carrot', 'Carrot', 'Carrot', 'testing',
                 licenses=[License.OTHER_PROPRIETARY])
-        self.assertEqual(
-            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
-        self.assertEqual(
-            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+            self.assertEqual(
+                BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
         aps = getUtility(IAccessPolicySource).findByPillar([product])
-        expected = [InformationType.PROPRIETARY]
+        expected = [InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def createProduct(self, information_type=None, license=None):
@@ -489,6 +536,43 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             product = self.createProduct(info_type, License.OTHER_PROPRIETARY)
             self.assertEqual(info_type, product.information_type)
+
+    def test_no_answers_for_proprietary(self):
+        # Enabling Answers is forbidden while information_type is proprietary.
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.factory.makeProduct(information_type=info_type)
+            with person_logged_in(removeSecurityProxy(product).owner):
+                self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
+                for usage in ServiceUsage.items:
+                    if usage == ServiceUsage.LAUNCHPAD:
+                        with ExpectedException(
+                            ServiceUsageForbidden,
+                            "Answers not allowed for non-public projects."):
+                            product.answers_usage = ServiceUsage.LAUNCHPAD
+                    else:
+                        # all other values are permitted.
+                        product.answers_usage = usage
+
+    def test_answers_for_public(self):
+        # Enabling answers is permitted while information_type is PUBLIC
+        product = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
+        with person_logged_in(product.owner):
+            for usage in ServiceUsage.items:
+                # all values are permitted.
+                product.answers_usage = usage
+
+    def test_no_proprietary_if_answers(self):
+        # Information type cannot be set to proprietary while Answers are
+        # enabled.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            product.answers_usage = ServiceUsage.LAUNCHPAD
+            with ExpectedException(
+                CannotChangeInformationType, 'Answers is enabled.'):
+                product.information_type = InformationType.PROPRIETARY
 
     def check_permissions(self, expected_permissions, used_permissions,
                           type_):
