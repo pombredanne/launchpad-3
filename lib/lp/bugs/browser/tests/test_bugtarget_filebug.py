@@ -4,10 +4,12 @@
 __metaclass__ = type
 
 
+from textwrap import dedent
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import transaction
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import (
     TooLong,
     TooShort,
@@ -19,6 +21,7 @@ from lp.app.enums import (
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.bugs.browser.bugtarget import FileBugViewBase
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
@@ -30,14 +33,20 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager)
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    EventRecorder,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
@@ -275,9 +284,8 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIs(None, find_tag_by_id(html, 'filebug-search-form'))
 
 
-class TestFileBugViewBase(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class FileBugViewMixin:
+    """Provide a FileBugView subclass that is easy to test."""
 
     class FileBugTestView(FileBugViewBase):
         """A simple subclass."""
@@ -288,7 +296,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
             pass
 
     def setUp(self):
-        super(TestFileBugViewBase, self).setUp()
+        super(FileBugViewMixin, self).setUp()
         self.target = self.factory.makeProduct()
         transaction.commit()
         login_person(self.target.owner)
@@ -307,6 +315,11 @@ class TestFileBugViewBase(TestCaseWithFactory):
         view = self.FileBugTestView(self.target, request)
         view.initialize()
         return view
+
+
+class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_submit_comment_empty_error(self):
         # The comment cannot be an empty string.
@@ -489,6 +502,209 @@ class TestFileBugViewBase(TestCaseWithFactory):
             html = view.render()
         self.assertIn("Reporting new bugs for", html)
         self.assertIn("This can be fixed by changing", html)
+
+
+class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
+    """FileBugView handles extra data from blobs created by apport."""
+
+    layer = LaunchpadFunctionalLayer
+
+    @staticmethod
+    def get_form():
+        return {
+            'title': 'test title',
+            'comment': 'test description',
+            }
+
+    @staticmethod
+    def process_extra_data(raw_data=None, command=''):
+        if raw_data is None:
+            raw_data = """\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+            %s
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary--
+            """ % command
+        extra_data = dedent(raw_data)
+        temp_storage_manager = getUtility(ITemporaryStorageManager)
+        token = temp_storage_manager.new(extra_data)
+        transaction.commit()
+        blob = temp_storage_manager.fetch(token)
+        job = getUtility(IProcessApportBlobJobSource).create(blob)
+        job.job.start()
+        job.run()
+        job.job.complete()
+        return token
+
+    def test_publish_traverse_token(self):
+        # The publish_traverse() method uses a token to lookup the extra_data.
+        token = self.process_extra_data(command="not-requred: ignore")
+        view = self.create_initialized_view()
+        self.assertIs(view, view.publishTraverse(view.request, token))
+
+    def test_publish_traverse_token_error(self):
+        # The publish_traverse() method uses a token to lookup the extra_data.
+        view = self.create_initialized_view()
+        self.assertRaises(
+            NotFound, view.publishTraverse, view.request, 'no-such-token')
+
+    def test_description_and_comments(self):
+        # The first extra text part is added to the desciption, all other
+        # extra parts become additional bug messages.
+        token = self.process_extra_data("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            Added to the description.
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            A bug comment.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        self.assertEqual(
+            'Added to the description.', view.extra_data.extra_description)
+        with EventRecorder() as recorder:
+            view.submit_bug_action.success(self.get_form())
+            # Subscribers are only notified about the new bug event;
+            # The extra comment for the attchments was silent.
+            self.assertEqual(2, len(recorder.events))
+            bug_event, message_event = recorder.events
+        transaction.commit()
+        bug = view.added_bug
+        self.assertEqual(bug, bug_event.object)
+        self.assertEqual(
+            'test description\n\n'
+            'Added to the description.',
+            bug.description)
+        self.assertEqual(2, bug.messages.count())
+        self.assertEqual(bug.bug_messages[-1], message_event.object)
+        notifications = [
+            no.message for no in view.request.response.notifications]
+        self.assertContentEqual(
+            ['<p class="last">Thank you for your bug report.</p>',
+             'Additional information was added to the bug description.',
+             'A comment with additional information was added to the'
+             ' bug report.'],
+            notifications)
+
+    def test_private_yes(self):
+        # The extra data can specify the bug is private.
+        token = self.process_extra_data(command='Private: yes')
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        self.assertIs(True, bug.private)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_private_no(self):
+        # The extra data can specify the bug is public.
+        token = self.process_extra_data(command='Private: no')
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        self.assertIs(False, bug.private)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_subscribers_with_email_address(self):
+        # The extra data can add bug subscribers via email address.
+        subscriber_1 = self.factory.makePerson(email='me@eg.dom')
+        subscriber_2 = self.factory.makePerson(email='him@eg.dom')
+        token = self.process_extra_data(
+            command='Subscribers: me@eg.dom him@eg.dom')
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        self.assertContentEqual(
+            ['me@eg.dom', 'him@eg.dom'], view.extra_data.subscribers)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        subscribers = [subscriber_1, subscriber_2, bug.owner]
+        self.assertContentEqual(subscribers, bug.getDirectSubscribers())
+
+    def test_subscribers_with_name(self):
+        # The extra data can add bug subscribers via Launchpad Id..
+        subscriber_1 = self.factory.makePerson(name='me')
+        subscriber_2 = self.factory.makePerson(name='him')
+        token = self.process_extra_data(command='Subscribers: me him')
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        self.assertContentEqual(['me', 'him'], view.extra_data.subscribers)
+        view.submit_bug_action.success(self.get_form())
+        transaction.commit()
+        bug = view.added_bug
+        subscribers = [subscriber_1, subscriber_2, bug.owner]
+        self.assertContentEqual(subscribers, bug.getDirectSubscribers())
+
+    def test_attachments(self):
+        # The attachment comment has no content and it does not notify.
+        token = self.process_extra_data("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: attachment; filename='attachment1'
+            Content-type: text/plain; charset=utf-8
+
+            This is an attachment.
+
+            --boundary
+            Content-disposition: attachment; filename='attachment2'
+            Content-description: Attachment description.
+            Content-type: text/plain; charset=ISO-8859-1
+
+            This is another attachment, with a description.
+
+            --boundary--
+            """)
+        view = self.create_initialized_view()
+        view.publishTraverse(view.request, token)
+        with EventRecorder() as recorder:
+            view.submit_bug_action.success(self.get_form())
+            # Subscribers are only notified about the new bug event;
+            # The extra comment for the attchments was silent.
+            self.assertEqual(1, len(recorder.events))
+            self.assertEqual(view.added_bug, recorder.events[0].object)
+        transaction.commit()
+        bug = view.added_bug
+        attachments = [at for at in bug.attachments_unpopulated]
+        self.assertEqual(2, len(attachments))
+        attachment = attachments[0]
+        self.assertEqual('attachment1', attachment.title)
+        self.assertEqual('attachment1', attachment.libraryfile.filename)
+        self.assertEqual(
+            'text/plain; charset=utf-8', attachment.libraryfile.mimetype)
+        self.assertEqual(
+            'This is an attachment.\n\n', attachment.libraryfile.read())
+        self.assertEqual(2, bug.messages.count())
+        self.assertEqual(2, len(bug.messages[1].bugattachments))
+        notifications = [
+            no.message for no in view.request.response.notifications]
+        self.assertContentEqual(
+            ['<p class="last">Thank you for your bug report.</p>',
+             'The file "attachment1" was attached to the bug report.',
+             'The file "attachment2" was attached to the bug report.'],
+            notifications)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):

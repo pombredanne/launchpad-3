@@ -1166,7 +1166,7 @@ class Bug(SQLBase, InformationTypeMixin):
 
     def newMessage(self, owner=None, subject=None,
                    content=None, parent=None, bugwatch=None,
-                   remote_comment_id=None):
+                   remote_comment_id=None, send_notifications=True):
         """Create a new Message and link it to this bug."""
         if subject is None:
             subject = self.followup_subject()
@@ -1180,7 +1180,8 @@ class Bug(SQLBase, InformationTypeMixin):
         if not bugmsg:
             return
 
-        notify(ObjectCreatedEvent(bugmsg, user=owner))
+        if send_notifications:
+            notify(ObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
