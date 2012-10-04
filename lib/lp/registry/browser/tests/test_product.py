@@ -241,6 +241,8 @@ class TestProductAddView(TestCaseWithFactory):
             form['field.driver'] = registrant.name
             form['field.maintainer'] = registrant.name
             form['field.bug_supervisor'] = registrant.name
+            form['field.licenses'] = License.OTHER_PROPRIETARY.title
+            form['field.license_info'] = 'Commericial Subscription'
             view = create_initialized_view(
                 self.product_set, '+new', form=form)
             self.assertEqual(0, len(view.view.errors))
