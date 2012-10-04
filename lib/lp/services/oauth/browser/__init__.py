@@ -34,6 +34,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestTokenSet,
     OAUTH_CHALLENGE,
     )
+from lp.services.oauth.model import OAuthValidationError
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.authentication import (
     check_oauth_signature,
@@ -369,8 +370,13 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                 datetime.now(pytz.timezone('UTC')) + duration_delta)
         else:
             expiration_date = None
-        self.token.review(self.user, permission, self.token_context,
-                          date_expires=expiration_date)
+        try:
+            self.token.review(
+                self.user, permission, self.token_context,
+                date_expires=expiration_date)
+        except OAuthValidationError as e:
+            self.request.response.addErrorNotification(str(e))
+            return
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
@@ -398,6 +404,10 @@ def lookup_oauth_context(context):
 
 class OAuthAccessTokenView(LaunchpadView):
     """Where consumers may exchange a request token for an access token."""
+
+    def _set_status_and_error(self, error):
+        self.request.response.setStatus(403)
+        return unicode(error)
 
     def __call__(self):
         """Create an access token and respond with its key/secret/context.
@@ -428,15 +438,14 @@ class OAuthAccessTokenView(LaunchpadView):
                 u"Request token has not yet been reviewed. Try again later.")
 
         if token.permission == OAuthPermission.UNAUTHORIZED:
-            # The end-user explicitly refused to authorize this
-            # token. We send 403 ("Forbidden") instead of 401
-            # ("Unauthorized") to distinguish this case and to
-            # indicate that, as RFC2616 says, "authorization will not
-            # help."
-            self.request.response.setStatus(403)
-            return u'End-user refused to authorize request token.'
+            return self._set_status_and_error(
+                'End-user refused to authorize request token.')
 
-        access_token = token.createAccessToken()
+        try:
+            access_token = token.createAccessToken()
+        except OAuthValidationError as e:
+            return self._set_status_and_error(e)
+
         context_name = None
         if access_token.context is not None:
             context_name = access_token.context.name

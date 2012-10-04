@@ -7,7 +7,9 @@ from cStringIO import StringIO
 import datetime
 
 import pytz
+from storm.locals import Store
 from testtools.matchers import MatchesAll
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
@@ -18,6 +20,8 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.interfaces.launchpad import (
@@ -28,6 +32,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -39,6 +44,7 @@ from lp.registry.enums import (
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
+    CannotChangeInformationType,
     CommercialSubscribersOnly,
     InclusiveTeamLinkageError,
     )
@@ -111,6 +117,7 @@ class TestProduct(TestCaseWithFactory):
             IHasLogo,
             IHasMugshot,
             IHasOOPSReferences,
+            IInformationType,
             ILaunchpadUsage,
             IServiceUsage,
             ]
@@ -389,6 +396,91 @@ class TestProduct(TestCaseWithFactory):
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def createProduct(self, information_type=None, license=None):
+        # convenience method for testing IProductSet.createProduct rather than
+        # self.factory.makeProduct
+        owner = self.factory.makePerson()
+        kwargs = {}
+        if information_type is not None:
+            kwargs['information_type'] = information_type
+        if license is not None:
+            kwargs['licenses'] = [license]
+        with person_logged_in(owner):
+            return getUtility(IProductSet).createProduct(
+                owner, self.factory.getUniqueString('product'),
+                'Fnord', 'Fnord', 'test 1', 'test 2', **kwargs)
+
+    def test_product_information_type(self):
+        # Product is created with specified information_type
+        product = self.createProduct(
+            information_type=InformationType.EMBARGOED,
+            license=License.OTHER_PROPRIETARY)
+        self.assertEqual(InformationType.EMBARGOED, product.information_type)
+        # Owner can set information_type
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        # Database persists information_type value
+        store = Store.of(product)
+        store.flush()
+        store.reset()
+        product = store.get(Product, product.id)
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+
+    def test_product_information_type_default(self):
+        # Default information_type is PUBLIC
+        product = self.createProduct()
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
+
+    invalid_information_types = [info_type for info_type in
+            InformationType.items if info_type not in
+            PUBLIC_PROPRIETARY_INFORMATION_TYPES]
+
+    def test_product_information_type_init_invalid_values(self):
+        # Cannot create Product.information_type with invalid values.
+        for info_type in self.invalid_information_types:
+            with ExpectedException(
+                CannotChangeInformationType, 'Not supported for Projects.'):
+                self.createProduct(information_type=info_type)
+
+    def test_product_information_type_set_invalid_values(self):
+        # Cannot set Product.information_type to invalid values.
+        product = self.factory.makeProduct()
+        for info_type in self.invalid_information_types:
+            with ExpectedException(
+                CannotChangeInformationType, 'Not supported for Projects.'):
+                with person_logged_in(product.owner):
+                    product.information_type = info_type
+
+    def test_product_information_set_proprietary_requires_commercial(self):
+        # Cannot set Product.information_type to proprietary values if no
+        # commercial subscription.
+        product = self.factory.makeProduct()
+        self.useContext(person_logged_in(product.owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with ExpectedException(
+                CommercialSubscribersOnly,
+                'A valid commercial subscription is required for private'
+                ' Projects.'):
+                product.information_type = info_type
+        product.redeemSubscriptionVoucher(
+            'hello', product.owner, product.owner, 1)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product.information_type = info_type
+
+    def test_product_information_init_proprietary_requires_commercial(self):
+        # Cannot create a product with proprietary types without specifying
+        # Other/Proprietary license.
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with ExpectedException(
+                CommercialSubscribersOnly,
+                'A valid commercial subscription is required for private'
+                ' Projects.'):
+                self.createProduct(info_type)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.createProduct(info_type, License.OTHER_PROPRIETARY)
+            self.assertEqual(info_type, product.information_type)
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

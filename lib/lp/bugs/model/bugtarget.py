@@ -33,11 +33,7 @@ from lp.bugs.interfaces.bugtasksearch import (
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
 
 
 class HasBugsBase:
@@ -191,8 +187,8 @@ class OfficialBugTagTargetMixin:
         if self._getTag(tag) is None:
             new_tag = OfficialBugTag()
             new_tag.tag = tag
-            new_tag.target = IMasterObject(self)
-            IMasterStore(OfficialBugTag).add(new_tag)
+            new_tag.target = self
+            IStore(OfficialBugTag).add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""

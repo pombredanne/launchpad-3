@@ -93,6 +93,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
@@ -303,7 +304,7 @@ class BugBecameQuestionEvent:
         self.user = user
 
 
-class Bug(SQLBase):
+class Bug(SQLBase, InformationTypeMixin):
     """A bug."""
 
     implements(IBug)
@@ -361,10 +362,6 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
-
-    @property
-    def private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
 
     @property
     def security_related(self):

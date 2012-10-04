@@ -7,7 +7,7 @@ bugs, as well as a listing.
     >>> anon_browser.title
     'Bugs : Warty (4.10) : Ubuntu'
 
-    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    >>> find_tags_by_class(anon_browser.contents, 'buglisting-row') is not None
     True
 
 The page has a link to see all open bugs.
@@ -15,7 +15,7 @@ The page has a link to see all open bugs.
     >>> anon_browser.getLink('Open bugs').click()
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/warty/+bugs'
-    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    >>> find_tags_by_class(anon_browser.contents, 'buglisting-row') is not None
     True
 
 It also has a link to subscribe to bug mail.

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -265,10 +265,6 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         self._test_batch_template(self.barney)
 
 
-SIMPLIFIED_BRANCHES_MENU_FLAG = {
-    'code.simplified_branches_menu.enabled': 'on'}
-
-
 class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -294,19 +290,16 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
     def get_branch_list_page(self, target=None, page_name='+branches'):
         if target is None:
             target = self.default_target
-        with FeatureFixture(SIMPLIFIED_BRANCHES_MENU_FLAG):
-            with person_logged_in(self.user):
-                return create_initialized_view(
-                    target, page_name, rootsite='code',
-                    principal=self.user)()
+        with person_logged_in(self.user):
+            return create_initialized_view(
+                target, page_name, rootsite='code', principal=self.user)()
 
     def test_branch_list_h1(self):
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Title', 'h1',
-                text='Bazaar branches owned by Barney'))
+                'Title', 'h1', text='Bazaar branches owned by Barney'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
@@ -317,7 +310,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
                 text='There are no branches related to Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_registered_link(self):
         self.makeABranch()
@@ -408,7 +400,6 @@ class TestSimplifiedPersonProductBranchesView(
                 text='There are no branches of Bambam owned by Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):

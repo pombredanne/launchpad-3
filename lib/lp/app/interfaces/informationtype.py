@@ -6,6 +6,7 @@ __all__ = [
     'IInformationType',
     ]
 
+from lazr.restful.declarations import exported
 from zope.schema import Choice
 
 from lp import _
@@ -15,7 +16,9 @@ from lp.app.interfaces.launchpad import IPrivacy
 
 class IInformationType(IPrivacy):
 
-    information_type = Choice(
+    information_type = exported(Choice(
         title=_('Information Type'),
         vocabulary=InformationType,
-        )
+        required=True,
+        description=_('The type of data contained in this item.')
+        ))

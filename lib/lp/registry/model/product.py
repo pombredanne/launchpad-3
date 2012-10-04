@@ -69,6 +69,8 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -81,6 +83,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -126,7 +129,10 @@ from lp.registry.enums import (
     BugSharingPolicy,
     SpecificationSharingPolicy,
     )
-from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.errors import (
+    CannotChangeInformationType,
+    CommercialSubscribersOnly,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
@@ -323,7 +329,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, InformationTypeMixin,
+              TranslationPolicyMixin):
     """A Product."""
 
     implements(
@@ -405,7 +412,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         return None
 
-    @date_next_suggest_packaging.setter
+    @date_next_suggest_packaging.setter  # pyflakes:ignore
     def date_next_suggest_packaging(self, value):
         """See `IProduct`
 
@@ -413,15 +420,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
-    @property
-    def information_type(self):
-        """See `IProduct`
+    def _valid_product_information_type(self, attr, value):
+        if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+            raise CannotChangeInformationType('Not supported for Projects.')
+        # Proprietary check works only after creation, because during
+        # creation, has_commercial_subscription cannot give the right value
+        # and triggers an inappropriate DB flush.
+        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
+            and not self.has_current_commercial_subscription):
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required for private'
+                ' Projects.')
+        return value
 
-        Place holder for a db column.
-        XXX: rharding 2012-09-10 bug=1048720: Waiting on db patch to connect
-        into place.
-        """
-        pass
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC,
+        storm_validator=_valid_product_information_type)
 
     security_contact = None
 
@@ -1599,12 +1613,24 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None, bug_supervisor=None, driver=None):
+                      registrant=None, bug_supervisor=None, driver=None,
+                      information_type=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
         if licenses is None:
             licenses = set()
+        if information_type is None:
+            information_type = InformationType.PUBLIC
+        if information_type in PROPRIETARY_INFORMATION_TYPES:
+            # This check is skipped in _valid_product_information_type during
+            # creation, so done here.  It predicts whether a commercial
+            # subscription will be generated based on the selected license,
+            # duplicating product._setLicenses
+            if License.OTHER_PROPRIETARY not in licenses:
+                raise CommercialSubscribersOnly(
+                    'A valid commercial subscription is required for private'
+                    ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1615,7 +1641,8 @@ class ProductSet:
             programminglang=programminglang,
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
-            bug_supervisor=bug_supervisor, driver=driver)
+            bug_supervisor=bug_supervisor, driver=driver,
+            information_type=information_type)
 
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
