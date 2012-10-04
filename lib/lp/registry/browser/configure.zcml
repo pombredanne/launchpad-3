@@ -1294,6 +1294,9 @@
         <browser:page
             name="+productrelease-data"
             template="../templates/productrelease-portlet-data.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/milestone-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+pillar-table-row"

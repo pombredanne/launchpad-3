@@ -9,28 +9,50 @@ __all__ = [
 from lazr.restful.interfaces import IJSONRequestCache
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.utilities import json_dump_information_types
 
 
 class InformationTypePortletMixin:
 
     def initialize(self):
-        cache = IJSONRequestCache(self.request)
-        json_dump_information_types(
-            cache,
-            self.context.getAllowedInformationTypes(self.user))
+        information_typed = IInformationType(self.context, None)
+        if information_typed is not None:
+            cache = IJSONRequestCache(self.request)
+            json_dump_information_types(
+                cache,
+                information_typed.getAllowedInformationTypes(self.user))
 
     @property
     def information_type(self):
-        return self.context.information_type.title
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.title
 
     @property
     def information_type_description(self):
-        return self.context.information_type.description
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.description
 
     @property
     def information_type_css(self):
-        if self.context.information_type in PRIVATE_INFORMATION_TYPES:
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return 'sprite public'
+        if information_typed.information_type in PRIVATE_INFORMATION_TYPES:
             return 'sprite private'
         else:
             return 'sprite public'
+
+    @property
+    def privacy_portlet_css(self):
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return 'portlet public'
+        if information_typed.information_type in PRIVATE_INFORMATION_TYPES:
+            return 'portlet private'
+        else:
+            return 'portlet public'
