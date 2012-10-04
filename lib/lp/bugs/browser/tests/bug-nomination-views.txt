@@ -167,55 +167,6 @@ approval.
     False
 
 
-From a series listing
-.....................
-
-Nominations are also listed on the +nomination page for a series.
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> grumpy = ubuntu.getSeries('grumpy')
-    >>> request = LaunchpadTestRequest()
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> list(grumpy_nominations.search().batch)
-    []
-
-The batch navigator used returns a BugTaskListingItem for each of the
-distribution's bugtasks that are nominated for this release, with a
-widget set up for accepting/declining the nomination. The widget is only
-set up if the user has permission to approve the nomination.
-
-    >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> ignored = login_person(nominator)
-    >>> no_priv = getUtility(ILaunchBag).user
-    >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
-    ...     no_priv, "Ubuntu bug", comment="Test bug."))
-    >>> grumpy_nomination = ubuntu_bug.addNomination(no_priv, grumpy)
-    >>> grumpy_nomination.canApprove(no_priv)
-    False
-
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> for listing_item in grumpy_nominations.search().getBugListingItems():
-    ...     has_widget = listing_item.review_action_widget is not None
-    ...     print "%s: %s" % (listing_item.bug.title, has_widget)
-    Ubuntu bug: False
-
-    >>> login("foo.bar@canonical.com")
-    >>> foo_bar = getUtility(ILaunchBag).user
-    >>> grumpy_nomination.canApprove(foo_bar)
-    True
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> for listing_item in grumpy_nominations.search().getBugListingItems():
-    ...     has_widget = listing_item.review_action_widget is not None
-    ...     print "%s: %s" % (listing_item.bug.title, has_widget)
-    Ubuntu bug: True
-
-
 Series Targeting For Release Managers
 -------------------------------------
 

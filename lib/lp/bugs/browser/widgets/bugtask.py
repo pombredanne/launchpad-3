@@ -14,7 +14,6 @@ __all__ = [
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
-    "NominationReviewActionWidget",
     "UbuntuSourcePackageNameWidget",
     ]
 
@@ -56,7 +55,6 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
@@ -624,17 +622,3 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
-
-
-class NominationReviewActionWidget(LaunchpadRadioWidget):
-    """Widget for choosing a nomination review action.
-
-    It renders a radio box with no label for each option.
-    """
-    orientation = "horizontal"
-
-    # The label will always be the empty string.
-    _joinButtonToMessageTemplate = '%s%s'
-
-    def textForValue(self, term):
-        return u''
