@@ -70,6 +70,8 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -128,7 +130,10 @@ from lp.registry.enums import (
     BugSharingPolicy,
     SpecificationSharingPolicy,
     )
-from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.errors import (
+    CannotChangeInformationType,
+    CommercialSubscribersOnly,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
@@ -416,9 +421,23 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """
         pass
 
+    def _valid_product_information_type(self, attr, value):
+        if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+            raise CannotChangeInformationType('Not supported for Projects.')
+        # Proprietary check works only after creation, because during
+        # creation, has_commercial_subscription cannot give the right value
+        # and triggers an inappropriate DB flush.
+        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
+            and not self.has_current_commercial_subscription):
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required for private'
+                ' Projects.')
+        return value
+
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
-        dbName='information_type')
+        dbName='information_type',
+        storm_validator=_valid_product_information_type)
 
     def _get_information_type(self):
         return self._information_type or InformationType.PUBLIC
@@ -1638,6 +1657,15 @@ class ProductSet:
             licenses = set()
         if information_type is None:
             information_type = InformationType.PUBLIC
+        if information_type in PROPRIETARY_INFORMATION_TYPES:
+            # This check is skipped in _valid_product_information_type during
+            # creation, so done here.  It predicts whether a commercial
+            # subscription will be generated based on the selected license,
+            # duplicating product._setLicenses
+            if License.OTHER_PROPRIETARY not in licenses:
+                raise CommercialSubscribersOnly(
+                    'A valid commercial subscription is required for private'
+                    ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
