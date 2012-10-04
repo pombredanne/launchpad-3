@@ -1412,6 +1412,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     @property
     def next_url(self):
