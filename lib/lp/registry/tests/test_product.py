@@ -530,6 +530,7 @@ class TestProduct(TestCaseWithFactory):
             self.assertEqual(info_type, product.information_type)
 
     def test_no_answers_for_proprietary(self):
+        # Enabling Answers is forbidden while information_type is proprietary.
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             product = self.factory.makeProduct(information_type=info_type)
             self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
@@ -545,6 +546,7 @@ class TestProduct(TestCaseWithFactory):
                         product.answers_usage = usage
 
     def test_answers_for_public(self):
+        # Enabling answers is permitted while information_type is PUBLIC
         product = self.factory.makeProduct(
             information_type=InformationType.PUBLIC)
         self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)
@@ -562,7 +564,7 @@ class TestProduct(TestCaseWithFactory):
             product.answers_usage = ServiceUsage.LAUNCHPAD
             with ExpectedException(
                 CannotChangeInformationType, 'Answers is enabled.'):
-                product.information_type=InformationType.PROPRIETARY
+                product.information_type = InformationType.PROPRIETARY
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

@@ -83,7 +83,6 @@ class TestProductConfiguration(BrowserTestCase):
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
 
-
     lp_tag = Tag('lp_tag', 'input', attrs={'value': 'LAUNCHPAD'})
 
     def test_configure_answers_has_launchpad_for_public(self):
