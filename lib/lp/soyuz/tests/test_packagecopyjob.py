@@ -1525,6 +1525,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=True, requester=requester)
         self.runJob(job)
         self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertContentEqual(
+            [], archive.getPublishedSources(
+                status=PackagePublishingStatus.PENDING))
+        self.assertEqual(
+            1, archive.getPublishedOnDiskBinaries(
+                status=PackagePublishingStatus.PENDING).count())
 
 
 class TestViaCelery(TestCaseWithFactory):
