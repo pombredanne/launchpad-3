@@ -8,7 +8,14 @@
 >
   <body>
     <div metal:fill-slot="main">
-
+      <script type="text/javascript">
+          LPJS.use('registry.product-views',  function(Y) {
+              Y.on('domready', function() {
+                  var view = new Y.registry.views.EditProject();
+                  view.render();
+              });
+          });
+      </script>
       <div class="top-portlet"
            metal:use-macro="context/@@launchpad_form/form">
 
