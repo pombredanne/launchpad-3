@@ -426,6 +426,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _valid_product_information_type(self, attr, value):
         if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
             raise CannotChangeInformationType('Not supported for Projects.')
+        if value in PROPRIETARY_INFORMATION_TYPES:
+            if self.answers_usage == ServiceUsage.LAUNCHPAD:
+                raise CannotChangeInformationType('Answers is enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.

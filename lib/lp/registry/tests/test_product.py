@@ -553,6 +553,17 @@ class TestProduct(TestCaseWithFactory):
                 # all values are permitted.
                 product.answers_usage = usage
 
+    def test_no_proprietary_if_answers(self):
+        # Information type cannot be set to proprietary while Answers are
+        # enabled.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            product.answers_usage = ServiceUsage.LAUNCHPAD
+            with ExpectedException(
+                CannotChangeInformationType, 'Answers is enabled.'):
+                product.information_type=InformationType.PROPRIETARY
+
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
 
