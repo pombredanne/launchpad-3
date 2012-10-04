@@ -13,6 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -243,7 +244,9 @@ class TestMilestoneInformationType(TestCaseWithFactory):
     def test_information_type_from_product(self):
         # Milestones should inherit information_type from its product."""
         product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
         information_type = InformationType.PROPRIETARY
         removeSecurityProxy(product).information_type = information_type
         milestone = self.factory.makeMilestone(product=product)
-        self.assertEqual(milestone.information_type, information_type)
+        self.assertEqual(
+            IInformationType(milestone).information_type, information_type)
