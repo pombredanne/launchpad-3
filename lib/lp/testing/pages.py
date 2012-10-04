@@ -730,7 +730,9 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return LaunchpadWebServiceCaller(consumer_key, access_token.key)
+    service = LaunchpadWebServiceCaller(consumer_key, access_token.key)
+    service.user = person
+    return service
 
 
 def setupDTCBrowser():

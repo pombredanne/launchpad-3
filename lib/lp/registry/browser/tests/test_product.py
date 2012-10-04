@@ -13,6 +13,7 @@ from soupmatchers import (
 from testtools.matchers import Not
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
@@ -97,7 +98,7 @@ class TestProductConfiguration(BrowserTestCase):
             product = self.factory.makeProduct(information_type=info_type)
             with person_logged_in(None):
                 browser = self.getViewBrowser(product, '+configure-answers',
-                    user=product.owner)
+                    user=removeSecurityProxy(product).owner)
             self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
 
 
@@ -511,8 +512,8 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+rdf')
         content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        browser = self.getViewBrowser(product, view_name='+rdf')
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
