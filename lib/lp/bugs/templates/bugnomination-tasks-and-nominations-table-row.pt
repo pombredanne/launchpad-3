@@ -22,8 +22,7 @@
       <tal:release-management condition="user_is_driver">
           <span class="hide-on-load">(</span>
           <span class="collapsible">
-          <a href="#"
-              tal:content="view/getApproveDeclineLinkText"
+          <a  tal:content="view/getApproveDeclineLinkText"
               tal:attributes="href view/getNominationEditLink">approve/decline</a>
         <div tal:attributes="id nomination_form_id"
              tal:condition="user_is_driver"
