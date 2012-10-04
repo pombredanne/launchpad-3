@@ -1495,7 +1495,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
     def test_diffs_are_not_created_when_only_copying_binaries(self):
-        # HERE
+        # The job will not fail because a packagediff from a source that wasn't
+        # copied could not be created.
         archive = self.distroseries.distribution.main_archive
         source = self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="copyme",
