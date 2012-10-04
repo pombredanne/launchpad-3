@@ -1494,6 +1494,44 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job should have set the PU status to REJECTED.
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
+    def test_diffs_are_not_created_when_only_copying_binaries(self):
+        # The job will not fail because a packagediff from a source that wasn't
+        # copied could not be created.
+        archive = self.distroseries.distribution.main_archive
+        source = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, sourcepackagename="copyme",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE, archive=archive,
+            component='multiverse')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.UPDATES, archive=archive,
+            distroseries=self.distroseries,
+            sourcepackagerelease=source.sourcepackagerelease)
+        das = self.factory.makeDistroArchSeries(distroseries=self.distroseries)
+        self.factory.makeBinaryPackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED, distroarchseries=das,
+            pocket=PackagePublishingPocket.UPDATES, archive=archive,
+            source_package_release=spph.sourcepackagerelease)
+        requester = self.factory.makePerson()
+        with person_logged_in(archive.owner):
+            archive.newComponentUploader(requester, 'multiverse')
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="copyme", package_version="2.8-1",
+            source_archive=archive, target_archive=archive,
+            target_distroseries=self.distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=True, requester=requester)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertContentEqual(
+            [], archive.getPublishedSources(
+                status=PackagePublishingStatus.PENDING))
+        self.assertEqual(
+            1, archive.getPublishedOnDiskBinaries(
+                status=PackagePublishingStatus.PENDING).count())
+
 
 class TestViaCelery(TestCaseWithFactory):
     """PackageCopyJob runs under Celery."""
