@@ -216,9 +216,9 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
 
-    def test_information_type_saved_default(self):
-        # information_type should only ever be PUBLIC if the private
-        # projects feature flag is not set.
+    def test_information_type_saved_new_product_default(self):
+        # information_type should be PUBLIC by default for new projects.
+        # if the private projects feature flag is not enabled.
         registrant = self.factory.makePerson()
         login_person(registrant)
         form = self.makeForm(action=2)
@@ -229,9 +229,9 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual(InformationType.PUBLIC, product.information_type)
 
-    def test_information_type_saved_private_projects(self):
-        # information_type should only ever be PUBLIC if the private
-        # projects feature flag is not set.
+    def test_information_type_saved_new_product_updated(self):
+        # information_type will be updated if passed in via form data,
+        # if the private projects feature flag is enabled.
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             registrant = self.factory.makePerson()
             login_person(registrant)
