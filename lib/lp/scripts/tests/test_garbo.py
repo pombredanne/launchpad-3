@@ -1069,7 +1069,7 @@ class TestGarbo(TestCaseWithFactory):
         # Make a new product without an information_type.
         product = self.factory.makeProduct()
         store.execute(Update(
-            {Product.information_type: None}, Product.id == product.id))
+            {Product._information_type: None}, Product.id == product.id))
         store.flush()
         self.assertEqual(1, store.find(Product,
             Product._information_type == None).count())
