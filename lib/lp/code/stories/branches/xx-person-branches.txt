@@ -64,7 +64,7 @@ Registered Branches
 There is also a link which points to the registered branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('registered').click()
+    >>> browser.getLink('Registered').click()
     >>> print browser.title
     Registered : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -81,7 +81,7 @@ From the persons main listing page, there is also a link to subscribed
 branches.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('subscribed').click()
+    >>> browser.getLink('Subscribed').click()
     >>> print browser.title
     Subscribed : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -112,10 +112,11 @@ The summary is shown.
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
     >>> print_tag_with_id(eric_browser.contents, 'portlet-person-codesummary')
-    1 owned branch
-    1 registered branch
-    1 subscribed branch
-    0 active reviews
+    Owned branches
+    Registered branches
+    Subscribed branches
+    Active reviews
+    Source package recipes
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
@@ -127,11 +128,11 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
     >>> print_tag_with_id(
     ...     eric_browser.contents, 'portlet-person-codesummary')
-    2 owned branches
-    2 registered branches
-    1 subscribed branch
-    0 active reviews
-
+    Owned branches
+    Registered branches
+    Subscribed branches
+    Active reviews
+    Source package recipes
 
 Teams do not show registered branches
 -------------------------------------
@@ -142,9 +143,10 @@ line is omitted.
     >>> browser.open('http://code.launchpad.dev/~landscape-developers')
     >>> print_tag_with_id(
     ...     browser.contents, 'portlet-person-codesummary')
-    1 owned branch
-    2 subscribed branches
-    0 active reviews
+    Owned branches
+    Subscribed branches
+    Active reviews
+    Source package recipes
 
     >>> browser.getLink('registered').click()
     Traceback (most recent call last):
