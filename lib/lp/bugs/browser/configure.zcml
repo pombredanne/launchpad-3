@@ -1167,13 +1167,6 @@
         template="../templates/bugs-listing-table-without-navlinks.pt"
         permission="zope.Public" />
 
-    <browser:page
-        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
-        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
-        name="+table-view-without-navlinks"
-        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
-        permission="zope.Public" />
-
     </facet>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"

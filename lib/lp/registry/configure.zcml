@@ -1233,11 +1233,19 @@
         class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+            interface="lp.registry.interfaces.pillar.IPillar"/>
         <require
             permission="launchpad.View"
+            interface="lp.registry.interfaces.product.IProductLimitedView"/>
+        <require
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+        <require
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="date_next_suggest_packaging"/>
         <require
             permission="launchpad.Driver"
@@ -1320,7 +1328,7 @@
                 translationpermission
                 translations_usage"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.View"
             attributes="
                 qualifies_for_free_hosting"/>
         <require
@@ -1335,7 +1343,8 @@
 
         <!-- IHasAliases -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             attributes="
                 aliases"/>
         <require
@@ -1345,14 +1354,17 @@
 
         <!-- IQuestionTarget -->
 
-        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-          permission="launchpad.AnyPerson"
+            permission="launchpad.View"
+            interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
+        <require
+          permission="launchpad.AnyAllowedPerson"
           interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
@@ -1363,15 +1375,17 @@
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             attributes="
                 bug_supervisor"/>
         <require

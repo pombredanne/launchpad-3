@@ -37,7 +37,6 @@ __all__ = [
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'get_visible_comments',
-    'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     ]
 
@@ -55,10 +54,6 @@ import urllib
 import urlparse
 
 from lazr.delegates import delegates
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
@@ -82,11 +77,7 @@ from zope import (
     )
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import (
-    IInputWidget,
-    InputErrors,
-    )
-from zope.app.form.utility import setUpWidget
+from zope.app.form.interfaces import InputErrors
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
@@ -178,7 +169,6 @@ from lp.bugs.browser.widgets.bugtask import (
     BugTaskTargetWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
-    NominationReviewActionWidget,
     )
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -204,7 +194,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
     IllegalTarget,
-    INominationsReviewTableBatchNavigator,
     IRemoveQuestionFromBugTaskForm,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
@@ -2402,72 +2391,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return {'items': items}
 
 
-class NominatedBugReviewAction(EnumeratedType):
-    """Enumeration for nomination review actions"""
-
-    ACCEPT = Item("""
-        Accept
-
-        Accept the bug nomination.
-        """)
-
-    DECLINE = Item("""
-        Decline
-
-        Decline the bug nomination.
-        """)
-
-    NO_CHANGE = Item("""
-        No change
-
-        Do not change the status of the bug nomination.
-        """)
-
-
-class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
-    """Batch navigator for nominated bugtasks. """
-
-    implements(INominationsReviewTableBatchNavigator)
-
-    def __init__(self, tasks, request, columns_to_show, size,
-                 nomination_target, user):
-        BugListingBatchNavigator.__init__(
-            self, tasks, request, columns_to_show, size)
-        self.nomination_target = nomination_target
-        self.user = user
-
-    def _getListingItem(self, bugtask):
-        """See BugListingBatchNavigator."""
-        bugtask_listing_item = BugListingBatchNavigator._getListingItem(
-            self, bugtask)
-        bug_nomination = bugtask_listing_item.bug.getNominationFor(
-            self.nomination_target)
-        if self.user is None or not bug_nomination.canApprove(self.user):
-            return bugtask_listing_item
-
-        review_action_field = Choice(
-            __name__='review_action_%d' % bug_nomination.id,
-            vocabulary=NominatedBugReviewAction,
-            title=u'Review action', required=True)
-
-        # This is so setUpWidget expects a view, and so
-        # view.request. We're not passing a view but we still want it
-        # to work.
-        bugtask_listing_item.request = self.request
-
-        bugtask_listing_item.review_action_widget = CustomWidgetFactory(
-            NominationReviewActionWidget)
-        setUpWidget(
-            bugtask_listing_item,
-            'review_action',
-            review_action_field,
-            IInputWidget,
-            value=NominatedBugReviewAction.NO_CHANGE,
-            context=bug_nomination)
-
-        return bugtask_listing_item
-
-
 class IBugTaskSearchListingMenu(Interface):
     """A marker interface for the search listing navigation menu."""
 
@@ -3413,14 +3336,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
-    def _getBatchNavigator(self, tasks):
-        """See BugTaskSearchListingView."""
-        batch_navigator = NominatedBugListingBatchNavigator(
-            tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size,
-            nomination_target=self.context, user=self.user)
-        return batch_navigator
-
     def search(self):
         """Return all the nominated tasks for this series."""
         if IDistroSeries.providedBy(self.context):
@@ -3433,60 +3348,6 @@ class BugNominationsView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, context=main_context,
             extra_params=dict(nominated_for=self.context))
-
-
-class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
-    """View for displaying a list of nominated bugs."""
-
-    def canApproveNominations(self, action=None):
-        """Whether the user can approve any of the shown nominations."""
-        return len(list(self.widgets)) > 0
-
-    def setUpFields(self):
-        """See LaunchpadFormView."""
-        # We set up the widgets ourselves.
-        self.form_fields = []
-
-    def setUpWidgets(self):
-        """See LaunchpadFormView."""
-        widgets_list = [
-            (True, bug_listing_item.review_action_widget)
-            for bug_listing_item in self.context.getBugListingItems()
-            if bug_listing_item.review_action_widget is not None]
-        self.widgets = formlib.form.Widgets(
-            widgets_list, len(self.prefix) + 1)
-
-    @action('Save changes', name='submit', condition=canApproveNominations)
-    def submit_action(self, action, data):
-        """Accept/Decline bug nominations."""
-        accepted = declined = 0
-
-        for name, review_action in data.items():
-            if review_action == NominatedBugReviewAction.NO_CHANGE:
-                continue
-            field = self.widgets[name].context
-            bug_nomination = field.context
-            if review_action == NominatedBugReviewAction.ACCEPT:
-                bug_nomination.approve(self.user)
-                accepted += 1
-            elif review_action == NominatedBugReviewAction.DECLINE:
-                bug_nomination.decline(self.user)
-                declined += 1
-            else:
-                raise AssertionError(
-                    'Unknown NominatedBugReviewAction: %r' % review_action)
-
-        if accepted > 0:
-            self.request.response.addInfoNotification(
-                '%d nomination(s) accepted' % accepted)
-        if declined > 0:
-            self.request.response.addInfoNotification(
-                '%d nomination(s) declined' % declined)
-
-        self.next_url = self.request.getURL()
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            self.next_url += '?%s' % query_string
 
 
 class BugTargetView(LaunchpadView):

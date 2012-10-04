@@ -280,12 +280,13 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         super(TestProjectMilestoneIndexQueryCount, self).setUp()
         self.owner = self.factory.makePerson(name='product-owner')
         self.product = self.factory.makeProduct(owner=self.owner)
+        self.product_owner = self.product.owner
         login_person(self.product.owner)
         self.milestone = self.factory.makeMilestone(
             productseries=self.product.development_focus)
 
     def add_bug(self, count):
-        login_person(self.product.owner)
+        login_person(self.product_owner)
         for i in range(count):
             bug = self.factory.makeBug(target=self.product)
             bug.bugtasks[0].transitionToMilestone(
@@ -330,6 +331,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # increasing the cap.
         page_query_limit = 37
         product = self.factory.makeProduct()
+        product_owner = product.owner
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
@@ -362,7 +364,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         with_1_private_bug = collector.count
         with_1_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in
             enumerate(collector.queries)]
-        login_person(product.owner)
+        login_person(product_owner)
         bug2 = self.factory.makeBug(
             target=product, information_type=InformationType.USERDATA,
             owner=product.owner)

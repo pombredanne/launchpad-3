@@ -579,7 +579,8 @@ class FileBugViewBase(LaunchpadFormView):
         if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
-                owner=self.user, subject=bug.followup_subject(), content=None)
+                owner=self.user, subject=bug.followup_subject(), content=None,
+                send_notifications=False)
 
             # Deal with attachments added in the filebug form.
             if attachment:
