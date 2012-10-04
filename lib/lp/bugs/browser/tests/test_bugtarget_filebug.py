@@ -595,18 +595,14 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             bug.description)
         self.assertEqual(2, bug.messages.count())
         self.assertEqual(bug.bug_messages[-1], message_event.object)
-        notifications = view.request.response.notifications
-        self.assertEqual(3, len(notifications))
-        self.assertEqual(
-            '<p class="last">Thank you for your bug report.</p>',
-            notifications[0].message)
-        self.assertEqual(
-            'Additional information was added to the bug description.',
-            notifications[1].message)
-        self.assertEqual(
-            'A comment with additional information was added '
-            'to the bug report.',
-            notifications[2].message)
+        notifications = [
+            no.message for no in view.request.response.notifications]
+        self.assertContentEqual(
+            ['<p class="last">Thank you for your bug report.</p>',
+             'Additional information was added to the bug description.',
+             'A comment with additional information was added to the'
+             ' bug report.'],
+            notifications)
 
     def test_private_yes(self):
         # The extra data can specify the bug is private.
@@ -638,7 +634,6 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             command='Subscribers: me@eg.dom him@eg.dom')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
-        self.assertEqual(2, len(view.extra_data.subscribers))
         self.assertContentEqual(
             ['me@eg.dom', 'him@eg.dom'], view.extra_data.subscribers)
         view.submit_bug_action.success(self.get_form())
@@ -654,7 +649,6 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
         token = self.process_extra_data(command='Subscribers: me him')
         view = self.create_initialized_view()
         view.publishTraverse(view.request, token)
-        self.assertEqual(2, len(view.extra_data.subscribers))
         self.assertContentEqual(['me', 'him'], view.extra_data.subscribers)
         view.submit_bug_action.success(self.get_form())
         transaction.commit()
@@ -704,17 +698,13 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             'This is an attachment.\n\n', attachment.libraryfile.read())
         self.assertEqual(2, bug.messages.count())
         self.assertEqual(2, len(bug.messages[1].bugattachments))
-        notifications = view.request.response.notifications
-        self.assertEqual(3, len(notifications))
-        self.assertEqual(
-            '<p class="last">Thank you for your bug report.</p>',
-            notifications[0].message)
-        self.assertEqual(
-            'The file "attachment1" was attached to the bug report.',
-            notifications[1].message)
-        self.assertEqual(
-            'The file "attachment2" was attached to the bug report.',
-            notifications[2].message)
+        notifications = [
+            no.message for no in view.request.response.notifications]
+        self.assertContentEqual(
+            ['<p class="last">Thank you for your bug report.</p>',
+             'The file "attachment1" was attached to the bug report.',
+             'The file "attachment2" was attached to the bug report.'],
+            notifications)
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
