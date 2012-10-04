@@ -11,7 +11,10 @@ from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -25,6 +28,7 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -106,6 +110,7 @@ class TestProductAddView(TestCaseWithFactory):
                 'field.licenses': ['MIT'],
                 'field.license_info': '',
                 'field.disclaim_maintainer': 'off',
+                'field.information_type': 0,
                 }
 
     def test_view_data_model(self):
@@ -210,6 +215,40 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertEqual(0, len(view.view.errors))
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
+
+    def test_information_type_saved_new_product_default(self):
+        # information_type should be PUBLIC by default for new projects.
+        # if the private projects feature flag is not enabled.
+        registrant = self.factory.makePerson()
+        login_person(registrant)
+        form = self.makeForm(action=2)
+        form['field.information_type'] = 'PROPRIETARY'
+        form['field.owner'] = registrant.name
+        view = create_initialized_view(self.product_set, '+new', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = self.product_set.getByName('fnord')
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
+
+    def test_information_type_saved_new_product_updated(self):
+        # information_type will be updated if passed in via form data,
+        # if the private projects feature flag is enabled.
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            registrant = self.factory.makePerson()
+            login_person(registrant)
+            form = self.makeForm(action=2)
+            form['field.information_type'] = 'PROPRIETARY'
+            form['field.owner'] = registrant.name
+            form['field.driver'] = registrant.name
+            form['field.maintainer'] = registrant.name
+            form['field.bug_supervisor'] = registrant.name
+            form['field.licenses'] = License.OTHER_PROPRIETARY.title
+            form['field.license_info'] = 'Commericial Subscription'
+            view = create_initialized_view(
+                self.product_set, '+new', form=form)
+            self.assertEqual(0, len(view.view.errors))
+            product = self.product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PROPRIETARY, product.information_type)
 
 
 class TestProductView(TestCaseWithFactory):
@@ -449,8 +488,8 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+rdf')
         content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        browser = self.getViewBrowser(product, view_name='+rdf')
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
