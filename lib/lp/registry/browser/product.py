@@ -2117,11 +2117,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         else:
             owner = data.get('owner')
 
-        information_type = InformationType.PUBLIC
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if private_projects:
-            information_type = data.get('information_type')
-
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
             bug_supervisor=data.get('bug_supervisor', None),
@@ -2135,7 +2130,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
-            information_type=information_type,
+            information_type=data.get('information_type'),
             project=project)
 
     def link_source_package(self, product, data):
