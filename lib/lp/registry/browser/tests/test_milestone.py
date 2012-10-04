@@ -85,13 +85,20 @@ class TestMilestoneViews(BrowserTestCase):
         information_type = InformationType.PROPRIETARY
         removeSecurityProxy(product).information_type = information_type
         milestone = self.factory.makeMilestone(product=product)
-        privacy_porlet = soupmatchers.Tag(
-            'info-type-portlet', True,
-            attrs={'id': 'information-type-summary'},
-            text='This page contains Proprietary information')
+        privacy_portlet = soupmatchers.Tag(
+            'info-type-portlet', 'span',
+            attrs={'id': 'information-type-summary'})
+        privacy_portlet_proprietary = soupmatchers.Tag(
+            'info-type-text', 'strong', attrs={'id': 'information-type'},
+            text='Proprietary')
         browser = self.getViewBrowser(milestone, '+index', user=owner)
+        # First, assert that the portlet exists.
         self.assertThat(
-            browser.contents, soupmatchers.HTMLContains(privacy_porlet))
+            browser.contents, soupmatchers.HTMLContains(privacy_portlet))
+        # Then, assert that the text displayed matches the information_type.
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(
+            privacy_portlet_proprietary))
 
 
 class TestAddMilestoneViews(TestCaseWithFactory):
