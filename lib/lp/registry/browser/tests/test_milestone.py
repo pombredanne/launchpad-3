@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import soupmatchers
 from testtools.matchers import LessThan
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -21,6 +22,7 @@ from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     login_person,
     login_team,
     logout,
@@ -37,7 +39,7 @@ from lp.testing.matchers import (
 from lp.testing.views import create_initialized_view
 
 
-class TestMilestoneViews(TestCaseWithFactory):
+class TestMilestoneViews(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -73,6 +75,23 @@ class TestMilestoneViews(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(product=product)
         view = create_initialized_view(milestone, '+index')
         self.assertEqual('Proprietary', view.information_type)
+
+    def test_privacy_portlet(self):
+        # A milestone's page should include a privacy portlet that
+        # accurately describes the information_type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        information_type = InformationType.PROPRIETARY
+        removeSecurityProxy(product).information_type = information_type
+        milestone = self.factory.makeMilestone(product=product)
+        privacy_porlet = soupmatchers.Tag(
+            'info-type-portlet', True,
+            attrs={'id': 'information-type-summary'},
+            text='This page contains Proprietary information')
+        browser = self.getViewBrowser(milestone, '+index', user=owner)
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_porlet))
 
 
 class TestAddMilestoneViews(TestCaseWithFactory):
