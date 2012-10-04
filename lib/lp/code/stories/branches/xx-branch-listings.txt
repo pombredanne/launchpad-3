@@ -65,7 +65,7 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('subscribed').click()
+    >>> browser.getLink('Subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True

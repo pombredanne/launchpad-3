@@ -1068,7 +1068,8 @@ class TestGarbo(TestCaseWithFactory):
         store.flush()
         # Make a new product without an information_type.
         product = self.factory.makeProduct()
-        removeSecurityProxy(product).information_type = None
+        store.execute(Update(
+            {Product.information_type: None}, Product.id == product.id))
         store.flush()
         self.assertEqual(1, store.find(Product,
             Product.information_type == None).count())
