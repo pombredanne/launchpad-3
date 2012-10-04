@@ -698,11 +698,11 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
             base_url = canonical_url(branch, rootsite='code')
             product_url = canonical_url(product, rootsite='code')
         url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        expected_title = "Code : %s" % product.displayname
         browser = self._getBrowser(user=subscriber)
         browser.open(url)
         browser.getControl('Unsubscribe').click()
         self.assertEqual(product_url, browser.url)
-        expected_title = "Code : %s" % product.displayname
         self.assertEqual(expected_title, browser.title)
 
 

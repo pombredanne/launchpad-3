@@ -64,6 +64,7 @@ from zope.security.proxy import (
 
 from lp.app.enums import (
     InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
@@ -1022,6 +1023,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if specification_sharing_policy:
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
+        if information_type is not None:
+            naked_product.information_type = information_type
+            if information_type in PROPRIETARY_INFORMATION_TYPES:
+                policy = self.makeAccessPolicy(product, information_type)
+                self.makeAccessPolicyGrant(
+                    policy, grantee=naked_product.owner)
 
         return product
 
@@ -1055,7 +1062,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         if owner is None:
-            owner = product.owner
+            owner = removeSecurityProxy(product).owner
         if name is None:
             name = self.getUniqueString()
         if summary is None:
@@ -1832,7 +1839,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(owner, target)
+        return removeSecurityProxy(bug).addTask(
+            owner, removeSecurityProxy(target))
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
