@@ -1398,6 +1398,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "description",
         "project",
         "homepageurl",
+        "information_type",
         "sourceforgeproject",
         "freshmeatproject",
         "wikiurl",
@@ -1412,9 +1413,37 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('license_info', GhostWidget)
 
     @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        if self.context.active:
+            return canonical_url(self.context)
+        else:
+            return canonical_url(getUtility(IProductSet))
+
+    cancel_url = next_url
+
+    @property
     def page_title(self):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProductEditView, self).initialize()
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductEditView, self).setUpFields()
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects:
+            self.form_fields = self.form_fields.omit('information_type')
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -1429,16 +1458,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        if self.context.active:
-            return canonical_url(self.context)
-        else:
-            return canonical_url(getUtility(IProductSet))
-
-    cancel_url = next_url
 
 
 class ProductValidationMixin:
