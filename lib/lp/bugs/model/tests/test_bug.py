@@ -13,6 +13,7 @@ from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -39,6 +40,7 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.testing import (
     admin_logged_in,
+    EventRecorder,
     feature_flags,
     login_person,
     person_logged_in,
@@ -565,6 +567,23 @@ class TestBug(TestCaseWithFactory):
             get_subscribers, create_stuff, 3)
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def test_newMessage_default(self):
+        # Adding a bug message notifies that is was created.
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        with EventRecorder() as recorder:
+            bug.newMessage(owner=bug.owner)
+            self.assertEqual(1, len(recorder.events))
+            self.assertIsInstance(recorder.events[0], ObjectCreatedEvent)
+
+    def test_newMessage_send_notification_false(self):
+        # Notifications about new messages can be supressed.
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        with EventRecorder() as recorder:
+            bug.newMessage(owner=bug.owner, send_notifications=False)
+            self.assertEqual(0, len(recorder.events))
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesMixin:
