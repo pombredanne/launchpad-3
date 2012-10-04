@@ -310,7 +310,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
                 text='There are no branches related to Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_registered_link(self):
         self.makeABranch()
@@ -401,7 +400,6 @@ class TestSimplifiedPersonProductBranchesView(
                 text='There are no branches of Bambam owned by Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):

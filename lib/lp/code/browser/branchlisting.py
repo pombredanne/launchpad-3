@@ -68,10 +68,7 @@ from lp.blueprints.interfaces.specificationbranch import (
     )
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
-from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView,
-    PersonProductActiveReviewsView,
-    )
+from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
 from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
@@ -850,25 +847,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed',
              'active_reviews', 'mergequeues', 'source_package_recipes']
-    extra_attributes = [
-        'active_review_count',
-        'owned_branch_count',
-        'registered_branch_count',
-        'subscribed_branch_count',
-        'mergequeue_count',
-        ]
-
-    def _getCountCollection(self):
-        """The base collection of branches which should be counted.
-
-        This collection will be further restricted to, e.g., the
-        branches registered by a particular user for the counts that
-        appear at the top of a branch listing page.
-
-        This should be overridden in subclasses to restrict to, for
-        example, the set of branches of a particular product.
-        """
-        return getUtility(IAllBranches).visibleByUser(self.user)
+    extra_attributes = ['mergequeue_count']
 
     @property
     def person(self):
@@ -879,16 +858,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
-    @cachedproperty
     def owned(self):
         return Link(
             canonical_url(self.context, rootsite='code'), 'Owned branches')
 
     def registered(self):
-        enabled = (
-            not self.person.is_team and
-            not self._getCountCollection().registeredBy(
-                self.person).is_empty())
+        enabled = not self.person.is_team
         return Link(
             '+registeredbranches', 'Registered branches', enabled=enabled)
 
@@ -910,22 +885,10 @@ class PersonProductBranchesMenu(PersonBranchesMenu):
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
              'source_package_recipes']
 
-    def _getCountCollection(self):
-        """See `PersonBranchesMenu`."""
-        collection = getUtility(IAllBranches).visibleByUser(self.user)
-        return collection.inProduct(self.context.product)
-
     @property
     def person(self):
         """See `PersonBranchesMenu`."""
         return self.context.person
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for self.person's branches."""
-        active_reviews = PersonProductActiveReviewsView(
-            self.context, self.request)
-        return active_reviews.getProposals().count()
 
 
 class PersonBaseBranchListingView(BranchListingView):
