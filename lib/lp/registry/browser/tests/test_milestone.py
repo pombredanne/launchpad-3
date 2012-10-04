@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from testtools.matchers import LessThan
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -53,6 +54,25 @@ class TestMilestoneViews(TestCaseWithFactory):
             specification=specification, milestone=milestone)
         view = create_initialized_view(milestone, '+index')
         self.assertIn('some work for this milestone', view.render())
+
+    def test_information_type_public(self):
+        # A milestone's view should include its information_type,
+        # which defaults to Public for new projects.
+        milestone = self.factory.makeMilestone()
+        view = create_initialized_view(milestone, '+index')
+        self.assertEqual('Public', view.information_type)
+
+    def test_information_type_proprietary(self):
+        # A milestone's view should get its information_type
+        # from the related product even if the product is changed to
+        # PROPRIETARY.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        information_type = InformationType.PROPRIETARY
+        removeSecurityProxy(product).information_type = information_type
+        milestone = self.factory.makeMilestone(product=product)
+        view = create_initialized_view(milestone, '+index')
+        self.assertEqual('Proprietary', view.information_type)
 
 
 class TestAddMilestoneViews(TestCaseWithFactory):
