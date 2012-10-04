@@ -37,12 +37,7 @@ no-priv will, of course, see his nomination.
     >>> user_browser.contents
     '...Nominated...for...Hoary...by...No Privileges Person...'
 
-But not the approve/decline link, nor any Approve or Decline buttons.
-
-    >>> user_browser.getLink("approve/decline")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+But not the Approve or Decline buttons.
 
     >>> user_browser.getControl("Approve")
     Traceback (most recent call last):
@@ -67,8 +62,8 @@ buttons) directly either.
 But if we log in as a user that does have launchpad.Driver permission,
 we will see the approve/decline links.
 
-First, when the task is in Proposed state, the (privileged) user sees an
-approve/decline link.
+First, when the task is in Proposed state, the (privileged) user sees
+Approve and Decline buttons.
 
     >>> login("foo.bar@canonical.com")
     >>> check_permission("launchpad.Driver", ubuntu_hoary_nomination.target)
@@ -81,12 +76,6 @@ approve/decline link.
     >>> browser.open(
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+bug/1/nominations/2/+bugtasks-and-nominations-table-row")
-
-    >>> browser.getLink("approve/decline")
-    <Link ...>
-
-Clicking the "approve/decline" link causes a simple form to be expanded
-underneath, with "Approve" and "Decline" buttons.
 
     >>> approve_button = browser.getControl("Approve")
     >>> decline_button = browser.getControl("Decline")
@@ -101,8 +90,7 @@ Clicking "Decline" declines the nomination.
     True
     >>> logout()
 
-Now only the "Approve" button shows, and the approve/decline link now
-reads only "approve".
+Now only the "Approve" button shows.
 
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open(
@@ -111,13 +99,6 @@ reads only "approve".
 
     >>> browser.contents
     '...Declined...for...Hoary...by...Foo Bar...'
-
-    >>> browser.getLink("approve/decline")
-    Traceback (most recent call last):
-      ...
-    LinkNotFoundError
-    >>> browser.getLink("approve")
-    <Link ...>
 
     >>> approve_button = browser.getControl("Approve")
     >>> browser.getControl("Decline")
