@@ -1929,10 +1929,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
-        if IProductSet.providedBy(self.context):
-            cache = IJSONRequestCache(self.request)
-            json_dump_information_types(cache,
-                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
@@ -1976,7 +1975,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         hidden_fields = self.form_fields.select(*hidden_names)
 
         private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if not private_projects or not IProductSet.providedBy(self.context):
+        if not private_projects:
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
