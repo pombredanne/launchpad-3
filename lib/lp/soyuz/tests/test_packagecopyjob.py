@@ -1498,21 +1498,21 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job will not fail because a packagediff from a source that wasn't
         # copied could not be created.
         archive = self.distroseries.distribution.main_archive
-        source = self.publisher.getPubSource(
-            distroseries=self.distroseries, sourcename="copyme",
+        source = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, sourcepackagename="copyme",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
-            component='multiverse', section='web',
-            pocket=PackagePublishingPocket.RELEASE, archive=archive)
+            pocket=PackagePublishingPocket.RELEASE, archive=archive,
+            component='multiverse')
         spph = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             pocket=PackagePublishingPocket.UPDATES, archive=archive,
             distroseries=self.distroseries,
             sourcepackagerelease=source.sourcepackagerelease)
-        self.publisher.getPubBinaries(
-            binaryname="copyme", pub_source=spph,
-            distroseries=self.distroseries, archive=archive,
-            pocket=PackagePublishingPocket.UPDATES,
-            status=PackagePublishingStatus.PUBLISHED)
+        das = self.factory.makeDistroArchSeries(distroseries=self.distroseries)
+        self.factory.makeBinaryPackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED, distroarchseries=das,
+            pocket=PackagePublishingPocket.UPDATES, archive=archive,
+            source_package_release=spph.sourcepackagerelease)
         requester = self.factory.makePerson()
         with person_logged_in(archive.owner):
             archive.newComponentUploader(requester, 'multiverse')
