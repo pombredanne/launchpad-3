@@ -17,31 +17,32 @@ class InformationTypePortletMixin:
 
     def initialize(self):
         information_typed = IInformationType(self.context, None)
-        if information_typed is not None:
-            cache = IJSONRequestCache(self.request)
-            json_dump_information_types(
-                cache,
-                information_typed.getAllowedInformationTypes(self.user))
+        if information_typed is None:
+            information_typed = self.context
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(
+            cache,
+            information_typed.getAllowedInformationTypes(self.user))
 
     @property
     def information_type(self):
         information_typed = IInformationType(self.context, None)
         if information_typed is None:
-            return None
+            information_typed = self.context
         return information_typed.information_type.title
 
     @property
     def information_type_description(self):
         information_typed = IInformationType(self.context, None)
         if information_typed is None:
-            return None
+            information_typed = self.context
         return information_typed.information_type.description
 
     @property
     def information_type_css(self):
         information_typed = IInformationType(self.context, None)
         if information_typed is None:
-            return 'sprite public'
+            information_typed = self.context
         if information_typed.information_type in PRIVATE_INFORMATION_TYPES:
             return 'sprite private'
         else:
@@ -51,7 +52,7 @@ class InformationTypePortletMixin:
     def privacy_portlet_css(self):
         information_typed = IInformationType(self.context, None)
         if information_typed is None:
-            return 'portlet public'
+            information_typed = self.context
         if information_typed.information_type in PRIVATE_INFORMATION_TYPES:
             return 'portlet private'
         else:
