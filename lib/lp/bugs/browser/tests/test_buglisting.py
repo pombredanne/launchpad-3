@@ -295,8 +295,12 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
 
     def test_has_bugtracker_external_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='external')
-        view = create_initialized_view(bug_target, '+bugs')
+        user = self.factory.makePerson
+        view = create_initialized_view(bug_target, '+bugs', principal=user)
         self.assertEqual(True, view.has_bugtracker)
+        markup = view.render()
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-search-form'))
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-table-listings'))
 
     def test_has_bugtracker_launchpad_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='launchpad')
