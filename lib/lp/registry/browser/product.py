@@ -914,7 +914,7 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def has_download_files(self):
         for series in self.context.series:
-            if series.status != SeriesStatus.OBSOLETE:
+            if series.status == SeriesStatus.OBSOLETE:
                 continue
             for release in series.releases:
                 if len(list(release.files)) > 0:
