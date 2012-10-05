@@ -14,7 +14,6 @@ __all__ = [
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
-    "NominationReviewActionWidget",
     "UbuntuSourcePackageNameWidget",
     ]
 
@@ -56,7 +55,6 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
@@ -73,7 +71,6 @@ from lp.bugs.interfaces.bugwatch import (
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
@@ -510,18 +507,6 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
 
         distribution = self.getDistribution()
 
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            try:
-                self.context.vocabulary.setDistribution(distribution)
-                source = self.context.vocabulary.getTermByToken(input).value
-            except NotFoundError:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-            else:
-                return source
-        # Else the untrusted SPN vocab was used so it needs seconday
-        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
@@ -624,17 +609,3 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
-
-
-class NominationReviewActionWidget(LaunchpadRadioWidget):
-    """Widget for choosing a nomination review action.
-
-    It renders a radio box with no label for each option.
-    """
-    orientation = "horizontal"
-
-    # The label will always be the empty string.
-    _joinButtonToMessageTemplate = '%s%s'
-
-    def textForValue(self, term):
-        return u''

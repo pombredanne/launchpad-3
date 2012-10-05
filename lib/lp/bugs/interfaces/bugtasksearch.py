@@ -370,11 +370,11 @@ class BugTaskSearchParams:
                        distribution=None, tags=None,
                        tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
-                       status_upstream=None, milestone_assignment=None,
-                       milestone=None, component=None, nominated_for=None,
-                       sourcepackagename=None, has_no_package=None,
-                       hardware_bus=None, hardware_vendor_id=None,
-                       hardware_product_id=None, hardware_driver_name=None,
+                       status_upstream=None, milestone=None, component=None,
+                       nominated_for=None, sourcepackagename=None,
+                       has_no_package=None, hardware_bus=None,
+                       hardware_vendor_id=None, hardware_product_id=None,
+                       hardware_driver_name=None,
                        hardware_driver_package_name=None,
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
@@ -547,8 +547,6 @@ class IBugTaskSearchBase(Interface):
     has_no_package = Bool(
         title=_('Exclude bugs with packages specified'),
         required=False, default=False)
-    milestone_assignment = Choice(
-        title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Milestone'),
         description=_('Show only bug tasks targeted to this milestone.'),

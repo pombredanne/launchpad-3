@@ -493,21 +493,6 @@
     <allow interface="lp.services.webapp.vocabulary.ICountableIterator"/>
   </class>
 
-  <securedutility
-    name="DistributionSourcePackage"
-    component="lp.registry.vocabularies.DistributionSourcePackageVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-
-  <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
-    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
-    <require
-        permission="zope.Public"
-        attributes="setDistribution"/>
-  </class>
-
     <class
         class="lp.services.webapp.vocabulary.VocabularyFilterAll">
         <require

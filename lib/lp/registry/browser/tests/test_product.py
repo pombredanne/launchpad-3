@@ -1,18 +1,27 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
 
 __metaclass__ = type
 
+__all__ = ['make_product_form']
+
 from lazr.restful.interfaces import IJSONRequestCache
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import Not
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.registry.browser.product import (
@@ -47,7 +56,7 @@ from lp.testing.views import (
     )
 
 
-class TestProductConfiguration(TestCaseWithFactory):
+class TestProductConfiguration(BrowserTestCase):
     """Tests the configuration links and helpers."""
 
     layer = DatabaseFunctionalLayer
@@ -77,6 +86,66 @@ class TestProductConfiguration(TestCaseWithFactory):
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
 
+    lp_tag = Tag('lp_tag', 'input', attrs={'value': 'LAUNCHPAD'})
+
+    def test_configure_answers_has_launchpad_for_public(self):
+        # Public projects support LAUNCHPAD for answers.
+        browser = self.getViewBrowser(self.product, '+configure-answers',
+            user=self.product.owner)
+        self.assertThat(browser.contents, HTMLContains(self.lp_tag))
+
+    def test_configure_answers_skips_launchpad_for_proprietary(self):
+        # Proprietary projects forbid LAUNCHPAD for answers.
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.factory.makeProduct(information_type=info_type)
+            with person_logged_in(None):
+                browser = self.getViewBrowser(product, '+configure-answers',
+                    user=removeSecurityProxy(product).owner)
+            self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
+
+
+def make_product_form(person=None, action=1, proprietary=False):
+    """Return form data for product creation.
+
+    :param person: A person to associate with the product.  Mandatory for
+        proprietary.
+    :param action: 1 means submit step 1.  2 means submit step 2 (completion)
+    :param proprietary: If true, create a PROPRIETARY product.
+    """
+    if action == 1:
+        return {
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': ProjectAddStepOne.step_name,
+            'field.displayname': 'Fnord',
+            'field.name': 'fnord',
+            'field.title': 'fnord',
+            'field.summary': 'fnord summary',
+            }
+    else:
+        form = {
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': '%s|%s' % (
+                ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+            'field.displayname': 'Fnord',
+            'field.name': 'fnord',
+            'field.title': 'fnord',
+            'field.summary': 'fnord summary',
+            'field.disclaim_maintainer': 'off',
+            }
+        if proprietary:
+            form['field.information_type'] = 'PROPRIETARY'
+            form['field.owner'] = person.name
+            form['field.driver'] = person.name
+            form['field.bug_supervisor'] = person.name
+            form['field.licenses'] = License.OTHER_PROPRIETARY.title
+            form['field.license_info'] = 'Commercial Subscription'
+        else:
+            form['field.information_type'] = 0
+            form['field.owner'] = ''
+            form['field.licenses'] = ['MIT']
+            form['field.license_info'] = ''
+        return form
+
 
 class TestProductAddView(TestCaseWithFactory):
     """Tests the configuration links and helpers."""
@@ -86,32 +155,6 @@ class TestProductAddView(TestCaseWithFactory):
     def setUp(self):
         super(TestProductAddView, self).setUp()
         self.product_set = getUtility(IProductSet)
-
-    def makeForm(self, action):
-        if action == 1:
-            return {
-                'field.actions.continue': 'Continue',
-                'field.__visited_steps__': ProjectAddStepOne.step_name,
-                'field.displayname': 'Fnord',
-                'field.name': 'fnord',
-                'field.title': 'fnord',
-                'field.summary': 'fnord summary',
-                }
-        else:
-            return {
-                'field.actions.continue': 'Continue',
-                'field.__visited_steps__': '%s|%s' % (
-                    ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-                'field.displayname': 'Fnord',
-                'field.name': 'fnord',
-                'field.title': 'fnord',
-                'field.summary': 'fnord summary',
-                'field.owner': '',
-                'field.licenses': ['MIT'],
-                'field.license_info': '',
-                'field.disclaim_maintainer': 'off',
-                'field.information_type': 0,
-                }
 
     def test_view_data_model(self):
         # The view's json request cache contains the expected data.
@@ -143,7 +186,7 @@ class TestProductAddView(TestCaseWithFactory):
         registrant = self.factory.makePerson(name='pting')
         transaction.commit()
         login_person(registrant)
-        form = self.makeForm(action=1)
+        form = make_product_form(action=1)
         view = create_initialized_view(self.product_set, '+new', form=form)
         owner_widget = view.view.widgets['owner']
         self.assertEqual('pting', view.view.initial_values['owner'])
@@ -171,7 +214,7 @@ class TestProductAddView(TestCaseWithFactory):
             membership_policy=TeamMembershipPolicy.RESTRICTED)
         transaction.commit()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = team.name
         view = create_initialized_view(self.product_set, '+new', form=form)
         self.assertEqual(0, len(view.view.errors))
@@ -183,7 +226,7 @@ class TestProductAddView(TestCaseWithFactory):
         # and the registry team is made the maintainer.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = registrant.name
         form['field.disclaim_maintainer'] = 'on'
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -196,7 +239,7 @@ class TestProductAddView(TestCaseWithFactory):
         # not selected.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = ''
         del form['field.disclaim_maintainer']
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -208,7 +251,7 @@ class TestProductAddView(TestCaseWithFactory):
         # selected.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = ''
         form['field.disclaim_maintainer'] = 'on'
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -221,9 +264,7 @@ class TestProductAddView(TestCaseWithFactory):
         # if the private projects feature flag is not enabled.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
-        form['field.information_type'] = 'PROPRIETARY'
-        form['field.owner'] = registrant.name
+        form = make_product_form(registrant, action=2, proprietary=True)
         view = create_initialized_view(self.product_set, '+new', form=form)
         self.assertEqual(0, len(view.view.errors))
         product = self.product_set.getByName('fnord')
@@ -235,14 +276,8 @@ class TestProductAddView(TestCaseWithFactory):
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             registrant = self.factory.makePerson()
             login_person(registrant)
-            form = self.makeForm(action=2)
-            form['field.information_type'] = 'PROPRIETARY'
-            form['field.owner'] = registrant.name
-            form['field.driver'] = registrant.name
+            form = make_product_form(registrant, action=2, proprietary=True)
             form['field.maintainer'] = registrant.name
-            form['field.bug_supervisor'] = registrant.name
-            form['field.licenses'] = License.OTHER_PROPRIETARY.title
-            form['field.license_info'] = 'Commericial Subscription'
             view = create_initialized_view(
                 self.product_set, '+new', form=form)
             self.assertEqual(0, len(view.view.errors))

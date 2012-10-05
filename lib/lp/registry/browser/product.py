@@ -69,6 +69,10 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -101,6 +105,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     InformationType,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -1326,6 +1331,14 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
                 field.description = (
                     field.description.replace('pillar', 'project'))
                 usage_field.field = field
+                if (self.usage_fieldname == 'answers_usage' and
+                    self.context.information_type in
+                    PROPRIETARY_INFORMATION_TYPES):
+                    values = usage_field.field.vocabulary.items
+                    terms = [SimpleTerm(value, value.name, value.title)
+                             for value in values
+                             if value != ServiceUsage.LAUNCHPAD]
+                    usage_field.field.vocabulary = SimpleVocabulary(terms)
 
     @property
     def field_names(self):
@@ -1949,10 +1962,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
-        if IProductSet.providedBy(self.context):
-            cache = IJSONRequestCache(self.request)
-            json_dump_information_types(cache,
-                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
@@ -1996,7 +2008,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         hidden_fields = self.form_fields.select(*hidden_names)
 
         private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if not private_projects or not IProductSet.providedBy(self.context):
+        if not private_projects:
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
