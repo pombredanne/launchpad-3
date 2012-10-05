@@ -522,7 +522,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
             displayname=data['displayname'],
             licenses=data['licenses'],
             license_info=data['license_info'],
-            information_type=data['information_type'],
+            information_type=data.get('information_type'),
             project=self.context,
             )
 
