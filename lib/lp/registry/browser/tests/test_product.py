@@ -429,7 +429,6 @@ class TestProductEditView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProductEditView, self).setUp()
-        self.product = self.factory.makeProduct(name='fnord')
 
     def _make_product_edit_form(self, proprietary=False):
         """Return form data for product edit.
@@ -457,6 +456,7 @@ class TestProductEditView(TestCaseWithFactory):
         }
 
     def test_change_information_type_proprietary(self):
+        self.product = self.factory.makeProduct(name='fnord')
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(self.product.owner)
             form = self._make_product_edit_form(proprietary=True)
@@ -467,6 +467,26 @@ class TestProductEditView(TestCaseWithFactory):
             product = product_set.getByName('fnord')
             self.assertEqual(
                 InformationType.PROPRIETARY, product.information_type)
+
+    def test_change_information_type_public(self):
+        owner = self.factory.makePerson(name='pting')
+        self.product = self.factory.makeProduct(
+            name='fnord',
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(owner)
+            form = self._make_product_edit_form()
+            view = create_initialized_view(self.product, '+edit', form=form)
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            product = product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PUBLIC, product.information_type)
+
+
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
