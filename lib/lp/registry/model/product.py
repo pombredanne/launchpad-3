@@ -447,9 +447,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 'A valid commercial subscription is required for private'
                 ' Projects.')
 
-        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
-            and not self.commercial_subscription):
-            # Create the commercial subscription for the 
+        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES):
+            # Create the commercial subscription for the product.
             self._ensure_complimentary_subscription()
 
         return value
