@@ -159,7 +159,7 @@ A correct URL is accepted.
     Code import created and branch linked to the series.
     >>> print series.branch.name
     blazer-branch
-    >>> print series.branch.registrant.name == driver.name
+    >>> series.branch.registrant.name == driver.name
     True
 
 Git branches cannnot use svn.
