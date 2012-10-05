@@ -514,6 +514,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
                 content.find(id='fnord-edit-license-approved').parent))
 
     def test_review_licence_query_count(self):
+        # Ensure the query count is not O(n).
         for _ in range(100):
             product = self.factory.makeProduct()
             for _ in range(5):
