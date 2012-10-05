@@ -39,16 +39,13 @@ class LicensesModifiedEventTestCase(TestCaseWithFactory):
 
     def test_init(self):
         product = self.factory.makeProduct()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product)
-        self.assertEqual(product.owner, event.user.person)
         self.assertEqual(product, event.object)
         self.assertEqual(product, event.object_before_modification)
         self.assertEqual([], event.edited_fields)
 
     def test_init_with_user(self):
         product = self.factory.makeProduct()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product, user=product.owner)
         self.assertEqual(product.owner, event.user)
 
