@@ -32,9 +32,7 @@ from lp.services.webapp.publisher import (
 def product_licenses_modified(product, event):
     """Send a notification if licences changed and a licence is special."""
     if LicenseNotification.needs_notification(product):
-        # XXX sinzui 2012-10-05: get product.owner, resolve team.
-        user = product.owner
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         notification.send()
         notification.display()
 
@@ -42,9 +40,9 @@ def product_licenses_modified(product, event):
 class LicenseNotification:
     """Send notification about special licences to the user."""
 
-    def __init__(self, product, user):
+    def __init__(self, product):
         self.product = product
-        self.user = user
+        self.user = product.owner
 
     @staticmethod
     def needs_notification(product):

@@ -146,7 +146,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_known_license(self):
         # A known licence does not generate an email.
         product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(False, result)
         self.assertEqual(0, len(pop_notifications()))
@@ -154,7 +154,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_dont_know(self):
         # An Other/I don't know licence sends one email.
         product, user = self.make_product_user([License.DONT_KNOW])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -165,7 +165,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_open_source(self):
         # An Other/Open Source licence sends one email.
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -176,7 +176,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_proprietary(self):
         # An Other/Proprietary licence sends one email.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -199,7 +199,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         with person_logged_in(product.owner):
             product.owner = team
         pop_notifications()
-        notification = LicenseNotification(product, team)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -214,7 +214,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         # Using the proxied product leads to an exeception when
         # notification.display() below is called because the permission
         # checks product require an interaction.
-        notification = LicenseNotification(removeSecurityProxy(product), user)
+        notification = LicenseNotification(removeSecurityProxy(product))
         logout()
         result = notification.display()
         self.assertIs(False, result)
@@ -222,7 +222,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_display_no_message(self):
         # A notification is not added if there is no message to show.
         product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         self.assertEqual('', notification.getCommercialUseMessage())
         self.assertIs(False, result)
@@ -230,7 +230,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_display_has_message(self):
         # A notification is added if there is a message to show.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         message = notification.getCommercialUseMessage()
         self.assertIs(True, result)
@@ -245,7 +245,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         # A notification is added if there is a message to show.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         product.displayname = '<b>Look</b>'
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         self.assertIs(True, result)
         request = get_current_browser_request()
@@ -262,33 +262,33 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
 
     def test_getTemplateName_other_dont_know(self):
         product, user = self.make_product_user([License.DONT_KNOW])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-dont-know.txt',
             notification.getTemplateName())
 
     def test_getTemplateName_propietary(self):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-other-proprietary.txt',
             notification.getTemplateName())
 
     def test_getTemplateName_other_open_source(self):
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-other-open-source.txt',
             notification.getTemplateName())
 
     def test_getCommercialUseMessage_without_commercial_subscription(self):
         product, user = self.make_product_user([License.MIT])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual('', notification.getCommercialUseMessage())
 
     def test_getCommercialUseMessage_with_complimentary_cs(self):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's complimentary commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
@@ -298,7 +298,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product, user = self.make_product_user([License.MIT])
         self.factory.makeCommercialSubscription(product)
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
@@ -308,7 +308,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product, user = self.make_product_user([License.MIT])
         self.factory.makeCommercialSubscription(product, expired=True)
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's commercial subscription expired on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
