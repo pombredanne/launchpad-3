@@ -42,7 +42,6 @@ class LicenseNotification:
 
     def __init__(self, product):
         self.product = product
-        self.user = product.owner
 
     @staticmethod
     def needs_notification(product):
@@ -84,17 +83,18 @@ class LicenseNotification:
         if not self.needs_notification(self.product):
             # The project has a common licence.
             return False
-        if self.user.is_team:
-            user_address = self.user.getTeamAdminsEmailAddresses()
+        maintainer = self.product.owner
+        if maintainer.is_team:
+            user_address = maintainer.getTeamAdminsEmailAddresses()
         else:
-            user_address = format_address_for_person(self.user)
+            user_address = format_address_for_person(maintainer)
         from_address = format_address(
             "Launchpad", config.canonical.noreply_from_address)
         commercial_address = format_address(
             'Commercial', 'commercial@launchpad.net')
         substitutions = dict(
-            user_displayname=self.user.displayname,
-            user_name=self.user.name,
+            user_displayname=maintainer.displayname,
+            user_name=maintainer.name,
             product_name=self.product.name,
             product_url=canonical_url(self.product),
             commercial_use_expiration=self.getCommercialUseMessage(),
