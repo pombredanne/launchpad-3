@@ -35,7 +35,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.product import IProduct
-from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
@@ -57,12 +56,6 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            # Replace the default field with a field that uses the better
-            # vocabulary.
-            package_vocab = 'DistributionSourcePackage'
-        else:
-            package_vocab = 'BinaryAndSourcePackageName'
         fields = [
             Choice(
                 __name__='product', title=u'Project',
@@ -73,7 +66,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary=package_vocab),
+                required=False, vocabulary='BinaryAndSourcePackageName'),
             ]
         self.distribution_widget = CustomWidgetFactory(
             LaunchpadDropdownWidget)
@@ -135,9 +128,6 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
-                if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-                    self.package_widget.vocabulary.setDistribution(
-                        distribution)
                 try:
                     package_name = self.package_widget.getInputValue()
                 except ConversionError:
