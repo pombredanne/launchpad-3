@@ -461,7 +461,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
-        self._ensurePolicies([value])
+        # However, only on edits. If this is a new Product it's handled
+        # already.
+        return
+        if not self._SO_creating:
+            self._ensurePolicies([value])
 
     information_type = property(_get_information_type, _set_information_type)
 

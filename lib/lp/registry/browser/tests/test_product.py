@@ -422,6 +422,54 @@ class TestProductView(TestCaseWithFactory):
             cache.objects['team_membership_policy_data'])
 
 
+# class TestProductEditView(TestCaseWithFactory):
+#     """Tests for the ProductEditView"""
+# 
+#     layer = DatabaseFunctionalLayer
+# 
+#     def setUp(self):
+#         super(TestProductView, self).setUp()
+#         self.product = self.factory.makeProduct(name='fnord')
+# 
+#     def _make_product_edit_form(product, proprietary=False):
+#         """Return form data for product edit.
+# 
+#         The form data needs to be based off of the product provided.
+# 
+#         :param product: Factory product to base the form data base of.
+# 
+#         """
+#         if proprietary:
+#             licenses = License.OTHER_PROPRIETARY.title
+#             license_info = 'Commercial Subscription'
+#             information_type = 'PROPRIETARY'
+#         else:
+#             licenses = ['MIT']
+#             license_info = ''
+#             information_type = 'PUBLIC'
+# 
+#         return {
+#             'field.name': 'fnord',
+#             'field.displayname': 'Fnord',
+#             'field.title': 'fnord',
+#             'field.summary': 'fnord summary',
+#             'field.information_type': information_type,
+#             'field.licenses': licenses,
+#             'field.license_info': license_info,
+#         }
+# 
+#     def test_change_information_type_proprietary(self):
+#         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+#             login_person(self.product.owner)
+#             form = self._make_product_form(self.product, proprietary=True)
+#             view = create_initialized_view(self.product, '+edit', form=form)
+#             self.assertEqual(0, len(view.view.errors))
+#             product = self.product_set.getByName('fnord')
+#             self.assertEqual(
+#                 InformationType.PROPRIETARY, product.information_type)
+
+
+
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
 
