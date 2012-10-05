@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,7 +81,6 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
@@ -361,10 +360,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     @property
     def schema(self):
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            return IAddDistroBugTaskForm
-        else:
-            return IAddBugTaskForm
+        return IAddBugTaskForm
 
     custom_widget(
         'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
