@@ -70,6 +70,10 @@ i18n:domain="malone"
           tal:attributes="href string:${context/fmt:url/+edit}">
           Enable bug tracking.</a>
       </p>
+
+      <metal:also-in-ubuntu
+        tal:condition="not:view/should_show_bug_information"
+        use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
     </div>
     <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
          class="top-portlet">
