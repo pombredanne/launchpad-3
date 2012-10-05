@@ -487,8 +487,6 @@ class TestProductEditView(TestCaseWithFactory):
                 InformationType.PUBLIC, product.information_type)
 
 
-
-
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
 
