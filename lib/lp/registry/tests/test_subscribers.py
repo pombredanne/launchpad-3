@@ -92,18 +92,6 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
         request = get_current_browser_request()
         self.assertEqual(0, len(request.response.notifications))
 
-    def test_product_licenses_modified_licenses_other_proprietary_team(self):
-        product, event = self.make_product_event([License.OTHER_PROPRIETARY])
-        team = self.factory.makeTeam(
-            membership_policy=TeamMembershipPolicy.RESTRICTED)
-        with person_logged_in(product.owner):
-            product.owner = team
-        product_licenses_modified(product, event)
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        request = get_current_browser_request()
-        self.assertEqual(1, len(request.response.notifications))
-
 
 class LicenseNotificationTestCase(TestCaseWithFactory):
 
@@ -181,7 +169,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
 
-    def test_send_other_proprietary_team(self):
+    def test_send_other_proprietary_team_admins(self):
         # An Other/Proprietary licence sends one email to the team admins.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         owner = self.factory.makePerson(email='owner@eg.dom')
@@ -199,7 +187,6 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
-        self.verify_whiteboard(product)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertEqual('admin@eg.dom,owner@eg.dom', notifications[0]['To'])
