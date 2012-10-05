@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=E0611,W0212
 """Models for `IProductSeries`."""
-from lp.services.propertycache import cachedproperty
 
 __metaclass__ = type
 
@@ -84,6 +83,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language

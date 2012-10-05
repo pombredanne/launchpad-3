@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-from lp.services.propertycache import cachedproperty
 
 __metaclass__ = type
 __all__ = [
@@ -53,6 +52,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.propertycache import cachedproperty
 
 
 class ProductRelease(SQLBase):
