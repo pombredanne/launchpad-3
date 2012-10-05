@@ -3,6 +3,7 @@
 
 # pylint: disable-msg=E0611,W0212
 """Models for `IProductSeries`."""
+from lp.services.propertycache import cachedproperty
 
 __metaclass__ = type
 
@@ -210,7 +211,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
 
-    @property
+    @cachedproperty
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)

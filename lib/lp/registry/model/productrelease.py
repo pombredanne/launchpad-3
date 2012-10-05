@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
+from lp.services.propertycache import cachedproperty
 
 __metaclass__ = type
 __all__ = [
@@ -71,9 +72,13 @@ class ProductRelease(SQLBase):
         notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin(
+    _files = SQLMultipleJoin(
         'ProductReleaseFile', joinColumn='productrelease',
         orderBy='-date_uploaded', prejoins=['productrelease'])
+
+    @cachedproperty
+    def files(self):
+        return self._files
 
     # properties
     @property

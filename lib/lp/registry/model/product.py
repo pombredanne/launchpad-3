@@ -153,6 +153,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -1001,8 +1002,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Customize `search_params` for this product.."""
         search_params.setProduct(self)
 
-    series = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    _series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
+
+    @cachedproperty
+    def series(self):
+        return self._series
 
     @property
     def active_or_packaged_series(self):
@@ -1089,26 +1094,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage,
             )
-        store = IStore(Packaging)
-        origin = [
-            Packaging,
-            Join(SourcePackageName,
-                 Packaging.sourcepackagename == SourcePackageName.id),
-            Join(ProductSeries, Packaging.productseries == ProductSeries.id),
-            Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
-            Join(Distribution, DistroSeries.distribution == Distribution.id),
-            ]
-        result = store.using(*origin).find(
-            (SourcePackageName, Distribution),
-            ProductSeries.product == self)
-        result = result.order_by(SourcePackageName.name, Distribution.name)
-        result.config(distinct=True)
-
+        dsp_info = getDistroSourcePackages([self])
         return [
             DistributionSourcePackage(
                 sourcepackagename=sourcepackagename,
                 distribution=distro)
-            for sourcepackagename, distro in result]
+            for sourcepackagename, distro, product_id in dsp_info]
 
     @cachedproperty
     def ubuntu_packages(self):
@@ -1436,22 +1427,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
 
-    # XXX: jcsackett 2010-08-23 bug=620494
-    # The second clause in the order_by in this method is a bandaid
-    # on a sorting issue caused by date vs datetime conflicts in the
-    # database. A fix is coming out, but this deals with the edge
-    # case responsible for the referenced bug.
     def getMilestonesAndReleases(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        result = store.find(
-            (Milestone, ProductRelease),
-            And(ProductRelease.milestone == Milestone.id,
-                Milestone.productseries == ProductSeries.id,
-                ProductSeries.product == self))
-        return result.order_by(
-            Desc(ProductRelease.datereleased),
-            Desc(Milestone.name))
+
+        def strip_product_id(row):
+            return row[0], row[1]
+
+        return DecoratedResultSet(
+            getMilestonesAndReleases([self]), strip_product_id)
 
     def packagedInDistros(self):
         return IStore(Distribution).find(
@@ -1531,6 +1514,151 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+
+def getPrecachedProducts(products, need_licences=False, need_projects=False,
+                        need_series=False, need_releases=False,
+                        role_names=None, need_role_validity=False):
+    """Load and cache product information.
+
+    :param products: the products for which to pre-cache information
+    :param need_licences: whether to cache license information
+    :param need_projects: whether to cache project information
+    :param need_series: whether to cache series information
+    :param need_releases: whether to cache release information
+    :param role_names: the role names to cache eg bug_supervisor
+    :param need_role_validity: whether to cache validity information
+    :return: a list of products
+    """
+
+    # Circular import.
+    from lp.registry.model.projectgroup import ProjectGroup
+
+    product_ids = set(obj.id for obj in products)
+    if not product_ids:
+        return
+    products_by_id = dict((product.id, product) for product in products)
+    caches = dict((product.id, get_property_cache(product))
+        for product in products)
+    for cache in caches.values():
+        if not safe_hasattr(cache, 'commercial_subscription'):
+            cache.commercial_subscription = None
+        if need_licences and  not safe_hasattr(cache, '_cached_licenses'):
+            cache._cached_licenses = []
+        if not safe_hasattr(cache, 'distrosourcepackages'):
+            cache.distrosourcepackages = []
+        if need_series and not safe_hasattr(cache, 'series'):
+            cache.series = []
+
+    from lp.registry.model.distributionsourcepackage import (
+        DistributionSourcePackage,
+        )
+
+    distrosourcepackages = getDistroSourcePackages(products)
+    for sourcepackagename, distro, product_id in distrosourcepackages:
+        cache = caches[product_id]
+        dsp = DistributionSourcePackage(
+                        sourcepackagename=sourcepackagename,
+                        distribution=distro)
+        cache.distrosourcepackages.append(dsp)
+
+    if need_series:
+        series_caches = {}
+        for series in IStore(ProductSeries).find(
+            ProductSeries,
+            ProductSeries.productID.is_in(product_ids)):
+            series_cache = get_property_cache(series)
+            if need_releases and not safe_hasattr(series_cache, 'releases'):
+                series_cache.releases = []
+
+            series_caches[series.id] = series_cache
+            cache = caches[series.productID]
+            cache.series.append(series)
+        if need_releases:
+            release_caches = {}
+            all_releases = []
+            milestones_and_releases = getMilestonesAndReleases(products)
+            for milestone, release, product_id in milestones_and_releases:
+                release_cache = get_property_cache(release)
+                release_caches[release.id] = release_cache
+                if not safe_hasattr(release_cache, 'files'):
+                    release_cache.files = []
+                all_releases.append(release)
+                series_cache = series_caches[milestone.productseries.id]
+                series_cache.releases.append(release)
+
+            prs = getUtility(IProductReleaseSet)
+            files = prs.getFilesForReleases(all_releases)
+            for file in files:
+                release_cache = release_caches[file.productrelease.id]
+                release_cache.files.append(file)
+
+    for subscription in IStore(CommercialSubscription).find(
+        CommercialSubscription,
+        CommercialSubscription.productID.is_in(product_ids)):
+        cache = caches[subscription.productID]
+        cache.commercial_subscription = subscription
+    if need_licences:
+        for license in IStore(ProductLicense).find(
+            ProductLicense,
+            ProductLicense.productID.is_in(product_ids)):
+            cache = caches[license.productID]
+            if not license.license in cache._cached_licenses:
+                cache._cached_licenses.append(license.license)
+    if need_projects:
+        bulk.load_related(ProjectGroup, products_by_id.values(), ['projectID'])
+    bulk.load_related(ProductSeries, products_by_id.values(),
+        ['development_focusID'])
+    if role_names is None:
+        role_names = [
+            '_ownerID', 'registrantID', 'bug_supervisorID', 'driverID']
+    person_ids = set()
+    for attr_name in role_names:
+        person_ids.update(
+            map(lambda x: getattr(x, attr_name), products_by_id.values()))
+    person_ids.discard(None)
+    list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        person_ids, need_validity=need_role_validity))
+    return products
+
+
+# XXX: jcsackett 2010-08-23 bug=620494
+# The second clause in the order_by in this method is a bandaid
+# on a sorting issue caused by date vs datetime conflicts in the
+# database. A fix is coming out, but this deals with the edge
+# case responsible for the referenced bug.
+def getMilestonesAndReleases(products):
+    """Bulk load the milestone and release information for the products."""
+    store = IStore(Product)
+    product_ids = [product.id for product in products]
+    result = store.find(
+        (Milestone, ProductRelease, ProductSeries.productID),
+        And(ProductRelease.milestone == Milestone.id,
+            Milestone.productseries == ProductSeries.id,
+            ProductSeries.productID.is_in(product_ids)))
+    return result.order_by(
+        Desc(ProductRelease.datereleased),
+        Desc(Milestone.name))
+
+
+def getDistroSourcePackages(products):
+    """Bulk load the source package information for the products."""
+    store = IStore(Packaging)
+    origin = [
+        Packaging,
+        Join(SourcePackageName,
+             Packaging.sourcepackagename == SourcePackageName.id),
+        Join(ProductSeries, Packaging.productseries == ProductSeries.id),
+        Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
+        Join(Distribution, DistroSeries.distribution == Distribution.id),
+        ]
+    product_ids = [product.id for product in products]
+    result = store.using(*origin).find(
+        (SourcePackageName, Distribution, ProductSeries.productID),
+        ProductSeries.productID.is_in(product_ids))
+    result = result.order_by(SourcePackageName.name, Distribution.name)
+    result.config(distinct=True)
+    return result
 
 
 class ProductSet:
@@ -1784,49 +1912,30 @@ class ProductSet:
             Product, *conditions).config(
                 distinct=True).order_by(
                     Product.datecreated, Product.displayname)
-        return result
+
+        def eager_load(products):
+            return getPrecachedProducts(
+                products, role_names=['_ownerID', 'registrantID'],
+                need_role_validity=True, need_licences=True,
+                need_series=True, need_releases=True)
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def search(self, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        # Circular...
-        from lp.registry.model.projectgroup import ProjectGroup
-        conditions = []
         conditions = [Product.active]
         if text:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
         result = IStore(Product).find(Product, *conditions)
 
-        def eager_load(rows):
-            product_ids = set(obj.id for obj in rows)
-            if not product_ids:
-                return
-            products = dict((product.id, product) for product in rows)
-            caches = dict((product.id, get_property_cache(product))
-                for product in rows)
-            for cache in caches.values():
-                if not safe_hasattr(cache, 'commercial_subscription'):
-                    cache.commercial_subscription = None
-                if not safe_hasattr(cache, '_cached_licenses'):
-                    cache._cached_licenses = []
-            for subscription in IStore(CommercialSubscription).find(
-                CommercialSubscription,
-                CommercialSubscription.productID.is_in(product_ids)):
-                cache = caches[subscription.productID]
-                cache.commercial_subscription = subscription
-            for license in IStore(ProductLicense).find(
-                ProductLicense,
-                ProductLicense.productID.is_in(product_ids)):
-                cache = caches[license.productID]
-                cache._cached_licenses.append(license.license)
-            for cache in caches.values():
-                cache._cached_licenses = tuple(sorted(cache._cached_licenses))
-            bulk.load_related(ProjectGroup, products.values(), ['projectID'])
-            bulk.load_related(ProductSeries, products.values(),
-                ['development_focusID'])
-            # Only need the objects for canonical_url, no need for validity.
-            bulk.load_related(Person, products.values(),
-                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID'])
+        def eager_load(products):
+            return getPrecachedProducts(
+                products,
+                role_names=['_ownerID', 'registrantID', 'bug_supervisorID',
+                            'driverID'],
+                need_licences=True, need_projects=True)
+
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def search_sqlobject(self, text):
