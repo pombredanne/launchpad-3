@@ -525,6 +525,7 @@ class TestProductSet(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_proprietary_products_skipped(self):
+        # Ignore proprietary products for anonymous users
         public = self.factory.makeProduct(
             information_type=InformationType.PUBLIC)
         proprietary = self.factory.makeProduct(

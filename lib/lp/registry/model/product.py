@@ -55,6 +55,10 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -175,6 +179,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -1610,14 +1615,19 @@ class ProductSet:
         return self.get_all_active()
 
     @staticmethod
-    def get_product_privacy_filter():
-        return [Product._information_type == InformationType.PUBLIC]
+    def get_product_privacy_filter(user):
+        return Or(Product._information_type == InformationType.PUBLIC, And(
+            AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
+            TeamParticipation.person == user,
+            AccessPolicyGrantFlat.policy == AccessPolicy.id,
+            AccessPolicy.product == Product.id,
+            AccessPolicy.type == Product._information_type))
 
     @classmethod
     def get_all_active(cls, eager_load=True):
-        clauses = cls.get_product_privacy_filter()
+        clause = cls.get_product_privacy_filter()
         result = IStore(Product).find(Product, Product.active,
-                    *clauses).order_by(Desc(Product.datecreated))
+                    clause).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 
