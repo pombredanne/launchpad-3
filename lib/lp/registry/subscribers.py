@@ -14,12 +14,12 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
+    format_address_for_person,
     simple_sendmail,
     )
 from lp.services.webapp.menu import structured
@@ -32,7 +32,8 @@ from lp.services.webapp.publisher import (
 def product_licenses_modified(product, event):
     """Send a notification if licences changed and a licence is special."""
     if LicenseNotification.needs_notification(product):
-        user = IPerson(event.user)
+        # XXX sinzui 2012-10-05: get product.owner, resolve team.
+        user = product.owner
         notification = LicenseNotification(product, user)
         notification.send()
         notification.display()
@@ -85,8 +86,10 @@ class LicenseNotification:
         if not self.needs_notification(self.product):
             # The project has a common licence.
             return False
-        user_address = format_address(
-            self.user.displayname, self.user.preferredemail.email)
+        if self.user.is_team:
+            user_address = self.user.getTeamAdminsEmailAddresses()
+        else:
+            user_address = format_address_for_person(self.user)
         from_address = format_address(
             "Launchpad", config.canonical.noreply_from_address)
         commercial_address = format_address(

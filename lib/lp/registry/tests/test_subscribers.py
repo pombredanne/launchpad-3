@@ -8,18 +8,25 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
 from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
     )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -53,7 +60,6 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
     def make_product_event(self, licenses):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product, user=product.owner)
         return product, event
 
@@ -88,6 +94,18 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         request = get_current_browser_request()
         self.assertEqual(0, len(request.response.notifications))
+
+    def test_product_licenses_modified_licenses_other_proprietary_team(self):
+        product, event = self.make_product_event([License.OTHER_PROPRIETARY])
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        with person_logged_in(product.owner):
+            product.owner = team
+        product_licenses_modified(product, event)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(1, len(request.response.notifications))
 
 
 class LicenseNotificationTestCase(TestCaseWithFactory):
@@ -165,6 +183,29 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
+
+    def test_send_other_proprietary_team(self):
+        # An Other/Proprietary licence sends one email to the team admins.
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        owner = self.factory.makePerson(email='owner@eg.dom')
+        team = self.factory.makeTeam(
+            owner=owner, membership_policy=TeamMembershipPolicy.RESTRICTED)
+        admin = self.factory.makePerson(email='admin@eg.dom')
+        with person_logged_in(owner):
+            team.addMember(admin, owner)
+            membership_set = getUtility(ITeamMembershipSet)
+            tm = membership_set.getByPersonAndTeam(admin, team)
+            tm.setStatus(TeamMembershipStatus.ADMIN, owner)
+        with person_logged_in(product.owner):
+            product.owner = team
+        pop_notifications()
+        notification = LicenseNotification(product, team)
+        result = notification.send()
+        self.assertIs(True, result)
+        self.verify_whiteboard(product)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual('admin@eg.dom,owner@eg.dom', notifications[0]['To'])
 
     def test_display_no_request(self):
         # If there is no request, there is no reason to show a message in
