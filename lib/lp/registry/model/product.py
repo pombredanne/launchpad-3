@@ -440,7 +440,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
-        if (value in PROPRIETARY_INFORMATION_TYPES
+        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
             and self.commercial_subscription
             and not self.has_current_commercial_subscription):
             raise CommercialSubscribersOnly(
@@ -463,7 +463,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # maintainer as required for the Product.
         # However, only on edits. If this is a new Product it's handled
         # already.
-        return
         if not self._SO_creating:
             self._ensurePolicies([value])
 

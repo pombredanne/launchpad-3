@@ -428,10 +428,10 @@ class TestProductEditView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestProductView, self).setUp()
+        super(TestProductEditView, self).setUp()
         self.product = self.factory.makeProduct(name='fnord')
 
-    def _make_product_edit_form(product, proprietary=False):
+    def _make_product_edit_form(self, proprietary=False):
         """Return form data for product edit.
 
         The form data needs to be based off of the product provided.
@@ -449,10 +449,10 @@ class TestProductEditView(TestCaseWithFactory):
             information_type = 'PUBLIC'
 
         return {
-            'field.name': 'fnord',
-            'field.displayname': 'Fnord',
-            'field.title': 'fnord',
-            'field.summary': 'fnord summary',
+            'field.name': self.product.name,
+            'field.displayname': self.product.displayname,
+            'field.title': self.product.title,
+            'field.summary': self.product.summary,
             'field.information_type': information_type,
             'field.licenses': licenses,
             'field.license_info': license_info,
@@ -461,10 +461,12 @@ class TestProductEditView(TestCaseWithFactory):
     def test_change_information_type_proprietary(self):
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(self.product.owner)
-            form = self._make_product_form(self.product, proprietary=True)
+            form = self._make_product_edit_form(proprietary=True)
             view = create_initialized_view(self.product, '+edit', form=form)
-            self.assertEqual(0, len(view.view.errors))
-            product = self.product_set.getByName('fnord')
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            product = product_set.getByName('fnord')
             self.assertEqual(
                 InformationType.PROPRIETARY, product.information_type)
 
