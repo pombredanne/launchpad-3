@@ -1610,10 +1610,14 @@ class ProductSet:
         return self.get_all_active()
 
     @staticmethod
-    def get_all_active(eager_load=True):
+    def get_product_privacy_filter():
+        return [Product._information_type == InformationType.PUBLIC]
+
+    @classmethod
+    def get_all_active(cls, eager_load=True):
+        clauses = cls.get_product_privacy_filter()
         result = IStore(Product).find(Product, Product.active,
-            Product._information_type == InformationType.PUBLIC
-        ).order_by(Desc(Product.datecreated))
+                    *clauses).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 

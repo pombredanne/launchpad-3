@@ -1634,3 +1634,16 @@ class TestProductSet(TestCaseWithFactory):
         result = ProductSet.get_all_active()
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
+
+    def test_get_product_privacy_filter(self):
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        clauses = ProductSet.get_product_privacy_filter()
+        result = Store.of(public).find(Product, *clauses)
+        self.assertIn(public, result)
+        self.assertNotIn(embargoed, result)
+        self.assertNotIn(proprietary, result)
