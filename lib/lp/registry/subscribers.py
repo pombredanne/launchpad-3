@@ -14,12 +14,12 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
+    format_address_for_person,
     simple_sendmail,
     )
 from lp.services.webapp.menu import structured
@@ -32,8 +32,7 @@ from lp.services.webapp.publisher import (
 def product_licenses_modified(product, event):
     """Send a notification if licences changed and a licence is special."""
     if LicenseNotification.needs_notification(product):
-        user = IPerson(event.user)
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         notification.send()
         notification.display()
 
@@ -41,9 +40,8 @@ def product_licenses_modified(product, event):
 class LicenseNotification:
     """Send notification about special licences to the user."""
 
-    def __init__(self, product, user):
+    def __init__(self, product):
         self.product = product
-        self.user = user
 
     @staticmethod
     def needs_notification(product):
@@ -85,15 +83,18 @@ class LicenseNotification:
         if not self.needs_notification(self.product):
             # The project has a common licence.
             return False
-        user_address = format_address(
-            self.user.displayname, self.user.preferredemail.email)
+        maintainer = self.product.owner
+        if maintainer.is_team:
+            user_address = maintainer.getTeamAdminsEmailAddresses()
+        else:
+            user_address = format_address_for_person(maintainer)
         from_address = format_address(
             "Launchpad", config.canonical.noreply_from_address)
         commercial_address = format_address(
             'Commercial', 'commercial@launchpad.net')
         substitutions = dict(
-            user_displayname=self.user.displayname,
-            user_name=self.user.name,
+            user_displayname=maintainer.displayname,
+            user_name=maintainer.name,
             product_name=self.product.name,
             product_url=canonical_url(self.product),
             commercial_use_expiration=self.getCommercialUseMessage(),
