@@ -434,10 +434,7 @@ class TestProductEditView(TestCaseWithFactory):
     def _make_product_edit_form(self, proprietary=False):
         """Return form data for product edit.
 
-        The form data needs to be based off of the product provided.
-
         :param product: Factory product to base the form data base of.
-
         """
         if proprietary:
             licenses = License.OTHER_PROPRIETARY.title
@@ -449,6 +446,7 @@ class TestProductEditView(TestCaseWithFactory):
             information_type = 'PUBLIC'
 
         return {
+            'field.actions.change': 'Change',
             'field.name': self.product.name,
             'field.displayname': self.product.displayname,
             'field.title': self.product.title,
