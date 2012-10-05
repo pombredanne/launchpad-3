@@ -9,6 +9,7 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasExpirableBugs',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
@@ -286,6 +287,10 @@ class IHasBugs(Interface):
         The ordered bug tasks are used to choose the most relevant bug task
         for any particular context.
         """
+
+
+class IHasExpirableBugs(Interface):
+    """Marker interface for entities supporting querying expirable bugs"""
 
 
 class IBugTarget(IHasBugs):
