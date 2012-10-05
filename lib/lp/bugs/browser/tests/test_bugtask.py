@@ -2017,10 +2017,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.invalidate_caches(bug)
         # count with single task
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(32)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
         # count with many tasks
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(32)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.
