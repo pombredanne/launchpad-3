@@ -924,7 +924,7 @@ class ProductDownloadFileMixin:
                 continue
             for release in series.releases:
                 if len(list(release.files)) > 0:
-                    return release
+                    return True
         return False
 
 
