@@ -440,16 +440,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
-        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
-            and self.commercial_subscription
-            and not self.has_current_commercial_subscription):
-            raise CommercialSubscribersOnly(
-                'A valid commercial subscription is required for private'
-                ' Projects.')
-
-        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES):
-            # Create the commercial subscription for the product.
+        if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
+            # Create the complimentary commercial subscription for the product.
             self._ensure_complimentary_subscription()
+
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    'A valid commercial subscription is required for private'
+                    ' Projects.')
 
         return value
 
