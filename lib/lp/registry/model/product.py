@@ -1612,20 +1612,22 @@ class ProductSet:
 
     @property
     def all_active(self):
-        return self.get_all_active()
+        return self.get_all_active(None)
 
     @staticmethod
     def get_product_privacy_filter(user):
-        return Or(Product._information_type == InformationType.PUBLIC, And(
-            AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
+        granted_products = And(
+            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
             TeamParticipation.person == user,
             AccessPolicyGrantFlat.policy == AccessPolicy.id,
             AccessPolicy.product == Product.id,
-            AccessPolicy.type == Product._information_type))
+            AccessPolicy.type == Product._information_type)
+        return Or(Product._information_type == InformationType.PUBLIC,
+                  Product.id.is_in(Select(Product.id, granted_products)))
 
     @classmethod
-    def get_all_active(cls, eager_load=True):
-        clause = cls.get_product_privacy_filter()
+    def get_all_active(cls, user, eager_load=True):
+        clause = cls.get_product_privacy_filter(user)
         result = IStore(Product).find(Product, Product.active,
                     clause).order_by(Desc(Product.datecreated))
         if not eager_load:

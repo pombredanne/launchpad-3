@@ -1729,6 +1729,9 @@ class ProductSetView(LaunchpadView):
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
 
+    def latest(self):
+        return self.context.get_all_active(self.user)[:5]
+
 
 class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""

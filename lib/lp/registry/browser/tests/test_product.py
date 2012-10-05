@@ -524,12 +524,30 @@ class TestProductSet(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def makeAllInformationTypes(self):
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC, owner=owner)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        return owner, public, proprietary, embargoed
+
     def test_proprietary_products_skipped(self):
         # Ignore proprietary products for anonymous users
-        public = self.factory.makeProduct(
-            information_type=InformationType.PUBLIC)
-        proprietary = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY)
-        embargoed = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED)
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
         browser = self.getViewBrowser(getUtility(IProductSet))
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
