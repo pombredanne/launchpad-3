@@ -1654,16 +1654,15 @@ def getPrecachedProducts(products, need_licences=False, need_projects=False,
         bulk.load_related(ProjectGroup, products_by_id.values(), ['projectID'])
     bulk.load_related(ProductSeries, products_by_id.values(),
         ['development_focusID'])
-    if role_names is None:
-        role_names = [
-            '_ownerID', 'registrantID', 'bug_supervisorID', 'driverID']
-    person_ids = set()
-    for attr_name in role_names:
-        person_ids.update(
-            map(lambda x: getattr(x, attr_name), products_by_id.values()))
-    person_ids.discard(None)
-    list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-        person_ids, need_validity=need_role_validity))
+    if role_names is not None:
+        person_ids = set()
+        for attr_name in role_names:
+            person_ids.update(map(
+                lambda x: getattr(x, attr_name + 'ID'),
+                products_by_id.values()))
+        person_ids.discard(None)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=need_role_validity))
     return products
 
 
@@ -1968,7 +1967,7 @@ class ProductSet:
 
         def eager_load(products):
             return getPrecachedProducts(
-                products, role_names=['_ownerID', 'registrantID'],
+                products, role_names=['_owner', 'registrant'],
                 need_role_validity=True, need_licences=True,
                 need_series=True, need_releases=True)
 
@@ -1984,10 +1983,9 @@ class ProductSet:
 
         def eager_load(products):
             return getPrecachedProducts(
-                products,
-                role_names=['_ownerID', 'registrantID', 'bug_supervisorID',
-                            'driverID'],
-                need_licences=True, need_projects=True)
+                products, need_licences=True, need_projects=True,
+                role_names=[
+                    '_owner', 'registrant', 'bug_supervisor', 'driver'])
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
