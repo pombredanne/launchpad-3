@@ -408,7 +408,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
 
     implements(IProjectGroupMilestone)
 
-    def __init__(self, target, name, dateexpected, active):
+    def __init__(self, target, name, dateexpected, active, product):
         self.code_name = None
         # The id is necessary for generating a unique memcache key
         # in a page template loop. The ProjectMilestone.id is passed
@@ -417,7 +417,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
         self.name = name
         self.target = target
         self.code_name = None
-        self.product = None
+        self.product = product
         self.distribution = None
         self.productseries = None
         self.distroseries = None

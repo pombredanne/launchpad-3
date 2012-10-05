@@ -407,12 +407,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Milestone.name,
             SQL('MIN(Milestone.dateexpected)'),
             SQL('BOOL_OR(Milestone.active)'),
+            Product,
             )
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
                          Product.active == True)
         result = store.find(columns, conditions)
-        result.group_by(Milestone.name)
+        result.group_by(Milestone.name, Product)
         if only_active:
             result.having('BOOL_OR(Milestone.active) = TRUE')
         # MIN(Milestone.dateexpected) has to be used to match the
@@ -421,8 +422,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
             'DESC')
         return shortlist(
-            [ProjectMilestone(self, name, dateexpected, active)
-             for name, dateexpected, active in result])
+            [ProjectMilestone(self, name, dateexpected, active, product)
+             for name, dateexpected, active, product in result])
 
     @property
     def has_milestones(self):

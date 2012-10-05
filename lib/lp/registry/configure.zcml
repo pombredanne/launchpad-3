@@ -1098,6 +1098,10 @@
         <allow
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
     <class
         class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
         <allow
