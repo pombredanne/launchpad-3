@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -260,8 +260,7 @@ class ProductSeriesInvolvementView(PillarInvolvementView):
             configured = True
         else:
             configured = False
-        return [dict(link=set_branch,
-                     configured=configured)]
+        return [dict(link=set_branch, configured=configured)]
 
 
 class ProductSeriesOverviewMenu(
@@ -292,8 +291,8 @@ class ProductSeriesOverviewMenu(
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'
         return Link(
-            canonical_url(self.context.product,
-                          view_name='+configure-bugtracker'),
+            canonical_url(
+                self.context.product, view_name='+configure-bugtracker'),
             text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -317,9 +316,7 @@ class ProductSeriesOverviewMenu(
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def link_branch(self):
-        """Return a link to set the bazaar branch for this series."""
+    def _fetch_branch_link(self):
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
@@ -328,6 +325,12 @@ class ProductSeriesOverviewMenu(
             text = "Change branch"
             icon = 'edit'
             summary = 'Change the branch for this series'
+        return (text, icon, summary)
+
+    @enabled_with_permission('launchpad.Edit')
+    def link_branch(self):
+        """Return a link to set the bazaar branch for this series."""
+        text, icon, summary = self._fetch_branch_link()
         return Link('+linkbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
@@ -335,14 +338,7 @@ class ProductSeriesOverviewMenu(
         """Return a link to set the bazaar branch for this series."""
         # Once +setbranch has been beta tested thoroughly, it should
         # replace the +linkbranch page.
-        if self.context.branch is None:
-            text = 'Link to branch'
-            icon = 'add'
-            summary = 'Set the branch for this series'
-        else:
-            text = "Change branch"
-            icon = 'edit'
-            summary = 'Change the branch for this series'
+        text, icon, summary = self._fetch_branch_link()
         return Link('+setbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -424,11 +420,8 @@ def get_series_branch_error(product, branch):
     if branch.product != product:
         return structured(
             '<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.',
-            canonical_url(branch),
-            branch.unique_name,
-            canonical_url(product),
+            canonical_url(branch), branch.unique_name, canonical_url(product),
             product.displayname)
-    return None
 
 
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
@@ -1084,7 +1077,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 rcs_item = RevisionControlSystems.items[rcs_type.name]
                 try:
                     code_import = getUtility(ICodeImportSet).new(
-                        registrant=branch_owner,
+                        owner=branch_owner,
+                        registrant=self.user,
                         target=IBranchTarget(self.context.product),
                         branch_name=branch_name,
                         rcs_type=rcs_item,
@@ -1092,8 +1086,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
                 except BranchExists as e:
-                    self._setBranchExists(e.existing_branch,
-                                          'branch_name')
+                    self._setBranchExists(
+                        e.existing_branch, 'branch_name')
                     self.errors_in_action = True
                     # Abort transaction. This is normally handled
                     # by LaunchpadFormView, but we are already in
@@ -1102,8 +1096,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     return
                 self.context.branch = code_import.branch
                 self.request.response.addInfoNotification(
-                    'Code import created and branch linked to the '
-                    'series.')
+                    'Code import created and branch linked to the series.')
             else:
                 raise UnexpectedFormData(branch_type)
 
@@ -1115,10 +1108,9 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch = None
         try:
             namespace = self.target.getNamespace(branch_owner)
-            branch = namespace.createBranch(branch_type=BranchType.HOSTED,
-                                            name=branch_name,
-                                            registrant=self.user,
-                                            url=repo_url)
+            branch = namespace.createBranch(
+                branch_type=BranchType.HOSTED, name=branch_name,
+                registrant=self.user, url=repo_url)
         except BranchCreationForbidden:
             self.addError(
                 "You are not allowed to create branches in %s." %
@@ -1187,10 +1179,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
         return 'Administer %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     @property
     def cancel_url(self):
