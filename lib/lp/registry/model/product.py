@@ -447,6 +447,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 'A valid commercial subscription is required for private'
                 ' Projects.')
 
+        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
+            and not self.commercial_subscription):
+            # Create the commercial subscription for the 
+            self._ensure_complimentary_subscription()
+
         return value
 
     _information_type = EnumCol(
@@ -976,6 +981,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
         if (License.OTHER_PROPRIETARY in licenses
             and self.commercial_subscription is None):
+            self._ensure_complimentary_subscription()
+
+        notify(LicensesModifiedEvent(self))
+
+    licenses = property(_getLicenses, _setLicenses)
+
+    def _ensure_complimentary_subscription(self):
+        """Create a complementary commercial subscription for the product"""
+        if not self.commercial_subscription:
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             now = datetime.datetime.now(pytz.UTC)
             date_expires = now + datetime.timedelta(days=30)
@@ -988,9 +1002,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 registrant=lp_janitor, purchaser=lp_janitor,
                 sales_system_id=sales_system_id, whiteboard=whiteboard)
             get_property_cache(self).commercial_subscription = subscription
-        notify(LicensesModifiedEvent(self))
-
-    licenses = property(_getLicenses, _setLicenses)
 
     def _getOwner(self):
         """Get the owner."""
