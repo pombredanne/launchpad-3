@@ -67,6 +67,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.product import (
     Product,
+    ProductSet,
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
@@ -1619,3 +1620,17 @@ class TestWebService(WebServiceTestCase):
         self.failUnlessEqual(
             [],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+
+
+class TestProductSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_get_all_active_omits_proprietary(self):
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        result = ProductSet.get_all_active()
+        self.assertNotIn(proprietary, result)
+        self.assertNotIn(embargoed, result)

@@ -1609,9 +1609,11 @@ class ProductSet:
     def all_active(self):
         return self.get_all_active()
 
-    def get_all_active(self, eager_load=True):
-        result = IStore(Product).find(Product, Product.active
-            ).order_by(Desc(Product.datecreated))
+    @staticmethod
+    def get_all_active(eager_load=True):
+        result = IStore(Product).find(Product, Product.active,
+            Product._information_type == InformationType.PUBLIC
+        ).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 

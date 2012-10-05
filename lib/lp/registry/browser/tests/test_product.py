@@ -518,3 +518,17 @@ class TestProductRdfView(BrowserTestCase):
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
             'application/rdf+xml', browser.headers['Content-type'])
+
+
+class TestProductSet(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_proprietary_products_skipped(self):
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        browser = self.getViewBrowser(getUtility(IProductSet))
