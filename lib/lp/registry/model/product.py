@@ -458,12 +458,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
+        self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
-        self._information_type = value
-
         self._ensurePolicies([value])
-        self._pruneUnusedPolicies()
 
     information_type = property(_get_information_type, _set_information_type)
 
