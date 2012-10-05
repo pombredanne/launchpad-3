@@ -433,11 +433,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
-        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
+
+        # If you're changing the license, and setting a PROPRIETARY
+        # information type, yet you don't have a subscription you get one when
+        # the license is set.
+
+        # If you have a commercial subscription, but it's not current, you
+        # cannot set the information type to a PROPRIETARY type.
+        if (value in PROPRIETARY_INFORMATION_TYPES
+            and self.commercial_subscription
             and not self.has_current_commercial_subscription):
             raise CommercialSubscribersOnly(
                 'A valid commercial subscription is required for private'
                 ' Projects.')
+
         return value
 
     _information_type = EnumCol(
@@ -449,7 +458,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
+        # Make sure that policies are updated to grant permission to the
+        # maintainer as required for the Product.
         self._information_type = value
+
+        self._ensurePolicies([value])
+        self._pruneUnusedPolicies()
 
     information_type = property(_get_information_type, _set_information_type)
 
