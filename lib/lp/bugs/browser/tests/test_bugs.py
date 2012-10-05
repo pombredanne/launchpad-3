@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -195,8 +196,9 @@ class TestMaloneView(TestCaseWithFactory):
     def test_createBug_proprietary_project(self):
         # crateBug() make proprietary bugs for proprietary projects.
         project = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
+            licenses=[License.OTHER_PROPRIETARY],
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(removeSecurityProxy(project).owner):
             project.setPrivateBugs(False, project.owner)
             bug = self.application.createBug(
                 project.owner, 'title', 'description', project)

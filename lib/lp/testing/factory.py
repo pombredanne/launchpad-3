@@ -978,7 +978,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 displayname = name.capitalize()
         if licenses is None:
-            licenses = [License.GNU_GPL_V2]
+            if information_type in PROPRIETARY_INFORMATION_TYPES:
+                licenses = [License.OTHER_PROPRIETARY]
+            else:
+                licenses = [License.GNU_GPL_V2]
         if title is None:
             title = self.getUniqueString('title')
         if summary is None:
@@ -1025,11 +1028,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 specification_sharing_policy)
         if information_type is not None:
             naked_product.information_type = information_type
-            if information_type in PROPRIETARY_INFORMATION_TYPES:
-                policy = self.makeAccessPolicy(product, information_type)
-                self.makeAccessPolicyGrant(
-                    policy, grantee=naked_product.owner)
-
         return product
 
     def makeLegacyProduct(self, **kwargs):
