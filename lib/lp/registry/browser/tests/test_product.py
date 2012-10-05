@@ -467,6 +467,9 @@ class TestProductEditView(TestCaseWithFactory):
             product = product_set.getByName('fnord')
             self.assertEqual(
                 InformationType.PROPRIETARY, product.information_type)
+            # A complimentary commercial subscription is auto generated for
+            # the product when the information type is changed.
+            self.assertIsNotNone(product.commercial_subscription)
 
     def test_change_information_type_public(self):
         owner = self.factory.makePerson(name='pting')
