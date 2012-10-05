@@ -69,12 +69,16 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    NotFoundError,
+    ServiceUsageForbidden,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -424,6 +428,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _valid_product_information_type(self, attr, value):
         if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
             raise CannotChangeInformationType('Not supported for Projects.')
+        if value in PROPRIETARY_INFORMATION_TYPES:
+            if self.answers_usage == ServiceUsage.LAUNCHPAD:
+                raise CannotChangeInformationType('Answers is enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
@@ -434,9 +441,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 ' Projects.')
         return value
 
-    information_type = EnumCol(
+    _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
+        dbName='information_type',
         storm_validator=_valid_product_information_type)
+
+    def _get_information_type(self):
+        return self._information_type or InformationType.PUBLIC
+
+    def _set_information_type(self, value):
+        self._information_type = value
+
+    information_type = property(_get_information_type, _set_information_type)
 
     security_contact = None
 
@@ -867,6 +883,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._answers_usage
 
     def _set_answers_usage(self, val):
+        if val == ServiceUsage.LAUNCHPAD:
+            if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+                raise ServiceUsageForbidden(
+                    "Answers not allowed for non-public projects.")
         self._answers_usage = val
         if val == ServiceUsage.LAUNCHPAD:
             self.official_answers = True
@@ -1515,6 +1535,31 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return weight_function
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        # We want an actual Storm Person.
+        if IPersonRoles.providedBy(user):
+            user = user.person
+        policy = getUtility(IAccessPolicySource).find(
+            [(self, self.information_type)]).one()
+        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
+            [(policy, user)])
+        if grants_for_user.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
+
 
 def getPrecachedProducts(products, need_licences=False, need_projects=False,
                         need_series=False, need_releases=False,
@@ -1775,17 +1820,25 @@ class ProductSet:
         # Set up the sharing policies and product licence.
         bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
         branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
+        specification_sharing_policy_to_use = (
+            SpecificationSharingPolicy.PUBLIC)
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
-            # By default, new non-proprietary projects use public bugs and
-            # branches. Proprietary projects are given a complimentary 30 day
-            # commercial subscription and so may use proprietary sharing
-            # policies.
-            if License.OTHER_PROPRIETARY in licenses:
-                bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-                branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+        if information_type == InformationType.PROPRIETARY:
+            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+            branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+            specification_sharing_policy_to_use = (
+                SpecificationSharingPolicy.PROPRIETARY)
+        if information_type == InformationType.EMBARGOED:
+            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+            branch_sharing_policy_to_use = (
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+            specification_sharing_policy_to_use = (
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         product.setBugSharingPolicy(bug_sharing_policy_to_use)
         product.setBranchSharingPolicy(branch_sharing_policy_to_use)
+        product.setSpecificationSharingPolicy(
+            specification_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

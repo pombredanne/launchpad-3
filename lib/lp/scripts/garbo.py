@@ -928,10 +928,10 @@ class ProductInformationTypeDefault(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         subselect = Select(
-            Product.id, Product.information_type == None,
+            Product.id, Product._information_type == None,
             limit=chunk_size)
         result = self.store.execute(
-            Update({Product.information_type: 1},
+            Update({Product._information_type: 1},
             Product.id.is_in(subselect)))
         transaction.commit()
         self.rows_updated = result.rowcount
