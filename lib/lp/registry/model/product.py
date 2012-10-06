@@ -1114,7 +1114,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage,
             )
-        dsp_info = getDistroSourcePackages([self])
+        dsp_info = get_distro_sourcepackages([self])
         return [
             DistributionSourcePackage(
                 sourcepackagename=sourcepackagename,
@@ -1454,7 +1454,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return row[0], row[1]
 
         return DecoratedResultSet(
-            getMilestonesAndReleases([self]), strip_product_id)
+            get_milestones_and_releases([self]), strip_product_id)
 
     def packagedInDistros(self):
         return IStore(Distribution).find(
@@ -1561,7 +1561,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return True
 
 
-def getPrecachedProducts(products, need_licences=False, need_projects=False,
+def get_precached_products(products, need_licences=False, need_projects=False,
                         need_series=False, need_releases=False,
                         role_names=None, need_role_validity=False):
     """Load and cache product information.
@@ -1599,7 +1599,7 @@ def getPrecachedProducts(products, need_licences=False, need_projects=False,
         DistributionSourcePackage,
         )
 
-    distrosourcepackages = getDistroSourcePackages(products)
+    distrosourcepackages = get_distro_sourcepackages(products)
     for sourcepackagename, distro, product_id in distrosourcepackages:
         cache = caches[product_id]
         dsp = DistributionSourcePackage(
@@ -1622,7 +1622,7 @@ def getPrecachedProducts(products, need_licences=False, need_projects=False,
         if need_releases:
             release_caches = {}
             all_releases = []
-            milestones_and_releases = getMilestonesAndReleases(products)
+            milestones_and_releases = get_milestones_and_releases(products)
             for milestone, release, product_id in milestones_and_releases:
                 release_cache = get_property_cache(release)
                 release_caches[release.id] = release_cache
@@ -1671,7 +1671,7 @@ def getPrecachedProducts(products, need_licences=False, need_projects=False,
 # on a sorting issue caused by date vs datetime conflicts in the
 # database. A fix is coming out, but this deals with the edge
 # case responsible for the referenced bug.
-def getMilestonesAndReleases(products):
+def get_milestones_and_releases(products):
     """Bulk load the milestone and release information for the products."""
     store = IStore(Product)
     product_ids = [product.id for product in products]
@@ -1685,7 +1685,7 @@ def getMilestonesAndReleases(products):
         Desc(Milestone.name))
 
 
-def getDistroSourcePackages(products):
+def get_distro_sourcepackages(products):
     """Bulk load the source package information for the products."""
     store = IStore(Packaging)
     origin = [
@@ -1966,7 +1966,7 @@ class ProductSet:
                     Product.datecreated, Product.displayname)
 
         def eager_load(products):
-            return getPrecachedProducts(
+            return get_precached_products(
                 products, role_names=['_owner', 'registrant'],
                 need_role_validity=True, need_licences=True,
                 need_series=True, need_releases=True)
@@ -1982,7 +1982,7 @@ class ProductSet:
         result = IStore(Product).find(Product, *conditions)
 
         def eager_load(products):
-            return getPrecachedProducts(
+            return get_precached_products(
                 products, need_licences=True, need_projects=True,
                 role_names=[
                     '_owner', 'registrant', 'bug_supervisor', 'driver'])
