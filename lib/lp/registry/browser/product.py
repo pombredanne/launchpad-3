@@ -922,7 +922,7 @@ class ProductDownloadFileMixin:
         for series in self.context.series:
             if series.status == SeriesStatus.OBSOLETE:
                 continue
-            for release in series.releases:
+            for release in series.getCachedReleases():
                 if len(list(release.files)) > 0:
                     return True
         return False
