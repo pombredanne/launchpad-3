@@ -917,6 +917,16 @@ class ProductDownloadFileMixin:
                     return release
         return None
 
+    @cachedproperty
+    def has_download_files(self):
+        for series in self.context.series:
+            if series.status == SeriesStatus.OBSOLETE:
+                continue
+            for release in series.releases:
+                if len(list(release.files)) > 0:
+                    return True
+        return False
+
 
 class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                   FeedsMixin, ProductDownloadFileMixin):
