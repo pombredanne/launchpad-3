@@ -1613,8 +1613,9 @@ def get_precached_products(products, need_licences=False, need_projects=False,
             ProductSeries,
             ProductSeries.productID.is_in(product_ids)):
             series_cache = get_property_cache(series)
-            if need_releases and not safe_hasattr(series_cache, 'releases'):
-                series_cache.releases = []
+            if (need_releases and
+                not safe_hasattr(series_cache, '_cached_releases')):
+                series_cache._cached_releases = []
 
             series_caches[series.id] = series_cache
             cache = caches[series.productID]
@@ -1630,7 +1631,7 @@ def get_precached_products(products, need_licences=False, need_projects=False,
                     release_cache.files = []
                 all_releases.append(release)
                 series_cache = series_caches[milestone.productseries.id]
-                series_cache.releases.append(release)
+                series_cache._cached_releases.append(release)
 
             prs = getUtility(IProductReleaseSet)
             files = prs.getFilesForReleases(all_releases)

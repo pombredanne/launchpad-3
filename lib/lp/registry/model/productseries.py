@@ -211,7 +211,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
 
-    @cachedproperty
+    @property
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
@@ -228,6 +228,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ProductRelease.milestone == Milestone.id)
         result = result.order_by(Desc('datereleased'))
         return DecoratedResultSet(result, decorate)
+
+    @cachedproperty
+    def _cached_releases(self):
+        return self.releases
+
+    def getCachedReleases(self):
+        """See `IProductSeries`."""
+        return self._cached_releases
 
     @property
     def release_files(self):

@@ -138,7 +138,7 @@ class ProductRelease(SQLBase):
 
     def destroySelf(self):
         """See `IProductRelease`."""
-        assert self.files.count() == 0, (
+        assert self._files.count() == 0, (
             "You can't delete a product release which has files associated "
             "with it.")
         SQLBase.destroySelf(self)
