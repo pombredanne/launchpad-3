@@ -963,10 +963,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None, specification_sharing_policy=None,
-        information_type=None):
+        translations_usage=None, bug_supervisor=None, driver=None, icon=None,
+        bug_sharing_policy=None, branch_sharing_policy=None,
+        specification_sharing_policy=None, information_type=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -1009,8 +1008,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if private_bugs:
-            naked_product.private_bugs = private_bugs
         if ((branch_sharing_policy and
             branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
             (bug_sharing_policy and

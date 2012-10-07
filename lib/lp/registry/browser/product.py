@@ -26,7 +26,6 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
-    'ProductPrivateBugsMixin',
     'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
@@ -1377,37 +1376,6 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
-class ProductPrivateBugsMixin():
-    """A mixin for setting the product private_bugs field."""
-    def setUpFields(self):
-        # private_bugs is readonly since we are using a mutator but we need
-        # to edit it on the form.
-        super(ProductPrivateBugsMixin, self).setUpFields()
-        self.form_fields = self.form_fields.omit('private_bugs')
-        private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
-        self.form_fields += form.Fields(private_bugs, render_context=True)
-
-    def validate(self, data):
-        super(ProductPrivateBugsMixin, self).validate(data)
-        private_bugs = data.get('private_bugs')
-        if private_bugs is None:
-            return
-        try:
-            self.context.checkPrivateBugsTransitionAllowed(
-                private_bugs, self.user)
-        except Exception as e:
-            self.setFieldError('private_bugs', e.message)
-
-    def updateContextFromData(self, data, context=None, notify_modified=True):
-        # private_bugs uses a mutator to check permissions, so it needs to
-        # be handled separately.
-        if 'private_bugs' in data:
-            self.context.setPrivateBugs(data['private_bugs'], self.user)
-            del data['private_bugs']
-        parent = super(ProductPrivateBugsMixin, self)
-        return parent.updateContextFromData(data, context, notify_modified)
-
-
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1479,17 +1447,10 @@ class ProductValidationMixin:
                         canonical_url(self.context, view_name='+packages')))
 
 
-class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
-                       ProductValidationMixin):
+class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
-    default_field_names = [
-        "name",
-        "owner",
-        "active",
-        "autoupdate",
-        "private_bugs",
-        ]
+    default_field_names = ["name", "owner", "active", "autoupdate"]
 
     @property
     def page_title(self):
@@ -1557,17 +1518,12 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ReturnToReferrerMixin, ProductPrivateBugsMixin,
-                               ProductEditView, ProductValidationMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin, ProductEditView,
+                               ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
-    field_names = [
-        "project_reviewed",
-        "license_approved",
-        "active",
-        "private_bugs",
-        "reviewer_whiteboard",
-        ]
+    field_names = ["project_reviewed", "license_approved", "active",
+        "reviewer_whiteboard"]
 
     @property
     def page_title(self):

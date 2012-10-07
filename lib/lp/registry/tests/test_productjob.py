@@ -723,8 +723,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
         clear_property_cache(product)
-        self.assertIs(True, product.active)
-        self.assertIs(False, product.private_bugs)
+        self.assertTrue(product.active)
         self.assertEqual(
             BranchSharingPolicy.FORBIDDEN, product.branch_sharing_policy)
         self.assertEqual(

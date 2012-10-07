@@ -295,9 +295,6 @@ class BugImporter:
 
         private = get_value(bugnode, 'private') == 'True'
         security_related = get_value(bugnode, 'security_related') == 'True'
-        # If the product has private_bugs, we force private to True.
-        if self.product.private_bugs:
-            private = True
         information_type = convert_to_information_type(
             private, security_related)
 
@@ -323,11 +320,6 @@ class BugImporter:
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 
-        # Security bugs must be created private, so set it correctly.
-        if not self.product.private_bugs:
-            information_type = convert_to_information_type(
-                private, security_related)
-            bug.transitionToInformationType(information_type, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:

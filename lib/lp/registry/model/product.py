@@ -52,7 +52,6 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -531,8 +530,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True, default=False)
     project_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
-    private_bugs = BoolCol(
-        dbName='private_bugs', notNull=True, default=False)
+    private_bugs = False
     bug_sharing_policy = EnumCol(
         enum=BugSharingPolicy, notNull=False, default=None)
     branch_sharing_policy = EnumCol(
@@ -593,40 +591,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
-        """See `IProductPublic`."""
-        from lp.security import (
-            BugTargetOwnerOrBugSupervisorOrAdmins,
-            ModerateByRegistryExpertsOrAdmins,
-            )
-        if user is not None:
-            person_roles = IPersonRoles(user)
-            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
-            moderator = moderator_check.checkAuthenticated(person_roles)
-            if moderator:
-                return True
-
-            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
-            bug_supervisor = (
-                bug_supervisor_check.checkAuthenticated(person_roles))
-            if (bug_supervisor and
-                    (not private_bugs
-                     or self.has_current_commercial_subscription)):
-                return
-        if private_bugs:
-            raise CommercialSubscribersOnly(
-                'A valid commercial subscription is required to turn on '
-                'default private bugs.')
-        raise Unauthorized(
-            'Only bug supervisors can turn off default private bugs.')
-
-    def setPrivateBugs(self, private_bugs, user):
-        """ See `IProductEditRestricted`."""
-        if self.private_bugs == private_bugs:
-            return
-        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
-        self.private_bugs = private_bugs
-
     def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
         if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
             not self.has_current_commercial_subscription):
@@ -671,8 +635,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution.`"""
         if self.bug_sharing_policy is not None:
             return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
-        elif self.private_bugs:
-            return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
 

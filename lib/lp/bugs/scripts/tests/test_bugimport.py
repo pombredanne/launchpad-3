@@ -656,19 +656,6 @@ class ImportBugTestCase(TestCase):
         self.assertEqual(bug101.private, False)
         self.assertEqual(bug101.security_related, True)
 
-    def test_public_bug_product_private_bugs(self):
-        # Test that if we import a public bug into a product with 
-        # private_bugs, the bug is private.
-        product = getUtility(IProductSet).getByName('netapplet')
-        removeSecurityProxy(product).private_bugs = True
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        bugnode = ET.fromstring(public_security_bug)
-        bug101 = importer.importBug(bugnode)
-        self.assertIsNot(None, bug101)
-        self.assertTrue(bug101.private)
-        self.assertTrue(bug101.security_related)
-
 
 class BugImportCacheTestCase(TestCase):
     """Test of bug mapping cache load/save routines."""
