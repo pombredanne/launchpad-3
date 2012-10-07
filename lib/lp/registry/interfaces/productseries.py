@@ -261,6 +261,11 @@ class IProductSeriesPublic(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
 
+    def getCachedReleases():
+        """Gets a cached copy of this series' releases.
+
+        Returns None if there is no release."""
+
     def getLatestRelease():
         """Gets the most recent release in the series.
 
