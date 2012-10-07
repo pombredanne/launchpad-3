@@ -12,7 +12,10 @@ from soupmatchers import (
     HTMLContains,
     Tag,
     )
-from testtools.matchers import Not
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -36,7 +39,9 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.registry.model.product import Product
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -44,10 +49,15 @@ from lp.testing import (
     login_celebrity,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.fixture import DemoMode
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import find_tag_by_id
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
@@ -425,7 +435,7 @@ class TestProductView(TestCaseWithFactory):
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(ProductSetReviewLicensesViewTestCase, self).setUp()
@@ -513,6 +523,19 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
                 content.find(id='fnord-edit-license-approved').parent))
+
+    def test_review_licence_query_count(self):
+        # Ensure the query count is not O(n).
+        for _ in range(100):
+            product = self.factory.makeProduct()
+            for _ in range(5):
+                self.factory.makeProductReleaseFile(product=product)
+        IStore(Product).reset()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                self.product_set, '+review-licenses', principal=self.user)
+            view.render()
+            self.assertThat(recorder, HasQueryCount(LessThan(25)))
 
 
 class TestProductRdfView(BrowserTestCase):

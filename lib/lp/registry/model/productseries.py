@@ -83,6 +83,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language
@@ -210,7 +211,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
 
-    @property
+    @cachedproperty
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
