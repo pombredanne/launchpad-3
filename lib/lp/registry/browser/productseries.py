@@ -55,6 +55,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -431,7 +432,8 @@ def get_series_branch_error(product, branch):
     return None
 
 
-class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
+class ProductSeriesView(
+    LaunchpadView, MilestoneOverlayMixin, InformationTypePortletMixin):
     """A view to show a series with translations."""
 
     def initialize(self):

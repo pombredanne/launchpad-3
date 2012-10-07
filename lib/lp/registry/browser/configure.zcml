@@ -1697,6 +1697,9 @@
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/productseries-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+ubuntupkg"

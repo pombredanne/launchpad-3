@@ -214,6 +214,8 @@
         </ul>
       </div>
 
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
+
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">
         <h2>Downloads</h2>
