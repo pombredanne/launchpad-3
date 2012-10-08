@@ -1455,7 +1455,6 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         "owner",
         "active",
         "autoupdate",
-        "private_bugs",
         ]
 
     @property
@@ -1532,7 +1531,6 @@ class ProductReviewLicenseView(ReturnToReferrerMixin, ProductEditView,
         "project_reviewed",
         "license_approved",
         "active",
-        "private_bugs",
         "reviewer_whiteboard",
         ]
 

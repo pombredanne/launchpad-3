@@ -572,7 +572,6 @@ class CommericialExpirationMixin(CommercialHelpers):
             owner=product.owner, product=product,
             information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
-            product.setPrivateBugs(True, product.owner)
             product.development_focus.branch = private_branch
         self.expire_commercial_subscription(product)
         job = self.JOB_CLASS.create(product, reviewer)
@@ -712,7 +711,6 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             owner=product.owner, product=product,
             information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
-            product.setPrivateBugs(True, product.owner)
             public_series = product.development_focus
             public_series.branch = public_branch
             private_series = product.newSeries(

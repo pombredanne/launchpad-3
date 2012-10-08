@@ -147,7 +147,7 @@ class TestMaloneView(TestCaseWithFactory):
         with person_logged_in(product.owner):
             product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
         bug = self.application.createBug(
-            product.owner, 'title', 'description', project)
+            product.owner, 'title', 'description', product)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_createBug_default_sharing_policy_proprietary(self):
@@ -157,7 +157,7 @@ class TestMaloneView(TestCaseWithFactory):
         with person_logged_in(product.owner):
             product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
-            product.owner, 'title', 'description', project)
+            product.owner, 'title', 'description', product)
         self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
 
     def test_createBug_public_bug_sharing_policy_proprietary(self):
@@ -167,5 +167,5 @@ class TestMaloneView(TestCaseWithFactory):
         with person_logged_in(product.owner):
             product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
-            product.owner, 'title', 'description', project, private=False)
+            product.owner, 'title', 'description', product, private=False)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)

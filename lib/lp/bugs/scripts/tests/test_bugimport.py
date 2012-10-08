@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import os
 import re
+import xml.etree.cElementTree as ET
 
 import pytz
 from testtools.content import text_content
@@ -28,7 +29,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts import bugimport
-from lp.bugs.scripts.bugimport import ET
 from lp.bugs.scripts.checkwatches import (
     CheckwatchesMaster,
     core,
