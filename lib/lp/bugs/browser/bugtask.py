@@ -2641,7 +2641,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         can_view = (IPrivacy(self.context, None) is None
             or check_permission('launchpad.View', self.context))
-        if can_view and not FeedsLayer.providedBy(self.request):
+        if (can_view and
+            not FeedsLayer.providedBy(self.request) and
+            not self.shouldShowAdvancedForm()):
             cache = IJSONRequestCache(self.request)
             view_names = set(reg.name for reg
                 in iter_view_registrations(self.__class__))
