@@ -1029,7 +1029,6 @@ class ProductBranchesMenu(ApplicationMenu):
         'list_branches',
         'active_reviews',
         'code_import',
-        'branch_visibility',
         ]
     extra_attributes = [
         'active_review_count',
@@ -1052,11 +1051,6 @@ class ProductBranchesMenu(ApplicationMenu):
             'Active review',
             'Active reviews')
         return Link('+activereviews', text, site='code')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def code_import(self):
         text = 'Import a branch'
