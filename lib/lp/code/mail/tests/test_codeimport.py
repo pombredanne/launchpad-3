@@ -101,7 +101,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
         code_import = self.factory.makePackageCodeImport(
-            git_repo_url='http://hg.example.com/fooix.hg',
+            git_repo_url='git://git.example.com/fooix.git',
             branch_name='master', sourcepackage=fooix, registrant=eric)
         transaction.commit()
         msg = message_from_string(stub.test_emails[0][2])
@@ -113,7 +113,7 @@ class TestNewCodeImports(TestCaseWithFactory):
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/foobuntu/manic/fooix/master\n'
             'from\n'
-            '    http://hg.example.com/fooix.hg\n'
+            '    git://git.example.com/fooix.git\n'
             '\n'
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))

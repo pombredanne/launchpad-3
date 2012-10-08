@@ -1326,7 +1326,6 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertGoodUrl("http://user:password@svn.example/branches/trunk")
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
-        self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
         self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
 
 
