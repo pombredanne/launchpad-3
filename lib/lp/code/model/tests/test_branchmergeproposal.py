@@ -27,7 +27,6 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
-    BranchVisibilityRule,
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
@@ -1552,8 +1551,6 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         source_branch = self.factory.makeBranch(
             stacked_on=base_branch, product=product, owner=owner)
         target_branch = self.factory.makeBranch(owner=owner, product=product)
-        target_branch.product.setBranchVisibilityTeamPolicy(
-            owner, BranchVisibilityRule.PRIVATE)
         login_person(owner)
         merge_proposal = self.factory.makeBranchMergeProposal(
             source_branch=source_branch,

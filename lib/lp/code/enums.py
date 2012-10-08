@@ -11,7 +11,6 @@ __all__ = [
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
     'BranchType',
-    'BranchVisibilityRule',
     'CodeImportEventDataType',
     'CodeImportEventType',
     'CodeImportJobState',
@@ -22,7 +21,6 @@ __all__ = [
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
     'RevisionControlSystems',
-    'TeamBranchVisibilityRule',
     'UICreatableBranchType',
     ]
 
@@ -303,40 +301,6 @@ class CodeReviewNotificationLevel(DBEnumeratedType):
 
         Send email about any code review activity for this branch.
         """)
-
-
-class BranchVisibilityRule(DBEnumeratedType):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = DBItem(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = DBItem(3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = DBItem(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
-        """)
-
-
-class TeamBranchVisibilityRule(EnumeratedType):
-    """The valid policy rules for teams."""
-    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
 
 
 class RevisionControlSystems(DBEnumeratedType):

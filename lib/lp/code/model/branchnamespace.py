@@ -31,7 +31,6 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
-    BranchVisibilityRule,
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (

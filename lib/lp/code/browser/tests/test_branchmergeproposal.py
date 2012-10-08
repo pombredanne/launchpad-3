@@ -46,7 +46,6 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
-    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff

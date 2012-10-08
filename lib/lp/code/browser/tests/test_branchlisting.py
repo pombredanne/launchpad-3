@@ -27,16 +27,12 @@ from lp.code.browser.branchlisting import (
     PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.enums import BranchVisibilityRule
 from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.enums import PersonVisibility
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
@@ -46,7 +42,6 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
-    celebrity_logged_in,
     login_person,
     normalize_whitespace,
     person_logged_in,
@@ -65,7 +60,6 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
     create_view,
