@@ -2644,47 +2644,40 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if (can_view and
             not FeedsLayer.providedBy(self.request) and
             not self.request.form.get('advanced')):
-            self._do_search()
+            cache = IJSONRequestCache(self.request)
+            view_names = set(reg.name for reg
+                in iter_view_registrations(self.__class__))
+            if len(view_names) != 1:
+                raise AssertionError("Ambiguous view name.")
+            cache.objects['view_name'] = view_names.pop()
+            batch_navigator = self.search()
+            cache.objects['mustache_model'] = batch_navigator.model
+            cache.objects['field_visibility'] = (
+                batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
+            cache.objects['cbl_cookie_name'] = (
+                batch_navigator.getCookieName())
 
-    def _do_search(self):
-        cache = IJSONRequestCache(self.request)
-        view_names = set(reg.name for reg
-            in iter_view_registrations(self.__class__))
-        if len(view_names) != 1:
-            raise AssertionError("Ambiguous view name.")
-        cache.objects['view_name'] = view_names.pop()
-        batch_navigator = self.search()
-        cache.objects['mustache_model'] = batch_navigator.model
-        cache.objects['field_visibility'] = (
-            batch_navigator.field_visibility)
-        cache.objects['field_visibility_defaults'] = (
-            batch_navigator.field_visibility_defaults)
-        cache.objects['cbl_cookie_name'] = (
-            batch_navigator.getCookieName())
+            def _getBatchInfo(batch):
+                if batch is None:
+                    return None
+                return {'memo': batch.range_memo,
+                        'start': batch.startNumber() - 1}
 
-        def _getBatchInfo(batch):
-            if batch is None:
-                return None
-            return {'memo': batch.range_memo,
-                    'start': batch.startNumber() - 1}
-
-        next_batch = batch_navigator.batch.nextBatch()
-        cache.objects['next'] = _getBatchInfo(next_batch)
-        prev_batch = batch_navigator.batch.prevBatch()
-        cache.objects['prev'] = _getBatchInfo(prev_batch)
-        cache.objects['total'] = batch_navigator.batch.total()
-        cache.objects['order_by'] = ','.join(
-            get_sortorder_from_request(self.request))
-        cache.objects['forwards'] = (
-            batch_navigator.batch.range_forwards)
-        last_batch = batch_navigator.batch.lastBatch()
-        cache.objects['last_start'] = last_batch.startNumber() - 1
-        cache.objects.update(_getBatchInfo(batch_navigator.batch))
-        cache.objects['sort_keys'] = SORT_KEYS
-
-    @action('Search', name='search')
-    def search_action(self, action, data):
-        self._do_search()
+            next_batch = batch_navigator.batch.nextBatch()
+            cache.objects['next'] = _getBatchInfo(next_batch)
+            prev_batch = batch_navigator.batch.prevBatch()
+            cache.objects['prev'] = _getBatchInfo(prev_batch)
+            cache.objects['total'] = batch_navigator.batch.total()
+            cache.objects['order_by'] = ','.join(
+                get_sortorder_from_request(self.request))
+            cache.objects['forwards'] = (
+                batch_navigator.batch.range_forwards)
+            last_batch = batch_navigator.batch.lastBatch()
+            cache.objects['last_start'] = last_batch.startNumber() - 1
+            cache.objects.update(_getBatchInfo(batch_navigator.batch))
+            cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
