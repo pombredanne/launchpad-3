@@ -368,19 +368,6 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.product)
 
-    def _getRelatedPolicies(self):
-        """Return the privacy policies relating to the owner."""
-        policies = self.product.getBranchVisibilityTeamPolicies()
-        return [
-            policy for policy in policies
-            if self.owner.inTeam(policy.team)]
-
-    def _getRelatedPrivatePolicies(self):
-        """Return the related policies for privacy."""
-        return [policy for policy in self._getRelatedPolicies()
-                if policy.rule in (BranchVisibilityRule.PRIVATE,
-                                   BranchVisibilityRule.PRIVATE_ONLY)]
-
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         # The project uses the new simplified branch_sharing_policy
