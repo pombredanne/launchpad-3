@@ -131,8 +131,6 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
     def setPrivate(branch):
         """Force a branch to be private."""
         login_person(branch.owner)
-        branch.product.setBranchVisibilityTeamPolicy(
-            branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
 
     def test_private(self):

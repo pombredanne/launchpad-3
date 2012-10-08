@@ -312,18 +312,6 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(IBranchTarget(person), namespace.target)
 
 
-class TestPersonalNamespacePrivacy(TestCaseWithFactory):
-    """Tests for the privacy aspects of `PersonalNamespace`."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_subscriber(self):
-        # There are no implicit subscribers for a personal namespace.
-        person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
-        self.assertIs(None, namespace.getPrivacySubscriber())
-
-
 class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `ProductNamespace`."""
 
@@ -550,21 +538,6 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         package = self.factory.makeSourcePackage()
         namespace = PackageNamespace(person, package)
         self.assertEqual(IBranchTarget(package), namespace.target)
-
-
-class TestPackageNamespacePrivacy(TestCaseWithFactory):
-    """Tests for the privacy aspects of `PackageNamespace`."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_subscriber(self):
-        # There are no implicit subscribers for a personal namespace.
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = PackageNamespace(
-            person, SourcePackage(sourcepackagename, distroseries))
-        self.assertIs(None, namespace.getPrivacySubscriber())
 
 
 class TestNamespaceSet(TestCaseWithFactory):

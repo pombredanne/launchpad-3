@@ -967,7 +967,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_branch_target_widget_renders_product(self):
         # The branch target widget renders correctly for a product branch.
         person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product, owner=person)
         login_person(person)
         view = create_initialized_view(branch, name='+edit')
@@ -986,7 +986,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_branch_target_widget_saves_junk(self):
         # The branch target widget can retarget to a junk branch.
         person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product, owner=person)
         login_person(person)
         form = {
@@ -1165,25 +1165,8 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             product=product, stacked_on=stacked_on_branch,
             owner=product.owner,
             information_type=InformationType.PRIVATESECURITY)
-        with admin_logged_in():
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            branch)
-
-    def test_private_branch(self):
-        # Branches on projects with a private policy can be made private.
-        branch = self.factory.makeBranch(
-            information_type=InformationType.PUBLIC)
-        with admin_logged_in():
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
-        self.assertShownTypes(
-            [InformationType.PUBLIC,
-             InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY,
-             InformationType.USERDATA],
             branch)
 
     def test_branch_for_project_with_embargoed_and_proprietary(self):
