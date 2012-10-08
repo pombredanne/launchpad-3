@@ -546,8 +546,8 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        content_disposition = 'attachment; filename="%s.rdf"' % product.name
         browser = self.getViewBrowser(product, view_name='+rdf')
+        content_disposition = 'attachment; filename="%s.rdf"' % product.name
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(

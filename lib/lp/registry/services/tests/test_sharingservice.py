@@ -1838,14 +1838,12 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
             api_method, api_version='devel', **kwargs).jsonBody()
 
     def _getPillarGranteeData(self):
-        pillar_uri = canonical_url(
-            removeSecurityProxy(self.pillar), force_local_path=True)
+        pillar_uri = canonical_url(self.pillar, force_local_path=True)
         return self._named_get(
             'getPillarGranteeData', pillar=pillar_uri)
 
     def _sharePillarInformation(self, pillar):
-        pillar_uri = canonical_url(
-            removeSecurityProxy(pillar), force_local_path=True)
+        pillar_uri = canonical_url(pillar, force_local_path=True)
         return self._named_post(
             'sharePillarInformation', pillar=pillar_uri,
             grantee=self.grantee_uri,
