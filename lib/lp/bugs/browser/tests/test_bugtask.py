@@ -42,10 +42,7 @@ from lp.bugs.browser.bugtask import (
     BugTasksAndNominationsView,
     )
 from lp.bugs.enums import BugNotificationLevel
-from lp.bugs.feed.bug import (
-    BugTargetBugsFeed,
-    PersonBugsFeed,
-    )
+from lp.bugs.feed.bug import PersonBugsFeed
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
@@ -1435,7 +1432,35 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class TestPersonBugs(TestCaseWithFactory):
+class BugTaskViewTestMixin():
+
+    def _assert_shouldShowStructuralSubscriberWidget(self, show=True):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(show, view.shouldShowStructuralSubscriberWidget())
+
+    def _assert_structural_subscriber_label(self, label):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(label, view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+    def test_mustache_cache_is_none_for_advanced_form(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        form = {
+            'advanced': 1,
+            }
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs', form=form)
+        cache = IJSONRequestCache(view.request)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+
+class TestPersonBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1445,24 +1470,14 @@ class TestPersonBugs(TestCaseWithFactory):
         self.target = self.factory.makePerson()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project, distribution, package, or series subscriber',
-            view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, PersonBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project, distribution, package, or series subscriber')
 
 
-class TestDistributionBugs(TestCaseWithFactory):
+class TestDistributionBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1471,24 +1486,15 @@ class TestDistributionBugs(TestCaseWithFactory):
         super(TestDistributionBugs, self).setUp()
         self.target = self.factory.makeDistribution()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
-
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package or series subscriber', view.structural_subscriber_label)
+        self._assert_structural_subscriber_label(
+            'Package or series subscriber')
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+    def test_shouldShowStructuralSubscriberWidget(self):
+        self._assert_shouldShowStructuralSubscriberWidget()
 
 
-class TestDistroSeriesBugs(TestCaseWithFactory):
+class TestDistroSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distro series."""
 
     layer = DatabaseFunctionalLayer
@@ -1498,23 +1504,14 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistroSeries()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Package subscriber')
 
 
-class TestDistributionSourcePackageBugs(TestCaseWithFactory):
+class TestDistributionSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distribution source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1524,17 +1521,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistributionSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distro series source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1544,17 +1535,10 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestProductBugs(TestCaseWithFactory):
+class TestProductBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for projects."""
 
     layer = DatabaseFunctionalLayer
@@ -1564,23 +1548,13 @@ class TestProductBugs(TestCaseWithFactory):
         self.target = self.factory.makeProduct()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Series subscriber')
 
 
-class TestProductSeriesBugs(TestCaseWithFactory):
+class TestProductSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project series."""
 
     layer = DatabaseFunctionalLayer
@@ -1589,18 +1563,8 @@ class TestProductSeriesBugs(TestCaseWithFactory):
         super(TestProductSeriesBugs, self).setUp()
         self.target = self.factory.makeProductSeries()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
-
-
-class TestProjectGroupBugs(TestCaseWithFactory):
+class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
@@ -1699,20 +1663,11 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         self.assertIs(None, help_link)
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project or series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project or series subscriber')
 
 
 class TestBugActivityItem(TestCaseWithFactory):
