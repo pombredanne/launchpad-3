@@ -150,7 +150,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         Store.of(product).invalidate()
         with StormStatementRecorder() as recorder:
             IHasAffiliation(product).getAffiliationBadges([person])
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
     def test_distro_affiliation_query_count(self):
         # Only 2 business queries are expected, selects from:

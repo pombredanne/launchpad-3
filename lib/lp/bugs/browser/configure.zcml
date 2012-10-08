@@ -69,7 +69,7 @@
             name="+bugs"
             template="../templates/buglisting-default.pt"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            for="lp.bugs.interfaces.bugtarget.IHasExpirableBugs"
             class="lp.bugs.browser.bugtask.BugTaskExpirableListingView"
             permission="zope.Public"
             name="+expirable-bugs"

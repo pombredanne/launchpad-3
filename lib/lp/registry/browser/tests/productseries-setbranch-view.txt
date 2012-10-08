@@ -377,3 +377,22 @@ error if a duplicate name is used.
     http://launchpad.dev/chevy/corvair
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
+
+If the owner is set to a private team, an error is raised.
+
+    >>> from lp.registry.enums import PersonVisibility
+    >>> private_team = factory.makeTeam(
+    ...     visibility=PersonVisibility.PRIVATE, members=[driver])
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'sport-branch',
+    ...     'field.branch_owner': private_team.name,
+    ...     'field.repo_url': 'http://bzr.com/sporty',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=driver, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    Private teams are forbidden from owning external imports.
