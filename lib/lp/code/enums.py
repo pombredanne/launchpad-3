@@ -374,7 +374,7 @@ class RevisionControlSystems(DBEnumeratedType):
     HG = DBItem(5, """
         Mercurial
 
-        Imports from Mercurial using bzr-hg.
+        Imports from Mercurial using bzr-hg. (no longer supported)
         """)
 
     BZR = DBItem(6, """

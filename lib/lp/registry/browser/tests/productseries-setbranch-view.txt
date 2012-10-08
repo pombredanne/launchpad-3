@@ -97,7 +97,7 @@ Import a branch hosted elsewhere
 --------------------------------
 
 Importing an externally hosted branch can either be a mirror, if a
-Bazaar branch, or an import, if a git, hg, cvs, or svn branch.
+Bazaar branch, or an import, if a git, cvs, or svn branch.
 
 Lots of data are required to create an import.
 
@@ -244,28 +244,6 @@ But Subversion branches may use svn as the scheme.
     Code import created and branch linked to the series.
     >>> print series.branch.name
     suburban-branch
-
-Mercurial branches must use http or https as the scheme.
-
-    >>> series = factory.makeProductSeries(name="malibu", product=product)
-    >>> transaction.commit()
-    >>> form = {
-    ...     'field.branch_type': 'import-external',
-    ...     'field.rcs_type': 'HG',
-    ...     'field.branch_name': 'malibu-branch',
-    ...     'field.branch_owner': team.name,
-    ...     'field.repo_url': 'https://mercurial.com/branch',
-    ...     'field.actions.update': 'Update',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     series, name='+setbranch', principal=driver, form=form)
-    >>> for error in view.errors:
-    ...     print error
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    Code import created and branch linked to the series.
-    >>> print series.branch.name
-    malibu-branch
 
 CVS branches must use http or https as the scheme and must have the
 CVS module field specified.

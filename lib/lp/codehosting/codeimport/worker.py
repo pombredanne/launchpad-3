@@ -330,10 +330,6 @@ class CodeImportSourceDetails:
             return cls(
                 branch.id, 'git', str(code_import.url),
                 stacked_on_url=stacked_on_url)
-        elif code_import.rcs_type == RevisionControlSystems.HG:
-            return cls(
-                branch.id, 'hg', str(code_import.url),
-                stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
             return cls(
                 branch.id, 'bzr', str(code_import.url),
@@ -846,79 +842,6 @@ class GitImportWorker(PullingImportWorker):
         git_db_dir = os.path.join(local_path_from_url(repo_base), 'git')
         local_name = 'git-cache.tar.gz'
         create_tarball(git_db_dir, local_name)
-        self.import_data_store.put(local_name)
-        return non_trivial
-
-
-class HgImportWorker(PullingImportWorker):
-    """An import worker for Mercurial imports.
-
-    The only behaviour we add is preserving the id-sha map between runs.
-    """
-
-    @property
-    def invalid_branch_exceptions(self):
-        return [
-            NoRepositoryPresent,
-            NotBranchError,
-            ConnectionError,
-        ]
-
-    @property
-    def unsupported_feature_exceptions(self):
-        return [
-            InvalidEntryName,
-        ]
-
-    @property
-    def broken_remote_exceptions(self):
-        return []
-
-    @property
-    def probers(self):
-        """See `PullingImportWorker.probers`."""
-        from bzrlib.plugins.hg import HgProber
-        return [HgProber]
-
-    def getRevisionLimit(self):
-        """See `PullingImportWorker.getRevisionLimit`."""
-        return config.codeimport.hg_revisions_import_limit
-
-    def getBazaarBranch(self):
-        """See `ImportWorker.getBazaarBranch`.
-
-        In addition to the superclass' behaviour, we retrieve the bzr-hg's
-        caches, both legacy and current and put them where bzr-hg will find
-        them in the Bazaar tree, that is at '.bzr/repository/hg-v2.db' and
-        '.bzr/repository/hg'.
-        """
-        branch = PullingImportWorker.getBazaarBranch(self)
-        # Fetch the legacy cache from the store, if present.
-        self.import_data_store.fetch(
-            'hg-v2.db', branch.repository._transport)
-        # The cache dir from newer bzr-hgs is stored as a tarball.
-        local_name = 'hg-cache.tar.gz'
-        if self.import_data_store.fetch(local_name):
-            repo_transport = branch.repository._transport
-            repo_transport.mkdir('hg')
-            hg_db_dir = os.path.join(
-                local_path_from_url(repo_transport.base), 'hg')
-            extract_tarball(local_name, hg_db_dir)
-        return branch
-
-    def pushBazaarBranch(self, bazaar_branch):
-        """See `ImportWorker.pushBazaarBranch`.
-
-        In addition to the superclass' behaviour, we store the hg cache
-        that bzr-hg will have created at .bzr/repository/hg into
-        the import data store.
-        """
-        non_trivial = PullingImportWorker.pushBazaarBranch(
-            self, bazaar_branch)
-        repo_base = bazaar_branch.repository._transport.base
-        hg_db_dir = os.path.join(local_path_from_url(repo_base), 'hg')
-        local_name = 'hg-cache.tar.gz'
-        create_tarball(hg_db_dir, local_name)
         self.import_data_store.put(local_name)
         return non_trivial
 
