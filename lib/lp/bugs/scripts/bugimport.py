@@ -7,7 +7,6 @@ This code can import an XML bug dump into Launchpad.  The XML format
 is described in the RELAX-NG schema 'doc/bug-export.rnc'.
 """
 
-
 __metaclass__ = type
 
 __all__ = [
@@ -29,17 +28,11 @@ except ImportError:
     import cElementTree as ET
 
 import pytz
-
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from lp.services.database.constants import UTC_NOW
-from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.messages.interfaces.message import IMessageSet
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -60,11 +53,17 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.scripts.bugexport import BUGS_XMLNS
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
-from lp.bugs.scripts.bugexport import BUGS_XMLNS
+from lp.registry.enums import BugSharingPolicy
+from lp.services.database.constants import UTC_NOW
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.messages.interfaces.message import IMessageSet
+
 
 
 DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
@@ -150,6 +149,9 @@ class BugImporter:
         # A mapping of old bug IDs to a list of Launchpad Bug IDs that are
         # duplicates of this bug.
         self.pending_duplicates = {}
+
+        # We can't currently sensibly import into non-PUBLIC products.
+        assert self.product.bug_sharing_policy == BugSharingPolicy.PUBLIC
 
     def getPerson(self, node):
         """Get the Launchpad user corresponding to the given XML node"""
@@ -315,8 +317,8 @@ class BugImporter:
 
         # Process remaining comments
         for commentnode in comments:
-            msg = self.createMessage(commentnode,
-                                     defaulttitle=bug.followup_subject())
+            msg = self.createMessage(
+                commentnode, defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 

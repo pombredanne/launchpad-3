@@ -1450,7 +1450,13 @@ class ProductValidationMixin:
 class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
-    default_field_names = ["name", "owner", "active", "autoupdate"]
+    default_field_names = [
+        "name",
+        "owner",
+        "active",
+        "autoupdate",
+        "private_bugs",
+        ]
 
     @property
     def page_title(self):
@@ -1522,8 +1528,13 @@ class ProductReviewLicenseView(ReturnToReferrerMixin, ProductEditView,
                                ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
-    field_names = ["project_reviewed", "license_approved", "active",
-        "reviewer_whiteboard"]
+    field_names = [
+        "project_reviewed",
+        "license_approved",
+        "active",
+        "private_bugs",
+        "reviewer_whiteboard",
+        ]
 
     @property
     def page_title(self):

@@ -8,12 +8,12 @@ from datetime import (
     timedelta,
     )
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from pytz import UTC
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -586,7 +586,7 @@ class TestBug(TestCaseWithFactory):
             self.assertEqual(0, len(recorder.events))
 
 
-class TestBugPrivateAndSecurityRelatedUpdatesMixin(TestCaseWithFactory):
+class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 

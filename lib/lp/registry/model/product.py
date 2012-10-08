@@ -68,9 +68,9 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -632,7 +632,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FREE_INFORMATION_TYPES
 
     def getDefaultBugInformationType(self):
-        """See `IDistribution.`"""
+        """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
             return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
         else:
