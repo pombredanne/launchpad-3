@@ -697,60 +697,6 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         super(TestProjectGroupBranches, self).setUp()
         self.project = self.factory.makeProject()
 
-    def test_project_with_no_branch_visibility_rule(self):
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Public.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_project_with_private_branch_visibility_rule(self):
-        self.project.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Forbidden.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def _testBranchVisibilityLink(self, user):
-        login_person(user)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code',
-            principal=user)
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        text = extract_text(action_portlet)
-        expected = '.*Define branch visibility.*'
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_branch_visibility_link_admin(self):
-        # An admin will be displayed a link to define branch visibility in the
-        # action portlet.
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_commercial_admin(self):
-        # A commercial admin will be displayed a link to define branch
-        # visibility in the action portlet.
-        with celebrity_logged_in('commercial_admin') as admin:
-            self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_non_admin(self):
-        # A non-admin will not see the action portlet.
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        self.assertIs(None, action_portlet)
-
     def test_no_branches_gets_message_not_listing(self):
         # If there are no product branches on the project's products, then
         # the view shows the no code hosting message instead of a listing.
