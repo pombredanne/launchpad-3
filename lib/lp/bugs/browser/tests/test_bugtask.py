@@ -1450,7 +1450,7 @@ class BugTaskViewTestMixin():
         self.assertIsNone(cache.objects.get('mustache_model'))
 
     def test_mustache_cache_is_none_for_advanced_form(self):
-        """The mustache model should not be added to JSON cache for feeds."""
+        """No mustache model for the advanced search form."""
         form = {
             'advanced': 1,
             }
