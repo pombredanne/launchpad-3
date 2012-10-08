@@ -84,30 +84,6 @@ Private teams can subscribe to branches.
     private-team
 
 
-Branch visibility policies
---------------------------
-
-Private teams can have branch visibility policies.
-
-    >>> def teamname(team):
-    ...     if team is None:
-    ...         return "*everyone*"
-    ...     else:
-    ...         return team.displayname
-    >>> def print_team_policies(context):
-    ...     for item in context.getBranchVisibilityTeamPolicies():
-    ...         print "%s: %s" % (teamname(item.team), item.rule.title)
-
-    >>> from lp.code.enums import BranchVisibilityRule
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> print_team_policies(evolution)
-    >>> evolution.setBranchVisibilityTeamPolicy(
-    ...     priv_team, BranchVisibilityRule.PRIVATE)
-    >>> print_team_policies(evolution)
-    Private Team: Private
-
-
 PPAs
 ====
 
