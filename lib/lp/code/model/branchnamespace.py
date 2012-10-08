@@ -162,18 +162,6 @@ class _BaseNamespace:
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
-        # Implicit subscriptions are to enable teams to see private branches
-        # as soon as they are created.  The subscriptions can be edited at
-        # a later date if desired.
-        implicit_subscription = self.getPrivacySubscriber()
-        if implicit_subscription is not None:
-            branch.subscribe(
-                implicit_subscription,
-                BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                registrant)
-
         # The registrant of the branch should also be automatically subscribed
         # in order for them to get code review notifications.  The implicit
         # registrant subscription does not cause email to be sent about
@@ -308,10 +296,6 @@ class _BaseNamespace:
             return InformationType.USERDATA
         return InformationType.PUBLIC
 
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        raise NotImplementedError(self.getPrivacySubscriber)
-
 
 class PersonalNamespace(_BaseNamespace):
     """A namespace for personal (or 'junk') branches.
@@ -342,10 +326,6 @@ class PersonalNamespace(_BaseNamespace):
             return FREE_INFORMATION_TYPES
         else:
             return PUBLIC_INFORMATION_TYPES
-
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        return None
 
     @property
     def target(self):
@@ -395,28 +375,6 @@ class ProductNamespace(_BaseNamespace):
         return [policy for policy in self._getRelatedPolicies()
                 if policy.rule in (BranchVisibilityRule.PRIVATE,
                                    BranchVisibilityRule.PRIVATE_ONLY)]
-
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        # New branch_sharing_policy-based privacy doesn't
-        # require a privacy subscriber, as branches are shared through
-        # AccessPolicyGrants.
-        if not self._using_branchvisibilitypolicy:
-            return None
-
-        # If there is a rule defined for the owner, then there is no privacy
-        # subscriber.
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if rule is not None:
-            return None
-        # If there is one private policy for the user, then return the team
-        # for that policy, otherwise there is no privacy subsciber as we don't
-        # guess the user's intent.
-        private_policies = self._getRelatedPrivatePolicies()
-        if len(private_policies) == 1:
-            return private_policies[0].team
-        else:
-            return None
 
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
@@ -517,10 +475,6 @@ class PackageNamespace(_BaseNamespace):
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         return PUBLIC_INFORMATION_TYPES
-
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        return None
 
 
 class BranchNamespaceSet:
