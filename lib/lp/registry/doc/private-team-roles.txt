@@ -131,6 +131,7 @@ Structural Subscription to Products
 
 Private teams can have structural subscriptions to products.
 
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> sub = firefox.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)

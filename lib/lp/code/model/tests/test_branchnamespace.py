@@ -30,6 +30,7 @@ from lp.code.errors import (
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace,
     IBranchNamespace,
+    IBranchNamespacePolicy,
     IBranchNamespaceSet,
     lookup_branch_namespace,
     )
@@ -919,10 +920,11 @@ class TestPackageNamespaceCanCreateBranches(TestCaseWithFactory,
 class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
                                             BaseCanCreateBranchesMixin):
 
-    def _getNamespace(self, owner, branch_sharing_policy):
-        product = self.factory.makeProduct()
-        return ProductNamespace(
-            owner, product, branch_sharing_policy=branch_sharing_policy)
+    def _getNamespace(self, owner,
+                      branch_sharing_policy=BranchSharingPolicy.PUBLIC):
+        product = self.factory.makeProduct(
+            branch_sharing_policy=branch_sharing_policy)
+        return ProductNamespace(owner, product)
 
     def setUp(self):
         # Setting visibility policies is an admin only task.
@@ -1099,6 +1101,8 @@ class JunkBranches(TestCaseWithFactory):
     It is the product that has the branch visibility policy, so junk branches
     have no related visibility policy."""
 
+    layer = DatabaseFunctionalLayer
+
     def assertPublic(self, creator, owner):
         """Assert that the policy check would result in a public branch.
 
@@ -1109,20 +1113,37 @@ class JunkBranches(TestCaseWithFactory):
         self.assertNotIn(
             InformationType.USERDATA, namespace.getAllowedInformationTypes())
 
+    def assertPolicyCheckRaises(self, error, creator, owner):
+        """Assert that the policy check raises an exception.
+
+        :param error: The exception class that should be raised.
+        :param creator: The user creating the branch.
+        :param owner: The person or team that will be the owner of the branch.
+        """
+        policy = IBranchNamespacePolicy(get_branch_namespace(owner))
+        self.assertRaises(
+            error,
+            policy.validateRegistrant,
+            registrant=creator)
+
     def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
         as public branches.
         """
-        self.assertPublic(self.albert, self.albert)
+        person = self.factory.makePerson()
+        self.assertPublic(person, person)
 
     def test_team_junk_branches(self):
         """Team junk branches are allowed, and are public."""
-        self.assertPublic(self.albert, self.xray)
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        self.assertPublic(person, team)
 
     def test_no_create_junk_branch_for_other_user(self):
         """One user can't create +junk branches owned by another."""
         self.assertPolicyCheckRaises(
-            BranchCreatorNotOwner, self.albert, self.doug)
+            BranchCreatorNotOwner, self.factory.makePerson(),
+            self.factory.makePerson())
 
 
 class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
