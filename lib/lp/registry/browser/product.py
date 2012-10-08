@@ -69,6 +69,10 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -101,6 +105,7 @@ from lp.app.browser.tales import (
 from lp.app.enums import (
     InformationType,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -204,6 +209,7 @@ from lp.translations.browser.customlanguagecode import (
 
 OR = ' OR '
 SPACE = ' '
+PRIVATE_PROJECTS_FLAG = 'disclosure.private_projects.enabled'
 
 
 class ProductNavigation(
@@ -911,6 +917,16 @@ class ProductDownloadFileMixin:
                     return release
         return None
 
+    @cachedproperty
+    def has_download_files(self):
+        for series in self.context.series:
+            if series.status == SeriesStatus.OBSOLETE:
+                continue
+            for release in series.getCachedReleases():
+                if len(list(release.files)) > 0:
+                    return True
+        return False
+
 
 class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
                   FeedsMixin, ProductDownloadFileMixin):
@@ -1325,6 +1341,14 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
                 field.description = (
                     field.description.replace('pillar', 'project'))
                 usage_field.field = field
+                if (self.usage_fieldname == 'answers_usage' and
+                    self.context.information_type in
+                    PROPRIETARY_INFORMATION_TYPES):
+                    values = usage_field.field.vocabulary.items
+                    terms = [SimpleTerm(value, value.name, value.title)
+                             for value in values
+                             if value != ServiceUsage.LAUNCHPAD]
+                    usage_field.field.vocabulary = SimpleVocabulary(terms)
 
     @property
     def field_names(self):
@@ -1928,10 +1952,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # The JSON cache must be populated before the super call, since
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
-        if IProductSet.providedBy(self.context):
-            cache = IJSONRequestCache(self.request)
-            json_dump_information_types(cache,
-                                        PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
@@ -1974,9 +1997,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
 
-        private_projects_flag = 'disclosure.private_projects.enabled'
-        private_projects = bool(getFeatureFlag(private_projects_flag))
-        if not private_projects or not IProductSet.providedBy(self.context):
+        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
+        if not private_projects:
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
@@ -2018,8 +2040,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
 
-        private_projects_flag = 'disclosure.private_projects.enabled'
-        private_projects = bool(getFeatureFlag(private_projects_flag))
+        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
 
         if private_projects and IProductSet.providedBy(self.context):
             self.widgets['information_type'].value = InformationType.PUBLIC
@@ -2091,8 +2112,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             for error in errors:
                 self.errors.remove(error)
 
-        private_projects_flag = 'disclosure.private_projects.enabled'
-        private_projects = bool(getFeatureFlag(private_projects_flag))
+        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
         if private_projects:
             if data.get('information_type') != InformationType.PUBLIC:
                 for required_field in ('bug_supervisor', 'driver'):
@@ -2118,6 +2138,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner = getUtility(ILaunchpadCelebrities).registry_experts
         else:
             owner = data.get('owner')
+
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
             bug_supervisor=data.get('bug_supervisor', None),
@@ -2131,6 +2152,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
+            information_type=data.get('information_type'),
             project=project)
 
     def link_source_package(self, product, data):

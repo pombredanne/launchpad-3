@@ -90,6 +90,7 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
@@ -425,7 +426,7 @@ class IProductModerateRestricted(Interface):
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones,
+    IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,

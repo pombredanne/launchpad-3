@@ -70,6 +70,10 @@ i18n:domain="malone"
           tal:attributes="href string:${context/fmt:url/+edit}">
           Enable bug tracking.</a>
       </p>
+
+      <metal:also-in-ubuntu
+        tal:condition="not:view/should_show_bug_information"
+        use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
     </div>
     <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
          class="top-portlet">
@@ -104,6 +108,7 @@ i18n:domain="malone"
         </tal:has_products>
       </tal:is_project_group>
 
+      <tal:uses-lp condition="view/should_show_bug_information">
         <tal:do_not_show_advanced_form
           condition="not: view/shouldShowAdvancedForm">
           <div tal:define="batch_navigator view/search">
@@ -116,11 +121,11 @@ i18n:domain="malone"
           <metal:advanced_form
              use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
         </tal:show_advanced_form>
+      </tal:uses-lp>
 
       <div class="yui-u">
         <div id="structural-subscription-content-box"></div>
       </div>
-
     </div>
   </div>
 

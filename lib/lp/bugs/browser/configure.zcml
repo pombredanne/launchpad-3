@@ -69,7 +69,7 @@
             name="+bugs"
             template="../templates/buglisting-default.pt"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            for="lp.bugs.interfaces.bugtarget.IHasExpirableBugs"
             class="lp.bugs.browser.bugtask.BugTaskExpirableListingView"
             permission="zope.Public"
             name="+expirable-bugs"
@@ -1165,13 +1165,6 @@
         for="lp.services.webapp.interfaces.ITableBatchNavigator"
         name="+table-view-without-navlinks"
         template="../templates/bugs-listing-table-without-navlinks.pt"
-        permission="zope.Public" />
-
-    <browser:page
-        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
-        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
-        name="+table-view-without-navlinks"
-        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
         permission="zope.Public" />
 
     </facet>

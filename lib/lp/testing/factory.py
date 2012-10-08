@@ -64,6 +64,7 @@ from zope.security.proxy import (
 
 from lp.app.enums import (
     InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
@@ -977,7 +978,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 displayname = name.capitalize()
         if licenses is None:
-            licenses = [License.GNU_GPL_V2]
+            if information_type in PROPRIETARY_INFORMATION_TYPES:
+                licenses = [License.OTHER_PROPRIETARY]
+            else:
+                licenses = [License.GNU_GPL_V2]
         if title is None:
             title = self.getUniqueString('title')
         if summary is None:
@@ -1022,6 +1026,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if specification_sharing_policy:
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
+        if information_type is not None:
+            naked_product.information_type = information_type
 
         return product
 
