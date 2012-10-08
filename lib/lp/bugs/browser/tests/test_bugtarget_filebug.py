@@ -375,7 +375,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
         }
         if information_type:
             form['field.information_type'] = information_type
-        product = self.factory.makeLegacyProduct(official_malone=True)
+        product = self.factory.makeProduct(official_malone=True)
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
@@ -708,7 +708,7 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             'field.security_related': 'on' if security_related else '',
             'field.actions.submit_bug': 'Submit Bug Request',
         }
-        product = self.factory.makeLegacyProduct(official_malone=True)
+        product = self.factory.makeProduct(official_malone=True)
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
