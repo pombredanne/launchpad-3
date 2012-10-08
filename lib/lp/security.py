@@ -34,7 +34,6 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
@@ -429,34 +428,6 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.isOwner(self.obj) or user.in_admin
-
-
-class ViewProduct(ViewPillar):
-    permission = 'launchpad.View'
-    usedfor = IProduct
-
-    def checkAuthenticated(self, user):
-        return (
-            super(ViewProduct, self).checkAuthenticated(user) and
-            self.obj.userCanView(user))
-
-    def checkUnauthenticated(self):
-        return (
-            self.obj.information_type in PUBLIC_INFORMATION_TYPES and
-            super(ViewProduct, self).checkUnauthenticated())
-
-
-class ChangeProduct(ViewProduct):
-    """Used for attributes of IProduct that are accessible to any logged
-    in user for public product but only to persons with access grants
-    for private products.
-    """
-
-    permission = 'launchpad.AnyAllowedPerson'
-    usedfor = IProduct
-
-    def checkUnauthenticated(self):
-        return False
 
 
 class EditProduct(EditByOwnersOrAdmins):

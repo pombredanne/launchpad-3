@@ -168,7 +168,7 @@ Projects are available at their canonical URL on the API virtual host.
     freshmeat_project: None
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
-    information_type: u'Public'
+    information_type: None
     is_permitted: True
     license_approved: False
     license_info: None

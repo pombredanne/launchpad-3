@@ -243,10 +243,10 @@ class PillarSharingViewTestMixin:
 
     def test_sharing_menu(self):
         url = canonical_url(self.pillar)
-        sharing_url = canonical_url(self.pillar, view_name='+sharing')
         browser = setupBrowserForUser(user=self.driver)
         browser.open(url)
         soup = BeautifulSoup(browser.contents)
+        sharing_url = canonical_url(self.pillar, view_name='+sharing')
         sharing_menu = soup.find('a', {'href': sharing_url})
         self.assertIsNotNone(sharing_menu)
 
