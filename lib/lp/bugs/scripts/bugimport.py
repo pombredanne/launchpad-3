@@ -20,12 +20,7 @@ import datetime
 import logging
 import os
 import time
-
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+import xml.etree.cElementTree
 
 import pytz
 from storm.store import Store
@@ -54,16 +49,15 @@ from lp.bugs.interfaces.bugwatch import (
     )
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.scripts.bugexport import BUGS_XMLNS
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
-from lp.registry.enums import BugSharingPolicy
 from lp.services.database.constants import UTC_NOW
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
-
 
 
 DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
@@ -258,7 +252,7 @@ class BugImporter:
 
     def importBugs(self, ztm):
         """Import bugs from a file."""
-        tree = ET.parse(self.bugs_filename)
+        tree = cElementTree.parse(self.bugs_filename)
         root = tree.getroot()
         assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS, (
             "Root element is wrong: %s" % root.tag)
