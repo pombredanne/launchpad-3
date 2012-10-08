@@ -34,7 +34,6 @@ from lp.code.bzr import (
     )
 from lp.code.enums import (
     BranchType,
-    BranchVisibilityRule,
     )
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -45,7 +44,6 @@ from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
-    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -893,68 +891,6 @@ class TestBranchRootContext(TestCaseWithFactory):
 class TestBranchEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def test_allowed_owner_is_ok(self):
-        # A branch's owner can be changed to a team permitted by the
-        # visibility policy.
-        person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
-        team = self.factory.makeTeam(
-            owner=person, displayname="Permitted team")
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Permitted team"]
-        browser.getControl("Change Branch").click()
-        with person_logged_in(person):
-            self.assertEquals(team, branch.owner)
-
-    def test_forbidden_owner_is_error(self):
-        # An error is displayed if a branch's owner is changed to
-        # a value forbidden by the visibility policy.
-        product = self.factory.makeLegacyProduct(displayname='Some Product')
-        person = self.factory.makePerson()
-        branch = self.factory.makeBranch(product=product, owner=person)
-        self.factory.makeTeam(
-            owner=person, displayname="Forbidden team")
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            person, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Forbidden team"]
-        browser.getControl("Change Branch").click()
-        self.assertThat(
-            browser.contents,
-            Contains(
-                'Forbidden team is not allowed to own branches in '
-                'Some Product.'))
-        with person_logged_in(person):
-            self.assertEquals(person, branch.owner)
-
-    def test_private_owner_is_ok(self):
-        # A branch's owner can be changed to a private team permitted by the
-        # visibility policy.
-        person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
-        branch = self.factory.makeProductBranch(product=product, owner=person)
-        team = self.factory.makeTeam(
-            owner=person, displayname="Private team",
-            visibility=PersonVisibility.PRIVATE)
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Private team"]
-        browser.getControl("Change Branch").click()
-        with person_logged_in(person):
-            self.assertEquals(team, branch.owner)
 
     def test_branch_target_widget_renders_junk(self):
         # The branch target widget renders correctly for a junk branch.
