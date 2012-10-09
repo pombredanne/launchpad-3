@@ -81,6 +81,20 @@
         <tr>
           <td>
             <label>
+              <input tal:replace="structure view/rcs_type_hg" />
+              Mercurial
+            </label>
+            <table class="importdetails">
+              <tal:widget define="widget nocall:view/widgets/hg_repo_url">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
               <input tal:replace="structure view/rcs_type_svn" />
               Subversion
             </label>
@@ -131,6 +145,7 @@
                 }
             }
             updateField(form['field.git_repo_url'], rcs_type === 'GIT');
+            updateField(form['field.hg_repo_url'], rcs_type === 'HG');
             updateField(form['field.cvs_root'], rcs_type === 'CVS');
             updateField(form['field.cvs_module'], rcs_type === 'CVS');
             updateField(form['field.svn_branch_url'], rcs_type === 'BZR_SVN');
