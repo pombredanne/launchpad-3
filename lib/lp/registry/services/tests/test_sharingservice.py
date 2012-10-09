@@ -612,16 +612,16 @@ class TestSharingService(TestCaseWithFactory):
                 (grantee,
                  {ud_policy: SharingPermission.SOME,
                   es_policy: SharingPermission.ALL},
-                 [InformationType.USERDATA,
-                  InformationType.PRIVATESECURITY]),
+                 [InformationType.PRIVATESECURITY,
+                  InformationType.USERDATA]),
                  ]
         else:
             expected_grantee_grants = [
                 (grantee,
                  {es_policy: SharingPermission.ALL,
                   ud_policy: SharingPermission.SOME},
-                 [InformationType.USERDATA,
-                  InformationType.PRIVATESECURITY]),
+                 [InformationType.PRIVATESECURITY,
+                  InformationType.USERDATA]),
                  ]
 
         grantee_grants = list(self.service.getPillarGrantees(pillar))
