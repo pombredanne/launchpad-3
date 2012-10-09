@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 import unittest
 from urlparse import urlunsplit
 
@@ -121,6 +122,12 @@ class ExtractBugTrackerAndBugTestBase:
         else:
             self.fail(
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
+
+    def test_invalid_bug_number(self):
+        invalid_url = re.sub(r'(\d)\d', r'\1E', self.bug_url, count=1)
+        self.assertRaises(
+            UnrecognizedBugTrackerURL,
+            self.bugwatch_set.extractBugTrackerAndBug, invalid_url)
 
 
 class MantisExtractBugTrackerAndBugTest(
@@ -338,6 +345,10 @@ class EmailAddressExtractBugTrackerAndBugTest(
         self.assertRaises(UnrecognizedBugTrackerURL,
             self.bugwatch_set.extractBugTrackerAndBug,
             url='this\.is@@a.bad.email.address')
+
+    def test_invalid_bug_number(self):
+        # Test does not make sense for email addresses.
+        pass
 
 
 class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
