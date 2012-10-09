@@ -1042,7 +1042,7 @@ class PullingImportWorkerTests:
         # import should be rejected.
         args = {'rcstype': self.rcstype}
         reference_url, target_url = self.createBranchReference()
-        if self.rcstype in ('git', 'bzr-svn', 'hg'):
+        if self.rcstype in ('git', 'bzr-svn'):
             args['url'] = reference_url
         else:
             raise AssertionError("unexpected rcs_type %r" % self.rcstype)

@@ -109,7 +109,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual(
             '~eric/foobuntu/manic/fooix/master', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new Git code import has been requested '
+            'A new git code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/foobuntu/manic/fooix/master\n'
             'from\n'

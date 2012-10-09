@@ -14,7 +14,6 @@ __all__ = [
     'CodeImportWorkerExitCode',
     'ForeignTreeStore',
     'GitImportWorker',
-    'HgImportWorker',
     'ImportWorker',
     'get_default_bazaar_branch_store',
     ]
@@ -267,9 +266,9 @@ class CodeImportSourceDetails:
 
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
-    :ivar rcstype: 'svn', 'cvs', 'hg', 'git', 'bzr-svn', 'bzr' as appropriate.
+    :ivar rcstype: 'svn', 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
     :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
-        'git', 'hg', 'bzr'], None otherwise.
+        'git', 'bzr'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """
@@ -288,7 +287,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
+        if rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
             try:
                 stacked_on_url = arguments.pop(0)
@@ -341,7 +340,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
+        if self.rcstype in ['svn', 'bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
                 result.append(self.stacked_on_url)

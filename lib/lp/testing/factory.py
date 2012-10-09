@@ -494,7 +494,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
+        if rcstype in ['svn', 'bzr-svn', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -2260,7 +2260,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
+            bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
