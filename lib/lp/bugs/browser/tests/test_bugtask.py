@@ -1960,8 +1960,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
+        url = canonical_url(product, view_name='+bugs')
         bug = self.factory.makeBug(target=product)
         buggy_product = self.factory.makeProduct()
+        buggy_url = canonical_url(buggy_product, view_name='+bugs')
         for _ in range(10):
             self.factory.makeBug(target=buggy_product)
         recorder = QueryCollector()
@@ -1969,11 +1971,9 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(bug)
         # count with single task
-        url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
         self.assertThat(recorder, HasQueryCount(LessThan(35)))
         # count with many tasks
-        buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
         self.assertThat(recorder, HasQueryCount(LessThan(35)))
 
