@@ -1616,6 +1616,10 @@ class ProductSet:
 
     @staticmethod
     def get_product_privacy_filter(user):
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
         granted_products = And(
             AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
             TeamParticipation.person == user,

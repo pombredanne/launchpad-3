@@ -71,6 +71,7 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.database.lpstorm import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     celebrity_logged_in,
@@ -1635,21 +1636,25 @@ class TestProductSet(TestCaseWithFactory):
             information_type=InformationType.PUBLIC)
         return proprietary, embargoed, public
 
+    @staticmethod
+    def filterFind(user):
+        clause = ProductSet.get_product_privacy_filter(user)
+        return IStore(Product).find(Product, clause)
+
     def test_get_all_active_omits_proprietary(self):
         # Ignore proprietary products for anonymous users
         proprietary = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         embargoed = self.factory.makeProduct(
             information_type=InformationType.EMBARGOED)
-        result = ProductSet.get_all_active()
+        result = ProductSet.get_all_active(None)
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
 
     def test_get_product_privacy_filter_anonymous(self):
         # Ignore proprietary products for anonymous users
-        clause = ProductSet.get_product_privacy_filter(None)
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(None)
         self.assertIn(public, result)
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
@@ -1658,8 +1663,7 @@ class TestProductSet(TestCaseWithFactory):
         # Exclude proprietary products for anonymous users
         random = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        clause = ProductSet.get_product_privacy_filter(random)
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(random)
         self.assertIn(public, result)
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
@@ -1674,10 +1678,9 @@ class TestProductSet(TestCaseWithFactory):
         # Include proprietary products for users with right grants.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        clause = ProductSet.get_product_privacy_filter(grantee)
         self.grant(embargoed, InformationType.EMBARGOED, grantee)
         self.grant(proprietary, InformationType.PROPRIETARY, grantee)
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(grantee)
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
@@ -1686,9 +1689,8 @@ class TestProductSet(TestCaseWithFactory):
         # Exclude proprietary products if grant is on wrong product.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        clause = ProductSet.get_product_privacy_filter(grantee)
         self.factory.makeAccessPolicyGrant(grantee=grantee)
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(grantee)
         self.assertIn(public, result)
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
@@ -1697,11 +1699,10 @@ class TestProductSet(TestCaseWithFactory):
         # Exclude proprietary products if grant is on wrong information type.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        clause = ProductSet.get_product_privacy_filter(grantee)
         self.grant(embargoed, InformationType.PROPRIETARY, grantee)
         self.factory.makeAccessPolicy(proprietary, InformationType.EMBARGOED)
         self.grant(proprietary, InformationType.EMBARGOED, grantee)
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(grantee)
         self.assertIn(public, result)
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
@@ -1710,10 +1711,25 @@ class TestProductSet(TestCaseWithFactory):
         # Include proprietary products for users in teams with right grants.
         grantee = self.factory.makeTeam()
         proprietary, embargoed, public = self.makeAllInformationTypes()
-        clause = ProductSet.get_product_privacy_filter(grantee.teamowner)
         self.grant(embargoed, InformationType.EMBARGOED, grantee)
         self.grant(proprietary, InformationType.PROPRIETARY, grantee)
-        result = Store.of(public).find(Product, clause)
+        result = self.filterFind(grantee.teamowner)
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)
+
+    def test_get_product_privacy_includes_admins(self):
+        # Launchpad admins can see everything.
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(self.factory.makeAdministrator())
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)
+
+    def test_get_product_privacy_includes_commercial_admins(self):
+        # Commercial admins can see everything.
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(self.factory.makeCommercialAdmin())
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
