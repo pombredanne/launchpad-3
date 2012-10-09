@@ -1102,53 +1102,6 @@ class BinaryPackageBuildSet:
             result_set, pre_iter_hook=self._prefetchBuildData)
         return decorated_results
 
-    def retryDepWaiting(self, distroarchseries):
-        """See `IBinaryPackageBuildSet`. """
-        # XXX cprov 20071122: use the root logger once bug 164203 is fixed.
-        logger = logging.getLogger('retry-depwait')
-
-        # Get the MANUALDEPWAIT records for all archives.
-        store = ISlaveStore(BinaryPackageBuild)
-
-        candidates = store.find(
-            BinaryPackageBuild,
-            BinaryPackageBuild.distro_arch_series == distroarchseries,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.status == BuildStatus.MANUALDEPWAIT)
-
-        # Materialise the results right away to avoid hitting the
-        # database multiple times.
-        candidates = list(candidates)
-
-        candidates_count = len(candidates)
-        if candidates_count == 0:
-            logger.info("No MANUALDEPWAIT record found.")
-            return
-
-        logger.info(
-            "Found %d builds in MANUALDEPWAIT state." % candidates_count)
-
-        for build in candidates:
-            if not build.can_be_retried:
-                continue
-            # We're changing 'build' so make sure we have an object from
-            # the master store.
-            build = IMasterObject(build)
-            try:
-                build.updateDependencies()
-            except UnparsableDependencies as e:
-                logger.error(e)
-                continue
-
-            if build.dependencies:
-                logger.debug(
-                    "Skipping %s: %s" % (build.title, build.dependencies))
-                continue
-            logger.info("Retrying %s" % build.title)
-            build.retry()
-            build.buildqueue_record.score()
-
     def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
                                         buildstate=None):
         """See `IBinaryPackageBuildSet`."""
