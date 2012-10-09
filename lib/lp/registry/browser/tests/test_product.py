@@ -466,24 +466,24 @@ class TestProductEditView(TestCaseWithFactory):
         }
 
     def test_change_information_type_proprietary(self):
-        self.product = self.factory.makeProduct(name='fnord')
+        product = self.factory.makeProduct(name='fnord')
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
-            login_person(self.product.owner)
+            login_person(product.owner)
             form = self._make_product_edit_form(proprietary=True)
-            view = create_initialized_view(self.product, '+edit', form=form)
+            view = create_initialized_view(product, '+edit', form=form)
             self.assertEqual(0, len(view.errors))
 
             product_set = getUtility(IProductSet)
-            product = product_set.getByName('fnord')
+            updated_product = product_set.getByName('fnord')
             self.assertEqual(
-                InformationType.PROPRIETARY, product.information_type)
+                InformationType.PROPRIETARY, updated_product.information_type)
             # A complimentary commercial subscription is auto generated for
             # the product when the information type is changed.
-            self.assertIsNotNone(product.commercial_subscription)
+            self.assertIsNotNone(updated_product.commercial_subscription)
 
     def test_change_information_type_public(self):
         owner = self.factory.makePerson(name='pting')
-        self.product = self.factory.makeProduct(
+        product = self.factory.makeProduct(
             name='fnord',
             information_type=InformationType.PROPRIETARY,
             owner=owner,
@@ -491,13 +491,13 @@ class TestProductEditView(TestCaseWithFactory):
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(owner)
             form = self._make_product_edit_form()
-            view = create_initialized_view(self.product, '+edit', form=form)
+            view = create_initialized_view(product, '+edit', form=form)
             self.assertEqual(0, len(view.errors))
 
             product_set = getUtility(IProductSet)
-            product = product_set.getByName('fnord')
+            updated_product = product_set.getByName('fnord')
             self.assertEqual(
-                InformationType.PUBLIC, product.information_type)
+                InformationType.PUBLIC, updated_product.information_type)
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
