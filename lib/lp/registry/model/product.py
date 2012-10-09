@@ -453,6 +453,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
+        dbName="information_type",
         storm_validator=_valid_product_information_type)
 
     def _get_information_type(self):

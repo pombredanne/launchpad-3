@@ -500,22 +500,6 @@ class TestProduct(TestCaseWithFactory):
                 with person_logged_in(product.owner):
                     product.information_type = info_type
 
-    def test_product_information_set_proprietary_requires_commercial(self):
-        # Cannot set Product.information_type to proprietary values if no
-        # commercial subscription.
-        product = self.factory.makeProduct()
-        self.useContext(person_logged_in(product.owner))
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CommercialSubscribersOnly,
-                'A valid commercial subscription is required for private'
-                ' Projects.'):
-                product.information_type = info_type
-        product.redeemSubscriptionVoucher(
-            'hello', product.owner, product.owner, 1)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product.information_type = info_type
-
     def test_product_information_init_proprietary_requires_commercial(self):
         # Cannot create a product with proprietary types without specifying
         # Other/Proprietary license.
