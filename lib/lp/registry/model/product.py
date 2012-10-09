@@ -1618,7 +1618,7 @@ class ProductSet:
         return self.get_all_active(None)
 
     @staticmethod
-    def get_product_privacy_filter(user):
+    def getProductPrivacyFilter(user):
         if user is not None:
             roles = IPersonRoles(user)
             if roles.in_admin or roles.in_commercial_admin:
@@ -1634,7 +1634,7 @@ class ProductSet:
 
     @classmethod
     def get_all_active(cls, user, eager_load=True):
-        clause = cls.get_product_privacy_filter(user)
+        clause = cls.getProductPrivacyFilter(user)
         result = IStore(Product).find(Product, Product.active,
                     clause).order_by(Desc(Product.datecreated))
         if not eager_load:
@@ -1756,7 +1756,7 @@ class ProductSet:
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = [self.get_product_privacy_filter(user)]
+        conditions = [self.getProductPrivacyFilter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)

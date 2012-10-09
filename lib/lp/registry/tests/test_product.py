@@ -1650,7 +1650,7 @@ class TestProductSet(TestCaseWithFactory):
 
     @staticmethod
     def filterFind(user):
-        clause = ProductSet.get_product_privacy_filter(user)
+        clause = ProductSet.getProductPrivacyFilter(user)
         return IStore(Product).find(Product, clause)
 
     def test_get_all_active_omits_proprietary(self):
@@ -1663,7 +1663,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
 
-    def test_get_product_privacy_filter_anonymous(self):
+    def test_getProductPrivacyFilterAnonymous(self):
         # Ignore proprietary products for anonymous users
         proprietary, embargoed, public = self.makeAllInformationTypes()
         result = self.filterFind(None)
@@ -1671,7 +1671,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
 
-    def test_get_product_privacy_filter_excludes_random_users(self):
+    def test_getProductPrivacyFilter_excludes_random_users(self):
         # Exclude proprietary products for anonymous users
         random = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -1686,7 +1686,7 @@ class TestProductSet(TestCaseWithFactory):
             [(pillar, information_type)])
         self.factory.makeAccessPolicyGrant(policy, grantee)
 
-    def test_get_product_privacy_filter_respects_grants(self):
+    def test_getProductPrivacyFilter_respects_grants(self):
         # Include proprietary products for users with right grants.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -1697,7 +1697,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
 
-    def test_get_product_privacy_filter_ignores_wrong_product(self):
+    def test_getProductPrivacyFilter_ignores_wrong_product(self):
         # Exclude proprietary products if grant is on wrong product.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -1707,7 +1707,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
 
-    def test_get_product_privacy_filter_ignores_wrong_info_type(self):
+    def test_getProductPrivacyFilter_ignores_wrong_info_type(self):
         # Exclude proprietary products if grant is on wrong information type.
         grantee = self.factory.makePerson()
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -1719,7 +1719,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(embargoed, result)
         self.assertNotIn(proprietary, result)
 
-    def test_get_product_privacy_filter_respects_team_grants(self):
+    def test_getProductPrivacyFilter_respects_team_grants(self):
         # Include proprietary products for users in teams with right grants.
         grantee = self.factory.makeTeam()
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -1730,7 +1730,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
 
-    def test_get_product_privacy_includes_admins(self):
+    def test_getProductPrivacyFilter_includes_admins(self):
         # Launchpad admins can see everything.
         proprietary, embargoed, public = self.makeAllInformationTypes()
         result = self.filterFind(self.factory.makeAdministrator())
@@ -1738,7 +1738,7 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
 
-    def test_get_product_privacy_includes_commercial_admins(self):
+    def test_getProductPrivacyFilter_includes_commercial_admins(self):
         # Commercial admins can see everything.
         proprietary, embargoed, public = self.makeAllInformationTypes()
         result = self.filterFind(self.factory.makeCommercialAdmin())
