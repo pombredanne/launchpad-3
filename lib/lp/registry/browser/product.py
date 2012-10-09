@@ -1711,7 +1711,8 @@ class ProductSetView(LaunchpadView):
 
     @cachedproperty
     def all_batched(self):
-        return BatchNavigator(self.context.all_active, self.request)
+        return BatchNavigator(self.context.get_all_active(self.user),
+                              self.request)
 
     @cachedproperty
     def matches(self):

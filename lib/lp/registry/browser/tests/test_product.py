@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
@@ -544,9 +544,30 @@ class TestProductSet(BrowserTestCase):
             self.assertNotIn(embargoed.name, browser.contents)
 
     def test_proprietary_products_shown_to_owners(self):
+        # Owners will see their proprietary products listed
         owner, public, proprietary, embargoed = self.makeAllInformationTypes()
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_skipped_all(self):
+        # Ignore proprietary products for anonymous users
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        browser = self.getViewBrowser(getUtility(IProductSet), view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners_all(self):
+        # Owners will see their proprietary products listed
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
+                view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
