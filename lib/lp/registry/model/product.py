@@ -1570,6 +1570,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         if user.id in self._known_viewers:
             return True
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
         # We want an actual Storm Person.
         if IPersonRoles.providedBy(user):
             user = user.person

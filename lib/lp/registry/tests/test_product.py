@@ -773,6 +773,18 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
+    def test_admin_launchpad_View_proprietary_product(self):
+        # Admins and commercial admins can view proprietary products.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(self.factory.makeAdministrator()):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(self.factory.makeCommercialAdmin()):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
     def test_access_launchpad_AnyAllowedPerson_public_product(self):
         # Only logged in persons have access to properties of public products
         # that require the permission launchpad.AnyAllowedPerson.
