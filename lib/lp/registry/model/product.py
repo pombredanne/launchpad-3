@@ -1746,7 +1746,7 @@ class ProductSet:
         product.development_focus = trunk
         return product
 
-    def forReview(self, search_text=None, active=None,
+    def forReview(self, user, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   created_after=None, created_before=None,
                   has_subscription=None,
@@ -1756,7 +1756,7 @@ class ProductSet:
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = []
+        conditions = [self.get_product_privacy_filter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)

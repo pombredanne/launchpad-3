@@ -556,7 +556,8 @@ class TestProductSet(BrowserTestCase):
     def test_proprietary_products_skipped_all(self):
         # Ignore proprietary products for anonymous users
         owner, public, proprietary, embargoed = self.makeAllInformationTypes()
-        browser = self.getViewBrowser(getUtility(IProductSet), view_name='+all')
+        product_set = getUtility(IProductSet)
+        browser = self.getViewBrowser(product_set, view_name='+all')
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertNotIn(proprietary.name, browser.contents)
@@ -568,6 +569,30 @@ class TestProductSet(BrowserTestCase):
         transaction.commit()
         browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
                 view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_review_exclude_proprietary_for_expert(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        expert = self.factory.makeRegistryExpert()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=expert)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_review_include_proprietary_for_admin(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        admin = self.factory.makeAdministrator()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=admin)
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
