@@ -125,7 +125,6 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
-    enabled_with_permission,
     Link,
     )
 from lp.services.webapp.authorization import (
