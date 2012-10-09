@@ -32,9 +32,7 @@ from lp.code.bzr import (
     ControlFormat,
     RepositoryFormat,
     )
-from lp.code.enums import (
-    BranchType,
-    )
+from lp.code.enums import BranchType
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility

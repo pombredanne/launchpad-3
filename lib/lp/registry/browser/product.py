@@ -104,8 +104,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError

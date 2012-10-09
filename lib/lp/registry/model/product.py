@@ -69,8 +69,8 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
