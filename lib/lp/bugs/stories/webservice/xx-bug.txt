@@ -1463,14 +1463,13 @@ It can also be used to find bugs modified since a certain date.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> target = factory.makeProduct()
-    >>> target_name = target.name
     >>> bug = factory.makeBug(target=target)
     >>> bug = removeSecurityProxy(bug)
     >>> date = bug.date_last_updated - timedelta(days=6)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target_name, 'searchTasks',
+    ...     '/%s' % target.name, 'searchTasks',
     ...     modified_since=u'%s' % date ).jsonBody())
     start: 0
     total_size: 1
@@ -1482,13 +1481,12 @@ It can also be used to find bug tasks created since a certain date.
     >>> from lp.bugs.interfaces.bugtarget import IBugTarget
     >>> login(ADMIN_EMAIL)
     >>> target = IBugTarget(factory.makeProduct())
-    >>> target_name = target.name
     >>> task = factory.makeBugTask(target=target)
     >>> date = task.datecreated - timedelta(days=8)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target_name, 'searchTasks',
+    ...     '/%s' % target.name, 'searchTasks',
     ...     created_since=u'%s' % date).jsonBody())
     start: 0
     total_size: 1
@@ -1499,7 +1497,7 @@ Or for finding bug tasks created before a certain date.
 
     >>> before_date = task.datecreated + timedelta(days=8)
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target_name, 'searchTasks',
+    ...     '/%s' % target.name, 'searchTasks',
     ...     created_before=u'%s' % before_date).jsonBody())
     start: 0
     total_size: 1

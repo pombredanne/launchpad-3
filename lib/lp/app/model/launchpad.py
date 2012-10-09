@@ -43,7 +43,7 @@ class ExceptionPrivacy(Privacy):
 
 
 class InformationTypeMixin:
-    """Common functionality for classes implementing IInformationType."""
+    """"Common functionality for classes implementing IInformationType."""
 
     @property
     def private(self):
