@@ -809,10 +809,23 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '(assignee|importance|milestone|status)')
         interesting_match = re.compile(
             "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
+
+        activity_items = [
+            activity_item for activity_item in activity
+            if interesting_match(activity_item.whatchanged) is not None]
+        # Pre-load the doers of the activities in one query.
+        person_ids = set(
+            activity_item.personID for activity_item in activity_items)
+        cached_people = {}
+        for person in getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True):
+            cached_people[person.id] = person
+
         interesting_activity = tuple(
-            BugActivityItem(activity)
-            for activity in activity
-            if interesting_match(activity.whatchanged) is not None)
+            BugActivityItem(
+                activity_item, cached_people[activity_item.personID])
+            for activity_item in activity_items)
+
         # This is a bit kludgy but it means that interesting_activity is
         # populated correctly for all subsequent calls.
         self._interesting_activity_cached_value = interesting_activity
@@ -4277,10 +4290,16 @@ class BugTaskExpirableListingView(BugTaskSearchListingView):
 
 class BugActivityItem:
     """A decorated BugActivity."""
+
+    # `person` needs to be declared as a class attribute so that this class
+    # will not delegate the actual instance variables to self.activity,
+    # which would bypass the caching.
+    person = None
     delegates(IBugActivity, 'activity')
 
-    def __init__(self, activity):
+    def __init__(self, activity, activity_person):
         self.activity = activity
+        self.person = activity_person
 
     @property
     def change_summary(self):

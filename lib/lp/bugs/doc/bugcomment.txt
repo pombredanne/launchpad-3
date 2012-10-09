@@ -346,7 +346,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
     ...     bug=bug_task.bug, whatchanged='malone: status',
     ...     oldvalue='New', newvalue='Confirmed',
     ...     person=user, datechanged=message.datecreated)
-    >>> activity_item = BugActivityItem(activity)
+    >>> activity_item = BugActivityItem(activity, user)
 
     >>> bug_comment = BugComment(
     ...     index=0, message=message, bugtask=bug_task,

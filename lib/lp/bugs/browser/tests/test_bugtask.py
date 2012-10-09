@@ -239,6 +239,31 @@ class TestBugTaskView(TestCaseWithFactory):
         [activity] = view.interesting_activity
         self.assertEqual("description", activity.whatchanged)
 
+    def test_rendered_query_counts_constant_with_activities(self):
+        # More queries are not used for extra bug activities.
+        task = self.factory.makeBugTask()
+
+        def add_activity(what, who):
+            getUtility(IBugActivitySet).new(
+                task.bug, datetime.now(UTC), who, whatchanged=what)
+
+        # Render the view with one activity.
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                98, self.factory.makePerson())
+            person = self.factory.makePerson()
+            add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
+        # Render the view with many more activities by different people.
+        with celebrity_logged_in('admin'):
+            for _ in range(20):
+                person = self.factory.makePerson()
+                add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
     def test_error_for_changing_target_with_invalid_status(self):
         # If a user moves a bug task with a restricted status (say,
         # Triaged) to a target where they do not have permission to set
