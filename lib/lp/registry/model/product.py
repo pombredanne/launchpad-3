@@ -69,7 +69,6 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
@@ -441,18 +440,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 ' Projects.')
         return value
 
-    _information_type = EnumCol(
+    information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
-        dbName='information_type',
         storm_validator=_valid_product_information_type)
-
-    def _get_information_type(self):
-        return self._information_type or InformationType.PUBLIC
-
-    def _set_information_type(self, value):
-        self._information_type = value
-
-    information_type = property(_get_information_type, _set_information_type)
 
     security_contact = None
 
@@ -1534,31 +1524,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
-
-    @cachedproperty
-    def _known_viewers(self):
-        """A set of known persons able to view this product."""
-        return set()
-
-    def userCanView(self, user):
-        """See `IProductPublic`."""
-        if self.information_type in PUBLIC_INFORMATION_TYPES:
-            return True
-        if user is None:
-            return False
-        if user.id in self._known_viewers:
-            return True
-        # We want an actual Storm Person.
-        if IPersonRoles.providedBy(user):
-            user = user.person
-        policy = getUtility(IAccessPolicySource).find(
-            [(self, self.information_type)]).one()
-        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
-            [(policy, user)])
-        if grants_for_user.is_empty():
-            return False
-        self._known_viewers.add(user.id)
-        return True
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,

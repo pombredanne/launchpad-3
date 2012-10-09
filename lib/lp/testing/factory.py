@@ -1028,6 +1028,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 specification_sharing_policy)
         if information_type is not None:
             naked_product.information_type = information_type
+
         return product
 
     def makeLegacyProduct(self, **kwargs):
@@ -1060,7 +1061,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         if owner is None:
-            owner = removeSecurityProxy(product).owner
+            owner = product.owner
         if name is None:
             name = self.getUniqueString()
         if summary is None:
@@ -1837,8 +1838,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(
-            owner, removeSecurityProxy(target))
+        return removeSecurityProxy(bug).addTask(owner, target)
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.

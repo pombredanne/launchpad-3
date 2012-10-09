@@ -40,7 +40,6 @@ from lp.registry.interfaces.product import (
     IProductSeries,
     )
 from lp.services.features.testing import FeatureFixture
-from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -468,11 +467,7 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             control = browser.getControl(information_type.title)
             if not control.selected:
                 control.click()
-            specification_name = self.submitSpec(browser)
-            # Using the browser terminated the interaction, but we need
-            # an interaction in order to access a product.
-            with person_logged_in(ANONYMOUS):
-                return product.getSpecification(specification_name)
+            return product.getSpecification(self.submitSpec(browser))
 
     def test_supplied_information_types(self):
         """Creating honours information types."""
@@ -556,11 +551,9 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         Useful because we need to follow to product from a
         ProductSeries.
         """
-        # We need an interaction in order to access a product.
-        with person_logged_in(ANONYMOUS):
-            if IProductSeries.providedBy(target):
-                return target.product.getSpecification(name)
-            return target.getSpecification(name)
+        if IProductSeries.providedBy(target):
+            return target.product.getSpecification(name)
+        return target.getSpecification(name)
 
     def submitSpec(self, browser):
         """Submit a Specification via a browser."""
