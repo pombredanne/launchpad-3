@@ -705,7 +705,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
-        allowed_specification_types = set (
+        allowed_specification_types = set(
             SPECIFICATION_POLICY_ALLOWED_TYPES.get(
                 self.specification_sharing_policy, [InformationType.PUBLIC])
         )
