@@ -1184,7 +1184,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             [policy.type for policy in
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.setSharingPolicy(
-            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.enum.EMBARGOED_OR_PROPRIETARY,
             self.commercial_admin)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA,
@@ -1197,6 +1197,30 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
                 self.product, InformationType.EMBARGOED, self.product.owner))
+
+
+class ProductSpecificationSharingPolicyTestCase(
+    ProductBranchSharingPolicyTestCase):
+    """Test Product.specification_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = SpecificationSharingPolicy
+    public_policy = SpecificationSharingPolicy.PUBLIC
+    commercial_policies = (
+        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        SpecificationSharingPolicy.PROPRIETARY,
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        with person_logged_in(user):
+            result = self.product.setSpecificationSharingPolicy(policy)
+        return result
+
+    def getSharingPolicy(self):
+        return self.product.specification_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
