@@ -624,7 +624,6 @@ class URIField(TextLine):
         if input is None:
             return input
 
-        input = input.strip()
         try:
             uri = URI(input)
         except InvalidURIError as exc:
