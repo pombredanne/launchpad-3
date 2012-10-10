@@ -809,10 +809,19 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '(assignee|importance|milestone|status)')
         interesting_match = re.compile(
             "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
+
+        activity_items = [
+            activity_item for activity_item in activity
+            if interesting_match(activity_item.whatchanged) is not None]
+        # Pre-load the doers of the activities in one query.
+        person_ids = set(
+            activity_item.personID for activity_item in activity_items)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
         interesting_activity = tuple(
-            BugActivityItem(activity)
-            for activity in activity
-            if interesting_match(activity.whatchanged) is not None)
+            BugActivityItem(activity_item) for activity_item in activity_items)
+
         # This is a bit kludgy but it means that interesting_activity is
         # populated correctly for all subsequent calls.
         self._interesting_activity_cached_value = interesting_activity
