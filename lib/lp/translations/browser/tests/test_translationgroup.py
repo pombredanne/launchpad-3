@@ -18,7 +18,6 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.views import create_initialized_view
 from lp.translations.browser.translationgroup import TranslationGroupView
 
 
