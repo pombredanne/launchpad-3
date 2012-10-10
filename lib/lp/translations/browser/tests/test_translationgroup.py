@@ -10,8 +10,15 @@ from zope.component import getUtility
 
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing import (
+    BrowserTestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.views import create_initialized_view
 from lp.translations.browser.translationgroup import TranslationGroupView
 
 
@@ -21,23 +28,19 @@ class TestTranslationGroupView(TestCaseWithFactory):
     def setUp(self):
         super(TestTranslationGroupView, self).setUp()
 
-    def _makeGroup(self):
-        """Create a translation group."""
-        return self.factory.makeTranslationGroup()
-
-    def _makeView(self, group):
+    def _makeView(self, group, name=None):
         """Create a view for self.group."""
         view = TranslationGroupView(group, LaunchpadTestRequest())
         view.initialize()
         return view
 
     def test_translator_list_empty(self):
-        view = self._makeView(self._makeGroup())
+        view = self._makeView(self.factory.makeTranslationGroup())
         self.assertEqual([], view.translator_list)
 
     def test_translator_list(self):
         # translator_list composes dicts using _makeTranslatorDict.
-        group = self._makeGroup()
+        group = self.factory.makeTranslationGroup()
         tr_translator = self.factory.makeTranslator('tr', group)
         transaction.commit()
         view = self._makeView(group)
@@ -47,7 +50,7 @@ class TestTranslationGroupView(TestCaseWithFactory):
 
     def test_makeTranslatorDict(self):
         # _makeTranslatorDict describes a Translator entry to the UI.
-        group = self._makeGroup()
+        group = self.factory.makeTranslationGroup()
         xhosa = self.factory.makeTranslator('xh', group)
         xhosa.style_guide_url = 'http://xh.example.com/'
         view = self._makeView(group)
@@ -62,3 +65,30 @@ class TestTranslationGroupView(TestCaseWithFactory):
         self.assertEqual(xhosa.datecreated, output['datecreated'])
         self.assertEqual(xhosa.style_guide_url, output['style_guide_url'])
         self.assertEqual(xhosa, output['context'])
+
+
+class TestTranslationGroupViewPermissions(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def _assertLinksFound(self, contents, links_found):
+        for link in ['+edit', '+appoint']:
+            if links_found:
+                self.assertTrue(link in contents)
+            else:
+                self.assertFalse(link in contents)
+
+    def test_links_anon(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(group, "+index", no_login=True)
+        self._assertLinksFound(browser.contents, False)
+
+    def test_links_unauthorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(group, "+index")
+        self._assertLinksFound(browser.contents, False)
+
+    def test_links_authorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(group, "+index", user=group.owner)
+        self._assertLinksFound(browser.contents, True)
