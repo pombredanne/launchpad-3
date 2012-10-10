@@ -8,6 +8,7 @@ from textwrap import dedent
 
 import transaction
 from zope.component import getUtility
+from testtools.matchers import Equals
 
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
@@ -34,6 +35,7 @@ from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login_celebrity,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -41,6 +43,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 
 
 class PersonMailingListTestCase(TestCaseWithFactory):
@@ -744,6 +747,21 @@ class MailingListHeldMessageTestCase(MailingListMessageTestCase):
         held_messages = team.mailing_list.getReviewableMessages()
         self.assertEqual(1, held_messages.count())
         self.assertEqual(held_message.message_id, held_messages[0].message_id)
+
+    def test_getReviewableMessages_queries(self):
+        # The Message and user that posted it are retrieved with the query
+        # that get the MessageApproval.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_messages = team.mailing_list.getReviewableMessages()
+        with StormStatementRecorder() as recorder:
+            [hm for hm in held_messages]
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        held_message = held_messages[0]
+        with StormStatementRecorder() as recorder:
+            held_message.message
+            held_message.posted_by
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
 class MessageApprovalTestCase(MailingListMessageTestCase):

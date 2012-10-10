@@ -450,11 +450,12 @@ class MailingList(SQLBase):
             MessageApproval.mailing_listID == self.id,
             MessageApproval.status == PostedMessageStatus.NEW,
             MessageApproval.messageID == Message.id,
+            MessageApproval.posted_byID == Person.id
             ]
         if message_id_filter is not None:
             clauses.append(Message.rfc822msgid.is_in(message_id_filter))
-        results = store.find((MessageApproval, Message),
-            *clauses)
+        results = store.find(
+            (MessageApproval, Message, Person), *clauses)
         results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
         return DecoratedResultSet(results, operator.itemgetter(0))
 
@@ -791,7 +792,7 @@ class HeldMessageDetails:
         self.message_id = message_approval.message_id
         self.subject = self.message.subject
         self.date = self.message.datecreated
-        self.author = self.message.owner
+        self.author = self.message_approval.posted_by
 
     @cachedproperty
     def body(self):
