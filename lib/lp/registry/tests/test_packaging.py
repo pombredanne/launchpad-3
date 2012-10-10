@@ -11,10 +11,13 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
     )
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import (
     IPackagingUtil,
@@ -169,6 +172,27 @@ class TestCreatePackaging(PackagingUtilMixin, TestCaseWithFactory):
             self.productseries, self.sourcepackagename, self.distroseries,
             PackagingType.PRIME, self.owner)
 
+    def test_createPackaging_refuses_PROPRIETARY(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Proprietary.'):
+            self.packaging_util.createPackaging(
+                series, self.sourcepackagename, self.distroseries,
+                PackagingType.PRIME, owner=self.owner)
+
+    def test_createPackaging_refuses_EMBARGOED(self):
+        """Packaging cannot be created for EMBARGOED productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        series = self.factory.makeProductSeries(product=product)
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Embargoed.'):
+            self.packaging_util.createPackaging(
+                series, self.sourcepackagename, self.distroseries,
+                PackagingType.PRIME, owner=self.owner)
 
 class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
     """Test PackagingUtil.packagingEntryExists."""

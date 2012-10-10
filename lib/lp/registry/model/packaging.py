@@ -16,7 +16,10 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.informationtype import IInformationType
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -106,6 +109,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
+        info_type = IInformationType(productseries).information_type
+        if info_type != InformationType.PUBLIC:
+            raise CannotPackageProprietaryProduct(
+                "Only Public project series can be packaged, not %s."
+                % info_type.title)
         return Packaging(productseries=productseries,
                          sourcepackagename=sourcepackagename,
                          distroseries=distroseries,
