@@ -405,7 +405,8 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         return create_initialized_view(product, '+addspec')
 
     def test_default_info_type(self):
-        # In this case the default info type cannot be PUBlic.
+        # In this case the default info type cannot be PUBlIC as it's not
+        # among the allowed types.
         view = self.createInitializedView()
         self.assertEqual(
             InformationType.EMBARGOED,
