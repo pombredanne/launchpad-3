@@ -202,8 +202,12 @@ This widget is registered as an input widget:
 
 Multiple values will cause an UnexpectedFormData exception:
 
-  >>> widget._toFieldValue(['http://launchpad.net',
-  ...                       'http://ubuntu.com'])
+  >>> widget._toFieldValue(['http://launchpad.net', 'http://ubuntu.com'])
   Traceback (most recent call last):
     ...
   UnexpectedFormData: Only a single value is expected
+
+Values with leading and trailing whitespace are stripped.
+
+   >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
+   u'http://www.ubuntu.com/'
