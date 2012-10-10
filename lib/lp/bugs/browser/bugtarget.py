@@ -359,6 +359,7 @@ class FileBugViewBase(LaunchpadFormView):
     def initial_values(self):
         """Give packagename a default value, if applicable."""
         values = {'information_type': self.default_information_type}
+
         if IDistributionSourcePackage.providedBy(self.context):
             values['packagename'] = self.context.name
 
