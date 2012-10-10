@@ -440,7 +440,7 @@ class TestProductEditView(TestCaseWithFactory):
     def setUp(self):
         super(TestProductEditView, self).setUp()
 
-    def _make_product_edit_form(self, proprietary=False):
+    def _make_product_edit_form(self, product, proprietary=False):
         """Return form data for product edit.
 
         :param product: Factory product to base the form data base of.
@@ -456,10 +456,10 @@ class TestProductEditView(TestCaseWithFactory):
 
         return {
             'field.actions.change': 'Change',
-            'field.name': self.product.name,
-            'field.displayname': self.product.displayname,
-            'field.title': self.product.title,
-            'field.summary': self.product.summary,
+            'field.name': product.name,
+            'field.displayname': product.displayname,
+            'field.title': product.title,
+            'field.summary': product.summary,
             'field.information_type': information_type,
             'field.licenses': licenses,
             'field.license_info': license_info,
@@ -469,7 +469,7 @@ class TestProductEditView(TestCaseWithFactory):
         product = self.factory.makeProduct(name='fnord')
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(product.owner)
-            form = self._make_product_edit_form(proprietary=True)
+            form = self._make_product_edit_form(product, proprietary=True)
             view = create_initialized_view(product, '+edit', form=form)
             self.assertEqual(0, len(view.errors))
 
@@ -490,7 +490,7 @@ class TestProductEditView(TestCaseWithFactory):
         )
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(owner)
-            form = self._make_product_edit_form()
+            form = self._make_product_edit_form(product)
             view = create_initialized_view(product, '+edit', form=form)
             self.assertEqual(0, len(view.errors))
 
