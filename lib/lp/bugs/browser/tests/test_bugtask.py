@@ -156,7 +156,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                97, self.factory.makePerson())
+                95, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -250,7 +250,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Render the view with one activity.
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                98, self.factory.makePerson())
+                93, self.factory.makePerson())
             person = self.factory.makePerson()
             add_activity("description", person)
 
