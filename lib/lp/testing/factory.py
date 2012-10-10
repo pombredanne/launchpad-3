@@ -4217,10 +4217,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_version=package_version, requester=requester)
 
     def makeAccessPolicy(self, pillar=None,
-                         type=InformationType.PROPRIETARY):
+                         type=InformationType.PROPRIETARY,
+                         check_existing=False):
         if pillar is None:
             pillar = self.makeProduct()
-        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        policy_source = getUtility(IAccessPolicySource)
+        if check_existing:
+            policy = policy_source.find([(pillar, type)]).one()
+            if policy is not None:
+                return policy
+        policies = policy_source.create([(pillar, type)])
         return policies[0]
 
     def makeAccessArtifact(self, concrete=None):

@@ -34,6 +34,10 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.registry.enums import SpecificationSharingPolicy
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.product import (
     IProduct,
@@ -460,9 +464,8 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             if sharing_policy is not None:
                 self.factory.makeCommercialSubscription(product)
                 product.setSpecificationSharingPolicy(sharing_policy)
-            policy = self.factory.makeAccessPolicy(product, information_type)
-            self.factory.makeAccessPolicyGrant(
-                policy, grantee=self.user, grantor=self.user)
+            policy = getUtility(IAccessPolicySource).find([(product,
+                information_type)]).one()
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:
