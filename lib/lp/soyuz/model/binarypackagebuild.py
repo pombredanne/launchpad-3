@@ -335,6 +335,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
             BuildStatus.FAILEDTOUPLOAD,
+            BuildStatus.CANCELLED,
             ]
 
         # If the build is currently in any of the failed states,

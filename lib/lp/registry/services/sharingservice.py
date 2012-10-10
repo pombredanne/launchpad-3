@@ -94,11 +94,12 @@ class SharingService:
         """See `IService`."""
         return 'sharing'
 
-    def checkPillarAccess(self, pillar, information_type, person):
+    def checkPillarAccess(self, pillars, information_type, person):
         """See `ISharingService`."""
-        policy = getUtility(IAccessPolicySource).find(
-            [(pillar, information_type)]).one()
-        if policy is None:
+        policies = getUtility(IAccessPolicySource).find(
+            [(pillar, information_type) for pillar in pillars])
+        policy_ids = [policy.id for policy in policies]
+        if not policy_ids:
             return False
         store = IStore(AccessPolicyGrant)
         tables = [
@@ -109,7 +110,7 @@ class SharingService:
             ]
         result = store.using(*tables).find(
             AccessPolicyGrant,
-            AccessPolicyGrant.policy_id == policy.id,
+            AccessPolicyGrant.policy_id.is_in(policy_ids),
             TeamParticipation.personID == person.id)
         return not result.is_empty()
 
