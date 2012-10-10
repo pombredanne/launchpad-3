@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'BugWatch',
@@ -20,7 +18,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import find_uris_in_text
 from pytz import utc
-# SQL imports
 from sqlobject import (
     ForeignKey,
     SQLObjectNotFound,
@@ -495,6 +492,8 @@ class BugWatchSet(BugSetBase):
             remote_bug = query['issue']
         else:
             return None
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
         base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
@@ -504,9 +503,8 @@ class BugWatchSet(BugSetBase):
         bug_page = 'view.php'
         if not path.endswith(bug_page):
             return None
-        if query.get('id'):
-            remote_bug = query['id']
-        else:
+        remote_bug = query.get('id')
+        if remote_bug is None or not remote_bug.isdigit():
             return None
         base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
@@ -539,7 +537,7 @@ class BugWatchSet(BugSetBase):
 
     def parseRoundupURL(self, scheme, host, path, query):
         """Extract the RoundUp base URL and bug ID."""
-        match = re.match(r'(.*/)issue(\d+)', path)
+        match = re.match(r'(.*/)issue(\d+)$', path)
         if not match:
             return None
         base_path = match.group(1)
@@ -569,13 +567,15 @@ class BugWatchSet(BugSetBase):
 
         base_path = match.group(1)
         remote_bug = query['id']
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
     def parseTracURL(self, scheme, host, path, query):
         """Extract the Trac base URL and bug ID."""
-        match = re.match(r'(.*/)ticket/(\d+)', path)
+        match = re.match(r'(.*/)ticket/(\d+)$', path)
         if not match:
             return None
         base_path = match.group(1)
@@ -605,6 +605,8 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query['aid']
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         # There's only one global SF instance registered in Launchpad,
         # so we return that if the hostnames match.
@@ -638,6 +640,8 @@ class BugWatchSet(BugSetBase):
         # a value, so we simply use the first and only key we come
         # across as a best-effort guess.
         remote_bug = query.popitem()[0]
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         if host in savannah_hosts:
             return savannah_tracker.baseurl, remote_bug
@@ -669,7 +673,7 @@ class BugWatchSet(BugSetBase):
         if path != '/bug.php' or len(query) != 1:
             return None
         remote_bug = query.get('id')
-        if remote_bug is None:
+        if remote_bug is None or not remote_bug.isdigit():
             return None
         base_url = urlunsplit((scheme, host, '/', '', ''))
         return base_url, remote_bug
@@ -687,7 +691,7 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query.get('id')
-        if remote_bug is None:
+        if remote_bug is None or not remote_bug.isdigit():
             return None
 
         tracker_path = path_match.groupdict()['base_path']
@@ -708,9 +712,8 @@ class BugWatchSet(BugSetBase):
             if not bugtracker_data:
                 continue
             base_url, remote_bug = bugtracker_data
-            bugtrackerset = getUtility(IBugTrackerSet)
             # Check whether we have a registered bug tracker already.
-            bugtracker = bugtrackerset.queryByBaseURL(base_url)
+            bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(base_url)
 
             if bugtracker is not None:
                 return bugtracker, remote_bug

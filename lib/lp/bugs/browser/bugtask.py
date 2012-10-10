@@ -809,10 +809,19 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '(assignee|importance|milestone|status)')
         interesting_match = re.compile(
             "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
+
+        activity_items = [
+            activity_item for activity_item in activity
+            if interesting_match(activity_item.whatchanged) is not None]
+        # Pre-load the doers of the activities in one query.
+        person_ids = set(
+            activity_item.personID for activity_item in activity_items)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
         interesting_activity = tuple(
-            BugActivityItem(activity)
-            for activity in activity
-            if interesting_match(activity.whatchanged) is not None)
+            BugActivityItem(activity_item) for activity_item in activity_items)
+
         # This is a bit kludgy but it means that interesting_activity is
         # populated correctly for all subsequent calls.
         self._interesting_activity_cached_value = interesting_activity
@@ -2641,7 +2650,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             self.context, self.request, self.user)
         can_view = (IPrivacy(self.context, None) is None
             or check_permission('launchpad.View', self.context))
-        if can_view and not FeedsLayer.providedBy(self.request):
+        if (can_view and
+            not FeedsLayer.providedBy(self.request) and
+            not self.request.form.get('advanced')):
             cache = IJSONRequestCache(self.request)
             view_names = set(reg.name for reg
                 in iter_view_registrations(self.__class__))
