@@ -55,8 +55,8 @@ class ISharingService(IService):
     def checkPillarAccess(pillars, information_type, person):
         """Check the person's access to the given pillars and information type.
 
-        :return: True if the user has sharing permission 'ALL' on any of the
-            specified pillars.
+        :return: True if the user has been granted SharingPermission.ALL on
+            *any* of the specified pillars.
         """
 
     def getAccessPolicyGrantCounts(pillar):
