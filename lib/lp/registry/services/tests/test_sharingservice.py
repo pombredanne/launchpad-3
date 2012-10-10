@@ -1722,18 +1722,18 @@ class TestSharingService(TestCaseWithFactory):
         self.assertEqual(
             False,
             self.service.checkPillarAccess(
-                product, InformationType.USERDATA, wrong_person))
+                [product], InformationType.USERDATA, wrong_person))
         self.assertEqual(
             True,
             self.service.checkPillarAccess(
-                product, InformationType.USERDATA, right_person))
+                [product], InformationType.USERDATA, right_person))
 
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.
         self.assertEqual(
             False,
             self.service.checkPillarAccess(
-                self.factory.makeProduct(), InformationType.PUBLIC,
+                [self.factory.makeProduct()], InformationType.PUBLIC,
                 self.factory.makePerson()))
 
     def test_getAccessPolicyGrantCounts(self):

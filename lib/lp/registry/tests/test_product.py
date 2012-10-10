@@ -1089,7 +1089,8 @@ class BaseSharingPolicyTests:
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.PROPRIETARY, self.product.owner))
+                [self.product], InformationType.PROPRIETARY,
+                self.product.owner))
 
     def test_unused_policies_are_pruned(self):
         # When a sharing policy is changed, the allowed information types may
@@ -1193,10 +1194,12 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.PROPRIETARY, self.product.owner))
+                [self.product], InformationType.PROPRIETARY,
+                self.product.owner))
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.EMBARGOED, self.product.owner))
+                [self.product], InformationType.EMBARGOED,
+                self.product.owner))
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
