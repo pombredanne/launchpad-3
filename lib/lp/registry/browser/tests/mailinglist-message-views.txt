@@ -38,7 +38,7 @@ the mailing list administrator.
     >>> print view.date
     2000-08-01 01:09:00+00:00
     >>> print view.author
-    <a href="http://launchpad.dev/~carlos">Carlos &lt;carlos@canonical.com&gt;</a>
+    <a href="/~carlos" class="sprite person">Carlos Perell... Marín</a>
     >>> print view.body_summary
     First paragraph.
     >>> print view.body_details
