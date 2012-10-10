@@ -755,9 +755,8 @@ class MailingListHeldMessageTestCase(MailingListMessageTestCase):
         team, member, sender, held_message = test_objects
         held_messages = team.mailing_list.getReviewableMessages()
         with StormStatementRecorder() as recorder:
-            [hm for hm in held_messages]
+            held_message = held_messages[0]
         self.assertThat(recorder, HasQueryCount(Equals(1)))
-        held_message = held_messages[0]
         with StormStatementRecorder() as recorder:
             held_message.message
             held_message.posted_by
