@@ -239,7 +239,7 @@ def load_tests(basic_tests, module, loader):
     scenarios = [scenario for scenario in branch_scenarios()
                  if scenario[0] not in (
                      'BranchReferenceFormat', 'GitBranchFormat',
-                     'HgBranchFormat', 'SvnBranchFormat')]
+                     'SvnBranchFormat')]
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))
