@@ -593,6 +593,18 @@ class TestProduct(TestCaseWithFactory):
                 CannotChangeInformationType, 'Answers is enabled.'):
                 product.information_type = InformationType.PROPRIETARY
 
+    def test_no_proprietary_if_packaging(self):
+        # information_type cannot be set to proprietary while any
+        # productseries are packaged.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        series = self.factory.makeProductSeries(product=product)
+        self.factory.makePackagingLink(productseries=series)
+        with person_logged_in(product.owner):
+            with ExpectedException(
+                CannotChangeInformationType, 'Some series are packaged.'):
+                product.information_type = InformationType.PROPRIETARY
+
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
 
