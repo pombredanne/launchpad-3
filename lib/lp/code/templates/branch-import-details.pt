@@ -50,18 +50,6 @@
           </p>
         </tal:git-import>
 
-        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
-          <p>This branch is an import of the tip branch of the Mercurial repository at
-            <tal:is-web-url condition="view/url_is_web">
-              <a tal:attributes="href code_import/url"
-                 tal:content="code_import/url" />.
-            </tal:is-web-url>
-            <tal:not-web-url condition="not: view/url_is_web">
-              <span tal:replace="code_import/url" />.
-            </tal:not-web-url>
-          </p>
-        </tal:hg-import>
-
         <tal:bzr-import condition="code_import/rcs_type/enumvalue:BZR">
           <p>This branch is an import of the Bazaar branch at
             <tal:is-web-url condition="view/url_is_web">
