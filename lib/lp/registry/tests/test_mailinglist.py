@@ -876,17 +876,6 @@ class HeldMessageDetailsTestCase(MailingListMessageTestCase):
         self.assertEqual(held_message.message.datecreated, details.date)
         self.assertEqual(held_message.message.owner, details.author)
 
-    def test_email_message(self):
-        held_message = self.makeMailingListAndHeldMessage()[-1]
-        details = IHeldMessageDetails(held_message)
-        self.assertEqual('A question', details.email_message['subject'])
-
-    def test_sender(self):
-        test_objects = self.makeMailingListAndHeldMessage()
-        team, member, sender, held_message = test_objects
-        details = IHeldMessageDetails(held_message)
-        self.assertEqual(sender.preferredemail.email, details.sender)
-
     def test_body(self):
         held_message = self.makeMailingListAndHeldMessage()[-1]
         details = IHeldMessageDetails(held_message)
