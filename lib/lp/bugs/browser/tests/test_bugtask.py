@@ -39,7 +39,8 @@ from lp.bugs.browser.bugtask import (
     BugListingBatchNavigator,
     BugTaskEditView,
     BugTaskListingItem,
-    BugTasksAndNominationsView,
+    BugTasksNominationsView,
+    BugTasksTableView,
     )
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.feed.bug import PersonBugsFeed
@@ -133,14 +134,14 @@ class TestBugTaskView(TestCaseWithFactory):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
-        # This may seem large: it is; there is easily another 30% fat in
+        # This may seem large: it is; there is easily another 25% fat in
         # there.
-        # If this test is run in isolation, the query count is 94.
+        # If this test is run in isolation, the query count is 80.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(95)))
+        self.assertThat(recorder, HasQueryCount(LessThan(81)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -156,7 +157,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                95, self.factory.makePerson())
+                84, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -250,7 +251,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Render the view with one activity.
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                93, self.factory.makePerson())
+                82, self.factory.makePerson())
             person = self.factory.makePerson()
             add_activity("description", person)
 
@@ -263,6 +264,27 @@ class TestBugTaskView(TestCaseWithFactory):
                 add_activity("description", person)
 
         self.assertThat(task, browses_under_limit)
+
+    def test_rendered_query_counts_constant_with_milestones(self):
+        # More queries are not used for extra milestones.
+        products = []
+        bug = self.factory.makeBug()
+
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                88, self.factory.makePerson())
+
+        self.assertThat(bug, browses_under_limit)
+
+        # Render the view with many milestones.
+        with celebrity_logged_in('admin'):
+            for _ in range(10):
+                product = self.factory.makeProduct()
+                products.append(product)
+                self.factory.makeBugTask(bug=bug, target=product)
+                self.factory.makeMilestone(product)
+
+        self.assertThat(bug, browses_under_limit)
 
     def test_error_for_changing_target_with_invalid_status(self):
         # If a user moves a bug task with a restricted status (say,
@@ -361,20 +383,20 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertIsNone(tag)
 
 
-class TestBugTasksAndNominationsView(TestCaseWithFactory):
+class TestBugTasksNominationsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTasksAndNominationsView, self).setUp()
+        super(TestBugTasksNominationsView, self).setUp()
         login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def refresh(self):
         # The view caches, to see different scenarios, a refresh is needed.
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def test_current_user_affected_status(self):
@@ -400,24 +422,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
-
-    def test_not_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks) - 1):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failIf(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failIf(row_view.many_bugtasks)
-
-    def test_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks)):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failUnless(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failUnless(row_view.many_bugtasks)
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
@@ -635,6 +639,41 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             "This bug affects 2 people", self.view.anon_affected_statement)
 
+
+class TestBugTasksTableView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTasksTableView, self).setUp()
+        login(ADMIN_EMAIL)
+        self.bug = self.factory.makeBug()
+        self.view = BugTasksTableView(
+            self.bug, LaunchpadTestRequest())
+
+    def refresh(self):
+        # The view caches, to see different scenarios, a refresh is needed.
+        self.view = BugTasksNominationsView(
+            self.bug, LaunchpadTestRequest())
+
+    def test_not_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks) - 1):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failIf(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failIf(row_view.many_bugtasks)
+
+    def test_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks)):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failUnless(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failUnless(row_view.many_bugtasks)
+
     def test_getTargetLinkTitle_product(self):
         # The target link title is always none for products.
         target = self.factory.makeProduct()
@@ -753,7 +792,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -777,7 +816,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -823,7 +862,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         any_person = self.factory.makePerson()
         login_person(any_person, request)
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())

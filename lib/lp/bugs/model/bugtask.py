@@ -1944,6 +1944,7 @@ class BugTaskSet:
 
         milestones = store.find(
             Milestone,
+            Milestone.active == True,
             Or(
                 Milestone.distributionID.is_in(distro_ids),
                 Milestone.distroseriesID.is_in(distro_series_ids),
