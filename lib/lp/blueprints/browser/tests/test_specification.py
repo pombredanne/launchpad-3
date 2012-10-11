@@ -352,6 +352,14 @@ class NewSpecificationTests:
         self.assertIsNot(None, info_data)
         self.assertEqual(self.expected_keys, set(info_data.keys()))
 
+    def test_default_info_type(self):
+        # The default selected information type needs to be PUBLIC for new
+        # specifications.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            view.initial_values['information_type'])
+
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
                                        NewSpecificationTests):
@@ -395,6 +403,14 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         product = self.factory.makeProduct(
             specification_sharing_policy=policy)
         return create_initialized_view(product, '+addspec')
+
+    def test_default_info_type(self):
+        # In this case the default info type cannot be PUBlIC as it's not
+        # among the allowed types.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,

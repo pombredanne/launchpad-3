@@ -1962,6 +1962,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             'driver': self.user.name,
             'bug_supervisor': self.user.name,
             'owner': self.user.name,
+            'information_type': InformationType.PUBLIC,
         }
 
     def setUpFields(self):
