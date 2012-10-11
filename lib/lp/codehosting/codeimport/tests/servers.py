@@ -7,7 +7,6 @@ __all__ = [
     'BzrServer',
     'CVSServer',
     'GitServer',
-    'MercurialServer',
     'SubversionServer',
     ]
 
@@ -45,12 +44,6 @@ from dulwich.server import (
     DictBackend,
     TCPGitServer,
     )
-from mercurial.hgweb import (
-    hgweb,
-    server as hgweb_server,
-    )
-from mercurial.localrepo import localrepository
-from mercurial.ui import ui as hg_ui
 import subvertpy.ra
 import subvertpy.repos
 
@@ -288,73 +281,6 @@ class GitServer(Server):
             for (b, filename) in blobs])
         repo.do_commit(committer='Joe Foo <joe@foo.com>',
             message=u'<The commit message>', tree=root_id)
-
-
-class MercurialServerThread(threading.Thread):
-    """A thread which runs a Mercurial http server."""
-
-    def __init__(self, path, address, port=0):
-        super(MercurialServerThread, self).__init__()
-        self.ui = hg_ui()
-        self.ui.setconfig("web", "address", address)
-        self.ui.setconfig("web", "port", port)
-        self.app = hgweb(path, baseui=self.ui)
-        self.httpd = hgweb_server.create_server(self.ui, self.app)
-        # By default the Mercurial server output goes to stdout,
-        # redirect it to prevent a lot of spurious output.
-        self.httpd.errorlog = StringIO()
-        self.httpd.accesslog = StringIO()
-
-    def get_address(self):
-        return (self.httpd.addr, self.httpd.port)
-
-    def run(self):
-        self.httpd.serve_forever()
-
-    def stop(self):
-        self.httpd.shutdown()
-
-
-class MercurialServer(Server):
-
-    def __init__(self, repository_path, use_server=False):
-        super(MercurialServer, self).__init__()
-        self.repository_path = repository_path
-        self._use_server = use_server
-
-    def get_url(self):
-        if self._use_server:
-            return "http://%s:%d/" % self._hgserver.get_address()
-        else:
-            return local_path_to_url(self.repository_path)
-
-    def start_server(self):
-        super(MercurialServer, self).start_server()
-        self.createRepository(self.repository_path)
-        if self._use_server:
-            self._hgserver = MercurialServerThread(self.repository_path,
-                "localhost")
-            self._hgserver.start()
-
-    def stop_server(self):
-        super(MercurialServer, self).stop_server()
-        if self._use_server:
-            self._hgserver.stop()
-
-    def createRepository(self, path):
-        localrepository(hg_ui(), self.repository_path, create=1)
-
-    def makeRepo(self, tree_contents):
-        repo = localrepository(hg_ui(), self.repository_path)
-        for filename, contents in tree_contents:
-            f = open(os.path.join(self.repository_path, filename), 'w')
-            try:
-                f.write(contents)
-            finally:
-                f.close()
-            repo[None].add([filename])
-        repo.commit(
-            text='<The commit message>', user='jane Foo <joe@foo.com>')
 
 
 class BzrServer(Server):

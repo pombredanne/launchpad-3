@@ -16,13 +16,13 @@ from urllib import quote
 
 from zope.component import getUtility
 
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
     )
 from lp.registry.interfaces.person import ITeam
 from lp.services.webapp import (
-    canonical_url,
     LaunchpadView,
     )
 
@@ -44,11 +44,7 @@ class HeldMessageView(LaunchpadView):
         self.subject = self.details.subject
         self.date = self.details.date
         self.widget_name = 'field.' + quote(self.message_id)
-        # The author field is very close to what the details has, except that
-        # the view wants to include a link to the person's overview page.
-        self.author = '<a href="%s">%s</a>' % (
-            canonical_url(self.details.author),
-            escape(self.details.sender))
+        self.author = PersonFormatterAPI(self.details.author).link(None)
 
     def initialize(self):
         """See `LaunchpadView`."""

@@ -22,7 +22,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
     InformationType,
     NON_EMBARGOED_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -32,7 +31,6 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
-    BranchVisibilityRule,
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
@@ -161,18 +159,6 @@ class _BaseNamespace:
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
-
-        # Implicit subscriptions are to enable teams to see private branches
-        # as soon as they are created.  The subscriptions can be edited at
-        # a later date if desired.
-        implicit_subscription = self.getPrivacySubscriber()
-        if implicit_subscription is not None:
-            branch.subscribe(
-                implicit_subscription,
-                BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                registrant)
 
         # The registrant of the branch should also be automatically subscribed
         # in order for them to get code review notifications.  The implicit
@@ -304,13 +290,7 @@ class _BaseNamespace:
 
     def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
-        if InformationType.USERDATA in self.getAllowedInformationTypes(who):
-            return InformationType.USERDATA
-        return InformationType.PUBLIC
-
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        raise NotImplementedError(self.getPrivacySubscriber)
+        raise NotImplementedError
 
 
 class PersonalNamespace(_BaseNamespace):
@@ -334,18 +314,26 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % self.owner.name
 
+    @property
+    def _is_private_team(self):
+        return (
+            self.owner.is_team
+            and self.owner.visibility == PersonVisibility.PRIVATE)
+
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
         # Private teams get private branches, everyone else gets public ones.
-        if (self.owner.is_team
-            and self.owner.visibility == PersonVisibility.PRIVATE):
+        if self._is_private_team:
             return FREE_INFORMATION_TYPES
         else:
             return PUBLIC_INFORMATION_TYPES
 
-    def getPrivacySubscriber(self):
+    def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
-        return None
+        if self._is_private_team:
+            return InformationType.USERDATA
+        else:
+            return InformationType.PUBLIC
 
     @property
     def target(self):
@@ -379,110 +367,34 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.product)
 
-    @property
-    def _using_branchvisibilitypolicy(self):
-        return self.product.branch_sharing_policy is None
-
-    def _getRelatedPolicies(self):
-        """Return the privacy policies relating to the owner."""
-        policies = self.product.getBranchVisibilityTeamPolicies()
-        return [
-            policy for policy in policies
-            if self.owner.inTeam(policy.team)]
-
-    def _getRelatedPrivatePolicies(self):
-        """Return the related policies for privacy."""
-        return [policy for policy in self._getRelatedPolicies()
-                if policy.rule in (BranchVisibilityRule.PRIVATE,
-                                   BranchVisibilityRule.PRIVATE_ONLY)]
-
-    def getPrivacySubscriber(self):
-        """See `IBranchNamespace`."""
-        # New branch_sharing_policy-based privacy doesn't
-        # require a privacy subscriber, as branches are shared through
-        # AccessPolicyGrants.
-        if not self._using_branchvisibilitypolicy:
-            return None
-
-        # If there is a rule defined for the owner, then there is no privacy
-        # subscriber.
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if rule is not None:
-            return None
-        # If there is one private policy for the user, then return the team
-        # for that policy, otherwise there is no privacy subsciber as we don't
-        # guess the user's intent.
-        private_policies = self._getRelatedPrivatePolicies()
-        if len(private_policies) == 1:
-            return private_policies[0].team
-        else:
-            return None
-
     def getAllowedInformationTypes(self, who=None):
         """See `IBranchNamespace`."""
-        if not self._using_branchvisibilitypolicy:
-            # The project uses the new simplified branch_sharing_policy
-            # rules, so check them.
+        # The project uses the new simplified branch_sharing_policy
+        # rules, so check them.
 
-            # Some policies require that the branch owner or current user have
-            # full access to an information type. If it's required and the user
-            # doesn't hold it, no information types are legal.
-            required_grant = BRANCH_POLICY_REQUIRED_GRANTS[
-                self.product.branch_sharing_policy]
-            if (required_grant is not None
-                and not getUtility(IService, 'sharing').checkPillarAccess(
-                    [self.product], required_grant, self.owner)
-                and (who is None
-                    or not getUtility(IService, 'sharing').checkPillarAccess(
-                        [self.product], required_grant, who))):
-                return []
+        # Some policies require that the branch owner or current user have
+        # full access to an information type. If it's required and the user
+        # doesn't hold it, no information types are legal.
+        required_grant = BRANCH_POLICY_REQUIRED_GRANTS[
+            self.product.branch_sharing_policy]
+        if (required_grant is not None
+            and not getUtility(IService, 'sharing').checkPillarAccess(
+                [self.product], required_grant, self.owner)
+            and (who is None
+                or not getUtility(IService, 'sharing').checkPillarAccess(
+                    [self.product], required_grant, who))):
+            return []
 
-            return BRANCH_POLICY_ALLOWED_TYPES[
-                self.product.branch_sharing_policy]
-
-        # The project still uses BranchVisibilityPolicy, so check that.
-        private_rules = (
-            BranchVisibilityRule.PRIVATE,
-            BranchVisibilityRule.PRIVATE_ONLY)
-
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if rule is not None:
-            # If there is an explicit rule for the namespace owner, use that.
-            private = rule in private_rules
-            public = rule != BranchVisibilityRule.PRIVATE_ONLY
-        else:
-            # Otherwise find all the rules for the owner's teams.
-            related_rules = set(p.rule for p in self._getRelatedPolicies())
-
-            # If any of the rules allow private branches, allow them.
-            private = bool(related_rules.intersection(private_rules))
-
-            # If any of the rules allow public branches, allow them.
-            if related_rules.difference([BranchVisibilityRule.PRIVATE_ONLY]):
-                public = True
-            else:
-                # There's no team-specific rules, or none of them allow
-                # public branches. Fall back to the default rule.
-                base_rule = self.product.getBaseBranchVisibilityRule()
-                public = base_rule == BranchVisibilityRule.PUBLIC
-
-        types = []
-        if public:
-            types.extend(PUBLIC_INFORMATION_TYPES)
-        if private:
-            types.extend(FREE_PRIVATE_INFORMATION_TYPES)
-        return types
+        return BRANCH_POLICY_ALLOWED_TYPES[
+            self.product.branch_sharing_policy]
 
     def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
-        if not self._using_branchvisibilitypolicy:
-            default_type = BRANCH_POLICY_DEFAULT_TYPES[
-                self.product.branch_sharing_policy]
-            if default_type not in self.getAllowedInformationTypes(who):
-                return None
-            return default_type
-
-        return super(ProductNamespace, self).getDefaultInformationType(who)
+        default_type = BRANCH_POLICY_DEFAULT_TYPES[
+            self.product.branch_sharing_policy]
+        if default_type not in self.getAllowedInformationTypes(who):
+            return None
+        return default_type
 
 
 class PackageNamespace(_BaseNamespace):
@@ -518,9 +430,9 @@ class PackageNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return PUBLIC_INFORMATION_TYPES
 
-    def getPrivacySubscriber(self):
+    def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
-        return None
+        return InformationType.PUBLIC
 
 
 class BranchNamespaceSet:

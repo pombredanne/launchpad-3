@@ -275,86 +275,6 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
 
-    def test_private_bugs_on_not_allowed_for_anonymous(self):
-        # Anonymous cannot turn on private bugs.
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, None)
-
-    def test_private_bugs_off_not_allowed_for_anonymous(self):
-        # Anonymous cannot turn private bugs off.
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False, None)
-
-    def test_private_bugs_on_not_allowed_for_unauthorised(self):
-        # Unauthorised users cannot turn on private bugs.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, someone)
-
-    def test_private_bugs_off_not_allowed_for_unauthorised(self):
-        # Unauthorised users cannot turn private bugs off.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False, someone)
-
-    def test_private_bugs_on_allowed_for_moderators(self):
-        # Moderators can turn on private bugs.
-        product = self.factory.makeProduct()
-        registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
-
-    def test_private_bugs_off_allowed_for_moderators(self):
-        # Moderators can turn private bugs off.
-        product = self.factory.makeProduct()
-        registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
-
-    def test_private_bugs_on_allowed_for_commercial_subscribers(self):
-        # Commercial subscribers can turn on private bugs.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product)
-        product.checkPrivateBugsTransitionAllowed(True, bug_supervisor)
-
-    def test_private_bugs_on_not_allowed_for_expired_subscribers(self):
-        # Expired Commercial subscribers cannot turn on private bugs.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product, expired=True)
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.setPrivateBugs, True, bug_supervisor)
-
-    def test_private_bugs_off_allowed_for_bug_supervisors(self):
-        # Bug supervisors can turn private bugs off.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
-
-    def test_unauthorised_set_private_bugs_raises(self):
-        # Test Product.setPrivateBugs raises an error if user unauthorised.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.setPrivateBugs, True, someone)
-
-    def test_set_private_bugs(self):
-        # Test Product.setPrivateBugs()
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product)
-        product.setPrivateBugs(True, bug_supervisor)
-        self.assertTrue(product.private_bugs)
-
     def test_product_creation_grants_maintainer_access(self):
         # Creating a new product creates an access grant for the maintainer
         # for all default policies.
@@ -598,8 +518,8 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
-        product = self.factory.makeProduct(private_bugs=private_bugs)
+    def makeProductWithPolicy(self, bug_sharing_policy):
+        product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
             product.setBugSharingPolicy(bug_sharing_policy)
@@ -609,24 +529,6 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         # New projects can only use the non-proprietary information
         # types.
         product = self.factory.makeProduct()
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
-        self.assertEqual(
-            InformationType.PUBLIC, product.getDefaultBugInformationType())
-
-    def test_legacy_private_bugs(self):
-        # The deprecated private_bugs attribute overrides the default
-        # information type to USERDATA.
-        product = self.factory.makeLegacyProduct(private_bugs=True)
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
-        self.assertEqual(
-            InformationType.USERDATA, product.getDefaultBugInformationType())
-
-    def test_sharing_policy_overrides_private_bugs(self):
-        # bug_sharing_policy overrides private_bugs.
-        product = self.makeProductWithPolicy(
-            BugSharingPolicy.PUBLIC, private_bugs=True)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
@@ -1212,7 +1114,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             [policy.type for policy in
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.setSharingPolicy(
-            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.enum.EMBARGOED_OR_PROPRIETARY,
             self.commercial_admin)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA,
@@ -1227,6 +1129,30 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             getUtility(IService, 'sharing').checkPillarAccess(
                 [self.product], InformationType.EMBARGOED,
                 self.product.owner))
+
+
+class ProductSpecificationSharingPolicyTestCase(
+    ProductBranchSharingPolicyTestCase):
+    """Test Product.specification_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = SpecificationSharingPolicy
+    public_policy = SpecificationSharingPolicy.PUBLIC
+    commercial_policies = (
+        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        SpecificationSharingPolicy.PROPRIETARY,
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        with person_logged_in(user):
+            result = self.product.setSpecificationSharingPolicy(policy)
+        return result
+
+    def getSharingPolicy(self):
+        return self.product.specification_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
