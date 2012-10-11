@@ -1028,20 +1028,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return product
 
-    def makeLegacyProduct(self, **kwargs):
-        # Create a product which does not have any of the new bug and branch
-        # sharing policies set. New products have these set to default values
-        # but we need to test for existing products which have not yet been
-        # migrated.
-        # XXX This method can be removed when branch visibility policy dies.
-        product = self.makeProduct(**kwargs)
-        # Since createProduct() doesn't create PRIVATESECURITY/USERDATA.
-        removeSecurityProxy(product)._ensurePolicies([
-            InformationType.PRIVATESECURITY, InformationType.USERDATA])
-        removeSecurityProxy(product).bug_sharing_policy = None
-        removeSecurityProxy(product).branch_sharing_policy = None
-        return product
-
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None, date_created=None, branch=None):
         """Create a new, arbitrary ProductSeries.

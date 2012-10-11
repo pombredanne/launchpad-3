@@ -20,7 +20,7 @@ import datetime
 import logging
 import os
 import time
-import xml.etree.cElementTree
+from xml.etree import cElementTree
 
 import pytz
 from storm.store import Store
