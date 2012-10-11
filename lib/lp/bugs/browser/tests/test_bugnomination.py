@@ -240,6 +240,23 @@ class TestBugNominationEditView(TestCaseWithFactory):
                 ).request.response.getStatus())
         self.assertTrue(nomination.isApproved())
 
+    def test_label(self):
+        nomination = self.getNomination()
+        target = nomination.target
+        view = self.getNominationEditView(nomination, {})
+        self.assertEqual(
+            'Approve or decline nomination for bug #%d in %s' % (
+                nomination.bug.id, target.bugtargetdisplayname),
+            view.label)
+
+    def test_page_title(self):
+        nomination = self.getNomination()
+        target = nomination.target
+        view = self.getNominationEditView(nomination, {})
+        self.assertEqual(
+            'Review nomination for %s' % target.bugtargetdisplayname,
+            view.page_title)
+
     def test_approving_twice_is_noop(self):
         nomination = self.getNomination()
         self.assertApproves(nomination)
