@@ -127,10 +127,6 @@
         <a tal:condition="configure_codehosting"
            tal:replace="structure configure_codehosting/fmt:link"/>
       </p>
-      <p tal:define="menu context/menu:branches;
-                     link menu/branch_visibility"
-         tal:condition="link/enabled"
-         tal:content="structure link/render"></p>
     </div>
   </div>
 

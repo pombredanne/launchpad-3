@@ -55,7 +55,6 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
-    BranchVisibilityRule,
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
@@ -2496,20 +2495,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # If there is a privacy policy allowing the branch owner to have
         # private branches, then setting the branch private is allowed.
         branch = self.factory.makeProductBranch()
-        branch.product.setBranchVisibilityTeamPolicy(
-            branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
-
-    def test_public_to_private_not_allowed(self):
-        # If there are no privacy policies allowing private branches, then
-        # CannotChangeInformationType is raised.
-        product = self.factory.makeLegacyProduct()
-        branch = self.factory.makeBranch(product=product)
-        self.assertRaisesWithContent(
-            CannotChangeInformationType, 'Forbidden by project policy.',
-            branch.setPrivate, True, branch.owner)
 
     def test_public_to_private_for_admins(self):
         # Admins can override the default behaviour and make any public branch
@@ -2546,14 +2534,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
         # to change the branch to be public raises CannotChangeInformationType.
-        product = self.factory.makeLegacyProduct()
-        branch = self.factory.makeBranch(
-            product=product,
-            information_type=InformationType.USERDATA)
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeBranch(product=product, owner=product.owner)
         self.assertRaisesWithContent(
             CannotChangeInformationType, 'Forbidden by project policy.',
             branch.setPrivate, False, branch.owner)

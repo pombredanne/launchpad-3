@@ -153,8 +153,7 @@ The view allow the reviewer to see and change project privileges and
 judge the licences.
 
     >>> view.field_names
-    ['project_reviewed', 'license_approved', 'active', 'private_bugs',
-     'reviewer_whiteboard']
+    ['project_reviewed', 'license_approved', 'active', 'reviewer_whiteboard']
 
 The reviewer cannot deactivate a project if it is linked
 to a source package.
@@ -193,15 +192,10 @@ The reviewer can deactivate a project if he concludes it is bogus.
     >>> print product.reviewer_whiteboard
     Looks bogus
 
-The reviewer can enable privileged features like private bugs. He can
-also reactivate the project at the same time.
-
-    >>> firefox.private_bugs
-    False
+The reviewer can reactivate the project.
 
     >>> form = {
     ...     'field.active': 'on',
-    ...     'field.private_bugs': 'on',
     ...     'field.reviewer_whiteboard': 'Reinstated old project',
     ...     'field.actions.change': 'Change',
     ...     }
@@ -212,8 +206,6 @@ also reactivate the project at the same time.
     []
     >>> firefox.active
     True
-    >>> firefox.private_bugs
-    True
     >>> print firefox.reviewer_whiteboard
     Reinstated old project
 
@@ -222,7 +214,6 @@ purchase a commercial subscription.
 
     >>> from lp.registry.interfaces.product import License
 
-    >>> firefox.setPrivateBugs(False, commercial_member)
     >>> login('test@canonical.com')
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
 

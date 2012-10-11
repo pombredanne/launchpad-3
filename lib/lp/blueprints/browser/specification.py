@@ -102,7 +102,10 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
-from lp.app.enums import PUBLIC_PROPRIETARY_INFORMATION_TYPES
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
 from lp.app.utilities import json_dump_information_types
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -309,7 +312,7 @@ class NewSpecificationView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set initial values to honor sharing policy default value."""
-        information_type = None
+        information_type = InformationType.PUBLIC
         if (IProduct.providedBy(self.context) or
             IProductSeries.providedBy(self.context)):
             information_type = (
