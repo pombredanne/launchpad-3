@@ -145,8 +145,8 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
         """Packaging cannot be created for PROPRIETARY productseries"""
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
-        sp = self.makeSourcePackage()
         series = self.factory.makeProductSeries(product=product)
+        sp = self.makeSourcePackage()
         with ExpectedException(CannotPackageProprietaryProduct,
             'Only Public project series can be packaged, not Proprietary.'):
             series.setPackaging(
