@@ -366,7 +366,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
             }]
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
 
-    def filebug_via_view(self, private_bugs=False, information_type=None,
+    def filebug_via_view(self, information_type=None,
                          bug_sharing_policy=None, extra_data_token=None):
         form = {
             'field.title': 'A bug',
@@ -375,9 +375,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
         }
         if information_type:
             form['field.information_type'] = information_type
-        product = self.factory.makeLegacyProduct(official_malone=True)
-        if private_bugs:
-            removeSecurityProxy(product).private_bugs = True
+        product = self.factory.makeProduct(official_malone=True)
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
@@ -394,8 +392,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
             return (getUtility(IBugSet).getByNameOrID(bug_number), view)
 
     def test_filebug_default_information_type(self):
-        # If we don't specify the bug's information_type, it is PUBLIC for
-        # products with private_bugs=False.
+        # If we don't specify the bug's information_type, it is PUBLIC.
         bug, view = self.filebug_via_view()
         self.assertEqual(
             InformationType.PUBLIC, view.default_information_type)
@@ -406,14 +403,6 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
         bug, view = self.filebug_via_view(information_type='PRIVATESECURITY')
         self.assertEqual(
             InformationType.PRIVATESECURITY, bug.information_type)
-
-    def test_filebug_information_type_with_private_bugs(self):
-        # If we don't specify the bug's information_type, it is USERDATA for
-        # products with private_bugs=True.
-        bug, view = self.filebug_via_view(private_bugs=True)
-        self.assertEqual(
-            InformationType.USERDATA, view.default_information_type)
-        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_filebug_information_type_with_bug_sharing_policy(self):
         # If we don't specify the bug's information_type, it follows the
@@ -711,7 +700,7 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def filebug_via_view(self, private_bugs=False, bug_sharing_policy=None,
+    def filebug_via_view(self, bug_sharing_policy=None,
                          security_related=False):
         form = {
             'field.title': 'A bug',
@@ -719,9 +708,7 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             'field.security_related': 'on' if security_related else '',
             'field.actions.submit_bug': 'Submit Bug Request',
         }
-        product = self.factory.makeLegacyProduct(official_malone=True)
-        if private_bugs:
-            removeSecurityProxy(product).private_bugs = True
+        product = self.factory.makeProduct(official_malone=True)
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
@@ -735,30 +722,15 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             return getUtility(IBugSet).getByNameOrID(bug_number)
 
     def test_filebug_non_security_related(self):
-        # Non security related bugs are PUBLIC for products with
-        # private_bugs=False.
+        # Non security related bugs are PUBLIC.
         bug = self.filebug_via_view()
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_filebug_security_related(self):
-        # Security related bugs are PRIVATESECURITY for products with
-        # private_bugs=False.
+        # Security related bugs are PRIVATESECURITY.
         bug = self.filebug_via_view(security_related=True)
         self.assertEqual(
             InformationType.PRIVATESECURITY, bug.information_type)
-
-    def test_filebug_security_related_with_private_bugs(self):
-        # Security related bugs are PRIVATESECURITY for products with
-        # private_bugs=True.
-        bug = self.filebug_via_view(private_bugs=True, security_related=True)
-        self.assertEqual(
-            InformationType.PRIVATESECURITY, bug.information_type)
-
-    def test_filebug_with_private_bugs(self):
-        # Non security related bugs are USERDATA for products with
-        # private_bugs=True.
-        bug = self.filebug_via_view(private_bugs=True)
-        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_filebug_with_proprietary_sharing(self):
         # Non security related bugs are PROPRIETARY for products with a
@@ -818,7 +790,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _assert_cache_values(self, view, duplicate_search, private_bugs=False):
+    def _assert_cache_values(self, view, duplicate_search):
         cache = IJSONRequestCache(view.request).objects
         self.assertEqual(
             duplicate_search, cache['enable_bugfiling_duplicate_search'])
@@ -865,7 +837,6 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             bugtask_importance_data.append(new_item)
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
-        self.assertEqual(cache['bug_private_by_default'], private_bugs)
         bugtask_info_type_data = {}
         if not IProjectGroup.providedBy(view.context):
             for item in view.context.getAllowedBugInformationTypes():
@@ -883,14 +854,6 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(project, '+filebug', principal=user)
         self._assert_cache_values(view, True)
-
-    def test_product_private_bugs(self):
-        project = self.factory.makeLegacyProduct(
-            official_malone=True, private_bugs=True)
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project, '+filebug', principal=user)
-        self._assert_cache_values(view, True, True)
 
     def test_product_no_duplicate_search(self):
         product = self.factory.makeProduct(official_malone=True)
