@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatusError,
     BugNominationStatus,
     IBugNomination,
     )
@@ -26,9 +27,8 @@ class BugNominationTestCase(TestCaseWithFactory):
 
     def test_implementation(self):
         # BugNomination implements IBugNomination.
-        series = self.factory.makeDistroSeries()
-        package_name = self.factory.makeSourcePackageName()
-        target = series.getSourcePackage(package_name)
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
         bug = self.factory.makeBug(target=target.distribution_sourcepackage)
         with person_logged_in(series.distribution.owner):
             nomination = bug.addNomination(series.distribution.owner, series)
@@ -43,9 +43,8 @@ class BugNominationTestCase(TestCaseWithFactory):
 
     def test_target_distroseries(self):
         # The target property returns the distroseries if it is not None.
-        series = self.factory.makeDistroSeries()
-        package_name = self.factory.makeSourcePackageName()
-        target = series.getSourcePackage(package_name)
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
         with person_logged_in(series.distribution.owner):
             nomination = self.factory.makeBugNomination(target=target)
         self.assertEqual(series, nomination.distroseries)
@@ -58,6 +57,58 @@ class BugNominationTestCase(TestCaseWithFactory):
             nomination = self.factory.makeBugNomination(target=series)
         self.assertEqual(series, nomination.productseries)
         self.assertEqual(series, nomination.target)
+
+    def test_status_proposed(self):
+        # isProposed is True when the status is PROPOSED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        self.assertEqual(BugNominationStatus.PROPOSED, nomination.status)
+        self.assertIs(True, nomination.isProposed())
+        self.assertIs(False, nomination.isDeclined())
+        self.assertIs(False, nomination.isApproved())
+
+    def test_status_declined(self):
+        # isDeclined is True when the status is DECLINED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.decline(series.product.owner)
+        self.assertEqual(BugNominationStatus.DECLINED, nomination.status)
+        self.assertIs(True, nomination.isDeclined())
+        self.assertIs(False, nomination.isProposed())
+        self.assertIs(False, nomination.isApproved())
+
+    def test_status_approved(self):
+        # isApproved is True when the status is APPROVED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIs(True, nomination.isApproved())
+        self.assertIs(False, nomination.isDeclined())
+        self.assertIs(False, nomination.isProposed())
+
+    def test_decline(self):
+        # The decline method updates the status and other data.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.decline(series.product.owner)
+        self.assertEqual(BugNominationStatus.DECLINED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+
+    def test_decline_error(self):
+        # A nominations cannot be declined if it is approved.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+            self.assertRaises(
+                BugNominationStatusError,
+                nomination.decline, series.product.owner)
 
 
 class CanBeNominatedForTestMixin:
