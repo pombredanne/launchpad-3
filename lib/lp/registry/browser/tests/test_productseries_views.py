@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View tests for ProductSeries pages."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import soupmatchers
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -56,6 +57,25 @@ class TestWithBrowser(BrowserTestCase):
                                attrs={'id': 'series-branch'},
                                text='lp://dev/' + branch.unique_name)
         browser = self.getViewBrowser(series)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
+
+    def test_package_proprietary_error(self):
+        """Packaging a proprietary product produces an error."""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        productseries = self.factory.makeProductSeries(product=product)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series,
+                                            publish=True)
+        browser = self.getViewBrowser(productseries, '+ubuntupkg')
+        browser.getControl('Source Package Name').value = (
+            sp.sourcepackagename.name)
+        browser.getControl(ubuntu_series.displayname).selected = True
+        browser.getControl('Update').click()
+        tag = soupmatchers.Tag(
+            'error-div', 'div', attrs={'class': 'error message'},
+             text='Only Public project series can be packaged, not'
+             ' Proprietary.')
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
 
 

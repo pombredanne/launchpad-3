@@ -111,6 +111,7 @@ from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarInvolvementView,
     )
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -636,8 +637,11 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
             sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
             return
-        self.context.setPackaging(
-            distroseries, sourcepackagename, self.user)
+        try:
+            self.context.setPackaging(
+                distroseries, sourcepackagename, self.user)
+        except CannotPackageProprietaryProduct, e:
+            self.request.response.addErrorNotification(str(e))
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
