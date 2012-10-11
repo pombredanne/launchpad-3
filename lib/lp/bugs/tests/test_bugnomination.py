@@ -5,14 +5,31 @@
 
 __metaclass__ = type
 
+from zope.interface.verify import verifyObject
+
+from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+
+
+class BugNominationTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_implementation(self):
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        target = series.getSourcePackage(package_name)
+        nomination = self.factory.makeBugNomination(target=target)
+        with person_logged_in(series.distribution.owner):
+            self.assertIs(True, verifyObject(IBugNomination, nomination))
 
 
 class CanBeNominatedForTestMixin:
