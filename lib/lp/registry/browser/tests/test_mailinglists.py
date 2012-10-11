@@ -12,6 +12,7 @@ from zope.component import getUtility
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -42,6 +43,25 @@ class MailingListTestCase(TestCaseWithFactory):
         login_person(owner)
         self.factory.makeMailingList(team=team, owner=owner)
         return team
+
+    def makeHeldMessage(self, team):
+        # Requires LaunchpadFunctionalLayer.
+        sender = self.factory.makePerson(
+            email='him@eg.dom', name='him', displayname='Him')
+        raw = '\n'.join([
+            'From: Him <him@eg.dom>',
+            'To: %s' % str(team.mailing_list.address),
+            'Subject: monkey',
+            'Message-ID: <monkey>',
+            'Date: Fri, 01 Aug 2000 01:09:00 -0000',
+            '',
+            'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.'
+            ])
+        message_set = getUtility(IMessageSet)
+        message = message_set.fromEmail(raw)
+        transaction.commit()
+        held_message = team.mailing_list.holdMessage(message)
+        return sender, message, held_message
 
 
 class MailingListSubscriptionControlsTestCase(TestCaseWithFactory):
@@ -152,29 +172,11 @@ class HeldMessageViewTestCase(MailingListTestCase):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeHeldMessage(self, team):
-        sender = self.factory.makePerson(
-            email='him@eg.dom', name='him', displayname='Him')
-        raw = '\n'.join([
-            'From: Him <him@eg.dom>',
-            'To: %s' % str(team.mailing_list.address),
-            'Subject: monkey',
-            'Message-ID: <monkey>',
-            'Date: Fri, 01 Aug 2000 01:09:00 -0000',
-            '',
-            'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.'
-            ])
-        message_set = getUtility(IMessageSet)
-        message = message_set.fromEmail(raw)
-        transaction.commit()
-        held_message = team.mailing_list.holdMessage(message)
-        return sender, message, held_message
-
     def test_view_properties(self):
         team = self.makeTeamWithMailingList()
         sender, message, held_message = self.makeHeldMessage(team)
         view = create_initialized_view(
-            held_message, name='+moderation', principal=team.teamowner)
+            held_message, name='+moderation')
         self.assertEqual(message.subject, view.subject)
         self.assertEqual(message.rfc822msgid, view.message_id)
         self.assertEqual(message.datecreated, view.date)
@@ -189,7 +191,7 @@ class HeldMessageViewTestCase(MailingListTestCase):
         team = self.makeTeamWithMailingList()
         sender, message, held_message = self.makeHeldMessage(team)
         view = create_initialized_view(
-            held_message, name='+moderation', principal=team.teamowner)
+            held_message, name='+moderation')
         paragraphs = []
         view._append_paragraph(paragraphs, ['line 1', 'line 2'])
         self.assertEqual(
@@ -197,3 +199,36 @@ class HeldMessageViewTestCase(MailingListTestCase):
         paragraphs = []
         view._append_paragraph(paragraphs, [])
         self.assertEqual([], paragraphs)
+
+
+class TeamMailingListModerationViewTestCase(MailingListTestCase):
+    """Verify the +mailinglist-moderate view."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_permissions(self):
+        # Team admins and privileged users can see the view others cannot.
+        team = self.makeTeamWithMailingList()
+        member = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(member, team.teamowner)
+            view = create_initialized_view(team, name='+mailinglist-moderate')
+            self.assertIs(True, check_permission('launchpad.Edit', view))
+        with person_logged_in(member):
+            self.assertIs(False, check_permission('launchpad.Edit', view))
+
+    def test_message_summary_text(self):
+        team = self.makeTeamWithMailingList()
+        # No messages.
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', principal=team.teamowner)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*There are no mailing list messages requiring your review.*',
+            view.render())
+        # One message.
+        self.makeHeldMessage(team)
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', principal=team.teamowner)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*1.*message has.*been posted to your mailing list.*',
+            view.render())
