@@ -183,3 +183,17 @@ class HeldMessageViewTestCase(MailingListTestCase):
         self.assertEqual(
             "\n<p>\nSecond paragraph.\n</p>\n\n<p>\nThird paragraph.\n</p>\n",
             view.body_details)
+
+    def test_view_append_paragraph(self):
+        # Consecutive lines are wrapped in html <p> tags.
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        view = create_initialized_view(
+            held_message, name='+moderation', principal=team.teamowner)
+        paragraphs = []
+        view._append_paragraph(paragraphs, ['line 1', 'line 2'])
+        self.assertEqual(
+            ['\n<p>\n', 'line 1\nline 2', '\n</p>\n'], paragraphs)
+        paragraphs = []
+        view._append_paragraph(paragraphs, [])
+        self.assertEqual([], paragraphs)
