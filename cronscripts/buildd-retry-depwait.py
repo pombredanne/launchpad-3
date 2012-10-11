@@ -5,11 +5,11 @@
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.scripts.retrydepwait import RetryDepwaitTunableLoop
 
 
-class RetryDepwait(LaunchpadScript):
+class RetryDepwait(LaunchpadCronScript):
 
     def add_my_options(self):
         self.parser.add_option(
