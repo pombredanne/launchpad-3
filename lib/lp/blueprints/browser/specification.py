@@ -221,7 +221,6 @@ class NewSpecificationView(LaunchpadFormView):
     label = "Register a new blueprint"
 
     custom_widget('specurl', TextWidget, displayWidth=60)
-
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def append_info_type(self, fields):
@@ -320,6 +319,33 @@ class NewSpecificationView(LaunchpadFormView):
         values = {'information_type': information_type}
         return values
 
+    def validate(self, data):
+        """See `LaunchpadFormView`.`"""
+        super(NewSpecificationView, self).validate(data)
+        self.validate_information_type(data)
+
+    def validate_information_type(self, data):
+        """Validate the information type is allowed for this context."""
+        information_type = data.get('information_type', None)
+        if information_type is None:
+            self.setFieldError(
+                'information_type',
+                'Select an information type value.')
+
+        # In the case of views outside a target context it's part of the form.
+        product = IProduct(data['target'], None)
+
+        if (IProduct.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
+            product = self.context
+
+        if product:
+            allowed = product.getAllowedSpecificationInformationTypes()
+            # Check that the information type is a valid one for this Product.
+            if information_type not in allowed:
+                self.setFieldError(
+                    'information_type',
+                    'This information type is not permitted for this product')
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a target context.
@@ -405,6 +431,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
             if target.getSpecification(name):
                 errormessage = INewSpecification['name'].errormessage
                 self.setFieldError('name', errormessage % name)
+        super(NewSpecificationFromNonTargetView, self).validate(data)
 
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):

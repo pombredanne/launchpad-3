@@ -360,6 +360,13 @@ class NewSpecificationTests:
             InformationType.PUBLIC,
             view.initial_values['information_type'])
 
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        # For default contexts, only PUBLIC is permitted.
+        form = {'field.search_text': r'%'}
+        view = create_initialized_view(specs, '+index', form=form)
+        self.assertEqual([], view.errors)
+
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
                                        NewSpecificationTests):
