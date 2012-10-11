@@ -641,16 +641,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
-        if self.bug_sharing_policy is not None:
-            return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-        return FREE_INFORMATION_TYPES
+        return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
 
     def getDefaultBugInformationType(self):
         """See `IProduct.`"""
-        if self.bug_sharing_policy is not None:
-            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
-        else:
-            return InformationType.PUBLIC
+        return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
