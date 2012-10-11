@@ -54,11 +54,41 @@ class BugNominationTestCase(TestCaseWithFactory):
     def test_target_productseries(self):
         # The target property returns the productseries if it is not None.
         series = self.factory.makeProductSeries()
-        target = series.product
         with person_logged_in(series.product.owner):
             nomination = self.factory.makeBugNomination(target=series)
         self.assertEqual(series, nomination.productseries)
         self.assertEqual(series, nomination.target)
+
+    def test_bug_getNominations(self):
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        target = series.getSourcePackage(package_name)
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        bug = nomination.bug
+        other_series = self.factory.makeProductSeries()
+        other_target = other_series.product
+        self.factory.makeBugTask(bug=bug, target=other_target)
+        with person_logged_in(other_target.owner):
+            other_nomination = bug.addNomination(
+                other_target.owner, other_series)
+        self.assertContentEqual(
+            [nomination, other_nomination], bug.getNominations())
+
+    def test_bug_getNominations_with_target(self):
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        target = series.getSourcePackage(package_name)
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        bug = nomination.bug
+        other_series = self.factory.makeProductSeries()
+        other_target = other_series.product
+        self.factory.makeBugTask(bug=bug, target=other_target)
+        with person_logged_in(other_target.owner):
+            bug.addNomination(other_target.owner, other_series)
+        self.assertContentEqual(
+            [nomination], bug.getNominations(series.distribution))
 
 
 class CanBeNominatedForTestMixin:
