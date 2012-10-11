@@ -731,10 +731,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_specification_types = set(
+            SPECIFICATION_POLICY_ALLOWED_TYPES.get(
+                self.specification_sharing_policy, [InformationType.PUBLIC])
+        )
         allowed_types = allowed_bug_types.union(allowed_branch_types)
+        allowed_types = allowed_types.union(allowed_specification_types)
         # Fetch all APs, and after filtering out ones that are forbidden
-        # by the bug and branch policies, the APs that have no APAs are
-        # unused and can be deleted.
+        # by the bug, branch, and specification policies, the APs that have no
+        # APAs are unused and can be deleted.
         ap_source = getUtility(IAccessPolicySource)
         access_policies = set(ap_source.findByPillar([self]))
         apa_source = getUtility(IAccessPolicyArtifactSource)

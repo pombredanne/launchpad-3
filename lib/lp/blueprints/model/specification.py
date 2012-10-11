@@ -143,6 +143,7 @@ SPECIFICATION_POLICY_ALLOWED_TYPES = {
     SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    SpecificationSharingPolicy.FORBIDDEN: [],
     }
 
 SPECIFICATION_POLICY_DEFAULT_TYPES = {

@@ -12,7 +12,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -99,22 +98,3 @@ class TestBuildDepWait(TestCaseWithFactory):
         # Now that we have moved it main, we can see it.
         build.updateDependencies()
         self.assertEquals(u'', build.dependencies)
-
-    def test_retry_dep_waiting(self):
-        # Builds in MANUALDEPWAIT can be automatically retried.
-        spph = self.publisher.getPubSource(
-            sourcename=self.factory.getUniqueString(),
-            version="%s.1" % self.factory.getUniqueInteger(),
-            distroseries=self.distroseries, archive=self.archive)
-        [build] = spph.createMissingBuilds()
-        with person_logged_in(self.admin):
-            build.status = BuildStatus.MANUALDEPWAIT
-            # .createMissingBuilds() queues the build for us, and we need to
-            # undo that if we're about to retry it.
-            build.buildqueue_record.destroySelf()
-            build.dependencies = u''
-            # Commit to make sure stuff hits the database.
-            transaction.commit()
-        getUtility(IBinaryPackageBuildSet).retryDepWaiting(self.das)
-        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
-        self.assertTrue(build.buildqueue_record.lastscore > 0)
