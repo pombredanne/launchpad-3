@@ -257,6 +257,11 @@ class TestBugNominationEditView(TestCaseWithFactory):
             'Review nomination for %s' % target.bugtargetdisplayname,
             view.page_title)
 
+    def test_next_url(self):
+        nomination = self.getNomination()
+        view = self.getNominationEditView(nomination, {})
+        self.assertEqual(canonical_url(view.current_bugtask), view.next_url)
+
     def test_approving_twice_is_noop(self):
         nomination = self.getNomination()
         self.assertApproves(nomination)
