@@ -117,12 +117,14 @@ class BugNominationTestCase(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         with person_logged_in(series.product.owner):
             nomination = self.factory.makeBugNomination(target=series)
-            bug_task_count = len(nomination.bug.bugtasks)
+            bug_tasks = nomination.bug.bugtasks
             nomination.approve(series.product.owner)
         self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
         self.assertIsNotNone(nomination.date_decided)
         self.assertEqual(series.product.owner, nomination.decider)
-        self.assertEqual(bug_task_count + 1, len(nomination.bug.bugtasks))
+        expected_targets = [bt.target for bt in bug_tasks] + [series]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
 
 
 class CanBeNominatedForTestMixin:
