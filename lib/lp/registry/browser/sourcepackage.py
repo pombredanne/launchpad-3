@@ -71,7 +71,6 @@ from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
-from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -303,6 +302,12 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
 
+    def validateStep(self, data):
+        if data['product'].private:
+            self.setFieldError('product',
+                'Only Public projects can be packaged, not %s.' %
+                data['product'].information_type.title)
+
     @property
     def register_upstream_url(self):
         return get_register_upstream_url(self.context)
@@ -400,11 +405,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
         if self.context.productseries == productseries:
             # There is nothing to do.
             return
-        try:
-            self.context.setPackaging(productseries, self.user)
-        except CannotPackageProprietaryProduct as e:
-            self.request.response.addErrorNotification(str(e))
-            return
+        self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
 
 

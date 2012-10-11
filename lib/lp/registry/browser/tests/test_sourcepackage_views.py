@@ -8,8 +8,6 @@ __metaclass__ = type
 import cgi
 import urllib
 
-import soupmatchers
-from testtools.matchers import Not
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -297,25 +295,32 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def test_error_on_proprietary(self):
-        """Packaging cannot be created for PROPRIETARY productseries"""
+    def test_error_on_proprietary_product(self):
+        """Packaging cannot be created for PROPRIETARY products"""
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        browser = self.getViewBrowser(sp, '+edit-packaging')
+        browser.getControl('Project').value = product.name
+        browser.getControl('Continue').click()
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)
+
+    def test_error_on_proprietary_productseries(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=product)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
         browser = self.getViewBrowser(sp, '+edit-packaging')
         browser.getControl('Project').value = product.name
         browser.getControl('Continue').click()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
         browser.getControl(series.displayname).selected = True
-        old_url = browser.url
         browser.getControl('Change').click()
-        tag = soupmatchers.Tag(
-            'error-div', 'div', attrs={'class': 'error message'},
-             text='Only Public project series can be packaged, not'
-             ' Proprietary.')
-        self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
-        updated = soupmatchers.Tag('updated', True,
-                                   text='Upstream link updated.')
-        self.assertThat(browser.contents,
-                        Not(soupmatchers.HTMLContains(updated)))
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)
