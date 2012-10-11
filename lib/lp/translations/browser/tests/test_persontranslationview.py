@@ -9,8 +9,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing import (
+    BrowserTestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.browser.person import PersonTranslationView
 from lp.translations.model.translator import TranslatorSet
 
@@ -422,3 +428,38 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # languages.
         self.view.context.removeLanguage(self.language)
         self.assertTrue(self.view.requires_preferred_languages)
+
+
+class TestPersonTranslationViewPermissions(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonTranslationViewPermissions, self).setUp()
+        self.context = self.factory.makePerson()
+        self.language = self.factory.makeLanguage()
+        self.context.addLanguage(self.language)
+        owner = self.factory.makePerson()
+        self.translationgroup = self.factory.makeTranslationGroup(owner=owner)
+        TranslatorSet().new(
+            translationgroup=self.translationgroup, language=self.language,
+            translator=self.context)
+
+    def test_links_anon(self):
+        browser = self.getViewBrowser(
+            self.context, "+translations", no_login=True)
+        self.assertFalse("+editmylanguages" in browser.contents)
+        self.assertFalse("+edit" in browser.contents)
+
+    def test_links_unauthorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(self.context, "+translations")
+        self.assertFalse("+editmylanguages" in browser.contents)
+        self.assertFalse("+edit" in browser.contents)
+
+    def test_links_authorized(self):
+        group = self.factory.makeTranslationGroup()
+        browser = self.getViewBrowser(
+            self.context, "+translations", user=self.context)
+        self.assertTrue("+editmylanguages" in browser.contents)
+        self.assertTrue("+edit" in browser.contents)
