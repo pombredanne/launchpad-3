@@ -70,11 +70,9 @@ class TestBug(TestCaseWithFactory):
         nomination = bug.getNominationFor(sourcepackage)
         self.assertEqual(series, nomination.target)
 
-    def test_getNominations(self):
-        # The getNominations() method returns all the nominations for the bug.
-        series = self.factory.makeDistroSeries()
-        package_name = self.factory.makeSourcePackageName()
-        target = series.getSourcePackage(package_name)
+    def makeManyNominations(self):
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
         with person_logged_in(series.distribution.owner):
             nomination = self.factory.makeBugNomination(target=target)
         bug = nomination.bug
@@ -84,24 +82,18 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(other_target.owner):
             other_nomination = bug.addNomination(
                 other_target.owner, other_series)
-        self.assertContentEqual(
-            [nomination, other_nomination], bug.getNominations())
+        return bug, [nomination, other_nomination]
+
+    def test_getNominations(self):
+        # The getNominations() method returns all the nominations for the bug.
+        bug, nominations = self.makeManyNominations()
+        self.assertContentEqual(nominations, bug.getNominations())
 
     def test_getNominations_with_target(self):
         # The target argument filters the nominations to just one pillar.
-        series = self.factory.makeDistroSeries()
-        package_name = self.factory.makeSourcePackageName()
-        target = series.getSourcePackage(package_name)
-        with person_logged_in(series.distribution.owner):
-            nomination = self.factory.makeBugNomination(target=target)
-        bug = nomination.bug
-        other_series = self.factory.makeProductSeries()
-        other_target = other_series.product
-        self.factory.makeBugTask(bug=bug, target=other_target)
-        with person_logged_in(other_target.owner):
-            bug.addNomination(other_target.owner, other_series)
-        self.assertContentEqual(
-            [nomination], bug.getNominations(series.distribution))
+        bug, nominations = self.makeManyNominations()
+        pillar = nominations[0].target.pillar
+        self.assertContentEqual([nominations[0]], bug.getNominations(pillar))
 
     def test_markAsDuplicate_None(self):
         # Calling markAsDuplicate(None) on a bug that is not currently a
