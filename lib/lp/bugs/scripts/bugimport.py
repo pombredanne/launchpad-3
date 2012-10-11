@@ -145,7 +145,8 @@ class BugImporter:
         self.pending_duplicates = {}
 
         # We can't currently sensibly import into non-PUBLIC products.
-        assert self.product.bug_sharing_policy == BugSharingPolicy.PUBLIC
+        if self.product:
+            assert self.product.bug_sharing_policy == BugSharingPolicy.PUBLIC
 
     def getPerson(self, node):
         """Get the Launchpad user corresponding to the given XML node"""
