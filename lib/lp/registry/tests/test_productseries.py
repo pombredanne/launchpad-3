@@ -1,14 +1,17 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductSeries and ProductSeriesSet."""
 
 __metaclass__ = type
 
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import (
@@ -137,6 +140,28 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
             sourcepackagename=sourcepackage.sourcepackagename,
             distroseries=self.ubuntu_series)
         return sourcepackage
+
+    def test_refuses_PROPRIETARY(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        sp = self.makeSourcePackage()
+        series = self.factory.makeProductSeries(product=product)
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Proprietary.'):
+            series.setPackaging(
+                sp.distroseries, sp.sourcepackagename, series.owner)
+
+    def test_refuses_EMBARGOED(self):
+        """Packaging cannot be created for EMBARGOED productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        sp = self.makeSourcePackage()
+        series = self.factory.makeProductSeries(product=product)
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Embargoed.'):
+            series.setPackaging(
+                sp.distroseries, sp.sourcepackagename, series.owner)
 
     def test_setPackaging_two_packagings(self):
         # More than one sourcepackage from the same distroseries

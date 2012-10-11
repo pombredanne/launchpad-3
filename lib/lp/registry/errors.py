@@ -9,6 +9,7 @@ __all__ = [
     'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
+    'CannotPackageProprietaryProduct',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
     'InvalidFilename',

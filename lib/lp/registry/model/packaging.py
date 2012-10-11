@@ -98,14 +98,15 @@ class PackagingUtil:
     """Utilities for Packaging."""
     implements(IPackagingUtil)
 
-    def createPackaging(self, productseries, sourcepackagename,
+    @classmethod
+    def createPackaging(cls, productseries, sourcepackagename,
                         distroseries, packaging, owner):
         """See `IPackaging`.
 
         Raises an assertion error if there is already packaging for
         the sourcepackagename in the distroseries.
         """
-        if self.packagingEntryExists(sourcepackagename, distroseries):
+        if cls.packagingEntryExists(sourcepackagename, distroseries):
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
@@ -134,7 +135,8 @@ class PackagingUtil:
                distroseries.parent.name, distroseries.name))
         packaging.destroySelf()
 
-    def packagingEntryExists(self, sourcepackagename, distroseries,
+    @staticmethod
+    def packagingEntryExists(sourcepackagename, distroseries,
                              productseries=None):
         """See `IPackaging`."""
         criteria = dict(
