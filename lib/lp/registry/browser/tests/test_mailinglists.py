@@ -44,10 +44,11 @@ class MailingListTestCase(TestCaseWithFactory):
         self.factory.makeMailingList(team=team, owner=owner)
         return team
 
-    def makeHeldMessage(self, team):
+    def makeHeldMessage(self, team, sender=None):
         # Requires LaunchpadFunctionalLayer.
-        sender = self.factory.makePerson(
-            email='him@eg.dom', name='him', displayname='Him')
+        if sender is None:
+            sender = self.factory.makePerson(
+                email='him@eg.dom', name='him', displayname='Him')
         raw = '\n'.join([
             'From: Him <him@eg.dom>',
             'To: %s' % str(team.mailing_list.address),
@@ -200,6 +201,27 @@ class HeldMessageViewTestCase(MailingListTestCase):
         view._append_paragraph(paragraphs, [])
         self.assertEqual([], paragraphs)
 
+    def test_render(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        view = create_initialized_view(
+            held_message, name='+moderation', principal=team.teamowner)
+        markup = view.render()
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*Subject:.*monkey.*From:.*Him.*Date:.*2000-08-01.*Message-ID'
+            '.*&lt;monkey&gt;.*class="foldable-quoted".*',
+            markup)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*<input type="radio" value="approve"'
+            '.*name="field.%3Cmonkey%3E" />'
+            '.*<input type="radio" value="reject"'
+            '.*name="field.%3Cmonkey%3E" />'
+            '.*<input type="radio" value="discard"'
+            '.*name="field.%3Cmonkey%3E" />'
+            '.*<input type="radio" value="hold"'
+            '.* name="field.%3Cmonkey%3E" checked="checked" />.*',
+            markup)
+
 
 class TeamMailingListModerationViewTestCase(MailingListTestCase):
     """Verify the +mailinglist-moderate view."""
@@ -232,3 +254,80 @@ class TeamMailingListModerationViewTestCase(MailingListTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             '.*1.*message has.*been posted to your mailing list.*',
             view.render())
+
+    def test_batching(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        for i in range(5):
+            self.makeHeldMessage(team, sender)
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', principal=team.teamowner)
+        self.assertEqual(6, view.hold_count)
+        self.assertEqual('messages', view.held_messages.heading)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*upper-batch-nav-batchnav-next.*lower-batch-nav-batchnav-next.*',
+            view.render())
+
+    def test_widgets(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', principal=team.teamowner)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '.*name="field.%3Cmonkey%3E.*', view.render())
+
+    def test_approve(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        form = {
+            'field.%3Cmonkey%3E': 'approve',
+            'field.actions.moderate': 'Moderate',
+            }
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'Held message approved; Message-ID: &lt;monkey&gt;',
+             view.request.notifications[0].message)
+
+    def test_discard(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        form = {
+            'field.%3Cmonkey%3E': 'discard',
+            'field.actions.moderate': 'Moderate',
+            }
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'Held message discarded; Message-ID: &lt;monkey&gt;',
+             view.request.notifications[0].message)
+
+    def test_reject(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        form = {
+            'field.%3Cmonkey%3E': 'reject',
+            'field.actions.moderate': 'Moderate',
+            }
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'Held message rejected; Message-ID: &lt;monkey&gt;',
+             view.request.notifications[0].message)
+
+    def test_held(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        form = {
+            'field.%3Cmonkey%3E': 'hold',
+            'field.actions.moderate': 'Moderate',
+            }
+        view = create_initialized_view(
+            team, name='+mailinglist-moderate', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'Messages still held for review: 1 of 1',
+             view.request.notifications[0].message)
