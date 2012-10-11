@@ -6,14 +6,21 @@
 
 __metaclass__ = type
 
+import transaction
+from zope.component import getUtility
 
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -138,3 +145,41 @@ class TestTeamMailingListConfigurationView(MailingListTestCase):
             team, name='+mailinglist', principal=owner)
         element = find_tag_by_id(view(), 'mailing-list-archive')
         self.assertEqual('private', extract_text(element))
+
+
+class HeldMessageViewTestCase(MailingListTestCase):
+    """Verify the +moderation view."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeHeldMessage(self, team):
+        sender = self.factory.makePerson(
+            email='him@eg.dom', name='him', displayname='Him')
+        raw = '\n'.join([
+            'From: Him <him@eg.dom>',
+            'To: %s' % str(team.mailing_list.address),
+            'Subject: monkey',
+            'Message-ID: <monkey>',
+            'Date: Fri, 01 Aug 2000 01:09:00 -0000',
+            '',
+            'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.'
+            ])
+        message_set = getUtility(IMessageSet)
+        message = message_set.fromEmail(raw)
+        transaction.commit()
+        held_message = team.mailing_list.holdMessage(message)
+        return sender, message, held_message
+
+    def test_view_properties(self):
+        team = self.makeTeamWithMailingList()
+        sender, message, held_message = self.makeHeldMessage(team)
+        view = create_initialized_view(
+            held_message, name='+moderation', principal=team.teamowner)
+        self.assertEqual(message.subject, view.subject)
+        self.assertEqual(message.rfc822msgid, view.message_id)
+        self.assertEqual(message.datecreated, view.date)
+        self.assertEqual(PersonFormatterAPI(sender).link(None), view.author)
+        self.assertEqual("First paragraph.", view.body_summary)
+        self.assertEqual(
+            "\n<p>\nSecond paragraph.\n</p>\n\n<p>\nThird paragraph.\n</p>\n",
+            view.body_details)
