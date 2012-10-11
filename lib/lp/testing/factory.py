@@ -963,10 +963,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None, specification_sharing_policy=None,
-        information_type=None):
+        translations_usage=None, bug_supervisor=None, driver=None, icon=None,
+        bug_sharing_policy=None, branch_sharing_policy=None,
+        specification_sharing_policy=None, information_type=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -1009,8 +1008,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if private_bugs:
-            naked_product.private_bugs = private_bugs
         if ((branch_sharing_policy and
             branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
             (bug_sharing_policy and
@@ -1029,20 +1026,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if information_type is not None:
             naked_product.information_type = information_type
 
-        return product
-
-    def makeLegacyProduct(self, **kwargs):
-        # Create a product which does not have any of the new bug and branch
-        # sharing policies set. New products have these set to default values
-        # but we need to test for existing products which have not yet been
-        # migrated.
-        # XXX This method can be removed when branch visibility policy dies.
-        product = self.makeProduct(**kwargs)
-        # Since createProduct() doesn't create PRIVATESECURITY/USERDATA.
-        removeSecurityProxy(product)._ensurePolicies([
-            InformationType.PRIVATESECURITY, InformationType.USERDATA])
-        removeSecurityProxy(product).bug_sharing_policy = None
-        removeSecurityProxy(product).branch_sharing_policy = None
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,

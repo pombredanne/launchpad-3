@@ -776,24 +776,6 @@ class IProductPublic(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
-    def checkPrivateBugsTransitionAllowed(private_bugs, user):
-        """Can the private_bugs attribute be changed to the value by the user?
-
-        Generally, the permission is restricted to ~registry or ~admin or
-        bug supervisors.
-        In addition, a valid commercial subscription is required to turn on
-        private bugs when being done by a bug supervisor. However, no
-        commercial subscription is required to turn off private bugs.
-        """
-
-    @mutator_for(private_bugs)
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(private_bugs=copy_field(private_bugs))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivateBugs(private_bugs, user):
-        """Mutator for private_bugs that checks entitlement."""
-
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 

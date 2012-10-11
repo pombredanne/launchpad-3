@@ -233,12 +233,6 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
-    'bug-private-by-default.txt': LayeredDocFileSuite(
-        '../doc/bug-private-by-default.txt',
-        setUp=setUp,
-        tearDown=tearDown,
-        layer=LaunchpadZopelessLayer
-        ),
     'bugtracker-person.txt': LayeredDocFileSuite(
         '../doc/bugtracker-person.txt',
         setUp=checkwatchesSetUp,
