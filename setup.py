@@ -61,7 +61,6 @@ setup(
         'Markdown',
         'mechanize',
         'meliae',
-        'mercurial',
         'mocker',
         'oauth',
         'oops',

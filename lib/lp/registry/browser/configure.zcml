@@ -1496,7 +1496,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/project-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.Edit"

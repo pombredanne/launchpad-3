@@ -4,8 +4,10 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-import datetime
-
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import pytz
 from storm.locals import Store
 from testtools.matchers import MatchesAll
@@ -420,21 +422,46 @@ class TestProduct(TestCaseWithFactory):
                 with person_logged_in(product.owner):
                     product.information_type = info_type
 
-    def test_product_information_set_proprietary_requires_commercial(self):
-        # Cannot set Product.information_type to proprietary values if no
-        # commercial subscription.
-        product = self.factory.makeProduct()
-        self.useContext(person_logged_in(product.owner))
+    def test_set_proprietary_gets_commerical_subscription(self):
+        # Changing a Product to Proprietary will auto generate a complimentary
+        # subscription just as choosing a proprietary license at creation time.
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(owner=owner)
+        self.useContext(person_logged_in(owner))
+        self.assertIsNone(product.commercial_subscription)
+
+        product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        self.assertIsNotNone(product.commercial_subscription)
+
+    def test_set_proprietary_fails_expired_commerical_subscription(self):
+        # Cannot set information type to proprietary with an expired
+        # complimentary subscription.
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        self.useContext(person_logged_in(owner))
+
+        # The Product now has a complimentary commercial subscription.
+        new_expires_date = datetime.now(pytz.timezone('UTC')) - timedelta(1)
+        naked_subscription = removeSecurityProxy(
+            product.commercial_subscription)
+        naked_subscription.date_expires = new_expires_date
+
+        # We can make the product PUBLIC
+        product.information_type = InformationType.PUBLIC
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
+
+        # However we can't change it back to a Proprietary because our
+        # commercial subscription has expired.
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with ExpectedException(
                 CommercialSubscribersOnly,
                 'A valid commercial subscription is required for private'
                 ' Projects.'):
                 product.information_type = info_type
-        product.redeemSubscriptionVoucher(
-            'hello', product.owner, product.owner, 1)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product.information_type = info_type
 
     def test_product_information_init_proprietary_requires_commercial(self):
         # Cannot create a product with proprietary types without specifying
@@ -882,9 +909,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             cs = product.commercial_subscription
             self.assertIsNotNone(cs)
             self.assertIn('complimentary-30-day', cs.sales_system_id)
-            now = datetime.datetime.now(pytz.UTC)
+            now = datetime.now(pytz.UTC)
             self.assertTrue(now >= cs.date_starts)
-            future_30_days = now + datetime.timedelta(days=30)
+            future_30_days = now + timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
             self.assertIn(
                 "Complimentary 30 day subscription. -- Launchpad",
@@ -905,9 +932,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             cs = product.commercial_subscription
             self.assertIsNotNone(cs)
             self.assertIn('complimentary-30-day', cs.sales_system_id)
-            now = datetime.datetime.now(pytz.UTC)
+            now = datetime.now(pytz.UTC)
             self.assertTrue(now >= cs.date_starts)
-            future_30_days = now + datetime.timedelta(days=30)
+            future_30_days = now + timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
             self.assertIn(
                 "Complimentary 30 day subscription. -- Launchpad",
@@ -991,7 +1018,8 @@ class BaseSharingPolicyTests:
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.PROPRIETARY, self.product.owner))
+                [self.product], InformationType.PROPRIETARY,
+                self.product.owner))
 
     def test_unused_policies_are_pruned(self):
         # When a sharing policy is changed, the allowed information types may
@@ -1086,7 +1114,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             [policy.type for policy in
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.setSharingPolicy(
-            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.enum.EMBARGOED_OR_PROPRIETARY,
             self.commercial_admin)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA,
@@ -1095,10 +1123,36 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.PROPRIETARY, self.product.owner))
+                [self.product], InformationType.PROPRIETARY,
+                self.product.owner))
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, InformationType.EMBARGOED, self.product.owner))
+                [self.product], InformationType.EMBARGOED,
+                self.product.owner))
+
+
+class ProductSpecificationSharingPolicyTestCase(
+    ProductBranchSharingPolicyTestCase):
+    """Test Product.specification_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = SpecificationSharingPolicy
+    public_policy = SpecificationSharingPolicy.PUBLIC
+    commercial_policies = (
+        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        SpecificationSharingPolicy.PROPRIETARY,
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        with person_logged_in(user):
+            result = self.product.setSpecificationSharingPolicy(policy)
+        return result
+
+    def getSharingPolicy(self):
+        return self.product.specification_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
@@ -1182,8 +1236,8 @@ class TestWebService(WebServiceTestCase):
         product = question.product
         transaction.commit()
         ws_product = self.wsObject(product, product.owner)
-        now = datetime.datetime.now(tz=pytz.utc)
-        day = datetime.timedelta(days=1)
+        now = datetime.now(tz=pytz.utc)
+        day = timedelta(days=1)
         self.failUnlessEqual(
             [oopsid],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
@@ -1200,8 +1254,8 @@ class TestWebService(WebServiceTestCase):
         product = self.factory.makeProduct()
         transaction.commit()
         ws_product = self.wsObject(product, product.owner)
-        now = datetime.datetime.now(tz=pytz.utc)
-        day = datetime.timedelta(days=1)
+        now = datetime.now(tz=pytz.utc)
+        day = timedelta(days=1)
         self.failUnlessEqual(
             [],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

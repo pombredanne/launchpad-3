@@ -103,8 +103,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -427,7 +427,6 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
-        'branchvisibility',
         'downloads',
         ]
 
@@ -442,11 +441,6 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text)
 
 
 class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
@@ -551,7 +545,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branchvisibility',
         'rdf',
         'branding',
         'view_recipes',
@@ -602,11 +595,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text, icon='info')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
@@ -1390,6 +1378,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "description",
         "project",
         "homepageurl",
+        "information_type",
         "sourceforgeproject",
         "freshmeatproject",
         "wikiurl",
@@ -1402,11 +1391,40 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        if self.context.active:
+            return canonical_url(self.context)
+        else:
+            return canonical_url(getUtility(IProductSet))
+
+    cancel_url = next_url
 
     @property
     def page_title(self):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProductEditView, self).initialize()
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductEditView, self).setUpFields()
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects:
+            self.form_fields = self.form_fields.omit('information_type')
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -1421,16 +1439,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        if self.context.active:
-            return canonical_url(self.context)
-        else:
-            return canonical_url(getUtility(IProductSet))
-
-    cancel_url = next_url
 
 
 class ProductValidationMixin:
