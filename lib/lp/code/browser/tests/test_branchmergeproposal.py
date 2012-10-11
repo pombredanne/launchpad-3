@@ -46,7 +46,6 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
-    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff
@@ -213,9 +212,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         owner = self.bmp.source_branch.owner
         if not is_branch_visible:
             branch = self.bmp.source_branch
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
-            branch.setPrivate(True, owner)
+            branch.transitionToInformationType(InformationType.USERDATA, owner)
 
         # Set up some review requests.
         public_person1 = self.factory.makePerson()

@@ -285,12 +285,6 @@ those permitted by private teams.
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,
     ...         CodeReviewNotificationLevel.STATUS, team_owner)
-    ...     # A branch visibility rule.
-    ...     from lp.code.enums import BranchVisibilityRule
-    ...     from lp.registry.interfaces.product import IProductSet
-    ...     evolution = getUtility(IProductSet).getByName('evolution')
-    ...     evolution.setBranchVisibilityTeamPolicy(
-    ...         team, BranchVisibilityRule.PRIVATE)
     ...     # A PPA.
     ...     from lp.soyuz.enums import ArchivePurpose
     ...     from lp.soyuz.interfaces.archive import IArchiveSet
