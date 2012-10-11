@@ -347,6 +347,7 @@ class NewSpecificationView(LaunchpadFormView):
                     'information_type',
                     'This information type is not permitted for this product')
 
+
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a target context.
 

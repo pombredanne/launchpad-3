@@ -345,6 +345,14 @@ class NewSpecificationTests:
 
     expected_keys = set(['PROPRIETARY', 'PUBLIC', 'EMBARGOED'])
 
+    def _create_form_data(self, context):
+        return {
+            'field.target': context,
+            'field.name': 'TestBlueprint',
+            'field.title': 'Test Blueprint',
+            'field.summary': 'Test Blueprint Summary',
+        }
+
     def test_cache_contains_information_type(self):
         view = self.createInitializedView()
         cache = IJSONRequestCache(view.request)
@@ -360,6 +368,19 @@ class NewSpecificationTests:
             InformationType.PUBLIC,
             view.initial_values['information_type'])
 
+<<<<<<< TREE
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        # For default contexts, only PUBLIC is permitted.
+        import pdb;from pprint import pprint; pdb.set_trace()
+        form = self._create_form_data(self.context)
+        form['field.information_type'] = u'PROPRIETARY'
+        view = self.createInitializedView(form=form)
+
+        view.errors
+        self.assertEqual([], view.errors)
+
+=======
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
         # For default contexts, only PUBLIC is permitted.
@@ -367,15 +388,16 @@ class NewSpecificationTests:
         view = create_initialized_view(specs, '+index', form=form)
         self.assertEqual([], view.errors)
 
+>>>>>>> MERGE-SOURCE
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
                                        NewSpecificationTests):
 
     layer = DatabaseFunctionalLayer
 
-    def createInitializedView(self):
-        specs = getUtility(ISpecificationSet)
-        return create_initialized_view(specs, '+new')
+    def createInitializedView(self, form=None):
+        self.context = getUtility(ISpecificationSet)
+        return create_initialized_view(self.context, '+new', form=form)
 
 
 class TestNewSpecificationFromSprintView(TestCaseWithFactory,
