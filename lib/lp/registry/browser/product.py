@@ -104,8 +104,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -428,7 +428,6 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
-        'branchvisibility',
         'downloads',
         ]
 
@@ -443,11 +442,6 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text)
 
 
 class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
@@ -552,7 +546,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branchvisibility',
         'rdf',
         'branding',
         'view_recipes',
@@ -603,11 +596,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text, icon='info')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):

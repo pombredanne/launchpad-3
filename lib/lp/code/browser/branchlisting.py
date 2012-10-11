@@ -73,7 +73,6 @@ from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
 from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
-from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -126,7 +125,6 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
-    enabled_with_permission,
     Link,
     )
 from lp.services.webapp.authorization import (
@@ -497,8 +495,7 @@ class BranchListingBatchNavigator(TableBatchNavigator,
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView, FeedsMixin,
-                        BranchVisibilityPolicyMixin):
+class BranchListingView(LaunchpadFormView, FeedsMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
@@ -1029,7 +1026,6 @@ class ProductBranchesMenu(ApplicationMenu):
         'list_branches',
         'active_reviews',
         'code_import',
-        'branch_visibility',
         ]
     extra_attributes = [
         'active_review_count',
@@ -1052,11 +1048,6 @@ class ProductBranchesMenu(ApplicationMenu):
             'Active review',
             'Active reviews')
         return Link('+activereviews', text, site='code')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def code_import(self):
         text = 'Import a branch'

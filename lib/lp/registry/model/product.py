@@ -69,8 +69,8 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -119,7 +119,6 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
-from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
@@ -328,10 +327,10 @@ class UnDeactivateable(Exception):
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              KarmaContextMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin, HasAliasMixin,
+              StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+              OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
               HasCodeImportsMixin, InformationTypeMixin,
               TranslationPolicyMixin):
