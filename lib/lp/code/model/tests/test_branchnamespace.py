@@ -968,7 +968,7 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES,
+            FREE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
     def test_public_team(self):
@@ -976,7 +976,7 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
         team = self.factory.makeTeam()
         namespace = PersonalNamespace(team)
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES,
+            FREE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
     def test_private_team(self):
@@ -984,7 +984,7 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         namespace = PersonalNamespace(team)
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES,
+            NON_EMBARGOED_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
 
@@ -1111,7 +1111,8 @@ class JunkBranches(TestCaseWithFactory):
         """
         namespace = get_branch_namespace(owner)
         self.assertNotIn(
-            InformationType.USERDATA, namespace.getAllowedInformationTypes())
+            InformationType.PROPRIETARY,
+            namespace.getAllowedInformationTypes())
 
     def assertPolicyCheckRaises(self, error, creator, owner):
         """Assert that the policy check raises an exception.
