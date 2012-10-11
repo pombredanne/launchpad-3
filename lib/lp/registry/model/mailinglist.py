@@ -16,12 +16,6 @@ __all__ = [
 
 
 import collections
-from email import message_from_string
-from email.Header import (
-    decode_header,
-    make_header,
-    )
-from itertools import repeat
 import operator
 from socket import getfqdn
 from string import Template
@@ -456,11 +450,12 @@ class MailingList(SQLBase):
             MessageApproval.mailing_listID == self.id,
             MessageApproval.status == PostedMessageStatus.NEW,
             MessageApproval.messageID == Message.id,
+            MessageApproval.posted_byID == Person.id
             ]
         if message_id_filter is not None:
             clauses.append(Message.rfc822msgid.is_in(message_id_filter))
-        results = store.find((MessageApproval, Message),
-            *clauses)
+        results = store.find(
+            (MessageApproval, Message, Person), *clauses)
         results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
         return DecoratedResultSet(results, operator.itemgetter(0))
 
@@ -797,31 +792,7 @@ class HeldMessageDetails:
         self.message_id = message_approval.message_id
         self.subject = self.message.subject
         self.date = self.message.datecreated
-        self.author = self.message.owner
-
-    @cachedproperty
-    def email_message(self):
-        self.message.raw.open()
-        try:
-            return message_from_string(self.message.raw.read())
-        finally:
-            self.message.raw.close()
-
-    @cachedproperty
-    def sender(self):
-        """See `IHeldMessageDetails`."""
-        originators = self.email_message.get_all('from', [])
-        originators.extend(self.email_message.get_all('reply-to', []))
-        if len(originators) == 0:
-            return 'n/a'
-        unicode_parts = []
-        for bytes, charset in decode_header(originators[0]):
-            if charset is None:
-                charset = 'us-ascii'
-            unicode_parts.append(
-                bytes.decode(charset, 'replace').encode('utf-8'))
-        header = make_header(zip(unicode_parts, repeat('utf-8')))
-        return unicode(header)
+        self.author = self.message_approval.posted_by
 
     @cachedproperty
     def body(self):

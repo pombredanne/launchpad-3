@@ -158,20 +158,11 @@ URIs with an authority but a blank path get canonicalised to a path of
   u'http://launchpad.net/'
 
 
-== Whitespace and null values ==
-
-Whitespace is stripped from the value:
-
-  >>> from zope.publisher.browser import TestRequest
-  >>> from lp.app.validators import LaunchpadValidationError
-  >>> from lp.app.widgets.textwidgets import URIWidget
-  >>> field = URIField(__name__='foo', title=u'Foo')
-
-  >>> field.normalize('  http://www.ubuntu.com/   ')
-  u'http://www.ubuntu.com/'
+== Null values ==
 
 None is an acceptable value for a URI field.
 
+  >>> field = URIField(__name__='foo', title=u'Foo')
   >>> print field.normalize(None)
   None
 
@@ -187,6 +178,7 @@ This widget is registered as an input widget:
 
   >>> from zope.app.form.interfaces import IInputWidget
   >>> from zope.component import getMultiAdapter
+  >>> from lp.app.widgets.textwidgets import URIWidget
   >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
   >>> class URIFieldTest(object):
@@ -202,8 +194,12 @@ This widget is registered as an input widget:
 
 Multiple values will cause an UnexpectedFormData exception:
 
-  >>> widget._toFieldValue(['http://launchpad.net',
-  ...                       'http://ubuntu.com'])
+  >>> widget._toFieldValue(['http://launchpad.net', 'http://ubuntu.com'])
   Traceback (most recent call last):
     ...
   UnexpectedFormData: Only a single value is expected
+
+Values with leading and trailing whitespace are stripped.
+
+   >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
+   u'http://www.ubuntu.com/'

@@ -460,9 +460,6 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             if sharing_policy is not None:
                 self.factory.makeCommercialSubscription(product)
                 product.setSpecificationSharingPolicy(sharing_policy)
-            policy = self.factory.makeAccessPolicy(product, information_type)
-            self.factory.makeAccessPolicyGrant(
-                policy, grantee=self.user, grantor=self.user)
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:
@@ -617,7 +614,6 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         self.assertThat(browser.contents, self.match_it)
         spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.EMBARGOED)
-
 
 
 class TestNewSpecificationDefaultInformationTypeProduct(

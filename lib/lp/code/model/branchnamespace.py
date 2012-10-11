@@ -379,10 +379,10 @@ class ProductNamespace(_BaseNamespace):
             self.product.branch_sharing_policy]
         if (required_grant is not None
             and not getUtility(IService, 'sharing').checkPillarAccess(
-                self.product, required_grant, self.owner)
+                [self.product], required_grant, self.owner)
             and (who is None
                 or not getUtility(IService, 'sharing').checkPillarAccess(
-                    self.product, required_grant, who))):
+                    [self.product], required_grant, who))):
             return []
 
         return BRANCH_POLICY_ALLOWED_TYPES[
