@@ -324,14 +324,14 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         # Private teams get private branches, everyone else gets public ones.
         if self._is_private_team:
-            return FREE_INFORMATION_TYPES
+            return NON_EMBARGOED_INFORMATION_TYPES
         else:
-            return PUBLIC_INFORMATION_TYPES
+            return FREE_INFORMATION_TYPES
 
     def getDefaultInformationType(self, who=None):
         """See `IBranchNamespace`."""
         if self._is_private_team:
-            return InformationType.USERDATA
+            return InformationType.PROPRIETARY
         else:
             return InformationType.PUBLIC
 

@@ -626,24 +626,26 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
-                        description=_(
-                            "Whether or not bugs reported into this project "
-                            "are private by default.")))
+    private_bugs = exported(
+        Bool(
+            title=_('Private bugs (obsolete; always False)'), readonly=True,
+            description=_("Replaced by bug_sharing_policy.")),
+        ('devel', dict(exported=False)))
+
     branch_sharing_policy = exported(Choice(
         title=_('Branch sharing policy'),
         description=_("Sharing policy for this project's branches."),
-        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        required=True, readonly=True, vocabulary=BranchSharingPolicy),
         as_of='devel')
     bug_sharing_policy = exported(Choice(
         title=_('Bug sharing policy'),
         description=_("Sharing policy for this project's bugs."),
-        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        required=True, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
     specification_sharing_policy = exported(Choice(
         title=_('Specification sharing policy'),
         description=_("Sharing policy for this project's specifications."),
-        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        required=True, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
 
     licenses = exported(
