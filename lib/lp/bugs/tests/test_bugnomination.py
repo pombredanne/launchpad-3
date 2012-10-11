@@ -41,6 +41,25 @@ class BugNominationTestCase(TestCaseWithFactory):
         self.assertIsNone(nomination.date_decided)
         self.assertEqual('UTC', nomination.date_created.tzname())
 
+    def test_target_distroseries(self):
+        # The target property returns the distroseries if it is not None.
+        series = self.factory.makeDistroSeries()
+        package_name = self.factory.makeSourcePackageName()
+        target = series.getSourcePackage(package_name)
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        self.assertEqual(series, nomination.distroseries)
+        self.assertEqual(series, nomination.target)
+
+    def test_target_productseries(self):
+        # The target property returns the productseries if it is not None.
+        series = self.factory.makeProductSeries()
+        target = series.product
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        self.assertEqual(series, nomination.productseries)
+        self.assertEqual(series, nomination.target)
+
 
 class CanBeNominatedForTestMixin:
     """Test case mixin for IBug.canBeNominatedFor."""
