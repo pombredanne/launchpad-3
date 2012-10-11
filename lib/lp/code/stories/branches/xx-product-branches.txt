@@ -49,7 +49,7 @@ If there are not any branches, a helpful message is shown.
       by registering a Mirrored branch. Read more.
     Launchpad can also act as a primary location for Bazaar branches of
       Gnome Applets. Read more.
-    Launchpad can import code from CVS, Subversion, Mercurial or Git
+    Launchpad can import code from CVS, Subversion or Git
       into Bazaar branches. Read more...
 
 The 'Help' links go to the help wiki.
@@ -169,10 +169,9 @@ default listings.
 Involvement portlet
 ===================
 
-There are several links in the side portlet:
-'Import a branch', 'Configure code hosting', and 'Define branch
-visibility'.  The links are only shown if the user has permission to
-perform the task.
+There are two links in the side portlet:
+'Import a branch' and 'Configure code hosting'
+The links are only shown if the user has permission to perform the task.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
@@ -181,10 +180,10 @@ perform the task.
     >>> factory = LaunchpadObjectFactory()
     >>> login(ANONYMOUS)
     >>> product = getUtility(IProductSet).getByName('firefox')
-    >>> owner = product.owner
     >>> old_branch = product.development_focus.branch
     >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = None
+    >>> logout()
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'involvement')
     ...     if links is None:
@@ -204,21 +203,17 @@ hosting configured or if it is not using Launchpad.
 
     >>> print product.codehosting_usage.name
     UNKNOWN
-    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     None
 
     >>> setup_code_hosting('firefox')
-    >>> login(ANONYMOUS)
     >>> print product.codehosting_usage.name
     LAUNCHPAD
-    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     Import a branch
     Configure code hosting
-    Define branch visibility
 
 The owner of the project sees the links for the activities he can
 perform, everything except defining branch visibility.
@@ -238,7 +233,7 @@ And a regular user can only register and import branches.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import a branch' button is still shown.
 
-    >>> ignored = login_person(owner)
+    >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = old_branch
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')

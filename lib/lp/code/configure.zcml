@@ -540,12 +540,6 @@
     <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
   </securedutility>
 
-  <!-- BranchVisibilityPolicy -->
-
-  <class class="lp.code.model.branchvisibilitypolicy.BranchVisibilityTeamPolicy">
-    <allow interface="lp.code.interfaces.branchvisibilitypolicy.IBranchVisibilityTeamPolicy"/>
-  </class>
-
   <!-- BranchDelta -->
 
   <class class="lp.code.adapters.branch.BranchDelta">

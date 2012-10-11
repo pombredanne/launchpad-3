@@ -98,9 +98,6 @@ from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy,
-    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasCodeImports,
@@ -423,23 +420,17 @@ class IProductModerateRestricted(Interface):
                 "Not applicable to 'Other/Proprietary'.")))
 
 
-class IProductPublic(Interface):
-
-    id = Int(title=_('The Project ID'))
-
-    def userCanView(user):
-        """True if the given user has access to this product."""
-
-
-class IProductLimitedView(
+class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
-    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IHasOOPSReferences,
+    IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs, IHasMugshot,
+    IHasOwner, IHasSprints, IHasTranslationImports, ITranslationPolicy,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
     ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
+
+    id = Int(title=_('The Project ID'))
 
     project = exported(
         ReferenceChoice(
@@ -785,24 +776,6 @@ class IProductLimitedView(
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
 
-    def checkPrivateBugsTransitionAllowed(private_bugs, user):
-        """Can the private_bugs attribute be changed to the value by the user?
-
-        Generally, the permission is restricted to ~registry or ~admin or
-        bug supervisors.
-        In addition, a valid commercial subscription is required to turn on
-        private bugs when being done by a bug supervisor. However, no
-        commercial subscription is required to turn off private bugs.
-        """
-
-    @mutator_for(private_bugs)
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(private_bugs=copy_field(private_bugs))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivateBugs(private_bugs, user):
-        """Mutator for private_bugs that checks entitlement."""
-
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
 
@@ -893,9 +866,9 @@ class IProductLimitedView(
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    @mutator_for(IProductLimitedView['bug_sharing_policy'])
+    @mutator_for(IProductPublic['bug_sharing_policy'])
     @operation_parameters(bug_sharing_policy=copy_field(
-        IProductLimitedView['bug_sharing_policy']))
+        IProductPublic['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBugSharingPolicy(bug_sharing_policy):
@@ -904,10 +877,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['branch_sharing_policy'])
+    @mutator_for(IProductPublic['branch_sharing_policy'])
     @operation_parameters(
         branch_sharing_policy=copy_field(
-            IProductLimitedView['branch_sharing_policy']))
+            IProductPublic['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
@@ -916,10 +889,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['specification_sharing_policy'])
+    @mutator_for(IProductPublic['specification_sharing_policy'])
     @operation_parameters(
         specification_sharing_policy=copy_field(
-            IProductLimitedView['specification_sharing_policy']))
+            IProductPublic['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setSpecificationSharingPolicy(specification_sharing_policy):
@@ -932,8 +905,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
-    IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType, IPillar):
+    IProductPublic, IQuestionTarget, IRootContext,
+    IStructuralSubscriptionTarget, IInformationType):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups

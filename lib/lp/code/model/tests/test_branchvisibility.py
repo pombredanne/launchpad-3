@@ -43,7 +43,7 @@ from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchVisibility(TestCaseWithFactory):
-    """Tests for `IHasBranchVisibilityPolicy`."""
+    """Tests for branch privacy."""
 
     layer = DatabaseFunctionalLayer
 

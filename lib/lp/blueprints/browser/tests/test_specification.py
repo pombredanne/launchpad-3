@@ -40,7 +40,6 @@ from lp.registry.interfaces.product import (
     IProductSeries,
     )
 from lp.services.features.testing import FeatureFixture
-from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -353,6 +352,14 @@ class NewSpecificationTests:
         self.assertIsNot(None, info_data)
         self.assertEqual(self.expected_keys, set(info_data.keys()))
 
+    def test_default_info_type(self):
+        # The default selected information type needs to be PUBLIC for new
+        # specifications.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            view.initial_values['information_type'])
+
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
                                        NewSpecificationTests):
@@ -396,6 +403,14 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         product = self.factory.makeProduct(
             specification_sharing_policy=policy)
         return create_initialized_view(product, '+addspec')
+
+    def test_default_info_type(self):
+        # In this case the default info type cannot be PUBlIC as it's not
+        # among the allowed types.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
@@ -461,18 +476,11 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             if sharing_policy is not None:
                 self.factory.makeCommercialSubscription(product)
                 product.setSpecificationSharingPolicy(sharing_policy)
-            policy = self.factory.makeAccessPolicy(product, information_type)
-            self.factory.makeAccessPolicyGrant(
-                policy, grantee=self.user, grantor=self.user)
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:
                 control.click()
-            specification_name = self.submitSpec(browser)
-            # Using the browser terminated the interaction, but we need
-            # an interaction in order to access a product.
-            with person_logged_in(ANONYMOUS):
-                return product.getSpecification(specification_name)
+            return product.getSpecification(self.submitSpec(browser))
 
     def test_supplied_information_types(self):
         """Creating honours information types."""
@@ -556,11 +564,9 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         Useful because we need to follow to product from a
         ProductSeries.
         """
-        # We need an interaction in order to access a product.
-        with person_logged_in(ANONYMOUS):
-            if IProductSeries.providedBy(target):
-                return target.product.getSpecification(name)
-            return target.getSpecification(name)
+        if IProductSeries.providedBy(target):
+            return target.product.getSpecification(name)
+        return target.getSpecification(name)
 
     def submitSpec(self, browser):
         """Submit a Specification via a browser."""
@@ -624,7 +630,6 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         self.assertThat(browser.contents, self.match_it)
         spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.EMBARGOED)
-
 
 
 class TestNewSpecificationDefaultInformationTypeProduct(

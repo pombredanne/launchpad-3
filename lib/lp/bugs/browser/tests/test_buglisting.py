@@ -147,7 +147,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         product = self.factory.makeProduct()
         form = {
             'search': 'Search',
-            'advanced': 1,
             'field.component': 1,
             'field.component-empty-marker': 1}
         with person_logged_in(product.owner):

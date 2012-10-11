@@ -2017,13 +2017,8 @@ class Bug(SQLBase, InformationTypeMixin):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        pillars = list(self.affected_pillars)
-        service = getUtility(IService, 'sharing')
-        for pillar in pillars:
-            if service.checkPillarAccess(
-                    pillar, InformationType.USERDATA, user):
-                return True
-        return False
+        return getUtility(IService, 'sharing').checkPillarAccess(
+            self.affected_pillars, InformationType.USERDATA, user)
 
     def linkHWSubmission(self, submission):
         """See `IBug`."""
@@ -2625,20 +2620,6 @@ class BugSet:
         # Create the initial task on the specified target.
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
-
-        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
-        # non-security bugs, this test might be simplified to checking
-        # params.private.
-        if (IProduct.providedBy(params.target) and params.target.private_bugs
-            and params.target.bug_sharing_policy is None
-            and params.information_type not in SECURITY_INFORMATION_TYPES):
-            # Subscribe the bug supervisor to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.target.bug_supervisor:
-                bug.subscribe(params.target.bug_supervisor, params.owner)
-            else:
-                bug.subscribe(params.target.owner, params.owner)
 
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)

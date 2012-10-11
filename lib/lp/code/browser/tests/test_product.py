@@ -18,12 +18,10 @@ from lp.app.enums import (
     InformationType,
     ServiceUsage,
     )
-from lp.code.enums import (
-    BranchType,
-    BranchVisibilityRule,
-    )
+from lp.code.enums import BranchType
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
+from lp.registry.enums import BranchSharingPolicy
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -224,9 +222,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login_person(product.owner)
         product.development_focus.branch = code_import.branch
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
-        product_url = canonical_url(product, rootsite='code')
         logout()
-        browser = self.getUserBrowser(product_url)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')
         text = extract_text(content)
@@ -365,26 +362,23 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
             contents, 'portlet-product-codestatistics'))
 
     def test_is_private(self):
-        team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        product = self.factory.makeLegacyProduct(owner=team_owner)
-        branch = self.factory.makeProductBranch(product=product)
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeProductBranch(
+            product=product, owner=product.owner)
         login_person(product.owner)
         product.development_focus.branch = branch
-        product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
         view = create_initialized_view(
             product, '+code-index', rootsite='code',
             principal=product.owner)
         text = extract_text(find_tag_by_id(view.render(), 'privacy'))
         expected = (
-            "New branches for %(name)s are Private.*"
+            "New branches for %(name)s are Proprietary.*"
             % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_is_public(self):
         product = self.factory.makeProduct()
-        product_displayname = product.displayname
         branch = self.factory.makeProductBranch(product=product)
         login_person(product.owner)
         product.development_focus.branch = branch
@@ -392,7 +386,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
         expected = (
             "New branches for %(name)s are Public.*"
-            % dict(name=product_displayname))
+            % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
 

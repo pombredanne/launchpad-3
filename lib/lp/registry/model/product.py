@@ -52,7 +52,6 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -69,9 +68,8 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
@@ -120,7 +118,6 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
-from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
@@ -158,7 +155,6 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -329,10 +325,10 @@ class UnDeactivateable(Exception):
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              KarmaContextMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin, HasAliasMixin,
+              StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+              OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
               HasCodeImportsMixin, InformationTypeMixin,
               TranslationPolicyMixin):
@@ -434,16 +430,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
-        if (not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES
-            and not self.has_current_commercial_subscription):
-            raise CommercialSubscribersOnly(
-                'A valid commercial subscription is required for private'
-                ' Projects.')
+
+        # If you're changing the license, and setting a PROPRIETARY
+        # information type, yet you don't have a subscription you get one when
+        # the license is set.
+
+        # If you have a commercial subscription, but it's not current, you
+        # cannot set the information type to a PROPRIETARY type.
+        if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
+            # Create the complimentary commercial subscription for the product.
+            self._ensure_complimentary_subscription()
+
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    'A valid commercial subscription is required for private'
+                    ' Projects.')
+
         return value
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
-        dbName='information_type',
+        dbName="information_type",
         storm_validator=_valid_product_information_type)
 
     def _get_information_type(self):
@@ -451,6 +458,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _set_information_type(self, value):
         self._information_type = value
+        # Make sure that policies are updated to grant permission to the
+        # maintainer as required for the Product.
+        # However, only on edits. If this is a new Product it's handled
+        # already.
+        if not self._SO_creating:
+            self._ensurePolicies([value])
 
     information_type = property(_get_information_type, _set_information_type)
 
@@ -531,8 +544,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True, default=False)
     project_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
-    private_bugs = BoolCol(
-        dbName='private_bugs', notNull=True, default=False)
+    private_bugs = False
     bug_sharing_policy = EnumCol(
         enum=BugSharingPolicy, notNull=False, default=None)
     branch_sharing_policy = EnumCol(
@@ -593,40 +605,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
-        """See `IProductPublic`."""
-        from lp.security import (
-            BugTargetOwnerOrBugSupervisorOrAdmins,
-            ModerateByRegistryExpertsOrAdmins,
-            )
-        if user is not None:
-            person_roles = IPersonRoles(user)
-            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
-            moderator = moderator_check.checkAuthenticated(person_roles)
-            if moderator:
-                return True
-
-            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
-            bug_supervisor = (
-                bug_supervisor_check.checkAuthenticated(person_roles))
-            if (bug_supervisor and
-                    (not private_bugs
-                     or self.has_current_commercial_subscription)):
-                return
-        if private_bugs:
-            raise CommercialSubscribersOnly(
-                'A valid commercial subscription is required to turn on '
-                'default private bugs.')
-        raise Unauthorized(
-            'Only bug supervisors can turn off default private bugs.')
-
-    def setPrivateBugs(self, private_bugs, user):
-        """ See `IProductEditRestricted`."""
-        if self.private_bugs == private_bugs:
-            return
-        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
-        self.private_bugs = private_bugs
-
     def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
         if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
             not self.has_current_commercial_subscription):
@@ -668,11 +646,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FREE_INFORMATION_TYPES
 
     def getDefaultBugInformationType(self):
-        """See `IDistribution.`"""
+        """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
             return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
-        elif self.private_bugs:
-            return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
 
@@ -715,10 +691,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_specification_types = set(
+            SPECIFICATION_POLICY_ALLOWED_TYPES.get(
+                self.specification_sharing_policy, [InformationType.PUBLIC])
+        )
         allowed_types = allowed_bug_types.union(allowed_branch_types)
+        allowed_types = allowed_types.union(allowed_specification_types)
         # Fetch all APs, and after filtering out ones that are forbidden
-        # by the bug and branch policies, the APs that have no APAs are
-        # unused and can be deleted.
+        # by the bug, branch, and specification policies, the APs that have no
+        # APAs are unused and can be deleted.
         ap_source = getUtility(IAccessPolicySource)
         access_policies = set(ap_source.findByPillar([self]))
         apa_source = getUtility(IAccessPolicyArtifactSource)
@@ -962,6 +943,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
         if (License.OTHER_PROPRIETARY in licenses
             and self.commercial_subscription is None):
+            self._ensure_complimentary_subscription()
+
+        notify(LicensesModifiedEvent(self))
+
+    licenses = property(_getLicenses, _setLicenses)
+
+    def _ensure_complimentary_subscription(self):
+        """Create a complementary commercial subscription for the product"""
+        if not self.commercial_subscription:
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             now = datetime.datetime.now(pytz.UTC)
             date_expires = now + datetime.timedelta(days=30)
@@ -974,9 +964,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 registrant=lp_janitor, purchaser=lp_janitor,
                 sales_system_id=sales_system_id, whiteboard=whiteboard)
             get_property_cache(self).commercial_subscription = subscription
-        notify(LicensesModifiedEvent(self))
-
-    licenses = property(_getLicenses, _setLicenses)
 
     def _getOwner(self):
         """Get the owner."""
@@ -1534,31 +1521,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
-
-    @cachedproperty
-    def _known_viewers(self):
-        """A set of known persons able to view this product."""
-        return set()
-
-    def userCanView(self, user):
-        """See `IProductPublic`."""
-        if self.information_type in PUBLIC_INFORMATION_TYPES:
-            return True
-        if user is None:
-            return False
-        if user.id in self._known_viewers:
-            return True
-        # We want an actual Storm Person.
-        if IPersonRoles.providedBy(user):
-            user = user.person
-        policy = getUtility(IAccessPolicySource).find(
-            [(self, self.information_type)]).one()
-        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
-            [(policy, user)])
-        if grants_for_user.is_empty():
-            return False
-        self._known_viewers.add(user.id)
-        return True
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,

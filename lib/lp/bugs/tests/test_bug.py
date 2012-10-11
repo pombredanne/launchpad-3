@@ -23,7 +23,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
-from lp.registry.enums import BugSharingPolicy
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -301,26 +300,3 @@ class TestBugCreation(TestCaseWithFactory):
         target = self.factory.makeProduct()
         bug = self.createBug(owner=person, target=target)
         self.assertContentEqual([person], bug.getDirectSubscribers())
-
-    def test_createBug_legacy_private_bugs_subscribers(self):
-        # If a project is using the legacy private_bugs setting, the bug
-        # supervisor is subscribed to new non-security bugs.
-        person = self.factory.makePerson()
-        target = self.factory.makeLegacyProduct(
-            private_bugs=True, bug_supervisor=self.factory.makePerson())
-        bug = self.createBug(owner=person, target=target)
-        with person_logged_in(person):
-            self.assertContentEqual(
-                [person, target.bug_supervisor], bug.getDirectSubscribers())
-
-    def test_createBug_proprietary_subscribers(self):
-        # If a project's sharing policy requests proprietary bugs, only
-        # the reporter is subscribed. Even if private_bugs is set.
-        person = self.factory.makePerson()
-        target = self.factory.makeProduct(
-            bug_sharing_policy=BugSharingPolicy.PROPRIETARY,
-            private_bugs=True)
-        bug = self.createBug(owner=person, target=target)
-        with person_logged_in(person):
-            self.assertContentEqual(
-                [person], bug.getDirectSubscribers())

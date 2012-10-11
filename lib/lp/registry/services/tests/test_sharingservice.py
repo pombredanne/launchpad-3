@@ -612,16 +612,16 @@ class TestSharingService(TestCaseWithFactory):
                 (grantee,
                  {ud_policy: SharingPermission.SOME,
                   es_policy: SharingPermission.ALL},
-                 [InformationType.USERDATA,
-                  InformationType.PRIVATESECURITY]),
+                 [InformationType.PRIVATESECURITY,
+                  InformationType.USERDATA]),
                  ]
         else:
             expected_grantee_grants = [
                 (grantee,
                  {es_policy: SharingPermission.ALL,
                   ud_policy: SharingPermission.SOME},
-                 [InformationType.USERDATA,
-                  InformationType.PRIVATESECURITY]),
+                 [InformationType.PRIVATESECURITY,
+                  InformationType.USERDATA]),
                  ]
 
         grantee_grants = list(self.service.getPillarGrantees(pillar))
@@ -892,7 +892,8 @@ class TestSharingService(TestCaseWithFactory):
             artifacts.extend(branches)
         if specifications:
             artifacts.extend(specifications)
-        policy = self.factory.makeAccessPolicy(pillar=pillar)
+        policy = self.factory.makeAccessPolicy(pillar=pillar,
+                                               check_existing=True)
         # Grant access to a grantee and another person.
         grantee = self.factory.makePerson()
         someone = self.factory.makePerson()
@@ -981,8 +982,6 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(
             owner=owner, specification_sharing_policy=(
                 SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
-        self.factory.makeAccessPolicy(
-            pillar=product, type=InformationType.EMBARGOED)
         login_person(owner)
         specification = self.factory.makeSpecification(
             product=product, owner=owner,
@@ -998,7 +997,8 @@ class TestSharingService(TestCaseWithFactory):
             artifacts.extend(branches)
         if specifications:
             artifacts.extend(specifications)
-        policy = self.factory.makeAccessPolicy(pillar=pillar)
+        policy = self.factory.makeAccessPolicy(pillar=pillar,
+                                               check_existing=True)
 
         person_grantee = self.factory.makePerson()
         team_owner = self.factory.makePerson()
@@ -1089,7 +1089,6 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(
             owner=owner, specification_sharing_policy=(
                 SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
-        self.factory.makeAccessPolicy(product, InformationType.EMBARGOED)
         login_person(owner)
         specification = self.factory.makeSpecification(
             product=product, owner=owner,
@@ -1722,18 +1721,18 @@ class TestSharingService(TestCaseWithFactory):
         self.assertEqual(
             False,
             self.service.checkPillarAccess(
-                product, InformationType.USERDATA, wrong_person))
+                [product], InformationType.USERDATA, wrong_person))
         self.assertEqual(
             True,
             self.service.checkPillarAccess(
-                product, InformationType.USERDATA, right_person))
+                [product], InformationType.USERDATA, right_person))
 
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.
         self.assertEqual(
             False,
             self.service.checkPillarAccess(
-                self.factory.makeProduct(), InformationType.PUBLIC,
+                [self.factory.makeProduct()], InformationType.PUBLIC,
                 self.factory.makePerson()))
 
     def test_getAccessPolicyGrantCounts(self):
@@ -1838,14 +1837,12 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
             api_method, api_version='devel', **kwargs).jsonBody()
 
     def _getPillarGranteeData(self):
-        pillar_uri = canonical_url(
-            removeSecurityProxy(self.pillar), force_local_path=True)
+        pillar_uri = canonical_url(self.pillar, force_local_path=True)
         return self._named_get(
             'getPillarGranteeData', pillar=pillar_uri)
 
     def _sharePillarInformation(self, pillar):
-        pillar_uri = canonical_url(
-            removeSecurityProxy(pillar), force_local_path=True)
+        pillar_uri = canonical_url(pillar, force_local_path=True)
         return self._named_post(
             'sharePillarInformation', pillar=pillar_uri,
             grantee=self.grantee_uri,

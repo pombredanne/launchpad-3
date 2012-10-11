@@ -112,12 +112,11 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
-            RevisionControlSystems.HG:
-                config.codeimport.default_interval_hg,
             RevisionControlSystems.BZR:
                 config.codeimport.default_interval_bzr,
             }
-        seconds = default_interval_dict[self.rcs_type]
+        # The default can be removed when HG is fully purged.
+        seconds = default_interval_dict.get(self.rcs_type, 21600)
         return timedelta(seconds=seconds)
 
     import_job = Reference("<primary key>", "CodeImportJob.code_importID",
@@ -247,7 +246,6 @@ class CodeImportSet:
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
                           RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG,
                           RevisionControlSystems.BZR):
             assert cvs_root is None and cvs_module is None
             assert url is not None
