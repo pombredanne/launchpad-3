@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 import soupmatchers
+from testtools.matchers import Not
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
@@ -77,6 +78,16 @@ class TestWithBrowser(BrowserTestCase):
              text='Only Public project series can be packaged, not'
              ' Proprietary.')
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
+
+    def test_proprietary_hides_packaging(self):
+        """Proprietary, Embargoed lack "Distribution packaging" sections."""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        browser = self.getViewBrowser(series)
+        tag = soupmatchers.Tag(
+            'portlet-packages', True, attrs={'id': 'portlet-packages'})
+        self.assertThat(browser.contents, Not(soupmatchers.HTMLContains(tag)))
 
 
 class TestProductSeriesStatus(TestCaseWithFactory):
