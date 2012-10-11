@@ -126,6 +126,22 @@ class BugNominationTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             expected_targets, [bt.target for bt in nomination.bug.bugtasks])
 
+    def test_approve_distroseries_source_package(self):
+        # Approving a package nomination creates a distroseries
+        # source package bug task.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+            bug_tasks = nomination.bug.bugtasks
+            nomination.approve(series.distribution.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.distribution.owner, nomination.decider)
+        expected_targets = [bt.target for bt in bug_tasks] + [target]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
+
 
 class CanBeNominatedForTestMixin:
     """Test case mixin for IBug.canBeNominatedFor."""
