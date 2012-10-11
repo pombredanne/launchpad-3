@@ -95,13 +95,15 @@ class BugNominationTestCase(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         with person_logged_in(series.product.owner):
             nomination = self.factory.makeBugNomination(target=series)
+            bug_tasks = nomination.bug.bugtasks
             nomination.decline(series.product.owner)
         self.assertEqual(BugNominationStatus.DECLINED, nomination.status)
         self.assertIsNotNone(nomination.date_decided)
         self.assertEqual(series.product.owner, nomination.decider)
+        self.assertContentEqual(bug_tasks, nomination.bug.bugtasks)
 
     def test_decline_error(self):
-        # A nominations cannot be declined if it is approved.
+        # A nomination cannot be declined if it is approved.
         series = self.factory.makeProductSeries()
         with person_logged_in(series.product.owner):
             nomination = self.factory.makeBugNomination(target=series)
@@ -109,6 +111,18 @@ class BugNominationTestCase(TestCaseWithFactory):
             self.assertRaises(
                 BugNominationStatusError,
                 nomination.decline, series.product.owner)
+
+    def test_approve_productseries(self):
+        # Approving a product nomination creates a productseries bug task.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            bug_task_count = len(nomination.bug.bugtasks)
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+        self.assertEqual(bug_task_count + 1, len(nomination.bug.bugtasks))
 
 
 class CanBeNominatedForTestMixin:
