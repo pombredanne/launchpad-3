@@ -204,5 +204,6 @@ class CannotDeleteCommercialSubscription(Exception):
 class CannotChangeInformationType(Exception):
     """The information type cannot be changed."""
 
+
 class CannotPackageProprietaryProduct(Exception):
     """Raised when a non-PUBLIC product's series is linked to a package."""

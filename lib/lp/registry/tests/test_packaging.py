@@ -194,6 +194,7 @@ class TestCreatePackaging(PackagingUtilMixin, TestCaseWithFactory):
                 series, self.sourcepackagename, self.distroseries,
                 PackagingType.PRIME, owner=self.owner)
 
+
 class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
     """Test PackagingUtil.packagingEntryExists."""
 
