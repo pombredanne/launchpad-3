@@ -20,9 +20,6 @@ from lp.bugs.interfaces.personsubscriptioninfo import (
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTargetHelper,
-    )
 from lp.bugs.model.bug import (
     Bug,
     BugMute,
@@ -30,7 +27,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -163,21 +159,6 @@ class PersonSubscriptions(object):
         """See `IPersonSubscriptions`."""
         self.loadSubscriptionsFor(self.person, self.bug)
 
-    def _getTaskPillar(self, bugtask):
-        """Return a pillar for a given BugTask."""
-        # There is no adaptor for ISourcePackage. Perhaps there
-        # should be since the data model doesn't seem to prohibit it.
-        # For now, we simply work around the problem.  It Would Be Nice If
-        # there were a reliable generic way of getting the pillar for any
-        # bugtarget, but we are not going to tackle that right now.
-        if ISourcePackage.providedBy(bugtask.target):
-            pillar = IStructuralSubscriptionTargetHelper(
-                bugtask.target.distribution_sourcepackage).pillar
-        else:
-            pillar = IStructuralSubscriptionTargetHelper(
-                bugtask.target).pillar
-        return pillar
-
     def _getDirectAndDuplicateSubscriptions(self, person, bug):
         # Fetch all information for direct and duplicate
         # subscriptions (including indirect through team
@@ -217,17 +198,15 @@ class PersonSubscriptions(object):
             direct.annotateReporter(bug, bug.owner)
         for task in all_tasks:
             # Get bug_supervisor.
-            pillar = self._getTaskPillar(task)
             duplicates.annotateBugTaskResponsibilities(
-                task, pillar, pillar.bug_supervisor)
+                task, task.pillar, task.pillar.bug_supervisor)
             direct.annotateBugTaskResponsibilities(
-                task, pillar, pillar.bug_supervisor)
+                task, task.pillar, task.pillar.bug_supervisor)
         return (direct, duplicates)
 
     def _isMuted(self, person, bug):
-        is_muted = Store.of(person).find(
-            BugMute, BugMute.bug == bug, BugMute.person == person).one()
-        return is_muted is not None
+        return not Store.of(person).find(
+            BugMute, bug=bug, person=person).is_empty()
 
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
@@ -248,13 +227,12 @@ class PersonSubscriptions(object):
         as_assignee = VirtualSubscriptionInfoCollection(
             self.person, self.administrated_team_ids)
         for bugtask in bug.bugtasks:
-            pillar = self._getTaskPillar(bugtask)
-            owner = pillar.owner
-            if person.inTeam(owner) and pillar.bug_supervisor is None:
-                as_owner.add(owner, bug, pillar, bugtask)
+            owner = bugtask.pillar.owner
+            if person.inTeam(owner) and bugtask.pillar.bug_supervisor is None:
+                as_owner.add(owner, bug, bugtask.pillar, bugtask)
             assignee = bugtask.assignee
             if person.inTeam(assignee):
-                as_assignee.add(assignee, bug, pillar, bugtask)
+                as_assignee.add(assignee, bug, bugtask.pillar, bugtask)
         self.count = 0
         for name, collection in (
             ('direct', direct), ('from_duplicate', from_duplicate),

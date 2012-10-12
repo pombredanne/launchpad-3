@@ -2832,17 +2832,18 @@ class BugMute(StormBase):
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
 
+
 def generate_subscription_with(bug, person):
     return [
         With('all_bugsubscriptions', Select(
             (BugSubscription.id, BugSubscription.person_id),
-            tables=[BugSubscription, Join(
-                Bug, Bug.id == BugSubscription.bug_id)],
+            tables=[
+                BugSubscription, Join(Bug, Bug.id == BugSubscription.bug_id)],
             where=Or(Bug.id == bug.id, Bug.duplicateofID == bug.id))),
         With('bugsubscriptions', Select(
             SQL('all_bugsubscriptions.id'),
             tables=[
-                SQL('all_bugsubscriptions'), Join(
-                    TeamParticipation, TeamParticipation.teamID == SQL(
-                        'all_bugsubscriptions.person'))],
+                SQL('all_bugsubscriptions'),
+                Join(TeamParticipation, TeamParticipation.teamID == SQL(
+                    'all_bugsubscriptions.person'))],
             where=[TeamParticipation.personID == person.id]))]

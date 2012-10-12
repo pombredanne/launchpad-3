@@ -739,6 +739,15 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             edit_url=canonical_url(self.context, view_name='+edit'),
             max_width='95%', truncate_lines=6)
 
+        # XXX 2010-10-05 gmb bug=655597:
+        # This line of code keeps the view's query count down,
+        # possibly using witchcraft. It should be rewritten to be
+        # useful or removed in favour of making other queries more
+        # efficient. The witchcraft is because the subscribers are accessed
+        # in the initial page load, so the data is actually used.
+        if self.user is not None:
+            list(bug.getSubscribersForPerson(self.user))
+
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
         return (
