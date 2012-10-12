@@ -348,12 +348,20 @@ class NewSpecificationTests:
     def _create_form_data(self, context):
         return {
             'field.actions.register': 'Register Blueprint',
-            'field.definition_status']: 'NEW',
+            'field.definition_status': 'NEW',
             'field.target': context,
             'field.name': 'TestBlueprint',
             'field.title': 'Test Blueprint',
             'field.summary': 'Test Blueprint Summary',
         }
+
+    def _assert_information_type_validation_error(self, product, form, owner):
+        """Helper to check for invalid information type on submit."""
+        with person_logged_in(owner):
+            view = create_initialized_view(product, '+addspec', form=form)
+            expected = (u'This information type is not permitted for'
+                        u'this product')
+            self.assertIn(expected, view.errors)
 
     def test_cache_contains_information_type(self):
         view = self.createInitializedView()
@@ -382,6 +390,7 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
         project = self.factory.makeProduct()
         form = self._create_form_data(project.name)
         form['field.information_type'] = 'PROPRIETARY'
@@ -401,14 +410,16 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
         sprint = self.factory.makeSprint()
-        target = self.factory.makeProduct()
-        form = self._create_form_data(target.name)
+        product = self.factory.makeProduct(owner=sprint.owner)
+        form = self._create_form_data(product.name)
         form['field.sprint'] = sprint
         form['field.information_type'] = 'PROPRIETARY'
-        view = create_initialized_view(sprint, '+addspec', form=form)
-        expected = u'This information type is not permitted for this product'
-        self.assertIn(expected, view.errors)
+        self._assert_information_type_validation_error(
+            product,
+            form,
+            sprint.owner)
 
 
 class TestNewSpecificationFromProjectView(TestCaseWithFactory,
@@ -422,13 +433,14 @@ class TestNewSpecificationFromProjectView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
-        # For default contexts, only PUBLIC is permitted.
-        project = self.factory.makeProduct()
-        form = self._create_form_data(project.name)
+        set_blueprint_information_type(self, True)
+        product = self.factory.makeProduct()
+        form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
-        view = create_initialized_view(project, '+addspec', form=form)
-        expected = u'This information type is not permitted for this product'
-        self.assertIn(expected, view.errors)
+        self._assert_information_type_validation_error(
+            product,
+            form,
+            product.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,
@@ -454,14 +466,17 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        owner = self.factory.makePerson()
         policy = SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY
         product = self.factory.makeProduct(
-            specification_sharing_policy=policy)
+            specification_sharing_policy=policy,
+            owner=owner)
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PUBLIC'
-        view = create_initialized_view(product, '+addspec', form=form)
-        expected = u'This information type is not permitted for this product'
-        self.assertIn(expected, view.errors)
+        import pdb;from pprint import pprint; pdb.set_trace()
+        
+        self._assert_information_type_validation_error(product, form, owner)
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,

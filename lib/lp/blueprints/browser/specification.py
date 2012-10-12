@@ -326,6 +326,7 @@ class NewSpecificationView(LaunchpadFormView):
 
     def validate_information_type(self, data):
         """Validate the information type is allowed for this context."""
+        import pdb;from pprint import pprint; pdb.set_trace()
         information_type = data.get('information_type', None)
         if information_type is None:
             # We rely on the model to set the correct default value.
