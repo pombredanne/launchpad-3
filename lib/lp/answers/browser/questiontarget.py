@@ -167,7 +167,7 @@ class QuestionCollectionLatestQuestionsPortlet:
         is used by the +portlet-latestquestions view.
         """
         question_collection = IQuestionCollection(self.context)
-        return list(question_collection.searchQuestions())[:quantity]
+        return list(question_collection.searchQuestions()[:quantity])
 
 
 class QuestionCollectionOpenCountView:
