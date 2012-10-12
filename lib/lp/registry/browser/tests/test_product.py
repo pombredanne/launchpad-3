@@ -482,6 +482,7 @@ class TestProductEditView(BrowserTestCase):
             self.assertIsNotNone(updated_product.commercial_subscription)
 
     def test_change_information_type_proprietary_packaged(self):
+        # It should be an error to make a Product private if it is packaged.
         self.useFixture(FeatureFixture(
             {u'disclosure.private_projects.enabled': u'on'}))
         product = self.factory.makeProduct()
