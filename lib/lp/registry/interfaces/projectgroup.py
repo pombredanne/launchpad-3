@@ -326,8 +326,7 @@ class IProjectGroupPublic(
         title=u"Search for possible duplicate bugs when a new bug is filed",
         required=False, readonly=True)
 
-    translatables = Attribute(
-        "An iterator over products that are translatable in LP")
+    translatables = Attribute("Products that are translatable in LP")
 
     def getProduct(name):
         """Get a product with name `name`."""

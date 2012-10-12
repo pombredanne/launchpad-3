@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=E0611,W0212
 """Launchpad ProjectGroup-related Database Table Objects."""
-from lp.services.propertycache import cachedproperty
 
 __metaclass__ = type
 __all__ = [
@@ -99,6 +98,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import shortlist
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
