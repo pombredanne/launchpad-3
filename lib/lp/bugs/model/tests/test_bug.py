@@ -70,6 +70,31 @@ class TestBug(TestCaseWithFactory):
         nomination = bug.getNominationFor(sourcepackage)
         self.assertEqual(series, nomination.target)
 
+    def makeManyNominations(self):
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        bug = nomination.bug
+        other_series = self.factory.makeProductSeries()
+        other_target = other_series.product
+        self.factory.makeBugTask(bug=bug, target=other_target)
+        with person_logged_in(other_target.owner):
+            other_nomination = bug.addNomination(
+                other_target.owner, other_series)
+        return bug, [nomination, other_nomination]
+
+    def test_getNominations(self):
+        # The getNominations() method returns all the nominations for the bug.
+        bug, nominations = self.makeManyNominations()
+        self.assertContentEqual(nominations, bug.getNominations())
+
+    def test_getNominations_with_target(self):
+        # The target argument filters the nominations to just one pillar.
+        bug, nominations = self.makeManyNominations()
+        pillar = nominations[0].target.pillar
+        self.assertContentEqual([nominations[0]], bug.getNominations(pillar))
+
     def test_markAsDuplicate_None(self):
         # Calling markAsDuplicate(None) on a bug that is not currently a
         # duplicate works correctly, and does not raise an AttributeError.

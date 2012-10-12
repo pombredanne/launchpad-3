@@ -47,7 +47,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators.validation import can_be_nominated_for_series
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -101,7 +100,7 @@ class BugNominationStatus(DBEnumeratedType):
         """)
 
 
-class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
+class IBugNomination(IHasBug, IHasOwner):
     """A nomination for a bug to be fixed in a specific series.
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
