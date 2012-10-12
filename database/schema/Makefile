@@ -38,7 +38,8 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2010-2011 Canonical Ltd.  This software is licensed \
+YEAR=$(shell date +'%Y')
+HEADER="-- Copyright 2010-${YEAR} Canonical Ltd.  This software is licensed \
   under the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 

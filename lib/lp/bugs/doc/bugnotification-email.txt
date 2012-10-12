@@ -233,10 +233,9 @@ logins to a user that is explicitly subscribed to this bug):
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/6",
     ...     user=sample_person,
-    ...     private={'old': False, 'new': edited_bug.private},
-    ...     security_related={
-    ...         'old': False,
-    ...         'new': edited_bug.security_related,
+    ...     information_type = {
+    ...         'old': InformationType.PUBLIC,
+    ...         'new': InformationType.PRIVATESECURITY
     ...     })
 
     >>> for change in get_bug_changes(bug_delta):
@@ -244,9 +243,7 @@ logins to a user that is explicitly subscribed to this bug):
     ...     text_representation = notification['text']
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Visibility changed to: Private
-    -----------------------------
-    ** This bug has been flagged as a security vulnerability
+    ** Information type change from Public to Private Security
     -----------------------------
 
 Now we set the bug public, and not security-related and check if the
@@ -267,9 +264,7 @@ e-mail sent changed as well.
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Visibility changed to: Public
-    -----------------------------
-    ** This bug is no longer flagged as a security vulnerability
+    ** Information type changed from Private Security to Public
     -----------------------------
 
 Let's add some tags to a bug:

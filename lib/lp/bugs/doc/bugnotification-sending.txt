@@ -166,16 +166,16 @@ subject, though, which is often the case when someone replies via email.
 Let's add a few changes and see how it looks like:
 
     >>> from lp.bugs.adapters.bugchange import (
-    ...     BugTitleChange, BugVisibilityChange)
+    ...     BugTitleChange, BugInformationTypeChange)
 
     >>> bug_one.addChange(
     ...     BugTitleChange(
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         "PUBLIC", "PRIVATE"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -196,7 +196,7 @@ Let's add a few changes and see how it looks like:
     - Old summary
     + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private
+    ** Information type changed from Public to Private
     <BLANKLINE>
     --
     ...
@@ -216,9 +216,9 @@ the constructed email:
     ...         ten_minutes_ago, sample_person, "title",
     ...         "New summary", "Another summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         "PRIVATE", "PUBLIC"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -283,9 +283,9 @@ for the last 5 minutes:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> for minutes_ago in reversed(range(10)):
     ...     bug_one.addChange(
-    ...         BugVisibilityChange(
+    ...         BugInformationTypeChange(
     ...             now - timedelta(minutes=minutes_ago), sample_person,
-    ...             "private", False, True))
+    ...             "information_type", "PUBLIC", "PRIVATE"))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -471,13 +471,13 @@ few notifications to show that it works.
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
+    ...     BugInformationTypeChange(
     ...         ten_minutes_ago, sample_person, "title",
-    ...         False, True))
+    ...         "PUBLIC", "PRIVATE"))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
+    ...     BugInformationTypeChange(
     ...         ten_minutes_ago, sample_person, "title",
-    ...         True, False))
+    ...         "PRIVATE", "PUBLIC"))
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
