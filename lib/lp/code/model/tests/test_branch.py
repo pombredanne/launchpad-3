@@ -2406,7 +2406,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
-        self.assertEqual(InformationType.USERDATA, branch.information_type)
+        self.assertEqual(InformationType.PROPRIETARY, branch.information_type)
 
     def test__reconcileAccess_for_product_branch(self):
         # _reconcileAccess uses a product policy for a product branch.
