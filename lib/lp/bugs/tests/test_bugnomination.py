@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatusError,
     BugNominationStatus,
     IBugNomination,
+    IBugNominationSet,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
@@ -398,3 +402,19 @@ class TestCanApprove(TestCaseWithFactory):
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
         self.assertTrue(nomination.canApprove(package_perm.person))
         self.assertTrue(nomination.canApprove(comp_perm.person))
+
+
+class BugNominationSetTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_get(self):
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        bug_nomination_set = getUtility(IBugNominationSet)
+        self.assertEqual(nomination, bug_nomination_set.get(nomination.id))
+
+    def test_get_none(self):
+        bug_nomination_set = getUtility(IBugNominationSet)
+        self.assertRaises(NotFoundError, bug_nomination_set.get, -1)
