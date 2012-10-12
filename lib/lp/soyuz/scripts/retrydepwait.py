@@ -17,7 +17,10 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
 from lp.services.database.lpstorm import IStore
-from lp.services.looptuner import TunableLoop
+from lp.services.looptuner import (
+    LoopTuner,
+    TunableLoop,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
@@ -28,6 +31,11 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class RetryDepwaitTunableLoop(TunableLoop):
+
+    # We don't write too much, and it's important that we're timely.
+    # Ignore the replication lag and long transaction checks by using a
+    # basic LoopTuner.
+    tuner_class = LoopTuner
 
     maximum_chunk_size = 5000
 
