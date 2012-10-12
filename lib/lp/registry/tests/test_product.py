@@ -59,11 +59,13 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     License,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.product import (
     Product,
@@ -741,6 +743,24 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
+    def test_access_launchpad_View_public_inactive_product(self):
+        # Everybody, including anonymous users, has access to
+        # properties of public but inactvie products that require
+        # the permission launchpad.View.
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).active = False
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(None):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(product.owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
     def test_access_launchpad_View_proprietary_product(self):
         # Only people with grants for a private product can access
         # attributes protected by the permission launchpad.View.
@@ -768,6 +788,26 @@ class TestProduct(TestCaseWithFactory):
                 product, ordinary_user, owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
         with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Admins can access proprietary products.
+        with person_logged_in(getUtility(IPersonSet).getByName('name16')):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        registry_expert = self.factory.makePerson()
+        registry = getUtility(ILaunchpadCelebrities).registry_experts
+        with person_logged_in(registry.teamowner):
+            registry.addMember(registry_expert, registry.teamowner)
+        with person_logged_in(registry_expert):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Commercial admins have access to all products.
+        commercial_admin = self.factory.makePerson()
+        commercial_admins = getUtility(ILaunchpadCelebrities).commercial_admin
+        with person_logged_in(commercial_admins.teamowner):
+            commercial_admins.addMember(
+                commercial_admin, commercial_admins.teamowner)
+        with person_logged_in(commercial_admin):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
@@ -881,6 +921,16 @@ class TestProduct(TestCaseWithFactory):
                 product.description
                 self.assertEqual(
                 queries_for_first_user_access, len(recorder.queries))
+
+    def test_userCanView_works_with_IPersonRoles(self):
+        # userCanView() maintains a cache of users known to have the
+        # permission to access a product.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        user = self.factory.makePerson()
+        product.userCanView(user)
+        product.userCanView(IPersonRoles(user))
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):

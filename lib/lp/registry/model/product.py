@@ -1548,13 +1548,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         if user.id in self._known_viewers:
             return True
-        # We want an actual Storm Person.
+        # We need the plain Storm Person object for the SQL query below
+        # but an IPersonRoles object for the team membership checks.
         if IPersonRoles.providedBy(user):
-            user = user.person
+            plain_user = user.person
+        else:
+            plain_user = user
+            user = IPersonRoles(user)
+        if (user.in_commercial_admin or user.in_admin or
+            user.in_registry_experts):
+            self._known_viewers.add(user.id)
+            return True
         policy = getUtility(IAccessPolicySource).find(
             [(self, self.information_type)]).one()
         grants_for_user = getUtility(IAccessPolicyGrantSource).find(
-            [(policy, user)])
+            [(policy, plain_user)])
         if grants_for_user.is_empty():
             return False
         self._known_viewers.add(user.id)
