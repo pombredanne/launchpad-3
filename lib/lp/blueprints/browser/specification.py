@@ -328,24 +328,25 @@ class NewSpecificationView(LaunchpadFormView):
         """Validate the information type is allowed for this context."""
         information_type = data.get('information_type', None)
         if information_type is None:
-            self.setFieldError(
-                'information_type',
-                'Select an information type value.')
+            # We rely on the model to set the correct default value.
+            return
+        else:
+            # In the case of views outside a target context it's part of the
+            # form.
+            product = IProduct(data.get('target', None), None)
 
-        # In the case of views outside a target context it's part of the form.
-        product = IProduct(data['target'], None)
+            if (IProduct.providedBy(self.context) or
+                IProductSeries.providedBy(self.context)):
+                product = self.context
 
-        if (IProduct.providedBy(self.context) or
-            IProductSeries.providedBy(self.context)):
-            product = self.context
-
-        if product:
-            allowed = product.getAllowedSpecificationInformationTypes()
-            # Check that the information type is a valid one for this Product.
-            if information_type not in allowed:
-                self.setFieldError(
-                    'information_type',
-                    'This information type is not permitted for this product')
+            if product:
+                allowed = product.getAllowedSpecificationInformationTypes()
+                # Check that the information type is a valid one for this
+                # Product.
+                if information_type not in allowed:
+                    error = ('This information type is not permitted for '
+                             'this product')
+                    self.setFieldError('information_type', error)
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
@@ -426,13 +427,13 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 
         The name must be unique within the context of the chosen target.
         """
+        super(NewSpecificationFromNonTargetView, self).validate(data)
         name = data.get('name')
         target = data.get('target')
         if name is not None and target is not None:
             if target.getSpecification(name):
                 errormessage = INewSpecification['name'].errormessage
                 self.setFieldError('name', errormessage % name)
-        super(NewSpecificationFromNonTargetView, self).validate(data)
 
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
