@@ -360,7 +360,7 @@ class NewSpecificationTests:
         with person_logged_in(owner):
             view = create_initialized_view(product, '+addspec', form=form)
             expected = (u'This information type is not permitted for'
-                        u'this product')
+                        u' this product')
             self.assertIn(expected, view.errors)
 
     def test_cache_contains_information_type(self):
@@ -385,16 +385,17 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
     layer = DatabaseFunctionalLayer
 
     def createInitializedView(self):
-        self.context = getUtility(ISpecificationSet)
-        return create_initialized_view(self.context, '+new')
+        context = getUtility(ISpecificationSet)
+        return create_initialized_view(context, '+new')
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
         set_blueprint_information_type(self, True)
-        project = self.factory.makeProduct()
-        form = self._create_form_data(project.name)
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
-        view = create_initialized_view(project, '+addspec', form=form)
+        view = create_initialized_view(context, '+new', form=form)
         expected = u'This information type is not permitted for this product'
         self.assertIn(expected, view.errors)
 
@@ -414,10 +415,9 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
         sprint = self.factory.makeSprint()
         product = self.factory.makeProduct(owner=sprint.owner)
         form = self._create_form_data(product.name)
-        form['field.sprint'] = sprint
         form['field.information_type'] = 'PROPRIETARY'
         self._assert_information_type_validation_error(
-            product,
+            sprint,
             form,
             sprint.owner)
 
@@ -434,13 +434,14 @@ class TestNewSpecificationFromProjectView(TestCaseWithFactory,
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
         set_blueprint_information_type(self, True)
-        product = self.factory.makeProduct()
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project)
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
         self._assert_information_type_validation_error(
-            product,
+            project,
             form,
-            product.owner)
+            project.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,
@@ -463,20 +464,6 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         self.assertEqual(
             InformationType.EMBARGOED,
             view.initial_values['information_type'])
-
-    def test_allowed_info_type_validated(self):
-        """information_type must be validated against context"""
-        set_blueprint_information_type(self, True)
-        owner = self.factory.makePerson()
-        policy = SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY
-        product = self.factory.makeProduct(
-            specification_sharing_policy=policy,
-            owner=owner)
-        form = self._create_form_data(product.name)
-        form['field.information_type'] = 'PUBLIC'
-        import pdb;from pprint import pprint; pdb.set_trace()
-        
-        self._assert_information_type_validation_error(product, form, owner)
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
