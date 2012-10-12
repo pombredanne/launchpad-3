@@ -8,9 +8,9 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     api_url,
@@ -84,6 +84,26 @@ class TestBranchOperations(TestCaseWithFactory):
             exception.content,
             'Source and target branches must be different.')
 
+    def test_setOwner(self):
+        """Test setOwner via the web API does not raise a 404."""
+        branch_owner = self.factory.makePerson(name='fred')
+        product = self.factory.makeProduct(name='myproduct')
+        self.factory.makeProductBranch(
+            name='mybranch', product=product, owner=branch_owner)
+        self.factory.makeTeam(name='barney', owner=branch_owner)
+        endInteraction()
+
+        lp = launchpadlib_for("test", person=branch_owner)
+        ws_branch = lp.branches.getByUniqueName(
+            unique_name='~fred/myproduct/mybranch')
+        ws_new_owner = lp.people['barney']
+        ws_branch.setOwner(new_owner=ws_new_owner)
+        # Check the result.
+        renamed_branch = lp.branches.getByUniqueName(
+            unique_name='~barney/myproduct/mybranch')
+        self.assertIsNotNone(renamed_branch)
+        self.assertEqual(
+            '~barney/myproduct/mybranch', renamed_branch.unique_name)
 
 class TestBranchDeletes(TestCaseWithFactory):
 

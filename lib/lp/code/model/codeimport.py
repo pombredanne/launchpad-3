@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImport."""
 
@@ -114,12 +112,11 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
-            RevisionControlSystems.HG:
-                config.codeimport.default_interval_hg,
             RevisionControlSystems.BZR:
                 config.codeimport.default_interval_bzr,
             }
-        seconds = default_interval_dict[self.rcs_type]
+        # The default can be removed when HG is fully purged.
+        seconds = default_interval_dict.get(self.rcs_type, 21600)
         return timedelta(seconds=seconds)
 
     import_job = Reference("<primary key>", "CodeImportJob.code_importID",
@@ -148,13 +145,6 @@ class CodeImport(SQLBase):
         if job is not None:
             if job.state == CodeImportJobState.PENDING:
                 CodeImportJobWorkflow().deletePendingJob(self)
-            else:
-                # When we have job killing, we might want to kill a running
-                # job.
-                pass
-        else:
-            # No job, so nothing to do.
-            pass
 
     results = SQLMultipleJoin(
         'CodeImportResult', joinColumn='code_import',
@@ -239,7 +229,6 @@ class CodeImport(SQLBase):
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
                 self.import_job, requester)
-        return None
 
 
 class CodeImportSet:
@@ -257,7 +246,6 @@ class CodeImportSet:
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
                           RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG,
                           RevisionControlSystems.BZR):
             assert cvs_root is None and cvs_module is None
             assert url is not None

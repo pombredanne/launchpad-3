@@ -27,15 +27,15 @@ from zope.component import getUtility
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.policy import (
+    DatabaseBlockedPolicy,
+    SlaveOnlyDatabasePolicy,
+    )
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
-from lp.services.webapp.dbpolicy import (
-    DatabaseBlockedPolicy,
-    SlaveOnlyDatabasePolicy,
-    )
 
 
 class AtomicFile:

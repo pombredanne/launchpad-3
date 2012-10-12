@@ -59,7 +59,6 @@ The default VCS type is Bazaar.
     >>> print_radio_button_field(browser.contents, "rcs_type")
     (*) Bazaar
     ( ) Git
-    ( ) Mercurial
     ( ) Subversion
     ( ) CVS
 
@@ -172,29 +171,6 @@ When the user clicks continue, the approved import branch is created
     Import Status: Reviewed
     This branch is an import of the HEAD branch of the Git repository at
     git://example.com/firefox.git.
-    The next import is scheduled to run as soon as possible.
-
-
-Requesting a Mercurial import
-=======================
-
-The user is required to enter a project that the import is for,
-a name for the import branch, and a mercurial branch location.
-
-    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
-    >>> browser.getControl('Project').value = "firefox"
-    >>> browser.getControl('Branch Name').value = "hg-import"
-    >>> browser.getControl('Mercurial').click()
-    >>> browser.getControl('Repo URL', index=1).value = (
-    ...     "http://example.com/firefox.hg")
-    >>> browser.getControl('Request Import').click()
-
-When the user clicks continue, the approved import branch is created
-
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Reviewed
-    This branch is an import of the tip branch of the Mercurial repository at
-    http://example.com/firefox.hg.
     The next import is scheduled to run as soon as possible.
 
 

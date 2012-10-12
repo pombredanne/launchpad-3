@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
     'recursive_dependent_query',
@@ -31,6 +32,7 @@ from storm.expr import (
     And,
     In,
     Join,
+    LeftJoin,
     Or,
     Select,
     )
@@ -43,7 +45,13 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -75,16 +83,10 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SpecificationSharingPolicy,
-    )
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.informationtype import IInformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -107,6 +109,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def recursive_blocked_query(spec):
@@ -140,6 +143,7 @@ SPECIFICATION_POLICY_ALLOWED_TYPES = {
     SpecificationSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+    SpecificationSharingPolicy.FORBIDDEN: [],
     }
 
 SPECIFICATION_POLICY_DEFAULT_TYPES = {
@@ -154,7 +158,7 @@ SPECIFICATION_POLICY_DEFAULT_TYPES = {
     }
 
 
-class Specification(SQLBase, BugLinkTargetMixin):
+class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     """See ISpecification."""
 
     implements(ISpecification, IBugLinkTarget, IInformationType)
@@ -530,6 +534,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
                         SpecificationImplementationStatus.INFORMATIONAL.value,
                         SpecificationDefinitionStatus.APPROVED.value))
 
+    @classmethod
+    def storm_completeness(cls):
+        """Storm version of the above."""
+        return Or(
+            cls.implementation_status ==
+                SpecificationImplementationStatus.IMPLEMENTED,
+            cls.definition_status.is_in([
+                SpecificationDefinitionStatus.OBSOLETE,
+                SpecificationDefinitionStatus.SUPERSEDED,
+                ]),
+            And(
+                cls.implementation_status ==
+                    SpecificationImplementationStatus.INFORMATIONAL,
+                cls.definition_status ==
+                    SpecificationDefinitionStatus.APPROVED
+                ),
+            )
+
     @property
     def is_complete(self):
         """See `ISpecification`."""
@@ -724,14 +746,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See ISpecification."""
         # see if a relevant subscription exists, and if so, delete it
         if person is None:
             person = unsubscribed_by
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                if (not sub.canBeUnsubscribedByUser(unsubscribed_by) and
+                    not ignore_permissions):
                     raise UserCannotUnsubscribePerson(
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
@@ -869,10 +892,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         reconcile_access_for_artifact(self, information_type, [self.target])
         return True
 
-    @property
-    def private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
-
     @cachedproperty
     def _known_viewers(self):
         """A set of known persons able to view the specifcation."""
@@ -936,7 +955,7 @@ class HasSpecificationsMixin:
     for other classes that have specifications.
     """
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
@@ -1001,25 +1020,21 @@ class HasSpecificationsMixin:
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
-    def valid_specifications(self):
+    def _all_specifications(self):
         """See IHasSpecifications."""
-        return self.specifications(filter=[SpecificationFilter.VALID])
+        user = getUtility(ILaunchBag).user
+        return self.specifications(user, filter=[SpecificationFilter.ALL])
 
     @property
-    def latest_specifications(self):
+    def _valid_specifications(self):
         """See IHasSpecifications."""
-        return self.specifications(sort=SpecificationSort.DATE, quantity=5)
+        user = getUtility(ILaunchBag).user
+        return self.specifications(user, filter=[SpecificationFilter.VALID])
 
-    @property
-    def latest_completed_specifications(self):
+    def specificationCount(self, user):
         """See IHasSpecifications."""
-        return self.specifications(sort=SpecificationSort.DATE, quantity=5,
-            filter=[SpecificationFilter.COMPLETE, ])
-
-    @property
-    def specification_count(self):
-        """See IHasSpecifications."""
-        return self.specifications(filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(user,
+                                   filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1051,18 +1066,14 @@ class SpecificationSet(HasSpecificationsMixin):
         return cur.fetchall()
 
     @property
-    def all_specifications(self):
+    def _all_specifications(self):
         return Specification.select()
 
     def __iter__(self):
         """See ISpecificationSet."""
         return iter(self.all_specifications)
 
-    @property
-    def has_any_specifications(self):
-        return self.all_specifications.count() != 0
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications."""
 
@@ -1226,3 +1237,55 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+
+
+def get_specification_privacy_filter(user):
+    """Return a Storm expression for filtering specifications by privacy.
+
+    :param user: A Person ID or a column reference.
+    :return: A Storm expression to check if a peron has access grants
+         for a specification.
+    """
+    # Avoid circular imports.
+    from lp.registry.model.accesspolicy import (
+        AccessArtifact,
+        AccessPolicy,
+        AccessPolicyGrantFlat,
+        )
+    public_specification_filter = (
+        Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+    if user is None:
+        return public_specification_filter
+    return Or(
+        public_specification_filter,
+        Specification.id.is_in(
+            Select(
+                Specification.id,
+                tables=(
+                    Specification,
+                    Join(
+                        AccessPolicy,
+                        And(
+                            Or(
+                                Specification.productID ==
+                                    AccessPolicy.product_id,
+                                Specification.distributionID ==
+                                    AccessPolicy.distribution_id),
+                            Specification.information_type ==
+                                AccessPolicy.type)),
+                    Join(
+                        AccessPolicyGrantFlat,
+                        AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
+                    LeftJoin(
+                        AccessArtifact,
+                        AccessPolicyGrantFlat.abstract_artifact_id ==
+                            AccessArtifact.id),
+                    Join(
+                        TeamParticipation,
+                        And(
+                            TeamParticipation.team ==
+                                AccessPolicyGrantFlat.grantee_id,
+                            TeamParticipation.person == user))),
+                where=Or(
+                    AccessPolicyGrantFlat.abstract_artifact_id == None,
+                    AccessArtifact.specification_id == Specification.id))))

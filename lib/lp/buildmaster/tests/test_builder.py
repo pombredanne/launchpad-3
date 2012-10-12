@@ -61,14 +61,14 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.database.sqlbase import flush_database_updates
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.log.logger import BufferLogger
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -283,8 +283,14 @@ class TestBuilder(TestCaseWithFactory):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
         # security context.
-        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(virtualized=False))
         self.assertEqual(builder.url, builder.slave.url)
+        self.assertEqual(10, builder.slave.timeout)
+
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(virtualized=True))
+        self.assertEqual(5, builder.slave.timeout)
 
     def test_recovery_of_aborted_virtual_slave(self):
         # If a virtual_slave is in the ABORTED state,
@@ -1050,8 +1056,6 @@ class TestSlave(TestCase):
     def test_resumeHost_timeout(self):
         # On a resume timeouts, 'resumeHost' fires the returned deferred
         # errorback with the `TimeoutError` failure.
-        self.slave_helper.getServerSlave()
-        slave = self.slave_helper.getClientSlave()
 
         # Override the configuration command-line with one that will timeout.
         timeout_config = """
@@ -1061,6 +1065,9 @@ class TestSlave(TestCase):
         """
         config.push('timeout_resume_command', timeout_config)
         self.addCleanup(config.pop, 'timeout_resume_command')
+
+        self.slave_helper.getServerSlave()
+        slave = self.slave_helper.getClientSlave()
 
         # On timeouts, the response is a twisted `Failure` object containing
         # a `TimeoutError` error.
@@ -1130,9 +1137,6 @@ class TestSlaveConnectionTimeouts(TestCase):
         super(TestSlaveConnectionTimeouts, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
         self.clock = Clock()
-        self.proxy = ProxyWithConnectionTimeout("fake_url")
-        self.slave = self.slave_helper.getClientSlave(
-            reactor=self.clock, proxy=self.proxy)
 
     def tearDown(self):
         # We need to remove any DelayedCalls that didn't actually get called.
@@ -1144,7 +1148,8 @@ class TestSlaveConnectionTimeouts(TestCase):
         # only the config value should.
         self.pushConfig('builddmaster', socket_timeout=180)
 
-        d = self.slave.echo()
+        slave = self.slave_helper.getClientSlave(reactor=self.clock)
+        d = slave.echo()
         # Advance past the 30 second timeout.  The real reactor will
         # never call connectTCP() since we're not spinning it up.  This
         # avoids "connection refused" errors and simulates an
@@ -1158,7 +1163,8 @@ class TestSlaveConnectionTimeouts(TestCase):
 
     def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
         # Make sure that BuilderSlaves use the custom proxy class.
-        slave = BuilderSlave.makeBuilderSlave("url", "host")
+        slave = BuilderSlave.makeBuilderSlave(
+            "url", "host", config.builddmaster.socket_timeout)
         self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 

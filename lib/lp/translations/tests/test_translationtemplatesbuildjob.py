@@ -8,6 +8,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -17,13 +18,12 @@ from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
-from lp.registry.enums import InformationType
-from lp.services.job.model.job import Job
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.job.model.job import Job
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (

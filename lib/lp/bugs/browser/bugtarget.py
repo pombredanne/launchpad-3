@@ -60,7 +60,13 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -69,7 +75,9 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     )
+from lp.app.utilities import json_dump_information_types
 from lp.app.validators.name import valid_name_pattern
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
@@ -111,17 +119,7 @@ from lp.bugs.model.structuralsubscription import (
 from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from lp.registry.browser.product import (
-    ProductConfigureBase,
-    ProductPrivateBugsMixin,
-    )
-from lp.registry.enums import (
-    json_dump_information_types,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -132,10 +130,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    ValidPersonOrTeamVocabulary,
-    )
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -160,8 +155,6 @@ class IProductBugConfiguration(Interface):
 
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
-    private_bugs = copy_field(
-        IProduct['private_bugs'], readonly=False)
     official_malone = copy_field(ILaunchpadUsage['official_malone'])
     enable_bug_expiration = copy_field(
         ILaunchpadUsage['enable_bug_expiration'])
@@ -182,8 +175,7 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(ProductPrivateBugsMixin,
-                                     ProductConfigureBase):
+class ProductConfigureBugTrackerView(ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
@@ -204,7 +196,6 @@ class ProductConfigureBugTrackerView(ProductPrivateBugsMixin,
             "bug_reporting_guidelines",
             "bug_reported_acknowledgement",
             "enable_bugfiling_duplicate_search",
-            "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
             field_names.append("bug_supervisor")
@@ -482,6 +473,10 @@ class FileBugViewBase(LaunchpadFormView):
         bug_tracking_usage = self.getMainContext().bug_tracking_usage
         return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
+    def contextAllowsNewBugs(self):
+        return (self.contextUsesMalone() and
+                self.getMainContext().getAllowedBugInformationTypes())
+
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
         return (
@@ -577,7 +572,8 @@ class FileBugViewBase(LaunchpadFormView):
         if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
-                owner=self.user, subject=bug.followup_subject(), content=None)
+                owner=self.user, subject=bug.followup_subject(), content=None,
+                send_notifications=False)
 
             # Deal with attachments added in the filebug form.
             if attachment:
@@ -1061,6 +1057,9 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
 
     def contextUsesMalone(self):
         return self.default_product is not None
+
+    def contextAllowsNewBugs(self):
+        return True
 
     def contextIsProduct(self):
         return False

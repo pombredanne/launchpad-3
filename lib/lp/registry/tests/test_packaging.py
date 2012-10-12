@@ -51,7 +51,8 @@ class TestPackaging(TestCaseWithFactory):
     def test_destroySelf_notifies(self):
         """destroySelf creates a notification."""
         packaging = self.factory.makePackagingLink()
-        with person_logged_in(packaging.owner):
+        user = self.factory.makePerson(karma=200)
+        with person_logged_in(user):
             with EventRecorder() as recorder:
                 removeSecurityProxy(packaging).destroySelf()
         (event,) = recorder.events
@@ -67,7 +68,7 @@ class TestPackaging(TestCaseWithFactory):
             packaging.productseries, packaging.sourcepackagename,
             packaging.distroseries)
 
-    def test_destroySelf__not_allowed_for_arbitrary_user(self):
+    def test_destroySelf__not_allowed_for_probationary_user(self):
         """Arbitrary users cannot delete a packaging."""
         packaging = self.factory.makePackagingLink()
         packaging_util = getUtility(IPackagingUtil)
@@ -77,31 +78,18 @@ class TestPackaging(TestCaseWithFactory):
                 packaging.productseries, packaging.sourcepackagename,
                 packaging.distroseries)
 
-    def test_destroySelf__allowed_for_packaging_owner(self):
-        """A packaging owner can delete a packaging."""
+    def test_destroySelf__allowed_for_non_probationary_user(self):
+        """An experienced user can delete a packaging."""
         packaging = self.factory.makePackagingLink()
         sourcepackagename = packaging.sourcepackagename
         distroseries = packaging.distroseries
         productseries = packaging.productseries
         packaging_util = getUtility(IPackagingUtil)
-        with person_logged_in(packaging.owner):
+        user = self.factory.makePerson(karma=200)
+        with person_logged_in(user):
             packaging_util.deletePackaging(
                 packaging.productseries, packaging.sourcepackagename,
                 packaging.distroseries)
-        self.assertFalse(
-            packaging_util.packagingEntryExists(
-                sourcepackagename, distroseries, productseries))
-
-    def test_destroySelf__allowed_for_distro_owner(self):
-        """A distribution owner can delete a packaging link."""
-        packaging = self.factory.makePackagingLink()
-        sourcepackagename = packaging.sourcepackagename
-        distroseries = packaging.distroseries
-        productseries = packaging.productseries
-        packaging_util = getUtility(IPackagingUtil)
-        with person_logged_in(distroseries.distribution.owner):
-            packaging_util.deletePackaging(
-                productseries, sourcepackagename, distroseries)
         self.assertFalse(
             packaging_util.packagingEntryExists(
                 sourcepackagename, distroseries, productseries))
@@ -287,7 +275,8 @@ class TestDeletePackaging(TestCaseWithFactory):
         """Deleting a Packaging creates a notification."""
         packaging_util = getUtility(IPackagingUtil)
         packaging = self.factory.makePackagingLink()
-        with person_logged_in(packaging.owner):
+        user = self.factory.makePerson(karma=200)
+        with person_logged_in(user):
             with EventRecorder() as recorder:
                 packaging_util.deletePackaging(
                     packaging.productseries, packaging.sourcepackagename,

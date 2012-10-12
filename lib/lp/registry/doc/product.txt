@@ -243,26 +243,6 @@ For convenience, you can get just the distro source packages for Ubuntu.
     >>> [(sp.name, sp.distribution.name) for sp in alsa.ubuntu_packages]
     [(u'alsa-utils', u'ubuntu')]
 
-The date_next_suggest_packaging attribute records the date when Launchpad can
-resume suggesting Ubuntu packages that the project provides. A value of None
-means that no user has ever confirmed that that the project has no Ubuntu
-packages.
-
-    >>> print evo.date_next_suggest_packaging
-    None
-
-Any logged in user can set date_next_suggest_packaging, just like any
-logged in user can can link a project to a source package.
-
-    >>> from datetime import datetime
-    >>> from pytz import UTC
-
-    >>> login("no-priv@canonical.com")
-    >>> evo.date_next_suggest_packaging = datetime(
-    ...     2011, 1, 25, 0, 0, 0, tzinfo=UTC)
-    >>> print evo.date_next_suggest_packaging
-    2011-01-25 00:00:00+00:00
-
 
 External Bug Tracker
 --------------------
@@ -404,7 +384,7 @@ informational.
 First, there should be only one informational spec for firefox:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
     extension-manager-upgrades
 
@@ -412,19 +392,19 @@ First, there should be only one informational spec for firefox:
 There are no completed specs for firefox:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
 
 
 And there are five incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> firefox.specifications(filter=filter).count()
+    >>> firefox.specifications(None, filter=filter).count()
     5
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in firefox.specifications(filter=['new']):
+    >>> for spec in firefox.specifications(None, filter=['new']):
     ...     print spec.name
     canvas
     e4x
@@ -442,14 +422,10 @@ ProductSeries of a product.
 Milestones for products can only be created by product/project owners,
 registry experts, or admins.
 
+    >>> from datetime import datetime
+
     >>> firefox_one_zero = firefox.getSeries('1.0')
     >>> product_owner_email = firefox.owner.preferredemail.email
-    >>> login("no-priv@canonical.com")
-    >>> firefox_one_zero.newMilestone(
-    ...     name='impossible', dateexpected=datetime(2018, 10, 1))
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<ProductSeries at ...>, 'newMilestone', 'launchpad.Edit')
     >>> login(product_owner_email)
     >>> firefox_milestone = firefox_one_zero.newMilestone(
     ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))

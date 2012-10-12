@@ -184,9 +184,9 @@ and an extra, expired, source file.
     >>> from lp.soyuz.enums import PackageDiffStatus
     >>> login(ANONYMOUS)
     >>> old = main_archive.getPublishedSources(
-    ...     name='alsa-utils', version='1.0.9a-4')[0].sourcepackagerelease
+    ...     name=u'alsa-utils', version='1.0.9a-4')[0].sourcepackagerelease
     >>> new = main_archive.getPublishedSources(
-    ...     name='alsa-utils',
+    ...     name=u'alsa-utils',
     ...     version='1.0.9a-4ubuntu1')[0].sourcepackagerelease
     >>> diff = removeSecurityProxy(old.requestDiffTo(
     ...     requester=name12, to_sourcepackagerelease=new))

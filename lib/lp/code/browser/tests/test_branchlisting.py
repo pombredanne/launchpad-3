@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -27,16 +27,12 @@ from lp.code.browser.branchlisting import (
     PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.enums import BranchVisibilityRule
 from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.enums import PersonVisibility
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
@@ -46,7 +42,6 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
-    celebrity_logged_in,
     login_person,
     normalize_whitespace,
     person_logged_in,
@@ -65,7 +60,6 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -265,10 +259,6 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
         self._test_batch_template(self.barney)
 
 
-SIMPLIFIED_BRANCHES_MENU_FLAG = {
-    'code.simplified_branches_menu.enabled': 'on'}
-
-
 class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -294,19 +284,16 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
     def get_branch_list_page(self, target=None, page_name='+branches'):
         if target is None:
             target = self.default_target
-        with FeatureFixture(SIMPLIFIED_BRANCHES_MENU_FLAG):
-            with person_logged_in(self.user):
-                return create_initialized_view(
-                    target, page_name, rootsite='code',
-                    principal=self.user)()
+        with person_logged_in(self.user):
+            return create_initialized_view(
+                target, page_name, rootsite='code', principal=self.user)()
 
     def test_branch_list_h1(self):
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Title', 'h1',
-                text='Bazaar branches owned by Barney'))
+                'Title', 'h1', text='Bazaar branches owned by Barney'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
@@ -317,7 +304,6 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
                 text='There are no branches related to Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
     def test_branch_list_registered_link(self):
         self.makeABranch()
@@ -408,7 +394,6 @@ class TestSimplifiedPersonProductBranchesView(
                 text='There are no branches of Bambam owned by Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
-        self.assertThat(page, Not(self.registered_branches_matcher))
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
@@ -705,60 +690,6 @@ class TestProjectGroupBranches(TestCaseWithFactory,
     def setUp(self):
         super(TestProjectGroupBranches, self).setUp()
         self.project = self.factory.makeProject()
-
-    def test_project_with_no_branch_visibility_rule(self):
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Public.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_project_with_private_branch_visibility_rule(self):
-        self.project.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy')
-        text = extract_text(privacy_portlet)
-        expected = """
-            Inherited branch visibility for all projects in .* is Forbidden.
-            """
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def _testBranchVisibilityLink(self, user):
-        login_person(user)
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code',
-            principal=user)
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        text = extract_text(action_portlet)
-        expected = '.*Define branch visibility.*'
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected, text)
-
-    def test_branch_visibility_link_admin(self):
-        # An admin will be displayed a link to define branch visibility in the
-        # action portlet.
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_commercial_admin(self):
-        # A commercial admin will be displayed a link to define branch
-        # visibility in the action portlet.
-        with celebrity_logged_in('commercial_admin') as admin:
-            self._testBranchVisibilityLink(admin)
-
-    def test_branch_visibility_link_non_admin(self):
-        # A non-admin will not see the action portlet.
-        view = create_initialized_view(
-            self.project, name="+branches", rootsite='code')
-        action_portlet = find_tag_by_id(view(), 'action-portlet')
-        self.assertIs(None, action_portlet)
 
     def test_no_branches_gets_message_not_listing(self):
         # If there are no product branches on the project's products, then

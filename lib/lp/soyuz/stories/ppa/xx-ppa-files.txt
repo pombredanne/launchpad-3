@@ -272,7 +272,7 @@ binaries across to no-priv's public ppa.
     ...     )
     >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(
-    ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
+    ...     no_priv_private_ppa.getPublishedSources(name=u'test-pkg'),
     ...     no_priv.archive, series=ubuntu['warty'],
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     include_binaries=True, allow_delayed_copies=False,
@@ -354,7 +354,7 @@ immediately deleted in case of reported ToS violation.
 
     # Attach an existing file (the 'test-pkg_1.0.dsc') to a deleted
     # LibraryFileContent.
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> login('foo.bar@canonical.com')
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

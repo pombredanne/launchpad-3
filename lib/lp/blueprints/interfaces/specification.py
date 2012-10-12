@@ -48,6 +48,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
@@ -72,7 +73,6 @@ from lp.blueprints.interfaces.specificationworkitem import (
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -674,8 +674,8 @@ class ISpecificationSet(IHasSpecifications):
 
     coming_sprints = Attribute("The next 5 sprints in the system.")
 
-    specification_count = Attribute(
-        "The total number of blueprints in Launchpad")
+    def specificationCount(user):
+        """The total number of blueprints in Launchpad"""
 
     def getStatusCountsForProductSeries(product_series):
         """Return the status counts for blueprints in a series.

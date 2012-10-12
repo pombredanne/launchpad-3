@@ -54,15 +54,15 @@ from zope.security.checker import (
 
 from lp.services import webapp
 from lp.services.config import config
-from lp.services.messaging.interfaces import MessagingUnavailable
-from lp.services.messaging.rabbit import connect
-from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.webapp.errorlog import ErrorReportEvent
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.messaging.interfaces import MessagingUnavailable
+from lp.services.messaging.rabbit import connect
+from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.errorlog import ErrorReportEvent
 from lp.testing.dbuser import dbuser
 
 

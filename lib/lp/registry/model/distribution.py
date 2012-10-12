@@ -48,7 +48,13 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -93,10 +99,6 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -152,7 +154,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -877,17 +878,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(IDistributionSet).getCurrentSourceReleases(
             {self: source_package_names})
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`.
 
@@ -1118,12 +1109,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     SourcePackageName.id),
             ]
 
-        # quote_like SQL-escapes the string in addition to LIKE-escaping
-        # it, so we can't use params=. So we need to double-escape the %
-        # on either side of the string: once to survive the formatting
-        # here, and once to survive Storm's formatting during
-        # compilation. Storm should really %-escape literal SQL strings,
-        # but it doesn't.
         conditions = [
             DistributionSourcePackageCache.distribution == self,
             DistributionSourcePackageCache.archiveID.is_in(
@@ -1131,8 +1116,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Or(
                 SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
                     params=(text,)),
-                SQL("DistributionSourcePackageCache.name "
-                    "LIKE '%%%%' || %s || '%%%%'" % quote_like(text.lower())),
+                DistributionSourcePackageCache.name.contains_string(
+                    text.lower()),
                 ),
             ]
 

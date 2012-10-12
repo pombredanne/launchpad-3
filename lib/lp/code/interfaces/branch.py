@@ -70,6 +70,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
@@ -91,7 +92,6 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
@@ -980,7 +980,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
-    def getAllowedInformationTypes(user):
+    def getAllowedInformationTypes(who):
         """Get a list of acceptable `InformationType`s for this branch.
 
         If the user is a Launchpad admin, any type is acceptable. Otherwise

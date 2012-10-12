@@ -79,7 +79,13 @@ from zope.security.proxy import (
     )
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     SubscriptionPrivacyViolation,
@@ -87,6 +93,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
@@ -154,12 +161,6 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PROPRIETARY_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -303,7 +304,7 @@ class BugBecameQuestionEvent:
         self.user = user
 
 
-class Bug(SQLBase):
+class Bug(SQLBase, InformationTypeMixin):
     """A bug."""
 
     implements(IBug)
@@ -361,10 +362,6 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
-
-    @property
-    def private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
 
     @property
     def security_related(self):
@@ -811,7 +808,7 @@ class Bug(SQLBase):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(
+            bugs, ignored, ignored = service.getVisibleArtifacts(
                 person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
@@ -1169,7 +1166,7 @@ class Bug(SQLBase):
 
     def newMessage(self, owner=None, subject=None,
                    content=None, parent=None, bugwatch=None,
-                   remote_comment_id=None):
+                   remote_comment_id=None, send_notifications=True):
         """Create a new Message and link it to this bug."""
         if subject is None:
             subject = self.followup_subject()
@@ -1183,7 +1180,8 @@ class Bug(SQLBase):
         if not bugmsg:
             return
 
-        notify(ObjectCreatedEvent(bugmsg, user=owner))
+        if send_notifications:
+            notify(ObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
@@ -1591,6 +1589,8 @@ class Bug(SQLBase):
             filter_args = dict(distroseriesID=target.id)
         elif IProductSeries.providedBy(target):
             filter_args = dict(productseriesID=target.id)
+        elif ISourcePackage.providedBy(target):
+            filter_args = dict(distroseriesID=target.series.id)
         else:
             return None
 
@@ -1704,6 +1704,7 @@ class Bug(SQLBase):
         for pillar in self.affected_pillars:
             types.intersection_update(
                 set(pillar.getAllowedBugInformationTypes()))
+        types.add(self.information_type)
         return types
 
     def transitionToInformationType(self, information_type, who):
@@ -2016,13 +2017,8 @@ class Bug(SQLBase):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        pillars = list(self.affected_pillars)
-        service = getUtility(IService, 'sharing')
-        for pillar in pillars:
-            if service.checkPillarAccess(
-                    pillar, InformationType.USERDATA, user):
-                return True
-        return False
+        return getUtility(IService, 'sharing').checkPillarAccess(
+            self.affected_pillars, InformationType.USERDATA, user)
 
     def linkHWSubmission(self, submission):
         """See `IBug`."""
@@ -2624,20 +2620,6 @@ class BugSet:
         # Create the initial task on the specified target.
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
-
-        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
-        # non-security bugs, this test might be simplified to checking
-        # params.private.
-        if (IProduct.providedBy(params.target) and params.target.private_bugs
-            and params.target.bug_sharing_policy is None
-            and params.information_type not in SECURITY_INFORMATION_TYPES):
-            # Subscribe the bug supervisor to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.target.bug_supervisor:
-                bug.subscribe(params.target.bug_supervisor, params.owner)
-            else:
-                bug.subscribe(params.target.owner, params.owner)
 
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)

@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
@@ -17,7 +18,6 @@ from lp.bugs.model.bugbranch import (
     BugBranch,
     BugBranchSet,
     )
-from lp.registry.enums import InformationType
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,

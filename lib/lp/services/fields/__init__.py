@@ -1,7 +1,5 @@
-# copyright 2009-2010 canonical ltd.  this software is licensed under the
-# gnu affero general public license version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,W0401
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -626,7 +624,6 @@ class URIField(TextLine):
         if input is None:
             return input
 
-        input = input.strip()
         try:
             uri = URI(input)
         except InvalidURIError as exc:

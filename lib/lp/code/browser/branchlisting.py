@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -61,19 +61,18 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.tales import MenuAPI
+from lp.app.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
     )
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.browser.branch import BranchMirrorMixin
-from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView,
-    PersonActiveReviewsView,
-    PersonProductActiveReviewsView,
-    )
+from lp.code.browser.branchmergeproposallisting import ActiveReviewsView
 from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
-from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -99,7 +98,6 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -114,7 +112,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     FeedsMixin,
     PersonBranchesFeedLink,
@@ -128,7 +125,6 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
-    enabled_with_permission,
     Link,
     )
 from lp.services.webapp.authorization import (
@@ -158,7 +154,7 @@ class BranchBadges(HasBadgeBase):
             return Badge('/@@/warning', '/@@/warning-large', '',
                          'Branch has errors')
         else:
-            return HasBadgeBase.getBadge(self, badge_name)
+            return super(BranchBadges, self).getBadge(badge_name)
 
 
 class BranchListingItem(BzrIdentityMixin, BranchBadges):
@@ -499,8 +495,7 @@ class BranchListingBatchNavigator(TableBatchNavigator,
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView, FeedsMixin,
-                        BranchVisibilityPolicyMixin):
+class BranchListingView(LaunchpadFormView, FeedsMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
@@ -557,9 +552,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
 
     @property
     def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            }
+        return {'lifecycle': BranchLifecycleStatusFilter.CURRENT}
 
     @cachedproperty
     def selected_lifecycle_status(self):
@@ -759,7 +752,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         if target is None:
             return False
         namespace = target.getNamespace(self.user)
-        return IBranchNamespacePolicy(namespace).getDefaultInformationType()
+        policy = IBranchNamespacePolicy(namespace)
+        return policy.getDefaultInformationType(self.user)
 
     @property
     def default_information_type_title(self):
@@ -852,30 +846,8 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed',
-             'active_reviews', 'mergequeues', 'source_package_recipes',
-             'simplified_subscribed', 'simplified_registered',
-             'simplified_owned', 'simplified_active_reviews']
-    extra_attributes = [
-        'active_review_count',
-        'owned_branch_count',
-        'registered_branch_count',
-        'show_summary',
-        'subscribed_branch_count',
-        'mergequeue_count',
-        'simplified_branches_menu',
-        ]
-
-    def _getCountCollection(self):
-        """The base collection of branches which should be counted.
-
-        This collection will be further restricted to, e.g., the
-        branches registered by a particular user for the counts that
-        appear at the top of a branch listing page.
-
-        This should be overridden in subclasses to restrict to, for
-        example, the set of branches of a particular product.
-        """
-        return getUtility(IAllBranches).visibleByUser(self.user)
+             'active_reviews', 'mergequeues', 'source_package_recipes']
+    extra_attributes = ['mergequeue_count']
 
     @property
     def person(self):
@@ -886,138 +858,37 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         """
         return self.context
 
-    @property
-    def show_summary(self):
-        """Should the template show the summary view with the links."""
-
-        if self.simplified_branches_menu:
-            return True
-        else:
-            return (
-                self.owned_branch_count or
-                self.registered_branch_count or
-                self.subscribed_branch_count or
-                self.active_review_count
-                )
-
-    @cachedproperty
-    def simplified_branches_menu(self):
-        return getFeatureFlag('code.simplified_branches_menu.enabled')
-
-    @cachedproperty
-    def registered_branches_not_empty(self):
-        """False if the number of branches registered by self.person
-        is zero.
-        """
-        return (
-            not self._getCountCollection().registeredBy(
-                self.person).is_empty())
-
-    def simplified_owned(self):
+    def owned(self):
         return Link(
-            canonical_url(self.context, rootsite='code'),
-            'Owned branches')
+            canonical_url(self.context, rootsite='code'), 'Owned branches')
 
-    def simplified_registered(self):
-        person_is_individual = (not self.person.is_team)
+    def registered(self):
+        enabled = not self.person.is_team
         return Link(
-            '+registeredbranches',
-            'Registered branches',
-            enabled=(
-                person_is_individual and
-                self.registered_branches_not_empty))
+            '+registeredbranches', 'Registered branches', enabled=enabled)
 
-    def simplified_subscribed(self):
-        return Link(
-            '+subscribedbranches',
-            'Subscribed branches')
+    def subscribed(self):
+        return Link('+subscribedbranches', 'Subscribed branches')
 
-    def simplified_active_reviews(self):
-        return Link(
-            '+activereviews',
-            'Active reviews')
+    def active_reviews(self):
+        return Link('+activereviews', 'Active reviews')
 
     def source_package_recipes(self):
         return Link(
-            '+recipes',
-            'Source package recipes',
+            '+recipes', 'Source package recipes',
             enabled=IPerson.providedBy(self.context))
-
-    @cachedproperty
-    def registered_branch_count(self):
-        """Return the number of branches registered by self.person."""
-        return self._getCountCollection().registeredBy(self.person).count()
-
-    @cachedproperty
-    def owned_branch_count(self):
-        """Return the number of branches owned by self.person."""
-        return self._getCountCollection().ownedBy(self.person).count()
-
-    @cachedproperty
-    def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by self.person."""
-        return self._getCountCollection().subscribedBy(self.person).count()
-
-    def owned(self):
-        return Link(
-            canonical_url(self.context, rootsite='code'),
-            get_plural_text(
-                self.owned_branch_count, 'owned branch', 'owned branches'))
-
-    def registered(self):
-        person_is_individual = (not self.person.is_team)
-        return Link(
-            '+registeredbranches',
-            get_plural_text(
-                self.registered_branch_count,
-                'registered branch', 'registered branches'),
-            enabled=person_is_individual)
-
-    def subscribed(self):
-        return Link(
-            '+subscribedbranches',
-            get_plural_text(
-                self.subscribed_branch_count,
-                'subscribed branch', 'subscribed branches'))
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for self.person's branches."""
-        active_reviews = PersonActiveReviewsView(self.context, self.request)
-        return active_reviews.getProposals().count()
-
-    def active_reviews(self):
-        text = get_plural_text(
-            self.active_review_count,
-            'active review',
-            'active reviews')
-        return Link('+activereviews', text)
 
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
-             'source_package_recipes',
-             'simplified_subscribed', 'simplified_registered',
-             'simplified_owned', 'simplified_active_reviews']
-
-    def _getCountCollection(self):
-        """See `PersonBranchesMenu`."""
-        collection = getUtility(IAllBranches).visibleByUser(self.user)
-        return collection.inProduct(self.context.product)
+             'source_package_recipes']
 
     @property
     def person(self):
         """See `PersonBranchesMenu`."""
         return self.context.person
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for self.person's branches."""
-        active_reviews = PersonProductActiveReviewsView(
-            self.context, self.request)
-        return active_reviews.getProposals().count()
 
 
 class PersonBaseBranchListingView(BranchListingView):
@@ -1155,7 +1026,6 @@ class ProductBranchesMenu(ApplicationMenu):
         'list_branches',
         'active_reviews',
         'code_import',
-        'branch_visibility',
         ]
     extra_attributes = [
         'active_review_count',
@@ -1178,11 +1048,6 @@ class ProductBranchesMenu(ApplicationMenu):
             'Active review',
             'Active reviews')
         return Link('+activereviews', text, site='code')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def code_import(self):
         text = 'Import a branch'
@@ -1404,6 +1269,12 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure code hosting'
         return set_branch
+
+    @property
+    def external_visible(self):
+        return (
+            self.context.codehosting_usage == ServiceUsage.EXTERNAL
+            and self.branch)
 
 
 class ProductBranchesView(ProductBranchListingView):

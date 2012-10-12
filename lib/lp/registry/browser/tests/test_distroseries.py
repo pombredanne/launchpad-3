@@ -54,6 +54,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
@@ -62,12 +67,7 @@ from lp.services.utils import utc_now
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.interaction import get_current_principal
-from lp.services.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.url import urlappend
 from lp.soyuz.browser.archive import copy_asynchronously_message
@@ -2124,7 +2124,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         # The inital state is that 1.0-1 is not in the derived series.
         pubs = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
+            name=u'my-src-name', version=versions['parent'],
             distroseries=derived_series).any()
         self.assertIs(None, pubs)
 
@@ -2186,7 +2186,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self._syncAndGetView(
             derived_series, person, [diff_id])
         parent_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
+            name=u'my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
 
         # We look for a PackageCopyJob with the right metadata.

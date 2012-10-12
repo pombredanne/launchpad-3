@@ -71,8 +71,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.services import IService
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import GhostCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -103,9 +105,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -912,8 +912,22 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                     bug, bug_before_modification, changed_fields,
                     user=self.user))
         if self.request.is_ajax:
+            # Avoid circular imports
+            from lp.bugs.browser.bugtask import (
+                can_add_package_task_to_bug,
+                can_add_project_task_to_bug,
+            )
             if changed:
-                return self._getSubscriptionDetails()
+                result_data = self._getSubscriptionDetails()
+                result_data['can_add_project_task'] = (
+                    can_add_project_task_to_bug(bug))
+                result_data['can_add_package_task'] = (
+                    can_add_package_task_to_bug(bug))
+                self.request.response.setHeader(
+                    'content-type', 'application/json')
+                return dumps(
+                    result_data, cls=ResourceJSONEncoder,
+                    media_type=EntryResource.JSON_TYPE)
             else:
                 return ''
 
@@ -946,10 +960,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         result_data = dict(
             cache_data=cache,
             subscription_data=subscription_data)
-        self.request.response.setHeader('content-type', 'application/json')
-        return dumps(
-            result_data, cls=ResourceJSONEncoder,
-            media_type=EntryResource.JSON_TYPE)
+        return result_data
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

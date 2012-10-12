@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
+from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -35,7 +36,6 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
@@ -67,6 +67,7 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -155,9 +156,8 @@ class CodeImportBaseView(LaunchpadFormView):
     @cachedproperty
     def _super_user(self):
         """Is the user an admin or member of vcs-imports?"""
-        celebs = getUtility(ILaunchpadCelebrities)
-        return (self.user.inTeam(celebs.admin) or
-                self.user.inTeam(celebs.vcs_imports))
+        role = IPersonRoles(self.user)
+        return role.in_admin or role.in_vcs_imports
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for rcs locations."""
@@ -217,9 +217,7 @@ class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
     use_template(IBranch, ['owner'])
-    use_template(
-        ICodeImport,
-        ['rcs_type', 'cvs_root', 'cvs_module'])
+    use_template(ICodeImport, ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -245,18 +243,6 @@ class NewCodeImportForm(Interface):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False)
-
-    hg_repo_url = URIField(
-        title=_("Repo URL"), required=False,
-        description=_(
-            "The URL of the Mercurial repository.  The tip branch will be "
-            "imported."),
-        allowed_schemes=["http", "https"],
-        allow_userinfo=True,
-        allow_port=True,
-        allow_query=False,     # Query makes no sense in Bazaar.
-        allow_fragment=False,  # Fragment makes no sense in Bazaar.
-        trailing_slash=False)  # See http://launchpad.net/bugs/56357.
 
     bzr_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -306,10 +292,10 @@ class CodeImportNewView(CodeImportBaseView):
 
     @property
     def label(self):
+        label = 'Request a code import'
         if self.context_is_product:
-            return 'Request a code import for %s' % self.context.displayname
-        else:
-            return 'Request a code import'
+            label += ' for %s' % self.context.displayname
+        return label
 
     @property
     def cancel_url(self):
@@ -338,26 +324,25 @@ class CodeImportNewView(CodeImportBaseView):
             self.form_fields = any_owner_field + self.form_fields
 
     def setUpWidgets(self):
-        CodeImportBaseView.setUpWidgets(self)
+        super(CodeImportNewView, self).setUpWidgets()
 
         # Extract the radio buttons from the rcs_type widget, so we can
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, hg_button, bzr_button,
+        [cvs_button, svn_button, git_button, bzr_button,
             empty_marker] = [
                 field for field in fields
                 if field.get('value') in [
-                     'CVS', 'BZR_SVN', 'GIT', 'HG', 'BZR', '1']]
+                     'CVS', 'BZR_SVN', 'GIT', 'BZR', '1']]
+        bzr_button['onclick'] = 'updateWidgets()'
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
-        hg_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
         self.rcs_type_git = str(git_button)
-        self.rcs_type_hg = str(hg_button)
         self.rcs_type_bzr = str(bzr_button)
         self.rcs_type_emptymarker = str(empty_marker)
 
@@ -370,8 +355,6 @@ class CodeImportNewView(CodeImportBaseView):
             return None, None, data.get('svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
             return None, None, data.get('git_repo_url')
-        elif rcs_type == RevisionControlSystems.HG:
-            return None, None, data.get('hg_repo_url')
         elif rcs_type == RevisionControlSystems.BZR:
             return None, None, data.get('bzr_branch_url')
         else:
@@ -463,9 +446,6 @@ class CodeImportNewView(CodeImportBaseView):
         elif rcs_type == RevisionControlSystems.GIT:
             self._validateURL(
                 data.get('git_repo_url'), field_name='git_repo_url')
-        elif rcs_type == RevisionControlSystems.HG:
-            self._validateURL(
-                data.get('hg_repo_url'), field_name='hg_repo_url')
         elif rcs_type == RevisionControlSystems.BZR:
             self._validateURL(
                 data.get('bzr_branch_url'), field_name='bzr_branch_url')
@@ -542,9 +522,11 @@ class CodeImportEditView(CodeImportBaseView):
         self.code_import = self.context.code_import
         if self.code_import is None:
             raise NotFoundError
+        if not self._super_user:
+            raise Unauthorized
         # The next and cancel location is the branch details page.
         self.cancel_url = self.next_url = canonical_url(self.context)
-        CodeImportBaseView.initialize(self)
+        super(CodeImportEditView, self).initialize()
 
     @property
     def adapters(self):
@@ -561,7 +543,6 @@ class CodeImportEditView(CodeImportBaseView):
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
                                            RevisionControlSystems.GIT,
-                                           RevisionControlSystems.HG,
                                            RevisionControlSystems.BZR):
             self.form_fields = self.form_fields.omit(
                 'cvs_root', 'cvs_module')
@@ -597,7 +578,6 @@ class CodeImportEditView(CodeImportBaseView):
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
                                            RevisionControlSystems.GIT,
-                                           RevisionControlSystems.HG,
                                            RevisionControlSystems.BZR):
             self._validateURL(data.get('url'), self.code_import)
         else:

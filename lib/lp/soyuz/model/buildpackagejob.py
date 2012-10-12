@@ -7,9 +7,6 @@ __all__ = [
     ]
 
 
-from datetime import datetime
-
-import pytz
 from storm.locals import (
     Int,
     Reference,
@@ -76,25 +73,22 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         """See `IBuildPackageJob`."""
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
-        # Please note: the score for language packs is to be zero because
-        # they unduly delay the building of packages in the main component
-        # otherwise.
-        if self.build.source_package_release.section.name == 'translations':
-            return 0
-
         score = 0
+
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.build.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        score += self.build.archive.relative_build_score
+
+        # Language packs don't get any of the usual package-specific
+        # score bumps, as they unduly delay the building of packages in
+        # the main component otherwise.
+        if self.build.source_package_release.section.name == 'translations':
+            return score
 
         # Calculates the urgency-related part of the score.
         score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
@@ -110,28 +104,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         package_sets = getUtility(IPackagesetSet).setsIncludingSource(
             self.build.source_package_release.name,
             distroseries=self.build.distro_series)
-        if not package_sets.is_empty():
+        if not self.build.archive.is_ppa and not package_sets.is_empty():
             score += package_sets.max(Packageset.relative_build_score)
-
-        # Calculates the build queue time component of the score.
-        right_now = datetime.now(pytz.timezone('UTC'))
-        eta = right_now - self.job.date_created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                break
-
-        # Private builds get uber score.
-        if self.build.archive.private:
-            score += PRIVATE_ARCHIVE_SCORE_BONUS
-
-        if self.build.archive.is_copy:
-            score -= COPY_ARCHIVE_SCORE_PENALTY
-
-        # Lastly, apply the archive score delta.  This is to boost
-        # or retard build scores for any build in a particular
-        # archive.
-        score += self.build.archive.relative_build_score
 
         return score
 

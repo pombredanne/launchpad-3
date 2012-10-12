@@ -61,9 +61,6 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy,
-    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
@@ -121,10 +118,10 @@ class IProjectGroupModerate(IPillar):
 
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
-    IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMergeProposals, IHasMilestones, IHasMugshot,
-    IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
+    IHasDrivers, IHasIcon, IHasLogo, IHasMergeProposals, IHasMilestones,
+    IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
+    IMakesAnnouncements, IKarmaContext, IRootContext, IHasOfficialBugTags,
+    IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)

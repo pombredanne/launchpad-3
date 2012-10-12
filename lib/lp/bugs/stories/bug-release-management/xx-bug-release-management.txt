@@ -1,17 +1,11 @@
 Privileged users can approve and decline bug nominations from the bug
 page.
 
-The approve/decline links and buttons aren't visible to unprivileged users.
+The approve/decline buttons and buttons aren't visible to unprivileged users.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth="Basic no-priv@canonical.com:test")
     >>> no_priv_browser.open("http://launchpad.dev/bugs/1")
-    >>> no_priv_browser.getLink(
-    ...     url="http://launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "1/+editstatus")
-    Traceback (most recent call last):
-      ...
-    LinkNotFoundError
 
     >>> no_priv_browser.getControl("Approve")
     Traceback (most recent call last):
@@ -26,12 +20,6 @@ The approve/decline links and buttons aren't visible to unprivileged users.
 But an admin can see them.
 
     >>> admin_browser.open("http://bugs.launchpad.dev/bugs/1")
-    >>> approve_decline_link = admin_browser.getLink(
-    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "1/+editstatus")
-    >>> print approve_decline_link.text
-    approve/decline
-
     >>> approve_button = admin_browser.getControl("Approve", index=0)
     >>> decline_button = admin_browser.getControl("Decline", index=0)
 
@@ -61,12 +49,6 @@ After a productseries task has been created, it's editable.
 Privileged users can decline bug nominations.
 
     >>> admin_browser.open("http://bugs.launchpad.dev/bugs/1")
-    >>> approve_decline_link = admin_browser.getLink(
-    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "2/+editstatus")
-    >>> print approve_decline_link.text
-    approve/decline
-
     >>> approve_button = admin_browser.getControl("Approve", index=0)
     >>> decline_button = admin_browser.getControl("Decline", index=0)
 
@@ -394,6 +376,6 @@ targeted to it.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-      Undecided New
+      Mozilla Firefox 1.0 Undecided New
     1 Firefox does not support SVG
-      Undecided Confirmed
+      Mozilla Firefox 1.0 Undecided Confirmed

@@ -229,7 +229,7 @@ them informational.
 If we ask for ALL specs we should see them both.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     a
     b
@@ -238,23 +238,23 @@ With a productseries, we can ask for ACCEPTED, PROPOSED and DECLINED
 specs:
 
     >>> filter=[SpecificationFilter.ACCEPTED]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     a Accepted
 
     >>> filter=[SpecificationFilter.PROPOSED]
-    >>> onezero.specifications(filter=filter).count()
+    >>> onezero.specifications(None, filter=filter).count()
     0
 
     >>> filter=[SpecificationFilter.DECLINED]
-    >>> onezero.specifications(filter=filter).count()
+    >>> onezero.specifications(None, filter=filter).count()
     1
 
 We should see one informational spec if we ask just for that, the
 accepted one.
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     a
 
@@ -262,21 +262,21 @@ If we specifically ask for declined informational, we will get that:
 
     >>> filter = [
     ...    SpecificationFilter.INFORMATIONAL, SpecificationFilter.DECLINED]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     b
 
 There are is one completed, accepted spec for 1.0:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete, spec.goalstatus.title
     a True Accepted
 
 There is one completed, declined spec:
 
     >>> filter = [SpecificationFilter.COMPLETE, SpecificationFilter.DECLINED]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete, spec.goalstatus.title
     b True Declined
 
@@ -291,7 +291,7 @@ Now lets make b incomplete, but accepted.
 And if we ask just for specs, we get BOTH the incomplete and the
 complete ones that have been accepted.
 
-    >>> for spec in onezero.specifications():
+    >>> for spec in onezero.specifications(None):
     ...     print spec.name, spec.is_complete, spec.goalstatus.title
     a True Accepted
     b False Accepted
@@ -299,7 +299,7 @@ complete ones that have been accepted.
 We can search for text in specifications (in this case there are no
 matches):
 
-    >>> print len(list(onezero.specifications(filter=['new'])))
+    >>> print len(list(onezero.specifications(None, filter=['new'])))
     0
 
 

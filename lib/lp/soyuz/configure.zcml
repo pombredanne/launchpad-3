@@ -801,7 +801,8 @@
             interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+            interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"
+            set_attributes="name description owner"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
@@ -988,19 +989,31 @@
       <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"/>
     </class>
 
-   <!-- Overrides -->
-   <class class="lp.soyuz.adapters.overrides.SourceOverride">
-        <allow interface="lp.soyuz.adapters.overrides.ISourceOverride" />
-   </class>
-   <class class="lp.soyuz.adapters.overrides.BinaryOverride">
-        <allow interface="lp.soyuz.adapters.overrides.IBinaryOverride" />
-   </class>
+    <!-- Overrides -->
+    <class class="lp.soyuz.adapters.overrides.SourceOverride">
+      <allow interface="lp.soyuz.adapters.overrides.ISourceOverride" />
+    </class>
+    <class class="lp.soyuz.adapters.overrides.BinaryOverride">
+      <allow interface="lp.soyuz.adapters.overrides.IBinaryOverride" />
+    </class>
 
-   <!-- OverridePolicy -->
-   <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
-        <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
-   </class>
+    <!-- OverridePolicy -->
+    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
+      <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+    </class>
 
-   <webservice:register module="lp.soyuz.interfaces.webservice" />
+    <!-- ProcessAcceptedBugsJobSource -->
+    <securedutility
+	component=".model.processacceptedbugsjob.ProcessAcceptedBugsJob"
+	provides=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJobSource">
+      <allow interface=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJobSource" />
+    </securedutility>
+
+    <!-- ProcessAcceptedBugsJob -->
+    <class class=".model.processacceptedbugsjob.ProcessAcceptedBugsJob">
+      <allow interface=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJob" />
+    </class>
+
+    <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

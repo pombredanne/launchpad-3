@@ -63,25 +63,25 @@ class TestCommProjVocabulary(TestCaseWithFactory):
 
     def test_searchForTerms_success(self):
         # Search for active maintained projects success.
-        results = self.vocab.searchForTerms('widget')
+        results = self.vocab.searchForTerms(u'widget')
         self.assertEqual(
             self.num_commercial, len(results),
             "Expected %d results but got %d." % (self.num_commercial,
                                                  len(results)))
         # Ensure we get only those that match by searching for a single
         # widget, using 't1', a subset of the name 'widget1'.
-        results = self.vocab.searchForTerms('t1')
+        results = self.vocab.searchForTerms(u't1')
         self.assertEqual(1, len(results),
                          "Expected %d result but got %d." % (1, len(results)))
 
     def test_searchForTerms_fail(self):
         # Search for deactivated or non-maintained projects fails.
-        results = self.vocab.searchForTerms('norwegian-blue-widget')
+        results = self.vocab.searchForTerms(u'norwegian-blue-widget')
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
-        results = self.vocab.searchForTerms('firefox')
+        results = self.vocab.searchForTerms(u'firefox')
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
@@ -91,9 +91,9 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         expert = login_celebrity('commercial_admin')
         self.vocab = CommercialProjectsVocabulary(context=expert)
         self.assertEqual(
-            1, len(self.vocab.searchForTerms('open-widget')))
+            1, len(self.vocab.searchForTerms(u'open-widget')))
         self.assertEqual(
-            0, len(self.vocab.searchForTerms('norwegian-blue-widget')))
+            0, len(self.vocab.searchForTerms(u'norwegian-blue-widget')))
 
     def test_toTerm(self):
         # Commercial project terms contain subscription information.
@@ -105,27 +105,27 @@ class TestCommProjVocabulary(TestCaseWithFactory):
     def test_getTermByToken_user(self):
         # The term for a token in the vocabulary is returned for maintained
         # projects.
-        token = self.vocab.getTermByToken('open-widget')
+        token = self.vocab.getTermByToken(u'open-widget')
         self.assertEqual(self.maintained_project, token.value)
 
     def test_getTermByToken_commercial_admin(self):
         # The term for a token in the vocabulary is returned for any
         # active project.
         login_celebrity('commercial_admin')
-        token = self.vocab.getTermByToken('open-widget')
+        token = self.vocab.getTermByToken(u'open-widget')
         self.assertEqual(self.maintained_project, token.value)
 
     def test_getTermByToken_error_user(self):
         # A LookupError is raised if the token is not in the vocabulary.
         self.assertRaises(
-            LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
+            LookupError, self.vocab.getTermByToken, u'norwegian-blue-widget')
 
     def test_getTermByToken_error_commercial_admin(self):
         # The term for a token in the vocabulary is returned for any
         # active project.
         login_celebrity('commercial_admin')
         self.assertRaises(
-            LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
+            LookupError, self.vocab.getTermByToken, u'norwegian-blue-widget')
 
     def test_iter(self):
         # The vocabulary can be iterated and the order is by displayname.

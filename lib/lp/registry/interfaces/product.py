@@ -75,6 +75,7 @@ from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -89,15 +90,13 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
-    )
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy,
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
@@ -109,7 +108,6 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     SpecificationSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -424,10 +422,10 @@ class IProductModerateRestricted(Interface):
 
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones,
-    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs, IHasMugshot,
+    IHasOwner, IHasSprints, IHasTranslationImports, ITranslationPolicy,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
     ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
@@ -449,13 +447,6 @@ class IProductPublic(
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
-
-    information_type = exported(
-        Choice(
-            title=_('Information Type'), vocabulary=InformationType,
-            required=True, readonly=True,
-            description=_(
-                'The type of of data contained in this project.')))
 
     owner = exported(
         PersonChoice(
@@ -635,24 +626,26 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
-                        description=_(
-                            "Whether or not bugs reported into this project "
-                            "are private by default.")))
+    private_bugs = exported(
+        Bool(
+            title=_('Private bugs (obsolete; always False)'), readonly=True,
+            description=_("Replaced by bug_sharing_policy.")),
+        ('devel', dict(exported=False)))
+
     branch_sharing_policy = exported(Choice(
         title=_('Branch sharing policy'),
         description=_("Sharing policy for this project's branches."),
-        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        required=True, readonly=True, vocabulary=BranchSharingPolicy),
         as_of='devel')
     bug_sharing_policy = exported(Choice(
         title=_('Bug sharing policy'),
         description=_("Sharing policy for this project's bugs."),
-        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        required=True, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
     specification_sharing_policy = exported(Choice(
         title=_('Specification sharing policy'),
         description=_("Sharing policy for this project's specifications."),
-        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        required=True, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
 
     licenses = exported(
@@ -679,11 +672,9 @@ class IProductPublic(
         Datetime(
             title=_('Next suggest packaging date'),
             description=_(
-                "The date when Launchpad can resume suggesting Ubuntu "
-                "packages that the project provides. The default value is "
-                "one year after a user states the project is not packaged "
-                "in Ubuntu."),
-            required=False))
+                "Obsolete. The date to resume Ubuntu package suggestions."),
+            required=False),
+        ('devel', dict(exported=False)))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
@@ -781,23 +772,11 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
-    def checkPrivateBugsTransitionAllowed(private_bugs, user):
-        """Can the private_bugs attribute be changed to the value by the user?
-
-        Generally, the permission is restricted to ~registry or ~admin or
-        bug supervisors.
-        In addition, a valid commercial subscription is required to turn on
-        private bugs when being done by a bug supervisor. However, no
-        commercial subscription is required to turn off private bugs.
-        """
-
-    @mutator_for(private_bugs)
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(private_bugs=copy_field(private_bugs))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivateBugs(private_bugs, user):
-        """Mutator for private_bugs that checks entitlement."""
+    security_contact = exported(
+        TextLine(
+            title=_('Security contact'), required=False, readonly=True,
+            description=_('Security contact (obsolete; always None)')),
+            ('devel', dict(exported=False)), as_of='1.0')
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.
@@ -929,7 +908,7 @@ class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
     IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget):
+    IStructuralSubscriptionTarget, IInformationType):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -990,12 +969,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getAllowedProductInformationTypes():
-        """Get the information types that a project can have.
-
-        :return: A sequence of `InformationType`s.
         """
 
     @call_with(owner=REQUEST_USER)

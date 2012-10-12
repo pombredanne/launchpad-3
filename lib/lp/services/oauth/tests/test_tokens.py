@@ -26,6 +26,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
     )
+from lp.services.oauth.model import OAuthValidationError
 from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
@@ -232,7 +233,7 @@ class TestRequestTokens(TestOAuth):
         token = self.factory.makeOAuthRequestToken(
             date_created=self.a_long_time_ago)
         self.assertRaises(
-            AssertionError, token.review, self.person,
+            OAuthValidationError, token.review, self.person,
             OAuthPermission.WRITE_PUBLIC)
 
     def test_get_request_tokens_for_person(self):
@@ -321,14 +322,14 @@ class TestAccessTokens(TestOAuth):
     def test_cant_exchange_unreviewed_request_token(self):
         # An unreviewed request token cannot be exchanged for an access token.
         token = self.consumer.newRequestToken()
-        self.assertRaises(AssertionError, token.createAccessToken)
+        self.assertRaises(OAuthValidationError, token.createAccessToken)
 
     def test_cant_exchange_unauthorized_request_token(self):
         # A request token associated with the UNAUTHORIZED
         # OAuthPermission cannot be exchanged for an access token.
         token = self.consumer.newRequestToken()
         token.review(self.person, OAuthPermission.UNAUTHORIZED)
-        self.assertRaises(AssertionError, token.createAccessToken)
+        self.assertRaises(OAuthValidationError, token.createAccessToken)
 
     def test_expired_request_token_cant_be_exchanged(self):
         """An expired request token can't be exchanged for an access token.
@@ -337,7 +338,7 @@ class TestAccessTokens(TestOAuth):
         """
         token = self.factory.makeOAuthRequestToken(
             date_created=self.a_long_time_ago, reviewed_by=self.person)
-        self.assertRaises(AssertionError, token.createAccessToken)
+        self.assertRaises(OAuthValidationError, token.createAccessToken)
 
     def test_write_permission(self):
         """An access token can only be modified by its creator."""

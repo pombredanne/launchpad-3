@@ -77,5 +77,4 @@ to the list of all bugs having that tag in this context.
 
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    2 Blackhole Trash folder Ubuntu Medium New

@@ -15,9 +15,9 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
-from lp.registry.enums import InformationType
 from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login_person,

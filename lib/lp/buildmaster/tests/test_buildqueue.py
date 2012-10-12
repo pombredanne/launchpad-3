@@ -33,12 +33,12 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     get_builder_data,
     )
-from lp.services.job.model.job import Job
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,

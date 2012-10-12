@@ -2094,7 +2094,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         included binaries.
 
         Check that no builds will be created in future runs of
-        `buildd-queue-builder`, because a source version can only be built
+        createMissingBuilds, because a source version can only be built
         once in a distroarchseries, independent of its targeted pocket.
         """
         [copied, original] = archive.getPublishedSources(

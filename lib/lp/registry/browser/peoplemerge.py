@@ -35,7 +35,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IRequestPeopleMerge,
     )
-from lp.services.database.lpstorm import IMasterObject
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -140,7 +139,6 @@ class AdminMergeBaseView(ValidatingMergeView):
         if not self.dupe_person.is_team:
             # Transfer user email addresses. Team addresses will be deleted.
             for email in self.dupe_person_emails:
-                email = IMasterObject(email)
                 # EmailAddress.person is a readonly field, so we need to
                 # remove the security proxy here.
                 naked_email = removeSecurityProxy(email)

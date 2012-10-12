@@ -39,7 +39,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
         if target is not None:
             for spec in sorted(
-                target.specifications(), key=attrgetter('title')):
+                target.specifications(launchbag.user),
+                key=attrgetter('title')):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:

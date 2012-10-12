@@ -22,6 +22,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtasksearch import (
@@ -30,7 +31,6 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.bugs.model.bug import Bug
 from lp.registry.enums import (
-    InformationType,
     PersonVisibility,
     TeamMembershipPolicy,
     )

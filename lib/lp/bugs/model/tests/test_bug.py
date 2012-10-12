@@ -8,12 +8,14 @@ from datetime import (
     timedelta,
     )
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from pytz import UTC
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
@@ -27,10 +29,7 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -41,6 +40,7 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.testing import (
     admin_logged_in,
+    EventRecorder,
     feature_flags,
     login_person,
     person_logged_in,
@@ -60,6 +60,15 @@ from lp.testing.matchers import (
 class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_getNominationFor_sourcepackage(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        series = sourcepackage.distroseries
+        bug = self.factory.makeBug(target=series.distribution)
+        with person_logged_in(series.owner):
+            bug.addNomination(series.owner, series)
+        nomination = bug.getNominationFor(sourcepackage)
+        self.assertEqual(series, nomination.target)
 
     def test_markAsDuplicate_None(self):
         # Calling markAsDuplicate(None) on a bug that is not currently a
@@ -559,8 +568,25 @@ class TestBug(TestCaseWithFactory):
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
 
+    def test_newMessage_default(self):
+        # Adding a bug message notifies that is was created.
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        with EventRecorder() as recorder:
+            bug.newMessage(owner=bug.owner)
+            self.assertEqual(1, len(recorder.events))
+            self.assertIsInstance(recorder.events[0], ObjectCreatedEvent)
 
-class TestBugPrivateAndSecurityRelatedUpdatesMixin:
+    def test_newMessage_send_notification_false(self):
+        # Notifications about new messages can be supressed.
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        with EventRecorder() as recorder:
+            bug.newMessage(owner=bug.owner, send_notifications=False)
+            self.assertEqual(0, len(recorder.events))
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -599,8 +625,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor,
             driver=product_driver)
-        if self.private_project:
-            removeSecurityProxy(bug_product).private_bugs = True
         bug = self.factory.makeBug(owner=bug_owner, target=bug_product)
         with person_logged_in(bug_owner):
             if private_security_related:
@@ -877,6 +901,18 @@ class TestBugPrivacy(TestCaseWithFactory):
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeBug().getAllowedInformationTypes(None))
 
+    def test_getAllowedInformationTypes_includes_current(self):
+        # A bug's allowed information types must include its current
+        # information type even if said type is not in the allowed types.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            target=product, information_type=InformationType.PUBLICSECURITY)
+        removeSecurityProxy(product).bug_sharing_policy = (
+            BugSharingPolicy.FORBIDDEN)
+        self.assertContentEqual(
+            [InformationType.PUBLICSECURITY],
+            bug.getAllowedInformationTypes(None))
+
     def test_transitionToInformationType_respects_allowed_proprietary(self):
         # transitionToInformationType rejects types that aren't allowed
         # for the bug.
@@ -899,24 +935,6 @@ class TestBugPrivacy(TestCaseWithFactory):
                 CannotChangeInformationType, "Forbidden by project policy.",
                 bug.transitionToInformationType,
                 InformationType.PUBLIC, bug.owner)
-
-
-class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
-        TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
-
-    def setUp(self):
-        s = super(TestBugPrivateAndSecurityRelatedUpdatesPrivateProject, self)
-        s.setUp()
-        self.private_project = True
-
-
-class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
-        TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
-
-    def setUp(self):
-        s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
-        s.setUp()
-        self.private_project = False
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):

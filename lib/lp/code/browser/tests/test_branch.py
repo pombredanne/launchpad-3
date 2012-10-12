@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
@@ -31,14 +32,8 @@ from lp.code.bzr import (
     ControlFormat,
     RepositoryFormat,
     )
-from lp.code.enums import (
-    BranchType,
-    BranchVisibilityRule,
-    )
-from lp.registry.enums import (
-    BranchSharingPolicy,
-    InformationType,
-    )
+from lp.code.enums import BranchType
+from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
@@ -47,7 +42,6 @@ from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
-    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -896,68 +890,6 @@ class TestBranchEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_allowed_owner_is_ok(self):
-        # A branch's owner can be changed to a team permitted by the
-        # visibility policy.
-        person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
-        team = self.factory.makeTeam(
-            owner=person, displayname="Permitted team")
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Permitted team"]
-        browser.getControl("Change Branch").click()
-        with person_logged_in(person):
-            self.assertEquals(team, branch.owner)
-
-    def test_forbidden_owner_is_error(self):
-        # An error is displayed if a branch's owner is changed to
-        # a value forbidden by the visibility policy.
-        product = self.factory.makeLegacyProduct(displayname='Some Product')
-        person = self.factory.makePerson()
-        branch = self.factory.makeBranch(product=product, owner=person)
-        self.factory.makeTeam(
-            owner=person, displayname="Forbidden team")
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            person, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Forbidden team"]
-        browser.getControl("Change Branch").click()
-        self.assertThat(
-            browser.contents,
-            Contains(
-                'Forbidden team is not allowed to own branches in '
-                'Some Product.'))
-        with person_logged_in(person):
-            self.assertEquals(person, branch.owner)
-
-    def test_private_owner_is_ok(self):
-        # A branch's owner can be changed to a private team permitted by the
-        # visibility policy.
-        person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
-        branch = self.factory.makeProductBranch(product=product, owner=person)
-        team = self.factory.makeTeam(
-            owner=person, displayname="Private team",
-            visibility=PersonVisibility.PRIVATE)
-        branch.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        branch.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        browser = self.getUserBrowser(
-            canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Private team"]
-        browser.getControl("Change Branch").click()
-        with person_logged_in(person):
-            self.assertEquals(team, branch.owner)
-
     def test_branch_target_widget_renders_junk(self):
         # The branch target widget renders correctly for a junk branch.
         person = self.factory.makePerson()
@@ -969,7 +901,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_branch_target_widget_renders_product(self):
         # The branch target widget renders correctly for a product branch.
         person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product, owner=person)
         login_person(person)
         view = create_initialized_view(branch, name='+edit')
@@ -988,7 +920,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_branch_target_widget_saves_junk(self):
         # The branch target widget can retarget to a junk branch.
         person = self.factory.makePerson()
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product, owner=person)
         login_person(person)
         form = {
@@ -997,8 +929,28 @@ class TestBranchEditView(TestCaseWithFactory):
         }
         view = create_initialized_view(branch, name='+edit', form=form)
         self.assertEqual(person, branch.target.context)
+        self.assertEqual(1, len(view.request.response.notifications))
         self.assertEqual(
-            'This branch is now a personal branch for %s' % person.displayname,
+            'This branch is now a personal branch for %s (%s)'
+                % (person.displayname, person.name),
+            view.request.response.notifications[0].message)
+
+    def test_save_to_different_junk(self):
+        # The branch target widget can retarget to a junk branch.
+        person = self.factory.makePerson()
+        branch = self.factory.makePersonalBranch(owner=person)
+        new_owner = self.factory.makeTeam(name='newowner', members=[person])
+        login_person(person)
+        form = {
+            'field.target': 'personal',
+            'field.owner': 'newowner',
+            'field.actions.change': 'Change Branch',
+        }
+        view = create_initialized_view(branch, name='+edit', form=form)
+        self.assertEqual(new_owner, branch.target.context)
+        self.assertEqual(1, len(view.request.response.notifications))
+        self.assertEqual(
+            'The branch owner has been changed to Newowner (newowner)',
             view.request.response.notifications[0].message)
 
     def test_branch_target_widget_saves_product(self):
@@ -1018,6 +970,28 @@ class TestBranchEditView(TestCaseWithFactory):
             'The branch target has been changed to %s (%s)'
                 % (product.displayname, product.name),
             view.request.response.notifications[0].message)
+
+    def test_forbidden_target_is_error(self):
+        # An error is displayed if a branch is saved with a target that is not
+        # allowed by the sharing policy.
+        owner = self.factory.makePerson()
+        initial_target = self.factory.makeProduct()
+        self.factory.makeProduct(
+            name="commercial", owner=owner,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        branch = self.factory.makeProductBranch(
+            owner=owner, product=initial_target,
+            information_type=InformationType.PUBLIC)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=owner)
+        browser.getControl(name="field.target.product").value = "commercial"
+        browser.getControl("Change Branch").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Public branches are not allowed for target Commercial.'))
+        with person_logged_in(owner):
+            self.assertEquals(initial_target, branch.target.context)
 
     def test_information_type_in_ui(self):
         # The information_type of a branch can be changed via the UI by an
@@ -1125,25 +1099,8 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             product=product, stacked_on=stacked_on_branch,
             owner=product.owner,
             information_type=InformationType.PRIVATESECURITY)
-        with admin_logged_in():
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            branch)
-
-    def test_private_branch(self):
-        # Branches on projects with a private policy can be made private.
-        branch = self.factory.makeBranch(
-            information_type=InformationType.PUBLIC)
-        with admin_logged_in():
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
-        self.assertShownTypes(
-            [InformationType.PUBLIC,
-             InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY,
-             InformationType.USERDATA],
             branch)
 
     def test_branch_for_project_with_embargoed_and_proprietary(self):

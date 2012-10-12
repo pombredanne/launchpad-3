@@ -193,14 +193,6 @@ COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email t
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
--- BranchVisibilityPolicy
-
-COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
-COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don''t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
-COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
-COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
-COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
-
 -- Bug
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
@@ -762,9 +754,9 @@ COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad adm
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
-COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+COMMENT ON COLUMN Product.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- ProductJob
 COMMENT ON TABLE productjob IS 'Contains references to jobs for updating projects and sendd notifications.';

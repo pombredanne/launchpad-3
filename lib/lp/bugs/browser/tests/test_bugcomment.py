@@ -19,6 +19,7 @@ from soupmatchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bugcomment import (
     BugComment,
     group_comments_with_activity,
@@ -28,7 +29,6 @@ from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject
@@ -307,6 +307,15 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         bug_comment = make_bug_comment(self.factory)
         url = canonical_url(bug_comment, view_name='+download')
         self.assertEqual(url, bug_comment.download_url)
+
+    def test_bug_comment_canonical_url(self):
+        """The bug comment url should use the default bugtastk."""
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].default_bugtask
+        product = removeSecurityProxy(bugtask).target
+        url = 'http://bugs.launchpad.dev/%s/+bug/%s/comments/%s' % (
+           product.name, bugtask.bug.id, 1)
+        self.assertEqual(url, canonical_url(bug_message))
 
 
 def make_bug_comment(factory, *args, **kwargs):

@@ -31,11 +31,12 @@ __all__ = [
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
+    'can_add_package_task_to_bug',
+    'can_add_project_task_to_bug',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
     'get_visible_comments',
-    'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     ]
 
@@ -53,10 +54,6 @@ import urllib
 import urlparse
 
 from lazr.delegates import delegates
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
@@ -80,11 +77,7 @@ from zope import (
     )
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import (
-    IInputWidget,
-    InputErrors,
-    )
-from zope.app.form.utility import setUpWidget
+from zope.app.form.interfaces import InputErrors
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
@@ -137,15 +130,21 @@ from lp.app.browser.tales import (
     PersonFormatterAPI,
     )
 from lp.app.browser.vocabulary import vocabulary_filters
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
+    IPrivacy,
     IServiceUsage,
     )
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -170,7 +169,6 @@ from lp.bugs.browser.widgets.bugtask import (
     BugTaskTargetWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
-    NominationReviewActionWidget,
     )
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -196,7 +194,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
     IllegalTarget,
-    INominationsReviewTableBatchNavigator,
     IRemoveQuestionFromBugTaskForm,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
@@ -222,10 +219,6 @@ from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
-from lp.registry.enums import (
-    InformationType,
-    PROPRIETARY_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -246,10 +239,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    MilestoneVocabulary,
-    )
+from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -819,10 +809,19 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             '(assignee|importance|milestone|status)')
         interesting_match = re.compile(
             "^(%s|%s)$" % (bug_change_re, bugtask_change_re)).match
+
+        activity_items = [
+            activity_item for activity_item in activity
+            if interesting_match(activity_item.whatchanged) is not None]
+        # Pre-load the doers of the activities in one query.
+        person_ids = set(
+            activity_item.personID for activity_item in activity_items)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
         interesting_activity = tuple(
-            BugActivityItem(activity)
-            for activity in activity
-            if interesting_match(activity.whatchanged) is not None)
+            BugActivityItem(activity_item) for activity_item in activity_items)
+
         # This is a bit kludgy but it means that interesting_activity is
         # populated correctly for all subsequent calls.
         self._interesting_activity_cached_value = interesting_activity
@@ -2204,12 +2203,9 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
-            return (
-                '<span class="sprite flame">%d</span>'
-                % self.bugtask.bug.heat)
-        else:
-            return str(self.bugtask.bug.heat)
+        return (
+            '<span class="sprite flame">%d</span>'
+            % self.bugtask.bug.heat)
 
     @property
     def model(self):
@@ -2404,72 +2400,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return {'items': items}
 
 
-class NominatedBugReviewAction(EnumeratedType):
-    """Enumeration for nomination review actions"""
-
-    ACCEPT = Item("""
-        Accept
-
-        Accept the bug nomination.
-        """)
-
-    DECLINE = Item("""
-        Decline
-
-        Decline the bug nomination.
-        """)
-
-    NO_CHANGE = Item("""
-        No change
-
-        Do not change the status of the bug nomination.
-        """)
-
-
-class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
-    """Batch navigator for nominated bugtasks. """
-
-    implements(INominationsReviewTableBatchNavigator)
-
-    def __init__(self, tasks, request, columns_to_show, size,
-                 nomination_target, user):
-        BugListingBatchNavigator.__init__(
-            self, tasks, request, columns_to_show, size)
-        self.nomination_target = nomination_target
-        self.user = user
-
-    def _getListingItem(self, bugtask):
-        """See BugListingBatchNavigator."""
-        bugtask_listing_item = BugListingBatchNavigator._getListingItem(
-            self, bugtask)
-        bug_nomination = bugtask_listing_item.bug.getNominationFor(
-            self.nomination_target)
-        if self.user is None or not bug_nomination.canApprove(self.user):
-            return bugtask_listing_item
-
-        review_action_field = Choice(
-            __name__='review_action_%d' % bug_nomination.id,
-            vocabulary=NominatedBugReviewAction,
-            title=u'Review action', required=True)
-
-        # This is so setUpWidget expects a view, and so
-        # view.request. We're not passing a view but we still want it
-        # to work.
-        bugtask_listing_item.request = self.request
-
-        bugtask_listing_item.review_action_widget = CustomWidgetFactory(
-            NominationReviewActionWidget)
-        setUpWidget(
-            bugtask_listing_item,
-            'review_action',
-            review_action_field,
-            IInputWidget,
-            value=NominatedBugReviewAction.NO_CHANGE,
-            context=bug_nomination)
-
-        return bugtask_listing_item
-
-
 class IBugTaskSearchListingMenu(Interface):
     """A marker interface for the search listing navigation menu."""
 
@@ -2547,7 +2477,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     implements(IBugTaskSearchListingMenu)
 
     related_features = (
-        'bugs.dynamic_bug_listings.enabled',
         'bugs.dynamic_bug_listings.pre_fetch',
     )
 
@@ -2719,42 +2648,45 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
-            if not FeedsLayer.providedBy(self.request):
-                cache = IJSONRequestCache(self.request)
-                view_names = set(reg.name for reg
-                    in iter_view_registrations(self.__class__))
-                if len(view_names) != 1:
-                    raise AssertionError("Ambiguous view name.")
-                cache.objects['view_name'] = view_names.pop()
-                batch_navigator = self.search()
-                cache.objects['mustache_model'] = batch_navigator.model
-                cache.objects['field_visibility'] = (
-                    batch_navigator.field_visibility)
-                cache.objects['field_visibility_defaults'] = (
-                    batch_navigator.field_visibility_defaults)
-                cache.objects['cbl_cookie_name'] = (
-                    batch_navigator.getCookieName())
+        can_view = (IPrivacy(self.context, None) is None
+            or check_permission('launchpad.View', self.context))
+        if (can_view and
+            not FeedsLayer.providedBy(self.request) and
+            not self.request.form.get('advanced')):
+            cache = IJSONRequestCache(self.request)
+            view_names = set(reg.name for reg
+                in iter_view_registrations(self.__class__))
+            if len(view_names) != 1:
+                raise AssertionError("Ambiguous view name.")
+            cache.objects['view_name'] = view_names.pop()
+            batch_navigator = self.search()
+            cache.objects['mustache_model'] = batch_navigator.model
+            cache.objects['field_visibility'] = (
+                batch_navigator.field_visibility)
+            cache.objects['field_visibility_defaults'] = (
+                batch_navigator.field_visibility_defaults)
+            cache.objects['cbl_cookie_name'] = (
+                batch_navigator.getCookieName())
 
-                def _getBatchInfo(batch):
-                    if batch is None:
-                        return None
-                    return {'memo': batch.range_memo,
-                            'start': batch.startNumber() - 1}
+            def _getBatchInfo(batch):
+                if batch is None:
+                    return None
+                return {'memo': batch.range_memo,
+                        'start': batch.startNumber() - 1}
 
-                next_batch = batch_navigator.batch.nextBatch()
-                cache.objects['next'] = _getBatchInfo(next_batch)
-                prev_batch = batch_navigator.batch.prevBatch()
-                cache.objects['prev'] = _getBatchInfo(prev_batch)
-                cache.objects['total'] = batch_navigator.batch.total()
-                cache.objects['order_by'] = ','.join(
-                    get_sortorder_from_request(self.request))
-                cache.objects['forwards'] = (
-                    batch_navigator.batch.range_forwards)
-                last_batch = batch_navigator.batch.lastBatch()
-                cache.objects['last_start'] = last_batch.startNumber() - 1
-                cache.objects.update(_getBatchInfo(batch_navigator.batch))
-                cache.objects['sort_keys'] = SORT_KEYS
+            next_batch = batch_navigator.batch.nextBatch()
+            cache.objects['next'] = _getBatchInfo(next_batch)
+            prev_batch = batch_navigator.batch.prevBatch()
+            cache.objects['prev'] = _getBatchInfo(prev_batch)
+            cache.objects['total'] = batch_navigator.batch.total()
+            cache.objects['order_by'] = ','.join(
+                get_sortorder_from_request(self.request))
+            cache.objects['forwards'] = (
+                batch_navigator.batch.range_forwards)
+            last_batch = batch_navigator.batch.lastBatch()
+            cache.objects['last_start'] = last_batch.startNumber() - 1
+            cache.objects.update(_getBatchInfo(batch_navigator.batch))
+            cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
@@ -3396,11 +3328,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         else:
             return None
 
-    @cachedproperty
-    def dynamic_bug_listing_enabled(self):
-        """Feature flag: Can the bug listing be customized?"""
-        return bool(getFeatureFlag('bugs.dynamic_bug_listings.enabled'))
-
     @property
     def search_macro_title(self):
         """The search macro's title text."""
@@ -3420,14 +3347,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
-    def _getBatchNavigator(self, tasks):
-        """See BugTaskSearchListingView."""
-        batch_navigator = NominatedBugListingBatchNavigator(
-            tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size,
-            nomination_target=self.context, user=self.user)
-        return batch_navigator
-
     def search(self):
         """Return all the nominated tasks for this series."""
         if IDistroSeries.providedBy(self.context):
@@ -3440,60 +3359,6 @@ class BugNominationsView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, context=main_context,
             extra_params=dict(nominated_for=self.context))
-
-
-class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
-    """View for displaying a list of nominated bugs."""
-
-    def canApproveNominations(self, action=None):
-        """Whether the user can approve any of the shown nominations."""
-        return len(list(self.widgets)) > 0
-
-    def setUpFields(self):
-        """See LaunchpadFormView."""
-        # We set up the widgets ourselves.
-        self.form_fields = []
-
-    def setUpWidgets(self):
-        """See LaunchpadFormView."""
-        widgets_list = [
-            (True, bug_listing_item.review_action_widget)
-            for bug_listing_item in self.context.getBugListingItems()
-            if bug_listing_item.review_action_widget is not None]
-        self.widgets = formlib.form.Widgets(
-            widgets_list, len(self.prefix) + 1)
-
-    @action('Save changes', name='submit', condition=canApproveNominations)
-    def submit_action(self, action, data):
-        """Accept/Decline bug nominations."""
-        accepted = declined = 0
-
-        for name, review_action in data.items():
-            if review_action == NominatedBugReviewAction.NO_CHANGE:
-                continue
-            field = self.widgets[name].context
-            bug_nomination = field.context
-            if review_action == NominatedBugReviewAction.ACCEPT:
-                bug_nomination.approve(self.user)
-                accepted += 1
-            elif review_action == NominatedBugReviewAction.DECLINE:
-                bug_nomination.decline(self.user)
-                declined += 1
-            else:
-                raise AssertionError(
-                    'Unknown NominatedBugReviewAction: %r' % review_action)
-
-        if accepted > 0:
-            self.request.response.addInfoNotification(
-                '%d nomination(s) accepted' % accepted)
-        if declined > 0:
-            self.request.response.addInfoNotification(
-                '%d nomination(s) declined' % declined)
-
-        self.next_url = self.request.getURL()
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            self.next_url += '?%s' % query_string
 
 
 class BugTargetView(LaunchpadView):
@@ -3892,34 +3757,40 @@ class BugTasksAndNominationsView(LaunchpadView):
             return None
 
     def canAddProjectTask(self):
-        """Can a new bug task on a project be added to this bug?
-
-        If a bug has any bug tasks already, were it to be Proprietary or
-        Embargoed, it cannot be marked as also affecting any other
-        project, so return False.
-        """
-        bug = self.context
-        if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-            return True
-        return len(bug.bugtasks) == 0
+        return can_add_project_task_to_bug(self.context)
 
     def canAddPackageTask(self):
-        """Can a new bug task on a src pkg be added to this bug?
+        return can_add_package_task_to_bug(self.context)
 
-        If a bug has any existing bug tasks on a project, were it to
-        be Proprietary or Embargoed, then it cannot be marked as
-        affecting a package, so return False.
 
-        A task on a given package may still be illegal to add, but
-        this will be caught when bug.addTask() is attempted.
-        """
-        bug = self.context
-        if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-            return True
-        for pillar in bug.affected_pillars:
-            if IProduct.providedBy(pillar):
-                return False
+def can_add_project_task_to_bug(bug):
+    """Can a new bug task on a project be added to this bug?
+
+    If a bug has any bug tasks already, were it to be Proprietary or
+    Embargoed, it cannot be marked as also affecting any other
+    project, so return False.
+    """
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
         return True
+    return len(bug.bugtasks) == 0
+
+
+def can_add_package_task_to_bug(bug):
+    """Can a new bug task on a src pkg be added to this bug?
+
+    If a bug has any existing bug tasks on a project, were it to
+    be Proprietary or Embargoed, then it cannot be marked as
+    affecting a package, so return False.
+
+    A task on a given package may still be illegal to add, but
+    this will be caught when bug.addTask() is attempted.
+    """
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
+        return True
+    for pillar in bug.affected_pillars:
+        if IProduct.providedBy(pillar):
+            return False
+    return True
 
 
 class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,

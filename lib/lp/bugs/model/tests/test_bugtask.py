@@ -22,7 +22,10 @@ from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized as ZopeUnAuthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import (
@@ -57,7 +60,6 @@ from lp.bugs.scripts.bugtasktargetnamecaches import (
 from lp.bugs.tests.bug import create_old_bug
 from lp.registry.enums import (
     BugSharingPolicy,
-    InformationType,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -502,7 +504,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
             ' has_specification: False'])
 
         # a specification gets linked...
-        spec = getUtility(ISpecificationSet).all_specifications[0]
+        spec = getUtility(ISpecificationSet)._all_specifications[0]
         spec.linkBug(bug_two)
 
         # or a branch gets linked to the bug...

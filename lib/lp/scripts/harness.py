@@ -39,15 +39,15 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.projectgroup import ProjectGroup
-from lp.services.scripts import execute_zcml_for_scripts
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.webapp import canonical_url
 from lp.testing.factory import LaunchpadObjectFactory
 
 # Silence unused name warnings

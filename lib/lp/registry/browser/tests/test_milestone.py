@@ -5,18 +5,19 @@
 
 __metaclass__ = type
 
-from textwrap import dedent
-
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
-from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
@@ -184,6 +185,27 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
             BugTaskSearchParams(user=None))
         self.assertEqual(0, tasks.count())
 
+    def test_delete_all_bugtasks(self):
+        # When a milestone is deleted, all bugtasks are deleted.
+        milestone = self.factory.makeMilestone()
+        self.factory.makeBug(milestone=milestone)
+        self.factory.makeBug(
+            milestone=milestone, information_type=InformationType.USERDATA)
+        # Remove the APG the product owner has so he can't see the private bug.
+        ap = getUtility(IAccessPolicySource).find(
+            [(milestone.product, InformationType.USERDATA)]).one()
+        getUtility(IAccessPolicyGrantSource).revoke(
+            [(ap, milestone.product.owner)])
+        form = {
+            'field.actions.delete': 'Delete Milestone',
+            }
+        with person_logged_in(milestone.product.owner):
+            view = create_initialized_view(milestone, '+delete', form=form)
+        self.assertEqual([], view.errors)
+        tasks = milestone.product.development_focus.searchTasks(
+            BugTaskSearchParams(user=None))
+        self.assertEqual(0, tasks.count())
+
 
 class TestQueryCountBase(TestCaseWithFactory):
 
@@ -210,13 +232,6 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestProjectMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.owner = self.factory.makePerson(name='product-owner')
         self.product = self.factory.makeProduct(owner=self.owner)
         login_person(self.product.owner)
@@ -331,13 +346,6 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestProjectGroupMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.owner = self.factory.makePerson(name='product-owner')
         self.project_group = self.factory.makeProject(owner=self.owner)
         login_person(self.owner)
@@ -396,13 +404,6 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
 
     def setUp(self):
         super(TestDistributionMilestoneIndexQueryCount, self).setUp()
-        # Increase cache size so that the query counts aren't affected
-        # by objects being removed from the cache early.
-        config.push('storm-cache', dedent('''
-            [launchpad]
-            storm_cache_size: 1000
-            '''))
-        self.addCleanup(config.pop, 'storm-cache')
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.owner = self.factory.makePerson(name='test-owner')
         login_team(self.ubuntu.owner)

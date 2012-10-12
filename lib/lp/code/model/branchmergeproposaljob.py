@@ -89,6 +89,12 @@ from lp.codehosting.vfs import get_ro_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
@@ -101,12 +107,6 @@ from lp.services.job.runner import (
     )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import errorlog
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):

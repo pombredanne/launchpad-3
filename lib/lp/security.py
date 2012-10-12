@@ -14,13 +14,8 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
-    And,
-    Exists,
-    Or,
     Select,
-    SQL,
     Union,
-    With,
     )
 from zope.component import (
     getUtility,
@@ -176,7 +171,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.account import IAccount
@@ -996,49 +990,28 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             if len(intersection_teams) > 0:
                 return True
 
-            # There are a number of other conditions under which a private
-            # team may be visible. These are:
-            #  - All blueprints are public, so if the team is subscribed to
-            #    any blueprints, they are in a public role and hence visible.
-            #  - If the team is directly subscribed or assigned to any bugs
-            #    the user can see, the team should be visible.
-            #
-            # For efficiency, we do not want to perform several
-            # TeamParticipation joins and we only want to do the user visible
-            # bug filtering once. We use a With statement for the team
-            # participation check.
+            # Teams subscribed to blueprints are visible. This needs to
+            # be taught about privacy eventually.
+            specsubs = store.find(SpecificationSubscription, person=self.obj)
 
-            store = IStore(Person)
-            user_bugs_visible_filter = get_bug_privacy_filter(user.person)
-            teams_select = Select(SQL('team'), tables="teams")
-            blueprint_subscription_sql = Select(
-                1,
-                tables=SpecificationSubscription,
-                where=SpecificationSubscription.personID.is_in(teams_select))
-            visible_bug_sql = Select(
-                1,
-                tables=(BugTaskFlat,),
-                where=And(
-                    user_bugs_visible_filter,
-                    Or(
-                        BugTaskFlat.bug_id.is_in(
-                            Select(
-                                BugSubscription.bug_id,
-                                tables=(BugSubscription,),
-                                where=BugSubscription.person_id.is_in(
-                                    teams_select))),
-                        BugTaskFlat.assignee_id.is_in(teams_select))))
-            bugs = Union(blueprint_subscription_sql, visible_bug_sql, all=True)
-            with_teams = With('teams',
-                    Select(
-                        TeamParticipation.teamID,
-                        where=TeamParticipation.personID == self.obj.id)),
+            # Teams subscribed or assigned to bugs that the user can see
+            # are visible.
+            bugs = store.find(
+                BugTaskFlat,
+                get_bug_privacy_filter(user.person),
+                BugTaskFlat.bug_id.is_in(
+                    Union(
+                        Select(
+                            BugSubscription.bug_id,
+                            tables=(BugSubscription,),
+                            where=BugSubscription.person == self.obj),
+                        Select(
+                            BugTaskFlat.bug_id,
+                            tables=(BugTaskFlat,),
+                            where=BugTaskFlat.assignee == self.obj),
+                        all=True)))
 
-            rs = store.with_(with_teams).using(Person).find(
-                SQL("1"),
-                Exists(bugs)
-            )
-            if rs.any():
+            if not specsubs.is_empty() or not bugs.is_empty():
                 return True
         return False
 

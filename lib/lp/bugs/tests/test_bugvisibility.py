@@ -3,7 +3,7 @@
 
 """Tests for visibility of a bug."""
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,

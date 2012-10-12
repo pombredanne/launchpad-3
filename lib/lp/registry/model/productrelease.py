@@ -41,17 +41,18 @@ from lp.registry.interfaces.productrelease import (
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.propertycache import cachedproperty
 
 
 class ProductRelease(SQLBase):
@@ -71,9 +72,13 @@ class ProductRelease(SQLBase):
         notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin(
+    _files = SQLMultipleJoin(
         'ProductReleaseFile', joinColumn='productrelease',
         orderBy='-date_uploaded', prejoins=['productrelease'])
+
+    @cachedproperty
+    def files(self):
+        return self._files
 
     # properties
     @property
@@ -133,7 +138,7 @@ class ProductRelease(SQLBase):
 
     def destroySelf(self):
         """See `IProductRelease`."""
-        assert self.files.count() == 0, (
+        assert self._files.count() == 0, (
             "You can't delete a product release which has files associated "
             "with it.")
         SQLBase.destroySelf(self)

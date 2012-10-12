@@ -76,6 +76,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     PackageCopyJobType,
     )
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
@@ -602,7 +603,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
         send_email = copy_policy.send_email(self.target_archive)
-        copied_sources = do_copy(
+        copied_publications = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
@@ -612,16 +613,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             unembargo=self.unembargo)
 
         # Add a PackageDiff for this new upload if it has ancestry.
-        if copied_sources and not ancestry.is_empty():
-            from_spr = copied_sources[0].sourcepackagerelease
-            for ancestor in ancestry:
-                to_spr = ancestor.sourcepackagerelease
-                if from_spr != to_spr:
-                    try:
-                        to_spr.requestDiffTo(self.requester, from_spr)
-                    except PackageDiffAlreadyRequested:
-                        pass
+        if copied_publications and not ancestry.is_empty():
+            from_spr = None
+            for publication in copied_publications:
+                if ISourcePackagePublishingHistory.providedBy(publication):
+                    from_spr = publication.sourcepackagerelease
                     break
+            if from_spr:
+                for ancestor in ancestry:
+                    to_spr = ancestor.sourcepackagerelease
+                    if from_spr != to_spr:
+                        try:
+                            to_spr.requestDiffTo(self.requester, from_spr)
+                        except PackageDiffAlreadyRequested:
+                            pass
+                        break
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be

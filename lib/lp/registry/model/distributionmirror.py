@@ -71,6 +71,11 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
@@ -89,11 +94,6 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     urlappend,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
     )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (

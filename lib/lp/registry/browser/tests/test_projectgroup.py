@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for project group views."""
@@ -13,8 +13,12 @@ from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.enums import InformationType
+from lp.registry.browser.tests.test_product import make_product_form
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
@@ -111,3 +115,33 @@ class TestProjectGroupEditView(TestCaseWithFactory):
         browser.open(canonical_url(self.project_group, view_name='+edit'))
         url = canonical_url(self.project_group, view_name='+review')
         self.assertRaises(Unauthorized, browser.open, url)
+
+
+class TestProjectGroupAddProductViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type(self):
+        # Information type controls are provided when creating a project via a
+        # project group.
+        self.useFixture(
+            FeatureFixture({u'disclosure.private_projects.enabled': u'on'}))
+        form = make_product_form(action=1)
+        project = self.factory.makeProject()
+        with person_logged_in(project.owner):
+            view = create_initialized_view(project, '+newproduct', form=form)
+        self.assertIn('information_type_data',
+                      IJSONRequestCache(view.request).objects)
+        self.assertIsNot(None, view.view.form_fields.get('information_type'))
+
+    def test_information_type_saved(self):
+        # Setting information_type to PROPRIETARY via form actually works.
+        self.useFixture(
+            FeatureFixture({u'disclosure.private_projects.enabled': u'on'}))
+        project = self.factory.makeProject()
+        form = make_product_form(project.owner, action=2, proprietary=True)
+        with person_logged_in(project.owner):
+            view = create_initialized_view(project, '+newproduct', form=form)
+        self.assertEqual(0, len(view.view.errors))
+        product = getUtility(IProductSet).getByName(form['field.name'])
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)

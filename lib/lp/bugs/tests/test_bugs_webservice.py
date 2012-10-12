@@ -27,12 +27,10 @@ from testtools.matchers import (
 from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
@@ -399,35 +397,6 @@ class TestErrorHandling(TestCaseWithFactory):
 class BugSetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def test_default_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug according
-        # to the project's bugs are private by default rule.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc')
-        self.assertEqual('Private', bug.information_type)
-
-    def test_explicit_private_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug because the
-        # user commands it.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc',
-            private=True)
-        self.assertEqual('Private', bug.information_type)
 
     def test_default_sharing_policy_proprietary(self):
         # Verify the path through user submission, to MaloneApplication to

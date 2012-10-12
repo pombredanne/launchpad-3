@@ -40,11 +40,11 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from lazr.restful.fields import Reference
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -83,8 +83,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -111,6 +113,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
+    BranchTargetError,
     CannotUpgradeBranch,
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
@@ -125,13 +128,9 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.vocabularies import (
-    InformationTypeVocabulary,
-    UserTeamsParticipationPlusSelfVocabulary,
-    )
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -382,18 +381,14 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def edit_import(self):
         text = 'Edit import source or review import'
-        enabled = True
         enabled = (
             self.context.branch_type == BranchType.IMPORTED and
             check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
+        return Link('+edit-import', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def upgrade_branch(self):
-        enabled = False
-        if self.context.needs_upgrading:
-            enabled = True
+        enabled = self.context.needs_upgrading
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
@@ -664,7 +659,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def url_is_web(self):
         """True if an imported branch's URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN, BZR, GIT or HG code
+        # You should only be calling this if it's an SVN, BZR or GIT code
         # import
         assert self.context.code_import
         url = self.context.code_import.url
@@ -833,14 +828,29 @@ class BranchEditFormView(LaunchpadEditFormView):
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
+        if 'private' in data:
+            # Read only for display.
+            data.pop('private')
+        # We must process information type before target so that the any new
+        # information type is valid for the target.
+        if 'information_type' in data:
+            information_type = data.pop('information_type')
+            self.context.transitionToInformationType(
+                information_type, self.user)
         if 'target' in data:
             target = data.pop('target')
+            existing_junk = self.context.target.name == '+junk'
+            same_junk_status = target == '+junk' and existing_junk
             if target == '+junk':
                 target = None
-            if (target is None and self.context.target is not None
-                or target is not None and self.context.target is None
-                or target != self.context.target):
-                self.context.setTarget(self.user, project=target)
+            if not same_junk_status or (
+                target is not None and target != self.context.target):
+                try:
+                    self.context.setTarget(self.user, project=target)
+                except BranchTargetError, e:
+                    self.setFieldError('target', e.message)
+                    return
+
                 changed = True
                 if target:
                     self.request.response.addNotification(
@@ -848,15 +858,9 @@ class BranchEditFormView(LaunchpadEditFormView):
                         % (target.displayname, target.name))
                 else:
                     self.request.response.addNotification(
-                        "This branch is now a personal branch for %s"
-                        % self.context.owner.displayname)
-        if 'private' in data:
-            # Read only for display.
-            data.pop('private')
-        if 'information_type' in data:
-            information_type = data.pop('information_type')
-            self.context.transitionToInformationType(
-                information_type, self.user)
+                        "This branch is now a personal branch for %s (%s)"
+                        % (self.context.owner.displayname,
+                            self.context.owner.name))
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
@@ -887,11 +891,13 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
-        if not self.request.is_ajax:
-            return canonical_url(self.context)
+        if not self.request.is_ajax and not self.errors:
+            return self.cancel_url
         return None
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class BranchEditWhiteboardView(BranchEditFormView):

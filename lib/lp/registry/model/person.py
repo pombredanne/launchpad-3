@@ -109,6 +109,7 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -152,7 +153,6 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
@@ -249,15 +249,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -310,7 +306,6 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
@@ -561,8 +556,7 @@ class Person(
 
     def _set_account_status(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status = value
+        self.account.status = value
 
     # Deprecated - this value has moved to the Account table.
     # We provide this shim for backwards compatibility.
@@ -575,8 +569,7 @@ class Person(
 
     def _set_account_status_comment(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status_comment = value
+        self.account.status_comment = value
 
     # Deprecated - this value has moved to the Account table.
     # We provide this shim for backwards compatibility.
@@ -822,20 +815,7 @@ class Person(
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 
@@ -1161,29 +1141,23 @@ class Person(
         # Import here to work around a circular import problem.
         from lp.registry.model.product import Product
 
-        clauses = ["""
-            SELECT DISTINCT Product.id
-            FROM Product, TeamParticipation
-            WHERE TeamParticipation.person = %(person)s
-            AND owner = TeamParticipation.team
-            AND Product.active IS TRUE
-            """ % sqlvalues(person=self)]
+        clauses = [
+            Product.active == True,
+            Product._ownerID == TeamParticipation.teamID,
+            TeamParticipation.person == self,
+            ]
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
         if match_name:
-            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
-            quoted_query = quote(match_name)
             clauses.append(
-                """(Product.name LIKE %s OR
-                    Product.displayname LIKE %s OR
-                    fti @@ ftq(%s))""" % (like_query,
-                                          like_query,
-                                          quoted_query))
-        query = " AND ".join(clauses)
-        results = Product.select("""id IN (%s)""" % query,
-                                 orderBy=['displayname'])
-        return results
+                Or(
+                    Product.name.contains_string(match_name),
+                    Product.displayname.contains_string(match_name),
+                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
+        return IStore(Product).find(
+            Product, *clauses
+            ).config(distinct=True).order_by(Product.displayname)
 
     def isAnyPillarOwner(self):
         """See IPerson."""
@@ -2204,7 +2178,6 @@ class Person(
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
-            email = IMasterObject(email)
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
@@ -2259,7 +2232,7 @@ class Person(
         # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
+        self.preferredemail.status = EmailAddressStatus.NEW
         del get_property_cache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
@@ -2574,8 +2547,7 @@ class Person(
 
     def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
-        account = IMasterObject(self.account)
-        account.reactivate(comment)
+        self.account.reactivate(comment)
         self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
@@ -2587,7 +2559,6 @@ class Person(
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
-        email = IMasterObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError(
@@ -2602,7 +2573,7 @@ class Person(
         # recursively, however, and the email address may have just been
         # created. So we have to explicitly pull it from the master store
         # until we rewrite this 'icky mess.
-        preferred_email = IMasterStore(EmailAddress).find(
+        preferred_email = IStore(EmailAddress).find(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == EmailAddressStatus.PREFERRED).one()
@@ -2635,11 +2606,9 @@ class Person(
             and self.mailing_list.status != MailingListStatus.PURGED):
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            if mailing_list_email is not None:
-                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
-        all_addresses = IMasterStore(self).find(
+        all_addresses = IStore(EmailAddress).find(
             EmailAddress, EmailAddress.personID == self.id)
         for address in all_addresses:
             # Delete all email addresses that are not the preferred email
@@ -2651,12 +2620,11 @@ class Person(
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
-        email_address = IMasterStore(EmailAddress).find(
+        email_address = IStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
-            email_address.syncUpdate()
         del get_property_cache(self).preferredemail
 
     def setPreferredEmail(self, email):
@@ -2681,7 +2649,7 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-        existing_preferred_email = IMasterStore(EmailAddress).find(
+        existing_preferred_email = IStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
         if existing_preferred_email is not None:
@@ -2691,8 +2659,7 @@ class Person(
             original_recipients = None
 
         email = removeSecurityProxy(email)
-        IMasterObject(email).status = EmailAddressStatus.PREFERRED
-        IMasterObject(email).syncUpdate()
+        email.status = EmailAddressStatus.PREFERRED
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email

@@ -13,7 +13,7 @@ __all__ = [
 from lazr.restful.interfaces import IEntry
 from zope.component import getMultiAdapter
 
-from lp.registry.enums import InformationType
+from lp.app.enums import InformationType
 
 
 def bugcomment_to_entry(comment, version):

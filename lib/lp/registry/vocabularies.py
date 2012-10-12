@@ -31,7 +31,6 @@ __all__ = [
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
-    'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
     'DistroSeriesDifferencesVocabulary',
@@ -39,7 +38,6 @@ __all__ = [
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
-    'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NewPillarGranteeVocabulary',
@@ -65,9 +63,6 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.enum import IEnumeratedType
-from lazr.restful.interfaces import IReference
-from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -87,7 +82,6 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
-from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
@@ -109,10 +103,7 @@ from lp.registry.enums import (
     PersonVisibility,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    IDistributionSet,
-    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -145,11 +136,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackageInDatabase,
-    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -170,6 +157,11 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     quote,
@@ -193,12 +185,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import nearest
 from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
@@ -210,7 +197,6 @@ from lp.services.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     VocabularyFilter,
     )
-from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
@@ -533,6 +519,7 @@ class ValidPersonOrTeamVocabulary(
     # This is what subclasses must change if they want any extra filtering of
     # results.
     extra_clause = True
+    extra_tables = ()
 
     # Subclasses should override this property to allow null searches to
     # return all results.  If false, an empty result set is returned.
@@ -611,6 +598,7 @@ class ValidPersonOrTeamVocabulary(
                      SQL("%s.id = Person.id" % self.cache_table_name)),
                 ]
             tables.extend(private_tables)
+            tables.extend(self.extra_tables)
             result = self.store.using(*tables).find(
                 Person,
                 And(
@@ -718,6 +706,7 @@ class ValidPersonOrTeamVocabulary(
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, Account.id == Person.accountID),
                 ]
+            public_tables.extend(self.extra_tables)
 
             # If private_tables is empty, we are searching for all private
             # teams. We can simply append the private query component to the
@@ -836,7 +825,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             Person.merged == None
             )
 
-        tables = [Person] + private_tables
+        tables = [Person] + private_tables + list(self.extra_tables)
 
         if not text:
             query = And(base_query,
@@ -1018,10 +1007,14 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
         if user is None:
             self.extra_clause = False
         else:
-            self.extra_clause = AND(
-                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
-                TeamParticipation.person == user.id,
-                TeamParticipation.team == Person.id)
+            # TeamParticipation might already be used for private team
+            # access checks, so alias and join it separately here.
+            tp_alias = ClassAlias(TeamParticipation)
+            self.extra_tables = [
+                Join(
+                    tp_alias,
+                    And(tp_alias.teamID == Person.id,
+                        tp_alias.personID == user.id))]
 
 
 class PersonActiveMembershipVocabulary:
@@ -2094,175 +2087,3 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         # package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
-
-
-class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
-
-    implements(IHugeVocabulary)
-    displayname = 'Select a package'
-    step_title = 'Search by name or distro/name'
-    LIMIT = 60
-
-    def __init__(self, context):
-        self.context = context
-        # Avoid circular import issues.
-        from lp.answers.interfaces.question import IQuestion
-        if IReference.providedBy(context):
-            target = context.context.target
-        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
-            target = context.target
-        else:
-            target = context
-        try:
-            self.distribution = IDistribution(target)
-        except TypeError:
-            self.distribution = None
-        if IDistributionSourcePackage.providedBy(target):
-            self.dsp = target
-        else:
-            self.dsp = None
-
-    def __contains__(self, spn_or_dsp):
-        if spn_or_dsp == self.dsp:
-            # Historic values are always valid. The DSP used to
-            # initialize the vocabulary is always included.
-            return True
-        try:
-            self.toTerm(spn_or_dsp)
-            return True
-        except LookupError:
-            return False
-
-    def __iter__(self):
-        pass
-
-    def __len__(self):
-        pass
-
-    def setDistribution(self, distribution):
-        """Set the distribution after the vocabulary was instantiated."""
-        self.distribution = distribution
-
-    def getDistributionAndPackageName(self, text):
-        "Return the distribution and package name from the parsed text."
-        # Match the toTerm() format, but also use it to select a distribution.
-        distribution = None
-        if '/' in text:
-            distro_name, text = text.split('/', 1)
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
-        if distribution is None:
-            distribution = self.distribution
-        return distribution, text
-
-    def toTerm(self, spn_or_dsp, distribution=None):
-        """See `IVocabulary`."""
-        dsp = None
-        binary_names = None
-        if isinstance(spn_or_dsp, tuple):
-            # The DSP in DB was passed with its binary_names.
-            spn_or_dsp, binary_names = spn_or_dsp
-            if binary_names is not None:
-                binary_names = binary_names.split()
-        if IDistributionSourcePackage.providedBy(spn_or_dsp):
-            dsp = spn_or_dsp
-            distribution = spn_or_dsp.distribution
-        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
-            safe_hasattr(spn_or_dsp, 'distribution')
-            and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
-            # We use the hasattr checks rather than adaption because the
-            # DistributionSourcePackageInDatabase object is a little bit
-            # broken, and does not provide any interface.
-            distribution = spn_or_dsp.distribution
-            dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
-        else:
-            distribution = distribution or self.distribution
-            if distribution is not None and spn_or_dsp is not None:
-                dsp = distribution.getSourcePackage(spn_or_dsp)
-        if dsp is not None and (dsp == self.dsp or dsp.is_official):
-            if binary_names:
-                # Search already did the hard work of looking up binary names.
-                cache = get_property_cache(dsp)
-                cache.binary_names = binary_names
-            token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            return SimpleTerm(dsp, token, token)
-        raise LookupError(distribution, spn_or_dsp)
-
-    def getTerm(self, spn_or_dsp):
-        """See `IBaseVocabulary`."""
-        return self.toTerm(spn_or_dsp)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        distribution, package_name = self.getDistributionAndPackageName(token)
-        return self.toTerm(package_name, distribution)
-
-    def searchForTerms(self, query=None, vocab_filter=None):
-        """See `IHugeVocabulary`."""
-        if not query:
-            return EmptyResultSet()
-        distribution, query = self.getDistributionAndPackageName(query)
-        if distribution is None:
-            # This could failover to ubuntu, but that is non-obvious. The
-            # Python widget must set the default distribution and the JS
-            # widget must encourage the <distro>/<package> search format.
-            return EmptyResultSet()
-        search_term = unicode(query)
-        store = IStore(DistributionSourcePackageInDatabase)
-        # Construct the searchable text that could live in the DSP table.
-        # Limit the results to ensure the user could see all the batches.
-        # Rank only what is returned: exact source name, exact binary
-        # name, partial source name, and lastly partial binary name.
-        searchable_dsp = SQL("""
-            SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
-            FROM DistributionSourcePackage dsp
-                JOIN (
-                SELECT DISTINCT ON (spn.id)
-                    spn.id, spn.name, dspc.binpkgnames,
-                    CASE WHEN spn.name = ? THEN 100
-                        WHEN dspc.binpkgnames
-                            ~ ('(^| )' || ? || '( |$)') THEN 75
-                        WHEN spn.name
-                            ~ ('(^|.*-)' || ? || '(-|$)') THEN 50
-                        WHEN dspc.binpkgnames
-                            ~ ('(^|.*-)' || ? || '(-| |$)') THEN 25
-                        ELSE 1
-                        END AS rank
-                FROM SourcePackageName spn
-                    LEFT JOIN DistributionSourcePackageCache dspc
-                        ON dspc.sourcepackagename = spn.id
-                    LEFT JOIN Archive a ON dspc.archive = a.id
-                        AND a.purpose IN (?, ?)
-                WHERE
-                    spn.name like '%%' || ? || '%%'
-                    OR dspc.binpkgnames like '%%' || ? || '%%'
-                LIMIT ?
-                ) dsps ON dsp.sourcepackagename = dsps.id
-            WHERE
-                dsp.distribution = ?
-            ORDER BY rank DESC
-            """, (search_term, search_term, search_term, search_term,
-                  ArchivePurpose.PRIMARY.value, ArchivePurpose.PARTNER.value,
-                  search_term, search_term, self.LIMIT, distribution.id))
-        matching_with = With('SearchableDSP', searchable_dsp)
-        # It might be possible to return the source name and binary names to
-        # reduce the work of the picker adapter.
-        dsps = store.with_(matching_with).using(
-            SQL('SearchableDSP'), DistributionSourcePackageInDatabase).find(
-            (DistributionSourcePackageInDatabase, SQL('binpkgnames')),
-            SQL('DistributionSourcePackage.id = SearchableDSP.id'))
-
-        return CountableIterator(dsps.count(), dsps, self.toTerm)
-
-
-class InformationTypeVocabulary(SimpleVocabulary):
-
-    implements(IEnumeratedType)
-
-    def __init__(self, types):
-        terms = []
-        for type in types:
-            term = SimpleTerm(type, type.name, type.title)
-            term.name = type.name
-            term.description = type.description
-            terms.append(term)
-        super(InformationTypeVocabulary, self).__init__(terms)

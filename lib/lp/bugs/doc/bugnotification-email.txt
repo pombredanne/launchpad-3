@@ -36,7 +36,7 @@ that follow:
     ...        IBugDelta,
     ...        IBugSet,
     ...        )
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> from lp.registry.interfaces.person import IPersonSet
 
 

@@ -8,23 +8,23 @@ __all__ = []
 
 from email import message_from_string
 from textwrap import dedent
-import transaction
 import xmlrpclib
 
+import transaction
 from zope.component import getUtility
 
 from lp.registry.enums import TeamMembershipPolicy
-from lp.registry.tests.mailinglists_helper import new_team
+from lp.registry.interfaces.mailinglist import (
+    IMailingListSet,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
 from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonVisibility,
     )
-from lp.registry.interfaces.mailinglist import (
-    IMailingListSet,
-    MailingListStatus,
-    IMessageApprovalSet,
-    PostedMessageStatus,
-    )
+from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
     ENABLED,

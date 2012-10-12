@@ -17,11 +17,9 @@ from zope.interface import (
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
-    DistributionSourcePackageVocabulary,
     DistributionVocabulary,
     ProductVocabulary,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
@@ -119,15 +117,6 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertIs(None, getattr(self.widget, 'package_widget', None))
         self.assertIs(None, getattr(self.widget, 'product_widget', None))
 
-    def test_setUpSubWidgets_dsp_picker_feature_flag(self):
-        # The DistributionSourcePackageVocabulary is used when the
-        # disclosure.dsp_picker.enabled is true.
-        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            self.widget.setUpSubWidgets()
-        self.assertIsInstance(
-            self.widget.package_widget.context.vocabulary,
-            DistributionSourcePackageVocabulary)
-
     def test_setUpOptions_default_package_checked(self):
         # The radio button options are composed of the setup widgets with
         # the package widget set as the default.
@@ -188,24 +177,6 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # is selected and the package sub field has official spn.
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
-
-    def test_getInputValue_package_spn_dsp_picker_feature_flag(self):
-        # The field value is the package when the package radio button
-        # is selected and the package sub field has a official dsp.
-        self.widget.request = LaunchpadTestRequest(form=self.form)
-        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            self.widget.setUpSubWidgets()
-            self.assertEqual(self.package, self.widget.getInputValue())
-
-    def test_getInputValue_package_dsp_dsp_picker_feature_flag(self):
-        # The field value is the package when the package radio button
-        # is selected and the package sub field has valid input.
-        form = self.form
-        form['field.target.package'] = 'fnord/snarf'
-        self.widget.request = LaunchpadTestRequest(form=form)
-        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
-            self.widget.setUpSubWidgets()
-            self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_invalid(self):
         # An error is raised when the package is not published in the distro.

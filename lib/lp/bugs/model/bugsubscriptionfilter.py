@@ -11,8 +11,10 @@ __all__ = [
     'BugSubscriptionFilterTag',
     ]
 
+import httplib
 from itertools import chain
 
+from lazr.restful.declarations import error_status
 import pytz
 from storm.locals import (
     Bool,
@@ -25,6 +27,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import (
     IBugSubscriptionFilter,
@@ -34,7 +37,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
@@ -44,6 +46,7 @@ from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 
 
+@error_status(httplib.BAD_REQUEST)
 class MuteNotAllowed(Exception):
     """Raised when someone tries to mute a filter that can't be muted."""
 
@@ -252,6 +255,11 @@ class BugSubscriptionFilter(StormBase):
 
     def mute(self, person):
         """See `IBugSubscriptionFilter`."""
+        subscriber = self.structural_subscription.subscriber
+        if subscriber.is_team and subscriber.preferredemail:
+            raise MuteNotAllowed(
+                "This subscription cannot be muted because team %s has a "
+                "contact address." % subscriber.name)
         if not self.isMuteAllowed(person):
             raise MuteNotAllowed(
                 "This subscription cannot be muted for %s" % person.name)
