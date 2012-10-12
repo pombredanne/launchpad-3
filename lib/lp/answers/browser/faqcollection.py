@@ -127,7 +127,7 @@ class SearchFAQsView(LaunchpadFormView):
         quantity = 5
         faqs = self.context.searchFAQs(
             search_text=self.search_text, sort=FAQSort.NEWEST_FIRST)
-        return faqs[:quantity]
+        return list(faqs)[:quantity]
 
     @safe_action
     @action(_('Search'), name='search')

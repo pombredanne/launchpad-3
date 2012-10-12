@@ -356,7 +356,7 @@ It has one translatable product.
     >>> gnome = getUtility(IProjectGroupSet)['gnome']
     >>> gnome.has_translatable()
     True
-    >>> translatables = gnome.translatables()
+    >>> translatables = gnome.translatables
     >>> translatables.count()
     1
 

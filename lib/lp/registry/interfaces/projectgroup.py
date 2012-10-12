@@ -326,18 +326,14 @@ class IProjectGroupPublic(
         title=u"Search for possible duplicate bugs when a new bug is filed",
         required=False, readonly=True)
 
+    translatables = Attribute(
+        "An iterator over products that are translatable in LP")
+
     def getProduct(name):
         """Get a product with name `name`."""
 
     def getConfigurableProducts():
         """Get all products that can be edited by user."""
-
-    def translatables():
-        """Return an iterator over products that are translatable in LP.
-
-        Only products with IProduct.translations_usage set to
-        ServiceUsage.LAUNCHPAD are considered translatable.
-        """
 
     def has_translatable():
         """Return a boolean showing the existance of translatables products.
