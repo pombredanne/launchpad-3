@@ -355,10 +355,10 @@ class NewSpecificationTests:
             'field.summary': 'Test Blueprint Summary',
         }
 
-    def _assert_information_type_validation_error(self, product, form, owner):
+    def _assert_information_type_validation_error(self, context, form, owner):
         """Helper to check for invalid information type on submit."""
         with person_logged_in(owner):
-            view = create_initialized_view(product, '+addspec', form=form)
+            view = create_initialized_view(context, '+addspec', form=form)
             expected = (u'This information type is not permitted for'
                         u' this product')
             self.assertIn(expected, view.errors)
