@@ -756,9 +756,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3162,17 +3159,6 @@ INSERT INTO branchsubscription (id, person, branch, date_created, notification_l
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchvisibilitypolicy DISABLE TRIGGER ALL;
-
-INSERT INTO branchvisibilitypolicy (id, project, product, team, policy) VALUES (1, NULL, 16, NULL, 4);
-INSERT INTO branchvisibilitypolicy (id, project, product, team, policy) VALUES (2, NULL, 16, 64, 3);
-INSERT INTO branchvisibilitypolicy (id, project, product, team, policy) VALUES (3, NULL, 17, NULL, 4);
-INSERT INTO branchvisibilitypolicy (id, project, product, team, policy) VALUES (4, NULL, 17, 57, 3);
-
-
-ALTER TABLE branchvisibilitypolicy ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugactivity DISABLE TRIGGER ALL;
