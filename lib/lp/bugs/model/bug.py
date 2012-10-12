@@ -13,6 +13,7 @@ __all__ = [
     'BugSet',
     'BugTag',
     'FileBugData',
+    'generate_subscription_with',
     'get_also_notified_subscribers',
     'get_bug_tags_open_count',
     ]
@@ -54,6 +55,7 @@ from storm.expr import (
     SQL,
     Sum,
     Union,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -1056,36 +1058,21 @@ class Bug(SQLBase, InformationTypeMixin):
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
-        return DecoratedResultSet(Store.of(self).find(
+        with_statement = generate_subscription_with(self, person)
+        store = Store.of(self).with_(with_statement)
+        return DecoratedResultSet(store.find(
              # Return people and subscriptions
             (Person, BugSubscription),
-            # For this bug or its duplicates
-            Or(
-                Bug.id == self.id,
-                Bug.duplicateof == self.id),
-            # Get subscriptions for these bugs
-            BugSubscription.bug_id == Bug.id,
-            # Filter by subscriptions to any team person is in.
-            # Note that teamparticipation includes self-participation entries
-            # (person X is in the team X)
-            TeamParticipation.person == person.id,
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""TeamParticipation.team = BugSubscription.person"""),
-            # Join in the Person rows we want
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""Person.id = TeamParticipation.team"""),
+            BugSubscription.id.is_in(
+                SQL('SELECT bugsubscriptions.id FROM bugsubscriptions')),
+            Person.id == BugSubscription.person_id,
             ).order_by(Person.name).config(
                 distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
         """See `IBug`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BugSubscription,
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
@@ -2844,3 +2831,18 @@ class BugMute(StormBase):
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
+
+def generate_subscription_with(bug, person):
+    return [
+        With('all_bugsubscriptions', Select(
+            (BugSubscription.id, BugSubscription.person_id),
+            tables=[BugSubscription, Join(
+                Bug, Bug.id == BugSubscription.bug_id)],
+            where=Or(Bug.id == bug.id, Bug.duplicateofID == bug.id))),
+        With('bugsubscriptions', Select(
+            SQL('all_bugsubscriptions.id'),
+            tables=[
+                SQL('all_bugsubscriptions'), Join(
+                    TeamParticipation, TeamParticipation.teamID == SQL(
+                        'all_bugsubscriptions.person'))],
+            where=[TeamParticipation.personID == person.id]))]

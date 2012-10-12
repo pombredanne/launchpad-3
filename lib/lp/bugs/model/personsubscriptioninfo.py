@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,8 +6,9 @@ __all__ = [
     'PersonSubscriptions',
     ]
 
-from storm.expr import Or
+from storm.expr import SQL
 from storm.store import Store
+from zope.component import getUtility
 from zope.interface import implements
 from zope.proxy import sameProxiedObjects
 
@@ -25,11 +26,15 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.bugs.model.bug import (
     Bug,
     BugMute,
+    generate_subscription_with,
     )
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
+from lp.registry.model.product import Product
+from lp.services.database.bulk import load_related
 
 
 class RealSubscriptionInfo:
@@ -96,8 +101,8 @@ class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
             person, administrated_team_ids)
         self._principal_pillar_to_info = {}
 
-    def _add_item_to_collection(self,
-                                collection, principal, bug, pillar, task):
+    def _add_item_to_collection(self, collection, principal, bug, pillar,
+                                task):
         key = (principal, pillar)
         info = self._principal_pillar_to_info.get(key)
         if info is None:
@@ -118,8 +123,8 @@ class RealSubscriptionInfoCollection(
             person, administrated_team_ids)
         self._principal_bug_to_infos = {}
 
-    def _add_item_to_collection(self, collection, principal,
-                                bug, subscription):
+    def _add_item_to_collection(self, collection, principal, bug,
+                                subscription):
         info = RealSubscriptionInfo(principal, bug, subscription)
         key = (principal, bug)
         infos = self._principal_bug_to_infos.get(key)
@@ -177,15 +182,13 @@ class PersonSubscriptions(object):
         # Fetch all information for direct and duplicate
         # subscriptions (including indirect through team
         # membership) in a single query.
-        store = Store.of(person)
-        bug_id_options = [Bug.id == bug.id, Bug.duplicateofID == bug.id]
-        info = store.find(
+        with_statement = generate_subscription_with(bug, person)
+        info = Store.of(person).with_(with_statement).find(
             (BugSubscription, Bug, Person),
-            BugSubscription.bug == Bug.id,
-            BugSubscription.person == Person.id,
-            Or(*bug_id_options),
-            TeamParticipation.personID == person.id,
-            TeamParticipation.teamID == Person.id)
+            BugSubscription.id.is_in(
+                SQL('SELECT bugsubscriptions.id FROM bugsubscriptions')),
+            Person.id == BugSubscription.person_id,
+            Bug.id == BugSubscription.bug_id)
 
         direct = RealSubscriptionInfoCollection(
             self.person, self.administrated_team_ids)
@@ -202,30 +205,30 @@ class PersonSubscriptions(object):
                 collection = direct
             collection.add(
                 subscriber, subscribed_bug, subscription)
+        # Preload bug owners, then all pillars.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [bug.ownerID for bug in bugs]))
+        all_tasks = [task for task in bug.bugtasks for bug in bugs] 
+        load_related(Product, all_tasks, ['productID'])
+        load_related(Distribution, all_tasks, ['distributionID'])
         for bug in bugs:
             # indicate the reporter and bug_supervisor
             duplicates.annotateReporter(bug, bug.owner)
             direct.annotateReporter(bug, bug.owner)
-            for task in bug.bugtasks:
-                # Get bug_supervisor.
-                pillar = self._getTaskPillar(task)
-                duplicates.annotateBugTaskResponsibilities(
-                    task, pillar, pillar.bug_supervisor)
-                direct.annotateBugTaskResponsibilities(
-                    task, pillar, pillar.bug_supervisor)
+        for task in all_tasks:
+            # Get bug_supervisor.
+            pillar = self._getTaskPillar(task)
+            duplicates.annotateBugTaskResponsibilities(
+                task, pillar, pillar.bug_supervisor)
+            direct.annotateBugTaskResponsibilities(
+                task, pillar, pillar.bug_supervisor)
         return (direct, duplicates)
 
     def _isMuted(self, person, bug):
         store = Store.of(person)
-        mutes = store.find(
-            BugMute,
-            BugMute.bug == bug,
-            BugMute.person == person)
-        is_muted = mutes.one()
-        if is_muted is None:
-            return False
-        else:
-            return True
+        is_muted = store.find(
+            BugMute, BugMute.bug == bug, BugMute.person == person).one()
+        return is_muted is not None
 
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
