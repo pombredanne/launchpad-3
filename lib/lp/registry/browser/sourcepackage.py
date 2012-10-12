@@ -303,7 +303,11 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         self.request.form['product'] = data['product']
 
     def validateStep(self, data):
-        if data['product'].private:
+        super(SourcePackageChangeUpstreamStepOne, self).validateStep(data)
+        product = data.get('product')
+        if product is None:
+            return
+        if product.private:
             self.setFieldError('product',
                 'Only Public projects can be packaged, not %s.' %
                 data['product'].information_type.title)
