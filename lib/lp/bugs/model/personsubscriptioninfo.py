@@ -225,8 +225,7 @@ class PersonSubscriptions(object):
         return (direct, duplicates)
 
     def _isMuted(self, person, bug):
-        store = Store.of(person)
-        is_muted = store.find(
+        is_muted = Store.of(person).find(
             BugMute, BugMute.bug == bug, BugMute.person == person).one()
         return is_muted is not None
 
