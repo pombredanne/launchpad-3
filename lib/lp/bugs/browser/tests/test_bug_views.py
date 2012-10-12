@@ -269,8 +269,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             self.assertFalse(self.bug.isSubscribed(person))
             self.assertFalse(self.bug.isMuted(person))
             self.assertFalse(
-                self.bug.personIsAlsoNotifiedSubscriber(
-                    person))
+                self.bug.personIsAlsoNotifiedSubscriber(person))
             view = create_initialized_view(
                 self.bug, name="+portlet-subscription")
             self.assertFalse(view.user_should_see_mute_link)
@@ -305,14 +304,31 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(person))
             view = create_initialized_view(
                 self.bug, name="+portlet-subscription")
-            self.assertTrue(view.user_should_see_mute_link,
-                            "User should see mute link.")
+            self.assertTrue(
+                view.user_should_see_mute_link, "User should see mute link.")
             contents = view.render()
-            self.assertTrue('mute_subscription' in contents,
-                            "'mute_subscription' not in contents.")
+            self.assertTrue(
+                'mute_subscription' in contents,
+                "'mute_subscription' not in contents.")
             self.assertFalse(
-                self._hasCSSClass(
-                    contents, 'mute-link-container', 'hidden'))
+                self._hasCSSClass(contents, 'mute-link-container', 'hidden'))
+
+    def test_bug_portlet_subscription_query_count(self):
+        # Bug:+portlet-subscription doesn't make O(n) queries based on the
+        # number of duplicate bugs.
+        user = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        for n in range(20):
+            dupe = self.factory.makeBug()
+            removeSecurityProxy(dupe)._markAsDuplicate(bug)
+            removeSecurityProxy(dupe).subscribe(user, dupe.owner)
+        Store.of(bug).invalidate()
+        with person_logged_in(user):
+            with StormStatementRecorder() as recorder:
+                view = create_initialized_view(
+                    bug, name='+portlet-subscription', principal=user)
+                view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(21)))
 
 
 class TestBugSecrecyViews(TestCaseWithFactory):
@@ -328,12 +344,11 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         if bug is None:
             bug = self.factory.makeBug()
         with person_logged_in(person):
-            view = create_initialized_view(
+            return create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
                     'field.information_type': 'USERDATA',
                     'field.actions.change': 'Change',
                     }, request=request)
-            return view
 
     def test_notification_shown_if_marking_private_and_not_subscribed(self):
         # If a user who is not subscribed to a bug marks that bug as

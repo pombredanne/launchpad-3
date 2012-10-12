@@ -13,6 +13,7 @@ __all__ = [
     'BugSet',
     'BugTag',
     'FileBugData',
+    'generate_subscription_with',
     'get_also_notified_subscribers',
     'get_bug_tags_open_count',
     ]
@@ -54,6 +55,7 @@ from storm.expr import (
     SQL,
     Sum,
     Union,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -1056,36 +1058,21 @@ class Bug(SQLBase, InformationTypeMixin):
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
-        return DecoratedResultSet(Store.of(self).find(
+        with_statement = generate_subscription_with(self, person)
+        store = Store.of(self).with_(with_statement)
+        return DecoratedResultSet(store.find(
              # Return people and subscriptions
             (Person, BugSubscription),
-            # For this bug or its duplicates
-            Or(
-                Bug.id == self.id,
-                Bug.duplicateof == self.id),
-            # Get subscriptions for these bugs
-            BugSubscription.bug_id == Bug.id,
-            # Filter by subscriptions to any team person is in.
-            # Note that teamparticipation includes self-participation entries
-            # (person X is in the team X)
-            TeamParticipation.person == person.id,
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""TeamParticipation.team = BugSubscription.person"""),
-            # Join in the Person rows we want
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""Person.id = TeamParticipation.team"""),
+            BugSubscription.id.is_in(
+                SQL('SELECT bugsubscriptions.id FROM bugsubscriptions')),
+            Person.id == BugSubscription.person_id,
             ).order_by(Person.name).config(
                 distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
         """See `IBug`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BugSubscription,
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
@@ -2017,13 +2004,8 @@ class Bug(SQLBase, InformationTypeMixin):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        pillars = list(self.affected_pillars)
-        service = getUtility(IService, 'sharing')
-        for pillar in pillars:
-            if service.checkPillarAccess(
-                    pillar, InformationType.USERDATA, user):
-                return True
-        return False
+        return getUtility(IService, 'sharing').checkPillarAccess(
+            self.affected_pillars, InformationType.USERDATA, user)
 
     def linkHWSubmission(self, submission):
         """See `IBug`."""
@@ -2626,20 +2608,6 @@ class BugSet:
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
-        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
-        # non-security bugs, this test might be simplified to checking
-        # params.private.
-        if (IProduct.providedBy(params.target) and params.target.private_bugs
-            and params.target.bug_sharing_policy is None
-            and params.information_type not in SECURITY_INFORMATION_TYPES):
-            # Subscribe the bug supervisor to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.target.bug_supervisor:
-                bug.subscribe(params.target.bug_supervisor, params.owner)
-            else:
-                bug.subscribe(params.target.owner, params.owner)
-
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)
         # Subscribe other users.
@@ -2849,3 +2817,19 @@ class BugMute(StormBase):
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
+
+
+def generate_subscription_with(bug, person):
+    return [
+        With('all_bugsubscriptions', Select(
+            (BugSubscription.id, BugSubscription.person_id),
+            tables=[
+                BugSubscription, Join(Bug, Bug.id == BugSubscription.bug_id)],
+            where=Or(Bug.id == bug.id, Bug.duplicateofID == bug.id))),
+        With('bugsubscriptions', Select(
+            SQL('all_bugsubscriptions.id'),
+            tables=[
+                SQL('all_bugsubscriptions'),
+                Join(TeamParticipation, TeamParticipation.teamID == SQL(
+                    'all_bugsubscriptions.person'))],
+            where=[TeamParticipation.personID == person.id]))]

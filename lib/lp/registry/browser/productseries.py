@@ -883,8 +883,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             widget, vocab.BZR_SVN, current_value, 'SVN')
         self.rcs_type_git = render_radio_widget_part(
             widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render_radio_widget_part(
-            widget, vocab.HG, current_value)
         self.rcs_type_bzr = render_radio_widget_part(
             widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
@@ -1104,8 +1102,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         return branch
 
 
-class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
-                                  ProductSeriesView,
+class ProductSeriesLinkBranchView(ReturnToReferrerMixin, ProductSeriesView,
                                   LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
@@ -1118,10 +1115,7 @@ class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
         return 'Link an existing branch to %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):

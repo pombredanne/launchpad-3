@@ -63,7 +63,6 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -108,8 +107,7 @@ from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
-                   KarmaContextMixin, BranchVisibilityPolicyMixin,
-                   StructuralSubscriptionTargetMixin,
+                   KarmaContextMixin, StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin,
                    HasMilestonesMixin, HasDriversMixin,
                    TranslationPolicyMixin):

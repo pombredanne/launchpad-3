@@ -26,7 +26,6 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
-    'ProductPrivateBugsMixin',
     'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
@@ -104,8 +103,8 @@ from lp.app.browser.tales import (
     )
 from lp.app.enums import (
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -428,7 +427,6 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
-        'branchvisibility',
         'downloads',
         ]
 
@@ -443,11 +441,6 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text)
 
 
 class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
@@ -552,7 +545,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branchvisibility',
         'rdf',
         'branding',
         'view_recipes',
@@ -603,11 +595,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text, icon='info')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branchvisibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
@@ -1377,37 +1364,6 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
-class ProductPrivateBugsMixin():
-    """A mixin for setting the product private_bugs field."""
-    def setUpFields(self):
-        # private_bugs is readonly since we are using a mutator but we need
-        # to edit it on the form.
-        super(ProductPrivateBugsMixin, self).setUpFields()
-        self.form_fields = self.form_fields.omit('private_bugs')
-        private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
-        self.form_fields += form.Fields(private_bugs, render_context=True)
-
-    def validate(self, data):
-        super(ProductPrivateBugsMixin, self).validate(data)
-        private_bugs = data.get('private_bugs')
-        if private_bugs is None:
-            return
-        try:
-            self.context.checkPrivateBugsTransitionAllowed(
-                private_bugs, self.user)
-        except Exception as e:
-            self.setFieldError('private_bugs', e.message)
-
-    def updateContextFromData(self, data, context=None, notify_modified=True):
-        # private_bugs uses a mutator to check permissions, so it needs to
-        # be handled separately.
-        if 'private_bugs' in data:
-            self.context.setPrivateBugs(data['private_bugs'], self.user)
-            del data['private_bugs']
-        parent = super(ProductPrivateBugsMixin, self)
-        return parent.updateContextFromData(data, context, notify_modified)
-
-
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1422,6 +1378,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "description",
         "project",
         "homepageurl",
+        "information_type",
         "sourceforgeproject",
         "freshmeatproject",
         "wikiurl",
@@ -1434,11 +1391,40 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        if self.context.active:
+            return canonical_url(self.context)
+        else:
+            return canonical_url(getUtility(IProductSet))
+
+    cancel_url = next_url
 
     @property
     def page_title(self):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(cache,
+                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProductEditView, self).initialize()
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductEditView, self).setUpFields()
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects:
+            self.form_fields = self.form_fields.omit('information_type')
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -1453,16 +1439,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        if self.context.active:
-            return canonical_url(self.context)
-        else:
-            return canonical_url(getUtility(IProductSet))
-
-    cancel_url = next_url
 
 
 class ProductValidationMixin:
@@ -1479,8 +1455,7 @@ class ProductValidationMixin:
                         canonical_url(self.context, view_name='+packages')))
 
 
-class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
-                       ProductValidationMixin):
+class ProductAdminView(ProductEditView, ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
     default_field_names = [
@@ -1488,7 +1463,6 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         "owner",
         "active",
         "autoupdate",
-        "private_bugs",
         ]
 
     @property
@@ -1557,15 +1531,14 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ReturnToReferrerMixin, ProductPrivateBugsMixin,
-                               ProductEditView, ProductValidationMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin, ProductEditView,
+                               ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "project_reviewed",
         "license_approved",
         "active",
-        "private_bugs",
         "reviewer_whiteboard",
         ]
 
@@ -1989,6 +1962,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             'driver': self.user.name,
             'bug_supervisor': self.user.name,
             'owner': self.user.name,
+            'information_type': InformationType.PUBLIC,
         }
 
     def setUpFields(self):

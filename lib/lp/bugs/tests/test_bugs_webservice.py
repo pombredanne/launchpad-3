@@ -400,37 +400,6 @@ class BugSetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug according
-        # to the project's bugs are private by default rule.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        target_url = api_url(project)
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=target_url, title='title', description='desc')
-        self.assertEqual('Private', bug.information_type)
-
-    def test_explicit_private_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug because the
-        # user commands it.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        target_url = api_url(project)
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=target_url, title='title', description='desc',
-            private=True)
-        self.assertEqual('Private', bug.information_type)
-
     def test_default_sharing_policy_proprietary(self):
         # Verify the path through user submission, to MaloneApplication to
         # BugSet, and back to the user creates a private bug according

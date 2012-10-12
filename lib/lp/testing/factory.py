@@ -494,7 +494,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
+        if rcstype in ['svn', 'bzr-svn', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -963,10 +963,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None, specification_sharing_policy=None,
-        information_type=None):
+        translations_usage=None, bug_supervisor=None, driver=None, icon=None,
+        bug_sharing_policy=None, branch_sharing_policy=None,
+        specification_sharing_policy=None, information_type=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -1009,8 +1008,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if private_bugs:
-            naked_product.private_bugs = private_bugs
         if ((branch_sharing_policy and
             branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
             (bug_sharing_policy and
@@ -1028,20 +1025,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 specification_sharing_policy)
         if information_type is not None:
             naked_product.information_type = information_type
-        return product
-
-    def makeLegacyProduct(self, **kwargs):
-        # Create a product which does not have any of the new bug and branch
-        # sharing policies set. New products have these set to default values
-        # but we need to test for existing products which have not yet been
-        # migrated.
-        # XXX This method can be removed when branch visibility policy dies.
-        product = self.makeProduct(**kwargs)
-        # Since createProduct() doesn't create PRIVATESECURITY/USERDATA.
-        removeSecurityProxy(product)._ensurePolicies([
-            InformationType.PRIVATESECURITY, InformationType.USERDATA])
-        removeSecurityProxy(product).bug_sharing_policy = None
-        removeSecurityProxy(product).branch_sharing_policy = None
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -2251,7 +2234,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None,
+                       git_repo_url=None, 
                        bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
@@ -2261,7 +2244,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         unique URL.
         """
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is bzr_branch_url is None):
+            bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2287,11 +2270,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url, review_status=review_status)
-        elif hg_repo_url is not None:
-            return code_import_set.new(
-                registrant, target, branch_name,
-                rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
             return code_import_set.new(
                 registrant, target, branch_name,
@@ -4217,10 +4195,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_version=package_version, requester=requester)
 
     def makeAccessPolicy(self, pillar=None,
-                         type=InformationType.PROPRIETARY):
+                         type=InformationType.PROPRIETARY,
+                         check_existing=False):
         if pillar is None:
             pillar = self.makeProduct()
-        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        policy_source = getUtility(IAccessPolicySource)
+        if check_existing:
+            policy = policy_source.find([(pillar, type)]).one()
+            if policy is not None:
+                return policy
+        policies = policy_source.create([(pillar, type)])
         return policies[0]
 
     def makeAccessArtifact(self, concrete=None):
