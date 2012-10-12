@@ -354,14 +354,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         sourcepackagename matches (SQL LIKE).
         """
 
-    def retryDepWaiting(distroarchseries):
-        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
-
-        This method will update all the dependency lines of all MANUALDEPWAIT
-        records in the given architecture and those with all dependencies
-        satisfied at this point will be automatically retried and re-scored.
-        """
-
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):
         """Return all builds related with the given list of source releases.

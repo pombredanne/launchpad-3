@@ -115,7 +115,8 @@ class CodeImport(SQLBase):
             RevisionControlSystems.BZR:
                 config.codeimport.default_interval_bzr,
             }
-        seconds = default_interval_dict[self.rcs_type]
+        # The default can be removed when HG is fully purged.
+        seconds = default_interval_dict.get(self.rcs_type, 21600)
         return timedelta(seconds=seconds)
 
     import_job = Reference("<primary key>", "CodeImportJob.code_importID",
@@ -131,6 +132,7 @@ class CodeImport(SQLBase):
             RevisionControlSystems.SVN,
             RevisionControlSystems.GIT,
             RevisionControlSystems.BZR_SVN,
+            RevisionControlSystems.HG,
             RevisionControlSystems.BZR):
             return self.url
         else:

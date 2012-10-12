@@ -218,11 +218,14 @@ class BugNominationEditView(LaunchpadFormView):
     field_names = []
 
     @property
-    def title(self):
+    def label(self):
         return 'Approve or decline nomination for bug #%d in %s' % (
             self.context.bug.id, self.context.target.bugtargetdisplayname)
-    label = title
-    page_title = title
+
+    @property
+    def page_title(self):
+        text = 'Review nomination for %s'
+        return text % self.context.target.bugtargetdisplayname
 
     def initialize(self):
         self.current_bugtask = getUtility(ILaunchBag).bugtask

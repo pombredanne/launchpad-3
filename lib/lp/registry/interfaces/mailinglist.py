@@ -834,13 +834,6 @@ class IHeldMessageDetails(Interface):
         description=_('The RFC 2822 Subject header.'),
         required=True, readonly=True)
 
-    sender = Text(
-        title=_('Message author'),
-        description=_('The message originator (i.e. author), formatted as '
-                      'per RFC 2822 and derived from the RFC 2822 originator '
-                      'fields From and Reply-To.  This is a unicode string.'),
-        required=True, readonly=True)
-
     author = Object(
         schema=IPerson,
         title=_('Message author'),
@@ -855,12 +848,6 @@ class IHeldMessageDetails(Interface):
     body = Text(
         title=_('Plain text message body'),
         description=_('The message body as plain text.'),
-        required=True, readonly=True)
-
-    email_message = Text(
-        title=_('The email message object'),
-        description=_('The email.message.Message object created from the '
-                      "original message's raw text."),
         required=True, readonly=True)
 
 

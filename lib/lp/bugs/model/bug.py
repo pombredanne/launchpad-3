@@ -2608,20 +2608,6 @@ class BugSet:
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
-        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
-        # non-security bugs, this test might be simplified to checking
-        # params.private.
-        if (IProduct.providedBy(params.target) and params.target.private_bugs
-            and params.target.bug_sharing_policy is None
-            and params.information_type not in SECURITY_INFORMATION_TYPES):
-            # Subscribe the bug supervisor to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.target.bug_supervisor:
-                bug.subscribe(params.target.bug_supervisor, params.owner)
-            else:
-                bug.subscribe(params.target.owner, params.owner)
-
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)
         # Subscribe other users.

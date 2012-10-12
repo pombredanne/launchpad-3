@@ -14,13 +14,8 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
-    And,
-    Exists,
-    Or,
     Select,
-    SQL,
     Union,
-    With,
     )
 from zope.component import (
     getUtility,
@@ -176,7 +171,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.account import IAccount
