@@ -37,6 +37,7 @@ from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlappend
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
@@ -553,27 +554,20 @@ class TestProductTraversal(TestCaseWithFactory, TraversalMixin):
             self.assertRaises(
                 NotFound, self.traverse_to_inactive_proprietary_product)
 
-    def check_admin_access(self, user):
-        with person_logged_in(user):
-            self.traverse_to_active_public_product()
-            self.traverse_to_inactive_public_product()
-            self.traverse_to_active_proprietary_product()
-            self.traverse_to_inactive_proprietary_product()
+    def check_admin_access(self):
+        self.traverse_to_active_public_product()
+        self.traverse_to_inactive_public_product()
+        self.traverse_to_active_proprietary_product()
+        self.traverse_to_inactive_proprietary_product()
 
     def test_access_for_persons_with_special_permissions(self):
         # Admins have access all products, including inactive and propretary
         # products.
-        self.check_admin_access(getUtility(IPersonSet).getByName('name16'))
+        with celebrity_logged_in('admin'):
+            self.check_admin_access()
         # Registry experts can access to all products.
-        registry_expert = self.factory.makePerson()
-        registry = getUtility(ILaunchpadCelebrities).registry_experts
-        with person_logged_in(registry.teamowner):
-            registry.addMember(registry_expert, registry.teamowner)
-        self.check_admin_access(registry_expert)
+        with celebrity_logged_in('registry_experts'):
+            self.check_admin_access()
         # Commercial admins have access to all products.
-        commercial_admin = self.factory.makePerson()
-        commercial_admins = getUtility(ILaunchpadCelebrities).commercial_admin
-        with person_logged_in(commercial_admins.teamowner):
-            commercial_admins.addMember(
-                commercial_admin, commercial_admins.teamowner)
-        self.check_admin_access(registry_expert)
+        with celebrity_logged_in('commercial_admin'):
+            self.check_admin_access()

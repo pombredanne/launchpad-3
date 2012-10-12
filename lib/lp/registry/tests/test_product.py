@@ -734,23 +734,14 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
         # Admins can access proprietary products.
-        with person_logged_in(getUtility(IPersonSet).getByName('name16')):
+        with celebrity_logged_in('admin'):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        registry_expert = self.factory.makePerson()
-        registry = getUtility(ILaunchpadCelebrities).registry_experts
-        with person_logged_in(registry.teamowner):
-            registry.addMember(registry_expert, registry.teamowner)
-        with person_logged_in(registry_expert):
+        with celebrity_logged_in('registry_experts'):
             for attribute_name in names:
                 getattr(product, attribute_name)
         # Commercial admins have access to all products.
-        commercial_admin = self.factory.makePerson()
-        commercial_admins = getUtility(ILaunchpadCelebrities).commercial_admin
-        with person_logged_in(commercial_admins.teamowner):
-            commercial_admins.addMember(
-                commercial_admin, commercial_admins.teamowner)
-        with person_logged_in(commercial_admin):
+        with celebrity_logged_in('commercial_admin'):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
