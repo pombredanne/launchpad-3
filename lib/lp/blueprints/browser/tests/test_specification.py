@@ -472,8 +472,8 @@ class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
     expected_keys = set(['PUBLIC'])
 
     def createInitializedView(self):
-        self.context = self.factory.makeDistribution()
-        return create_initialized_view(self.context, '+addspec')
+        distro = self.factory.makeDistribution()
+        return create_initialized_view(distro, '+addspec')
 
 
 class TestNewSpecificationInformationType(BrowserTestCase):
