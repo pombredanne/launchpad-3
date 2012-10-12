@@ -175,6 +175,25 @@ class BugNominationTestCase(TestCaseWithFactory):
         self.assertEqual(date_decided, nomination.date_decided)
         self.assertEqual(series.product.owner, nomination.decider)
 
+    def test_approve_distroseries_source_package_then_retarget(self):
+        # Retargeting a bugtarget with and approved nomination also
+        # retargets the master bug target.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+            nomination.approve(series.distribution.owner)
+        target2 = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
+        product_target = nomination.bug.bugtasks[0].target
+        expected_targets = [
+            product_target, target2, target2.distribution_sourcepackage]
+        bug_task = nomination.bug.bugtasks[-1]
+        with person_logged_in(series.distribution.owner):
+            bug_task.transitionToTarget(target2, series.distribution.owner)
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
+
 
 class CanBeNominatedForTestMixin:
     """Test case mixin for IBug.canBeNominatedFor."""
