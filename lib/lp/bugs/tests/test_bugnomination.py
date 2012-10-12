@@ -142,6 +142,39 @@ class BugNominationTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             expected_targets, [bt.target for bt in nomination.bug.bugtasks])
 
+    def test_approve_distroseries_source_package_many(self):
+        # Approving a package nomination creates a distroseries
+        # source package bug task for each affect package in the same distro.
+        # See bug 110195 which argues this is wrong.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        target2 = self.factory.makeSourcePackage(distroseries=series)
+        bug = self.factory.makeBug(target=target.distribution_sourcepackage)
+        self.factory.makeBugTask(
+            bug=bug, target=target2.distribution_sourcepackage)
+        bug_tasks = bug.bugtasks
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(bug=bug, target=target)
+            nomination.approve(series.distribution.owner)
+        expected_targets = [bt.target for bt in bug_tasks] + [target, target2]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in bug.bugtasks])
+
+    def test_approve_twice(self):
+        # Approving a nomination twice is a no-op.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        date_decided = nomination.date_decided
+        self.assertIsNotNone(date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+        with celebrity_logged_in('admin') as admin:
+            nomination.approve(admin)
+        self.assertEqual(date_decided, nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+
 
 class CanBeNominatedForTestMixin:
     """Test case mixin for IBug.canBeNominatedFor."""
