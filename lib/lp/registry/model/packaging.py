@@ -18,7 +18,6 @@ from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.interfaces.informationtype import IInformationType
 from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
