@@ -54,7 +54,7 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackageFactory,
     )
 from lp.registry.model.hasdrivers import HasDriversMixin
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.packaging import Packaging, PackagingUtil
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
@@ -523,7 +523,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             # Delete the current packaging and create a new one so
             # that the translation sharing jobs are started.
             self.direct_packaging.destroySelf()
-        Packaging(
+        PackagingUtil.createPackaging(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             productseries=productseries, owner=owner,

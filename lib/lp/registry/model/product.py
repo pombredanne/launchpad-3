@@ -438,6 +438,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
         if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
+            if not self.packagings.is_empty():
+                raise CannotChangeInformationType('Some series are packaged.')
             # Create the complimentary commercial subscription for the product.
             self._ensure_complimentary_subscription()
 
