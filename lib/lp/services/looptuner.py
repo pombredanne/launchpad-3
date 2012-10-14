@@ -359,6 +359,11 @@ class TunableLoop:
     """A base implementation of `ITunableLoop`."""
     implements(ITunableLoop)
 
+    # DBLoopTuner blocks on replication lag and long transactions. If a
+    # subclass wants to ignore them, it can override this to be a normal
+    # LoopTuner.
+    tuner_class = DBLoopTuner
+
     goal_seconds = 2
     minimum_chunk_size = 1
     maximum_chunk_size = None  # Override.
@@ -375,7 +380,7 @@ class TunableLoop:
     def run(self):
         assert self.maximum_chunk_size is not None, (
             "Did not override maximum_chunk_size.")
-        DBLoopTuner(
+        self.tuner_class(
             self, self.goal_seconds,
             minimum_chunk_size=self.minimum_chunk_size,
             maximum_chunk_size=self.maximum_chunk_size,
