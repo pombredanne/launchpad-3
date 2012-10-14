@@ -56,20 +56,20 @@ class RetryDepwaitTunableLoop(TunableLoop):
         return self.findBuildFarmJobs().is_empty()
 
     def __call__(self, chunk_size):
-        chunk = [
+        bfjs = list(self.findBuildFarmJobs()[:chunk_size])
+        bpbs = [
             removeSecurityProxy(build) for build in
-            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(
-                list(self.findBuildFarmJobs()[:chunk_size]))]
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(bfjs)]
         sprs = load_related(
-            SourcePackageRelease, chunk, ['source_package_release_id'])
+            SourcePackageRelease, bpbs, ['source_package_release_id'])
         load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
         chroots = IStore(PocketChroot).find(
             PocketChroot,
             PocketChroot.distroarchseriesID.is_in(
-                b.distro_arch_series_id for b in chunk),
+                b.distro_arch_series_id for b in bpbs),
             PocketChroot.chroot != None)
         chroot_series = set(chroot.distroarchseriesID for chroot in chroots)
-        for build in chunk:
+        for build in bpbs:
             if (build.distro_arch_series.distroseries.status ==
                     SeriesStatus.OBSOLETE
                 or not build.can_be_retried
@@ -86,7 +86,7 @@ class RetryDepwaitTunableLoop(TunableLoop):
                 build.retry()
                 build.buildqueue_record.score()
 
-        self.start_at = chunk[-1].package_build.build_farm_job_id + 1
+        self.start_at = bfjs[-1].id + 1
 
         if not self.dry_run:
             transaction.commit()
