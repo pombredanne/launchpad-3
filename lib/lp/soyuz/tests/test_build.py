@@ -215,6 +215,17 @@ class TestBuild(TestCaseWithFactory):
             build.status = BuildStatus.FAILEDTOBUILD
         self.assertTrue(build.can_be_retried)
 
+    def test_retry_cancelled(self):
+        # A cancelled build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.CANCELLED
+        self.assertTrue(build.can_be_retried)
+
     def test_uploadlog(self):
         # The upload log can be attached to a build
         spph = self.publisher.getPubSource(

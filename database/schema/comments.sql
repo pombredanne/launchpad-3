@@ -193,14 +193,6 @@ COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email t
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
--- BranchVisibilityPolicy
-
-COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
-COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don''t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
-COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
-COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
-COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
-
 -- Bug
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
@@ -752,7 +744,6 @@ COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in t
 COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
 COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the branding of a product, on its home page.';
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
-COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
 COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';

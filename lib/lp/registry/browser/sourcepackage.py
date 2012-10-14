@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -301,6 +301,16 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         """See `MultiStepView`."""
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
+
+    def validateStep(self, data):
+        super(SourcePackageChangeUpstreamStepOne, self).validateStep(data)
+        product = data.get('product')
+        if product is None:
+            return
+        if product.private:
+            self.setFieldError('product',
+                'Only Public projects can be packaged, not %s.' %
+                data['product'].information_type.title)
 
     @property
     def register_upstream_url(self):

@@ -4,8 +4,10 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-import datetime
-
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import pytz
 from storm.locals import Store
 from testtools.matchers import MatchesAll
@@ -273,86 +275,6 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
 
-    def test_private_bugs_on_not_allowed_for_anonymous(self):
-        # Anonymous cannot turn on private bugs.
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, None)
-
-    def test_private_bugs_off_not_allowed_for_anonymous(self):
-        # Anonymous cannot turn private bugs off.
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False, None)
-
-    def test_private_bugs_on_not_allowed_for_unauthorised(self):
-        # Unauthorised users cannot turn on private bugs.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, someone)
-
-    def test_private_bugs_off_not_allowed_for_unauthorised(self):
-        # Unauthorised users cannot turn private bugs off.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False, someone)
-
-    def test_private_bugs_on_allowed_for_moderators(self):
-        # Moderators can turn on private bugs.
-        product = self.factory.makeProduct()
-        registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
-
-    def test_private_bugs_off_allowed_for_moderators(self):
-        # Moderators can turn private bugs off.
-        product = self.factory.makeProduct()
-        registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
-
-    def test_private_bugs_on_allowed_for_commercial_subscribers(self):
-        # Commercial subscribers can turn on private bugs.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product)
-        product.checkPrivateBugsTransitionAllowed(True, bug_supervisor)
-
-    def test_private_bugs_on_not_allowed_for_expired_subscribers(self):
-        # Expired Commercial subscribers cannot turn on private bugs.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product, expired=True)
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.setPrivateBugs, True, bug_supervisor)
-
-    def test_private_bugs_off_allowed_for_bug_supervisors(self):
-        # Bug supervisors can turn private bugs off.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
-
-    def test_unauthorised_set_private_bugs_raises(self):
-        # Test Product.setPrivateBugs raises an error if user unauthorised.
-        product = self.factory.makeProduct()
-        someone = self.factory.makePerson()
-        self.assertRaises(
-            CommercialSubscribersOnly,
-            product.setPrivateBugs, True, someone)
-
-    def test_set_private_bugs(self):
-        # Test Product.setPrivateBugs()
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        self.factory.makeCommercialSubscription(product)
-        product.setPrivateBugs(True, bug_supervisor)
-        self.assertTrue(product.private_bugs)
-
     def test_product_creation_grants_maintainer_access(self):
         # Creating a new product creates an access grant for the maintainer
         # for all default policies.
@@ -500,21 +422,46 @@ class TestProduct(TestCaseWithFactory):
                 with person_logged_in(product.owner):
                     product.information_type = info_type
 
-    def test_product_information_set_proprietary_requires_commercial(self):
-        # Cannot set Product.information_type to proprietary values if no
-        # commercial subscription.
-        product = self.factory.makeProduct()
-        self.useContext(person_logged_in(product.owner))
+    def test_set_proprietary_gets_commerical_subscription(self):
+        # Changing a Product to Proprietary will auto generate a complimentary
+        # subscription just as choosing a proprietary license at creation time.
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(owner=owner)
+        self.useContext(person_logged_in(owner))
+        self.assertIsNone(product.commercial_subscription)
+
+        product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        self.assertIsNotNone(product.commercial_subscription)
+
+    def test_set_proprietary_fails_expired_commerical_subscription(self):
+        # Cannot set information type to proprietary with an expired
+        # complimentary subscription.
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        self.useContext(person_logged_in(owner))
+
+        # The Product now has a complimentary commercial subscription.
+        new_expires_date = datetime.now(pytz.timezone('UTC')) - timedelta(1)
+        naked_subscription = removeSecurityProxy(
+            product.commercial_subscription)
+        naked_subscription.date_expires = new_expires_date
+
+        # We can make the product PUBLIC
+        product.information_type = InformationType.PUBLIC
+        self.assertEqual(InformationType.PUBLIC, product.information_type)
+
+        # However we can't change it back to a Proprietary because our
+        # commercial subscription has expired.
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with ExpectedException(
                 CommercialSubscribersOnly,
                 'A valid commercial subscription is required for private'
                 ' Projects.'):
                 product.information_type = info_type
-        product.redeemSubscriptionVoucher(
-            'hello', product.owner, product.owner, 1)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product.information_type = info_type
 
     def test_product_information_init_proprietary_requires_commercial(self):
         # Cannot create a product with proprietary types without specifying
@@ -566,13 +513,25 @@ class TestProduct(TestCaseWithFactory):
                 CannotChangeInformationType, 'Answers is enabled.'):
                 product.information_type = InformationType.PROPRIETARY
 
+    def test_no_proprietary_if_packaging(self):
+        # information_type cannot be set to proprietary while any
+        # productseries are packaged.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        series = self.factory.makeProductSeries(product=product)
+        self.factory.makePackagingLink(productseries=series)
+        with person_logged_in(product.owner):
+            with ExpectedException(
+                CannotChangeInformationType, 'Some series are packaged.'):
+                product.information_type = InformationType.PROPRIETARY
+
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
-        product = self.factory.makeProduct(private_bugs=private_bugs)
+    def makeProductWithPolicy(self, bug_sharing_policy):
+        product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
             product.setBugSharingPolicy(bug_sharing_policy)
@@ -582,24 +541,6 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         # New projects can only use the non-proprietary information
         # types.
         product = self.factory.makeProduct()
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
-        self.assertEqual(
-            InformationType.PUBLIC, product.getDefaultBugInformationType())
-
-    def test_legacy_private_bugs(self):
-        # The deprecated private_bugs attribute overrides the default
-        # information type to USERDATA.
-        product = self.factory.makeLegacyProduct(private_bugs=True)
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
-        self.assertEqual(
-            InformationType.USERDATA, product.getDefaultBugInformationType())
-
-    def test_sharing_policy_overrides_private_bugs(self):
-        # bug_sharing_policy overrides private_bugs.
-        product = self.makeProductWithPolicy(
-            BugSharingPolicy.PUBLIC, private_bugs=True)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
@@ -980,9 +921,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             cs = product.commercial_subscription
             self.assertIsNotNone(cs)
             self.assertIn('complimentary-30-day', cs.sales_system_id)
-            now = datetime.datetime.now(pytz.UTC)
+            now = datetime.now(pytz.UTC)
             self.assertTrue(now >= cs.date_starts)
-            future_30_days = now + datetime.timedelta(days=30)
+            future_30_days = now + timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
             self.assertIn(
                 "Complimentary 30 day subscription. -- Launchpad",
@@ -1003,9 +944,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             cs = product.commercial_subscription
             self.assertIsNotNone(cs)
             self.assertIn('complimentary-30-day', cs.sales_system_id)
-            now = datetime.datetime.now(pytz.UTC)
+            now = datetime.now(pytz.UTC)
             self.assertTrue(now >= cs.date_starts)
-            future_30_days = now + datetime.timedelta(days=30)
+            future_30_days = now + timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
             self.assertIn(
                 "Complimentary 30 day subscription. -- Launchpad",
@@ -1185,7 +1126,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             [policy.type for policy in
              getUtility(IAccessPolicySource).findByPillar([self.product])])
         self.setSharingPolicy(
-            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.enum.EMBARGOED_OR_PROPRIETARY,
             self.commercial_admin)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA,
@@ -1200,6 +1141,30 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
             getUtility(IService, 'sharing').checkPillarAccess(
                 [self.product], InformationType.EMBARGOED,
                 self.product.owner))
+
+
+class ProductSpecificationSharingPolicyTestCase(
+    ProductBranchSharingPolicyTestCase):
+    """Test Product.specification_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = SpecificationSharingPolicy
+    public_policy = SpecificationSharingPolicy.PUBLIC
+    commercial_policies = (
+        SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        SpecificationSharingPolicy.PROPRIETARY,
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        with person_logged_in(user):
+            result = self.product.setSpecificationSharingPolicy(policy)
+        return result
+
+    def getSharingPolicy(self):
+        return self.product.specification_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
@@ -1283,8 +1248,8 @@ class TestWebService(WebServiceTestCase):
         product = question.product
         transaction.commit()
         ws_product = self.wsObject(product, product.owner)
-        now = datetime.datetime.now(tz=pytz.utc)
-        day = datetime.timedelta(days=1)
+        now = datetime.now(tz=pytz.utc)
+        day = timedelta(days=1)
         self.failUnlessEqual(
             [oopsid],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
@@ -1301,8 +1266,8 @@ class TestWebService(WebServiceTestCase):
         product = self.factory.makeProduct()
         transaction.commit()
         ws_product = self.wsObject(product, product.owner)
-        now = datetime.datetime.now(tz=pytz.utc)
-        day = datetime.timedelta(days=1)
+        now = datetime.now(tz=pytz.utc)
+        day = timedelta(days=1)
         self.failUnlessEqual(
             [],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))

@@ -432,6 +432,91 @@ class TestProductView(TestCaseWithFactory):
             cache.objects['team_membership_policy_data'])
 
 
+class TestProductEditView(BrowserTestCase):
+    """Tests for the ProductEditView"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductEditView, self).setUp()
+
+    def _make_product_edit_form(self, product, proprietary=False):
+        """Return form data for product edit.
+
+        :param product: Factory product to base the form data base of.
+        """
+        if proprietary:
+            licenses = License.OTHER_PROPRIETARY.title
+            license_info = 'Commercial Subscription'
+            information_type = 'PROPRIETARY'
+        else:
+            licenses = ['MIT']
+            license_info = ''
+            information_type = 'PUBLIC'
+
+        return {
+            'field.actions.change': 'Change',
+            'field.name': product.name,
+            'field.displayname': product.displayname,
+            'field.title': product.title,
+            'field.summary': product.summary,
+            'field.information_type': information_type,
+            'field.licenses': licenses,
+            'field.license_info': license_info,
+        }
+
+    def test_change_information_type_proprietary(self):
+        product = self.factory.makeProduct(name='fnord')
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(product.owner)
+            form = self._make_product_edit_form(product, proprietary=True)
+            view = create_initialized_view(product, '+edit', form=form)
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            updated_product = product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PROPRIETARY, updated_product.information_type)
+            # A complimentary commercial subscription is auto generated for
+            # the product when the information type is changed.
+            self.assertIsNotNone(updated_product.commercial_subscription)
+
+    def test_change_information_type_proprietary_packaged(self):
+        # It should be an error to make a Product private if it is packaged.
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        product = self.factory.makeProduct()
+        sourcepackage = self.factory.makeSourcePackage()
+        sourcepackage.setPackaging(product.development_focus, product.owner)
+        browser = self.getViewBrowser(product, '+edit', user=product.owner)
+        info_type = browser.getControl(name='field.information_type')
+        info_type.value = ['PROPRIETARY']
+        old_url = browser.url
+        browser.getControl('Change').click()
+        self.assertEqual(old_url, browser.url)
+        tag = Tag('error', 'div', text='Some series are packaged.',
+                  attrs={'class': 'message'})
+        self.assertThat(browser.contents, HTMLContains(tag))
+
+    def test_change_information_type_public(self):
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(
+            name='fnord',
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(owner)
+            form = self._make_product_edit_form(product)
+            view = create_initialized_view(product, '+edit', form=form)
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            updated_product = product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PUBLIC, updated_product.information_type)
+
+
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
 
