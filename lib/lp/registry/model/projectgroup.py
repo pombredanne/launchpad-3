@@ -211,11 +211,12 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @cachedproperty
     def translatables(self):
+        """See `IProjectGroup`."""
         return list(self.getTranslatables())
 
     def has_translatable(self):
         """See `IProjectGroup`."""
-        return self.translatables > 0
+        return len(self.translatables) > 0
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,

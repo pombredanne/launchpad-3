@@ -131,6 +131,8 @@ ordered by their names.
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> flush_database_updates()
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(gnome)
     >>> [product.displayname for product in gnome.products]
     [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'gnomebaker']
 
@@ -357,7 +359,7 @@ It has one translatable product.
     >>> gnome.has_translatable()
     True
     >>> translatables = gnome.translatables
-    >>> translatables.count()
+    >>> len(translatables)
     1
 
 And that translatable product is 'Evolution'.
