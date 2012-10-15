@@ -111,7 +111,6 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
     fields = ["title", "description", "name", "information_type",
         "duplicateof", "tags"]
-    fields.extend(("duplicateof", "tags"))
     for field_name in fields:
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)

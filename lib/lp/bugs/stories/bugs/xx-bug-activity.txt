@@ -275,7 +275,7 @@ If a bug task is deleted the pillar no longer affected will be shown.
 Changes to information_type are shown.
 
     >>> admin_browser.open(
-    >>>     "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
+    ...     "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
     >>> admin_browser.getControl("Private", index=1).selected = True
     >>> admin_browser.getControl('Change').click()
     >>> admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
@@ -287,7 +287,7 @@ Changes to information_type are shown.
     --------
 
     >>> admin_browser.open(
-    >>>     "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
+    ...     "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
     >>> admin_browser.getControl("Private", index=1).selected = True
     >>> admin_browser.getControl('Change').click()
     >>> admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")

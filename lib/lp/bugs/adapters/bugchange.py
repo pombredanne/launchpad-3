@@ -104,7 +104,6 @@ def get_bug_changes(bug_delta):
     # log and in notification emails.
     bug_change_field_names = ['duplicateof', 'title', 'description',
         'information_type', 'tags', 'attachment']
-    bug_change_field_names.extend(('tags', 'attachment'))
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
