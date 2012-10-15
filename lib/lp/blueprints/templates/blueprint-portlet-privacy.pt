@@ -10,7 +10,9 @@
   <div id="privacy-text">
     <span id="information-type-summary"
       tal:attributes="class view/information_type_css;">This blueprint contains
-      <strong id="information-type" tal:content="view/information_type"></strong> information</span>&nbsp;<a class="sprite edit action-icon" id="privacy-link"
+      <strong id="information-type" tal:content="view/information_type">
+      </strong> information</span>&nbsp;<a class="sprite edit action-icon"
+        id="privacy-link"
         tal:attributes="href link/path"
         tal:condition="link/enabled">Edit</a>
 
