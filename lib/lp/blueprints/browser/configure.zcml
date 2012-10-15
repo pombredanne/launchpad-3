@@ -623,6 +623,9 @@
         permission="launchpad.AnyPerson"
         template="../templates/addspec.pt" />
 
+    <browser:menus
+        module="lp.blueprints.browser.person"
+        classes="PersonSpecsMenu"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+table-specworkload"

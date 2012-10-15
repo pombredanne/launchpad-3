@@ -787,7 +787,6 @@
                 PersonRelatedSoftwareNavigationMenu
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
-                PersonSpecsMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"

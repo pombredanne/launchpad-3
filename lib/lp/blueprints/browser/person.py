@@ -5,13 +5,58 @@
 
 __metaclass__ = type
 __all__ = [
+    'PersonSpecsMenu',
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     ]
 
+from lp.registry.interfaces.person import IPerson
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    Link,
+    NavigationMenu,
+    )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.publisher import LaunchpadView
+
+
+class PersonSpecsMenu(NavigationMenu):
+
+    usedfor = IPerson
+    facet = 'specifications'
+    links = ['assignee', 'drafter', 'approver',
+             'subscriber', 'registrant', 'workload']
+
+    def registrant(self):
+        text = 'Registrant'
+        summary = 'List specs registered by %s' % self.context.displayname
+        return Link('+specs?role=registrant', text, summary, icon='blueprint')
+
+    def approver(self):
+        text = 'Approver'
+        summary = 'List specs with %s is supposed to approve' % (
+            self.context.displayname)
+        return Link('+specs?role=approver', text, summary, icon='blueprint')
+
+    def assignee(self):
+        text = 'Assignee'
+        summary = 'List specs for which %s is the assignee' % (
+            self.context.displayname)
+        return Link('+specs?role=assignee', text, summary, icon='blueprint')
+
+    def drafter(self):
+        text = 'Drafter'
+        summary = 'List specs drafted by %s' % self.context.displayname
+        return Link('+specs?role=drafter', text, summary, icon='blueprint')
+
+    def subscriber(self):
+        text = 'Subscriber'
+        return Link('+specs?role=subscriber', text, icon='blueprint')
+
+    def workload(self):
+        text = 'Workload'
+        summary = 'Show all specification work assigned'
+        return Link('+specworkload', text, summary, icon='info')
 
 
 class PersonSpecWorkloadView(LaunchpadView):

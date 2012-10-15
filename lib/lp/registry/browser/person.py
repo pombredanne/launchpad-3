@@ -42,7 +42,6 @@ __all__ = [
     'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
-    'PersonSpecsMenu',
     'PersonView',
     'PersonVouchersView',
     'PPANavigationMenuMixIn',
@@ -585,45 +584,6 @@ class PersonFacets(StandardLaunchpadFacets):
             'Software that %s is involved in translating' %
             self.context.displayname)
         return Link('', text, summary)
-
-
-class PersonSpecsMenu(NavigationMenu):
-
-    usedfor = IPerson
-    facet = 'specifications'
-    links = ['assignee', 'drafter', 'approver',
-             'subscriber', 'registrant', 'workload']
-
-    def registrant(self):
-        text = 'Registrant'
-        summary = 'List specs registered by %s' % self.context.displayname
-        return Link('+specs?role=registrant', text, summary, icon='blueprint')
-
-    def approver(self):
-        text = 'Approver'
-        summary = 'List specs with %s is supposed to approve' % (
-            self.context.displayname)
-        return Link('+specs?role=approver', text, summary, icon='blueprint')
-
-    def assignee(self):
-        text = 'Assignee'
-        summary = 'List specs for which %s is the assignee' % (
-            self.context.displayname)
-        return Link('+specs?role=assignee', text, summary, icon='blueprint')
-
-    def drafter(self):
-        text = 'Drafter'
-        summary = 'List specs drafted by %s' % self.context.displayname
-        return Link('+specs?role=drafter', text, summary, icon='blueprint')
-
-    def subscriber(self):
-        text = 'Subscriber'
-        return Link('+specs?role=subscriber', text, icon='blueprint')
-
-    def workload(self):
-        text = 'Workload'
-        summary = 'Show all specification work assigned'
-        return Link('+specworkload', text, summary, icon='info')
 
 
 class CommonMenuLinks:
