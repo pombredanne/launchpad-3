@@ -477,7 +477,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None):
+    def getBugNotificationRecipients(level=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of

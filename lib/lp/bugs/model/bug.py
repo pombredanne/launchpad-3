@@ -1085,9 +1085,9 @@ class Bug(SQLBase, InformationTypeMixin):
         """
         return get_also_notified_subscribers(self, recipients, level)
 
-    def getBugNotificationRecipients(self, duplicateof=None, level=None):
+    def getBugNotificationRecipients(self, level=None):
         """See `IBug`."""
-        recipients = BugNotificationRecipients(duplicateof=duplicateof)
+        recipients = BugNotificationRecipients()
         self.getDirectSubscribers(
             recipients, level=level, filter_visible=True)
         self.getIndirectSubscribers(recipients, level=level)
