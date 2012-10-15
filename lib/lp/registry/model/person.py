@@ -257,6 +257,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -941,6 +942,24 @@ class Person(
             limit=quantity)
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
+
+    def specifications(self, user, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
+        """See `IHasSpecifications`."""
+        if filter is None:
+            filter = []
+        clauses = [Specification.owner == self]
+        # Filter for specification text
+        for constraint in filter:
+            if isinstance(constraint, basestring):
+                # a string in the filter is a text search filter
+                clauses.append(fti_search(Specification, constraint))
+        results = Store.of(self).find(Specification, *clauses)
+        if sort == SpecificationSort.DATE:
+            results = results.order_by(Desc(Specification.datecreated))
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
