@@ -91,7 +91,9 @@ exact functionality we're testing.
 Flush the updates to the database so we'll see them.
 
     >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.propertycache import clear_property_cache
     >>> flush_database_updates()
+    >>> clear_property_cache(ubuntu)
 
 See, there are no ubuntu sprints.
 

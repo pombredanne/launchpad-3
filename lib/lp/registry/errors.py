@@ -9,6 +9,7 @@ __all__ = [
     'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
+    'CannotPackageProprietaryProduct',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
     'InvalidFilename',
@@ -202,3 +203,7 @@ class CannotDeleteCommercialSubscription(Exception):
 @error_status(httplib.BAD_REQUEST)
 class CannotChangeInformationType(Exception):
     """The information type cannot be changed."""
+
+
+class CannotPackageProprietaryProduct(Exception):
+    """Raised when a non-PUBLIC product's series is linked to a package."""

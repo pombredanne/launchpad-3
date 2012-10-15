@@ -96,7 +96,6 @@ from zope.security.proxy import (
     )
 
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
@@ -1428,19 +1427,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     @staticmethod
     def getMilestoneTarget(milestone_context):
         """Return the milestone target."""
-        if IBugTask.providedBy(milestone_context):
-            bug_target = milestone_context.target
-            if IProduct.providedBy(bug_target):
-                target = milestone_context.product
-            elif IProductSeries.providedBy(bug_target):
-                target = milestone_context.productseries.product
-            elif (IDistribution.providedBy(bug_target) or
-                  IDistributionSourcePackage.providedBy(bug_target)):
-                target = milestone_context.distribution
-            elif (IDistroSeries.providedBy(bug_target) or
-                  ISourcePackage.providedBy(bug_target)):
-                target = milestone_context.distroseries
-        elif IDistributionSourcePackage.providedBy(milestone_context):
+        if IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
             target = milestone_context.distroseries
@@ -1502,14 +1489,6 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                     longest_expected=40)
             else:
                 milestones = []
-
-        if (IBugTask.providedBy(milestone_context) and
-            milestone_context.milestone is not None and
-            milestone_context.milestone not in milestones):
-            # Even if we inactivate a milestone, a bugtask might still be
-            # linked to it. Include such milestones in the vocabulary to
-            # ensure that the +editstatus page doesn't break.
-            milestones.append(milestone_context.milestone)
 
         # Prefetch products and distributions for rendering
         # milestones: optimization to reduce the number of queries.

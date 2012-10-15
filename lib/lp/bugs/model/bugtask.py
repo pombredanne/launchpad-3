@@ -1935,6 +1935,8 @@ class BugTaskSet:
             distro_ids.add(task.distributionID)
             distro_series_ids.add(task.distroseriesID)
             product_ids.add(task.productID)
+            if task.productseries:
+                product_ids.add(task.productseries.productID)
             product_series_ids.add(task.productseriesID)
 
         distro_ids.discard(None)
@@ -1944,6 +1946,7 @@ class BugTaskSet:
 
         milestones = store.find(
             Milestone,
+            Milestone.active == True,
             Or(
                 Milestone.distributionID.is_in(distro_ids),
                 Milestone.distroseriesID.is_in(distro_series_ids),
