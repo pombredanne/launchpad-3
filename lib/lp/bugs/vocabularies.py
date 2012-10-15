@@ -44,7 +44,10 @@ from zope.schema.vocabulary import (
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
@@ -335,7 +338,7 @@ def milestone_matches_bugtask(milestone, bugtask):
     if IProduct.providedBy(bug_target):
         return bugtask.product.id == naked_milestone.productID
     elif IProductSeries.providedBy(bug_target):
-        return bugtask.productseries.id == naked_milestone.productseriesID
+        return bugtask.productseries.product.id == naked_milestone.productID
     elif (IDistribution.providedBy(bug_target) or
           IDistributionSourcePackage.providedBy(bug_target)):
         return bugtask.distribution.id == naked_milestone.distributionID
@@ -346,17 +349,38 @@ def milestone_matches_bugtask(milestone, bugtask):
 
 
 class BugTaskMilestoneVocabulary:
-    """Milestones for a set of bugtasks."""
+    """Milestones for a set of bugtasks.
+
+    This vocabulary supports the optional preloading and caching of milestones
+    in order to avoid repeated database queries.
+    """
 
     implements(IVocabulary, IVocabularyTokenized)
 
-    def __init__(self, milestones, default_bugtask=None):
+    def __init__(self, default_bugtask=None, milestones=None):
         assert default_bugtask is None or IBugTask.providedBy(default_bugtask)
         self.default_bugtask = default_bugtask
-        self.milestones = dict(
-            (milestone.id, milestone) for milestone in milestones)
+        self._milestones = None
+        if milestones is not None:
+            self._milestones = dict(
+                (str(milestone.id), milestone) for milestone in milestones)
 
-    def visible_milestones(self, bugtask):
+    def _load_milestones(self, bugtask):
+        # If the milestones have not already been cached, load them for the
+        # specified bugtask.
+        if self._milestones is None:
+            bugtask_set = getUtility(IBugTaskSet)
+            milestones = list(
+                bugtask_set.getBugTaskTargetMilestones([bugtask]))
+            self._milestones = dict(
+                (str(milestone.id), milestone) for milestone in milestones)
+        return self._milestones
+
+    @property
+    def milestones(self):
+        return self._load_milestones(self.default_bugtask)
+
+    def visible_milestones(self, bugtask=None):
         return self._get_milestones(bugtask)
 
     def _get_milestones(self, bugtask=None):
@@ -365,8 +389,9 @@ class BugTaskMilestoneVocabulary:
         if bugtask is None:
             return []
 
+        self._load_milestones(bugtask)
         milestones = [milestone
-                for milestone in self.milestones.values()
+                for milestone in self._milestones.values()
                 if milestone_matches_bugtask(milestone, bugtask)]
 
         if (bugtask.milestone is not None and
@@ -377,10 +402,16 @@ class BugTaskMilestoneVocabulary:
             milestones.append(bugtask.milestone)
         return milestones
 
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         try:
-            return self.milestones[token]
+            return self.toTerm(self.milestones[str(token)])
         except:
             raise LookupError(token)
 

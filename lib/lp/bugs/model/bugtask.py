@@ -1935,6 +1935,8 @@ class BugTaskSet:
             distro_ids.add(task.distributionID)
             distro_series_ids.add(task.distroseriesID)
             product_ids.add(task.productID)
+            if task.productseries:
+                product_ids.add(task.productseries.productID)
             product_series_ids.add(task.productseriesID)
 
         distro_ids.discard(None)

@@ -1058,11 +1058,4 @@
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
-  <securedutility
-    name="BugTaskMilestoneVocabulary"
-    component="lp.bugs.vocabularies.BugTaskMilestoneVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
 </configure>

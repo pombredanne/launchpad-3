@@ -93,4 +93,17 @@
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
+
+  <securedutility
+    name="BugTaskMilestone"
+    component="lp.bugs.vocabularies.BugTaskMilestoneVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.bugs.vocabularies.BugTaskMilestoneVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
 </configure>

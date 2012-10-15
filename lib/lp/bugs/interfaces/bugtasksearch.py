@@ -13,6 +13,7 @@ __all__ = [
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'get_person_bugtasks_search_params',
     'IBugTaskSearch',
+    'IBugTaskSearchBase',
     'IllegalRelatedBugTasksParams',
     'IFrontPageBugTaskSearch',
     'IPersonBugTaskSearch',
@@ -27,6 +28,7 @@ from lazr.enum import (
     Item,
     )
 from lazr.restful.declarations import error_status
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -550,7 +552,10 @@ class IBugTaskSearchBase(Interface):
     milestone = List(
         title=_('Milestone'),
         description=_('Show only bug tasks targeted to this milestone.'),
-        value_type=IBugTask['milestone'], required=False)
+        value_type=ReferenceChoice(
+        title=_('Milestone'), vocabulary='Milestone',
+            schema=Interface), #IMilestone
+        required=False)
     component = List(
         title=_('Component'),
         description=_('Distribution package archive grouping. '

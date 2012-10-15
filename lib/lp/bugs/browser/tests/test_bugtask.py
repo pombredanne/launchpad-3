@@ -251,7 +251,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Render the view with one activity.
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                82, self.factory.makePerson())
+                83, self.factory.makePerson())
             person = self.factory.makePerson()
             add_activity("description", person)
 

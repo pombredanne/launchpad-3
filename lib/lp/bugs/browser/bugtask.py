@@ -3628,7 +3628,7 @@ class BugTasksTableView(LaunchpadView):
 
     @cachedproperty
     def caching_milestone_vocabulary(self):
-        return BugTaskMilestoneVocabulary(self.milestones)
+        return BugTaskMilestoneVocabulary(milestones=self.milestones)
 
     @cachedproperty
     def milestones(self):
@@ -3680,7 +3680,7 @@ class BugTasksTableView(LaunchpadView):
         if IBugTask.providedBy(context):
             view.target_link_title = self.getTargetLinkTitle(context.target)
             view.edit_view.milestone_source = (
-                BugTaskMilestoneVocabulary(self.milestones, context))
+                BugTaskMilestoneVocabulary(context, self.milestones))
         view.edit_view.user_is_subscribed = self.user_is_subscribed
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
@@ -3787,7 +3787,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
     def __init__(self, context, request):
         super(BugTaskTableRowView, self).__init__(context, request)
-        self.milestone_source = MilestoneVocabulary
+        self.milestone_source = BugTaskMilestoneVocabulary
 
     @cachedproperty
     def api_request(self):
