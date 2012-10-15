@@ -1304,6 +1304,12 @@ def get_specification_filters(filter):
     if SpecificationFilter.INFORMATIONAL in filter:
         clauses.append(Specification.implementation_status ==
                        SpecificationImplementationStatus.INFORMATIONAL)
+    # filter based on completion. see the implementation of
+    # Specification.is_complete() for more details
+    if SpecificationFilter.COMPLETE in filter:
+        clauses.append(Specification.storm_completeness())
+    if SpecificationFilter.INCOMPLETE in filter:
+        clauses.append(Not(Specification.storm_completeness()))
     for constraint in filter:
         if isinstance(constraint, basestring):
             # a string in the filter is a text search filter

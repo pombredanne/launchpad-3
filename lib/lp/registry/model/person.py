@@ -820,9 +820,12 @@ class Person(
                        prejoin_people=True):
         """See `IHasSpecifications`."""
         if filter is None:
-            filter = []
+            filter = set()
+        else:
+            filter = set(filter)
         clauses = [Specification.owner == self]
-
+        if SpecificationFilter.COMPLETE not in filter:
+            filter.add(SpecificationFilter.INCOMPLETE)
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         if sort == SpecificationSort.DATE:

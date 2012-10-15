@@ -17,7 +17,6 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
-    Not,
     Or,
     Store,
     )
@@ -32,7 +31,6 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.blueprints.enums import (
     SpecificationFilter,
-    SpecificationImplementationStatus,
     SpecificationSort,
     SprintSpecificationStatus,
     )
@@ -139,12 +137,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         #  - informational.
         #
 
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        if SpecificationFilter.COMPLETE in filter:
-            query.append(Specification.storm_completeness())
-        if SpecificationFilter.INCOMPLETE in filter:
-            query.append(Not(Specification.storm_completeness()))
         sprint_status = []
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
