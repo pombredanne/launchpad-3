@@ -139,10 +139,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         #  - informational.
         #
 
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query.append(Specification.implementation_status ==
-                         SpecificationImplementationStatus.INFORMATIONAL)
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         if SpecificationFilter.COMPLETE in filter:

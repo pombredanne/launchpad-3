@@ -1300,6 +1300,10 @@ def get_specification_filters(filter):
     clauses = [Or(Specification.product == None,
                   Not(Specification.productID.is_in(Select(Product.id,
                       Product.active == False))))]
+    # look for informational specs
+    if SpecificationFilter.INFORMATIONAL in filter:
+        clauses.append(Specification.implementation_status ==
+                       SpecificationImplementationStatus.INFORMATIONAL)
     for constraint in filter:
         if isinstance(constraint, basestring):
             # a string in the filter is a text search filter
