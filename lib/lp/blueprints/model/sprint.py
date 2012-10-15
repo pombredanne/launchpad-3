@@ -19,7 +19,6 @@ from storm.locals import (
     Desc,
     Not,
     Or,
-    Select,
     Store,
     )
 from zope.component import getUtility
@@ -124,12 +123,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         """
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        from lp.registry.model.product import Product
         query = [SprintSpecification.sprintID == self.id,
-                 SprintSpecification.specificationID == Specification.id,
-                 Or(Specification.product == None,
-                    Not(Specification.productID.is_in(Select(Product.id,
-                        Product.active == False))))]
+                 SprintSpecification.specificationID == Specification.id]
         query.append(get_specification_privacy_filter(user))
         if not filter:
             # filter could be None or [] then we decide the default

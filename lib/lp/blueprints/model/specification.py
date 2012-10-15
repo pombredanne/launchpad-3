@@ -35,6 +35,7 @@ from storm.expr import (
     Join,
     LeftJoin,
     Or,
+    Not,
     Select,
     )
 from storm.locals import (
@@ -1294,7 +1295,11 @@ def get_specification_privacy_filter(user):
 
 
 def get_specification_filters(filter):
-    clauses = []
+    from lp.registry.model.product import Product
+    # If Product is used, it must be active.
+    clauses = [Or(Specification.product == None,
+                  Not(Specification.productID.is_in(Select(Product.id,
+                      Product.active == False))))]
     for constraint in filter:
         if isinstance(constraint, basestring):
             # a string in the filter is a text search filter
