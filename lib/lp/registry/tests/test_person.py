@@ -27,6 +27,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
     SpecificationPriority,
     SpecificationSort,
     )
@@ -1665,6 +1666,20 @@ class TestSpecifications(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         spec = self.factory.makeSpecification(distribution=distribution)
         self.assertIn(spec, spec.owner.specifications(None))
+
+    def test_informational(self):
+        enum = SpecificationImplementationStatus
+        informational = self.factory.makeSpecification(
+            implementation_status=enum.INFORMATIONAL)
+        owner = informational.owner
+        plain = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None)
+        self.assertIn(informational, result)
+        self.assertIn(plain, result)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INFORMATIONAL])
+        self.assertIn(informational, result)
+        self.assertNotIn(plain, result)
 
     def test_text_search(self):
         # Text searches work.
