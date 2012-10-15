@@ -277,7 +277,8 @@ def getWorkItemsDueBefore(person, cutoff_date, user):
     Only work items whose milestone have a due date between today and the
     given cut-off date are included in the results.
     """
-    workitems = person.getAssignedSpecificationWorkItemsDueBefore(cutoff_date)
+    workitems = person.getAssignedSpecificationWorkItemsDueBefore(cutoff_date,
+                                                                  user)
     # For every specification that has work items in the list above, create
     # one SpecWorkItemContainer holding the work items from that spec that are
     # targeted to the same milestone and assigned to this person (or its
