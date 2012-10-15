@@ -297,12 +297,16 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
 
     def test_error_on_proprietary_product(self):
         """Packaging cannot be created for PROPRIETARY products"""
+        product_owner = self.factory.makePerson()
+        product_name = 'proprietary-product'
         product = self.factory.makeProduct(
+            name=product_name, owner=product_owner,
             information_type=InformationType.PROPRIETARY)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
-        browser = self.getViewBrowser(sp, '+edit-packaging')
-        browser.getControl('Project').value = product.name
+        browser = self.getViewBrowser(
+            sp, '+edit-packaging', user=product_owner)
+        browser.getControl('Project').value = product_name
         browser.getControl('Continue').click()
         self.assertIn(
             'Only Public projects can be packaged, not Proprietary.',
@@ -310,12 +314,17 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
 
     def test_error_on_proprietary_productseries(self):
         """Packaging cannot be created for PROPRIETARY productseries"""
-        product = self.factory.makeProduct()
+        product_owner = self.factory.makePerson()
+        product_name = 'proprietary-product'
+        product = self.factory.makeProduct(
+            name=product_name, owner=product_owner,
+            information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product=product)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
-        browser = self.getViewBrowser(sp, '+edit-packaging')
-        browser.getControl('Project').value = product.name
+        browser = self.getViewBrowser(
+            sp, '+edit-packaging', user=product_owner)
+        browser.getControl('Project').value = product_name
         browser.getControl('Continue').click()
         with person_logged_in(product.owner):
             product.information_type = InformationType.PROPRIETARY
