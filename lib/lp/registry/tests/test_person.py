@@ -1322,6 +1322,25 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
 
         self.assertEqual([workitem], list(workitems))
 
+    def test_listings_consider_spec_visibility(self):
+        # This spec is visible only to the product owner, even though it is
+        # assigned to self.team.teamowner.  Therefore, it is listed only for
+        # product.owner, not the team.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        milestone = self.factory.makeMilestone(
+            dateexpected=self.current_milestone.dateexpected, product=product)
+        spec = self.factory.makeSpecification(
+            milestone=milestone, information_type=InformationType.PROPRIETARY)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=spec, assignee=self.team.teamowner)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            milestone.dateexpected, self.team)
+        self.assertNotIn(workitem, workitems)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            milestone.dateexpected, product.owner)
+        self.assertIn(workitem, workitems)
+
     def _makeProductSpec(self, milestone_dateexpected):
         assignee = self.factory.makePerson()
         with person_logged_in(self.team.teamowner):

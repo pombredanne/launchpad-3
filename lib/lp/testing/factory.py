@@ -2082,6 +2082,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
             information_type is not None)
+        if (product is None and milestone is not None and
+            milestone.productseries is not None):
+            product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
                 specification_sharing_policy = (
@@ -2234,7 +2237,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, 
+                       git_repo_url=None,
                        bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
