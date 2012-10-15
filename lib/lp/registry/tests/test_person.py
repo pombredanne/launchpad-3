@@ -1655,6 +1655,18 @@ class TestSpecifications(TestCaseWithFactory):
         result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
+    def test_ignore_inactive(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('admin'):
+            product.active = False
+        spec = self.factory.makeSpecification(product=product)
+        self.assertNotIn(spec, spec.owner.specifications(None))
+
+    def test_include_distro(self):
+        distribution = self.factory.makeDistribution()
+        spec = self.factory.makeSpecification(distribution=distribution)
+        self.assertIn(spec, spec.owner.specifications(None))
+
     def test_text_search(self):
         # Text searches work.
         blueprint1 = self.makeSpec(title='abc')
