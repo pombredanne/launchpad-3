@@ -42,6 +42,7 @@ from lp.blueprints.interfaces.sprint import (
     ISprintSet,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
     get_specification_privacy_filter,
     HasSpecificationsMixin,
     )
@@ -59,7 +60,6 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )
-from lp.services.database.stormexpr import fti_search
 from lp.services.propertycache import cachedproperty
 
 
@@ -168,10 +168,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query.append(fti_search(Specification, constraint))
+        query.extend(get_specification_filters(filter))
         return query
 
     def all_specifications(self, user):

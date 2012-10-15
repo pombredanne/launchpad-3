@@ -128,6 +128,7 @@ from lp.blueprints.enums import (
     SpecificationSort,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
     HasSpecificationsMixin,
     Specification,
     )
@@ -257,7 +258,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -822,11 +822,8 @@ class Person(
         if filter is None:
             filter = []
         clauses = [Specification.owner == self]
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                clauses.append(fti_search(Specification, constraint))
+
+        clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         if sort == SpecificationSort.DATE:
             results = results.order_by(Desc(Specification.datecreated))

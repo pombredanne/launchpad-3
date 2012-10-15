@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_specification_filters',
     'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
@@ -104,6 +105,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -1289,3 +1291,12 @@ def get_specification_privacy_filter(user):
                 where=Or(
                     AccessPolicyGrantFlat.abstract_artifact_id == None,
                     AccessArtifact.specification_id == Specification.id))))
+
+
+def get_specification_filters(filter):
+    clauses = []
+    for constraint in filter:
+        if isinstance(constraint, basestring):
+            # a string in the filter is a text search filter
+            clauses.append(fti_search(Specification, constraint))
+    return clauses
