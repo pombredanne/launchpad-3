@@ -1684,7 +1684,7 @@ class TestSpecifications(TestCaseWithFactory):
 
     def test_completeness(self):
         implemented = self.factory.makeSpecification(
-            implementation_status=
+            implementation_status =
             SpecificationImplementationStatus.IMPLEMENTED)
         owner = implemented.owner
         non_implemented = self.factory.makeSpecification(owner=owner)
