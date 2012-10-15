@@ -1684,7 +1684,7 @@ class TestSpecifications(TestCaseWithFactory):
 
     def test_completeness(self):
         implemented = self.factory.makeSpecification(
-            implementation_status=
+            implementation_status =
             SpecificationImplementationStatus.IMPLEMENTED)
         owner = implemented.owner
         non_implemented = self.factory.makeSpecification(owner=owner)
@@ -1701,6 +1701,25 @@ class TestSpecifications(TestCaseWithFactory):
             None)
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
+
+    def test_roles(self):
+        created = self.factory.makeSpecification()
+        person = created.owner
+        def rlist(filter=None):
+            return list(person.specifications(None, filter=filter))
+        assigned = self.factory.makeSpecification(assignee=person)
+        drafting = self.factory.makeSpecification(drafter=person)
+        approving = self.factory.makeSpecification(approver=person)
+        subscribed = self.factory.makeSpecification()
+        subscribed.subscribe(person)
+        self.assertEqual([created, assigned, drafting, approving, subscribed],
+                         rlist([]))
+        self.assertEqual([created], rlist([SpecificationFilter.CREATOR]))
+        self.assertEqual([assigned], rlist([SpecificationFilter.ASSIGNEE]))
+        self.assertEqual([drafting], rlist([SpecificationFilter.DRAFTER]))
+        self.assertEqual([approving], rlist([SpecificationFilter.APPROVER]))
+        self.assertEqual([subscribed],
+                         rlist([SpecificationFilter.SUBSCRIBER]))
 
     def test_text_search(self):
         # Text searches work.
