@@ -390,7 +390,7 @@ class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
         The number of sub projects can break the preferred layout so the
         template may want to plan for a long list.
         """
-        return self.context.products.count() > 10
+        return len(self.context.products) > 10
 
     @property
     def project_group_milestone_tag(self):

@@ -7,7 +7,7 @@ with less than 10 projects is considered not have many projects.
 
     >>> projectgroup = factory.makeProject(name='mothership')
     >>> view = create_view(projectgroup, name='+index')
-    >>> projectgroup.products.count()
+    >>> len(projectgroup.products)
     0
 
     >>> view.has_many_projects
@@ -23,7 +23,9 @@ with less than 10 projects is considered not have many projects.
     >>> owner = projectgroup.owner
     >>> ignored = login_person(owner)
     >>> add_daughter(projectgroup, 'a')
-    >>> projectgroup.products.count()
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(projectgroup)
+    >>> len(projectgroup.products)
     1
 
     >>> view = create_view(projectgroup, name='+index')
@@ -34,7 +36,8 @@ A projectgroup with more than 10 sub projects is considered to have many
 projects (10 projects are roughly 2 portlets deep.)
 
     >>> add_daughter(projectgroup, 'bcdefghijk')
-    >>> projectgroup.products.count()
+    >>> clear_property_cache(projectgroup)
+    >>> len(projectgroup.products)
     11
 
     >>> view = create_view(projectgroup, name='+index')

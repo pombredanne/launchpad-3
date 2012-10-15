@@ -4321,7 +4321,6 @@ ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.information_type_notifications.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'js.combo_loader.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2012-05-18 07:34:39.239649');
 

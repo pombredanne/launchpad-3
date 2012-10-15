@@ -156,6 +156,7 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1397,6 +1398,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     def next_url(self):
         """See `LaunchpadFormView`."""
         if self.context.active:
+            if len(self.errors) > 0:
+                return None
             return canonical_url(self.context)
         else:
             return canonical_url(getUtility(IProductSet))
@@ -1438,7 +1441,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except CannotChangeInformationType as e:
+            self.setFieldError('information_type', str(e))
 
 
 class ProductValidationMixin:

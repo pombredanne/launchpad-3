@@ -60,6 +60,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     )
 from lp.services.database.stormexpr import fti_search
+from lp.services.propertycache import cachedproperty
 
 
 class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
@@ -361,21 +362,27 @@ class HasSprintsMixin:
                    quote(SprintSpecificationStatus.ACCEPTED))
         return query, ['Specification', 'SprintSpecification']
 
-    @property
-    def sprints(self):
-        """See IHasSprints."""
+    def getSprints(self):
         query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts', distinct=True)
 
-    @property
-    def coming_sprints(self):
+    @cachedproperty
+    def sprints(self):
         """See IHasSprints."""
+        return list(self.getSprints())
+
+    def getComingSprings(self):
         query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
         query += " AND Sprint.time_ends > 'NOW'"
         return Sprint.select(
             query, clauseTables=tables, orderBy='time_starts',
             distinct=True, limit=5)
+
+    @cachedproperty
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return list(self.getComingSprings())
 
     @property
     def past_sprints(self):

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.registry.browser.sourcepackage import (
     get_register_upstream_url,
     PackageUpstreamTracking,
@@ -25,6 +26,7 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -287,3 +289,38 @@ class TestSourcePackagePackagingLinks(TestCaseWithFactory):
         menu, user = self.makeSourcePackageOverviewMenu(True, None)
         with person_logged_in(user):
             self.assertFalse(menu.remove_packaging().enabled)
+
+
+class TestSourcePackageChangeUpstreamView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_error_on_proprietary_product(self):
+        """Packaging cannot be created for PROPRIETARY products"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        browser = self.getViewBrowser(sp, '+edit-packaging')
+        browser.getControl('Project').value = product.name
+        browser.getControl('Continue').click()
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)
+
+    def test_error_on_proprietary_productseries(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        browser = self.getViewBrowser(sp, '+edit-packaging')
+        browser.getControl('Project').value = product.name
+        browser.getControl('Continue').click()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+        browser.getControl(series.displayname).selected = True
+        browser.getControl('Change').click()
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)
