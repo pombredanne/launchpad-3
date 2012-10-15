@@ -317,8 +317,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
         product_owner = self.factory.makePerson()
         product_name = 'proprietary-product'
         product = self.factory.makeProduct(
-            name=product_name, owner=product_owner,
-            information_type=InformationType.PROPRIETARY)
+            name=product_name, owner=product_owner)
         series = self.factory.makeProductSeries(product=product)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
@@ -326,7 +325,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
             sp, '+edit-packaging', user=product_owner)
         browser.getControl('Project').value = product_name
         browser.getControl('Continue').click()
-        with person_logged_in(product.owner):
+        with person_logged_in(product_owner):
             product.information_type = InformationType.PROPRIETARY
         browser.getControl(series.displayname).selected = True
         browser.getControl('Change').click()
