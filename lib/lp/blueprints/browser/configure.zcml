@@ -622,6 +622,19 @@
         class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
         permission="launchpad.AnyPerson"
         template="../templates/addspec.pt" />
+
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        name="+table-specworkload"
+        permission="zope.Public"
+        class="lp.blueprints.browser.person.PersonSpecWorkloadTableView"
+        template="../templates/person-table-specworkload.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        name="+specworkload"
+        class="lp.blueprints.browser.person.PersonSpecWorkloadView"
+        permission="zope.Public"
+        template="../templates/person-specworkload.pt"/>
     </facet>
 
     <browser:page

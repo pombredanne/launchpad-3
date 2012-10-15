@@ -969,19 +969,6 @@
             template="../templates/person-vouchers.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            name="+table-specworkload"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonSpecWorkloadTableView"
-            template="../../blueprints/templates/person-table-specworkload.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+specworkload"
-            facet="specifications"
-            class="lp.registry.browser.person.PersonSpecWorkloadView"
-            permission="zope.Public"
-            template="../../blueprints/templates/person-specworkload.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
             name="+rdf"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonRdfView"
