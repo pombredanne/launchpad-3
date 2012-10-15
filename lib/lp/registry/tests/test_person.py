@@ -29,6 +29,7 @@ from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationImplementationStatus,
     SpecificationPriority,
+    SpecificationFilter,
     SpecificationSort,
     )
 from lp.blueprints.model.specification import Specification
