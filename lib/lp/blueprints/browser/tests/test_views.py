@@ -66,9 +66,9 @@ class TestAssignments(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
+        url = canonical_url(target) + "/+assignments"
         viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
-        url = canonical_url(target) + "/+assignments"
         # Seed the cookie cache and any other cross-request state we may gain
         # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(url)

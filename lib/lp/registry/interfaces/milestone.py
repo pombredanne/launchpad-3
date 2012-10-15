@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
+from lp.bugs.interfaces.bugtasksearch import IBugTaskSearchBase
 
 __metaclass__ = type
 
@@ -269,6 +270,7 @@ class IMilestone(IAbstractMilestone):
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
+IBugTaskSearchBase['milestone'].value_type.schema = IMilestone
 patch_plain_parameter_type(
     IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 

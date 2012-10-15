@@ -432,7 +432,7 @@ class TestProductView(TestCaseWithFactory):
             cache.objects['team_membership_policy_data'])
 
 
-class TestProductEditView(TestCaseWithFactory):
+class TestProductEditView(BrowserTestCase):
     """Tests for the ProductEditView"""
 
     layer = DatabaseFunctionalLayer
@@ -480,6 +480,23 @@ class TestProductEditView(TestCaseWithFactory):
             # A complimentary commercial subscription is auto generated for
             # the product when the information type is changed.
             self.assertIsNotNone(updated_product.commercial_subscription)
+
+    def test_change_information_type_proprietary_packaged(self):
+        # It should be an error to make a Product private if it is packaged.
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        product = self.factory.makeProduct()
+        sourcepackage = self.factory.makeSourcePackage()
+        sourcepackage.setPackaging(product.development_focus, product.owner)
+        browser = self.getViewBrowser(product, '+edit', user=product.owner)
+        info_type = browser.getControl(name='field.information_type')
+        info_type.value = ['PROPRIETARY']
+        old_url = browser.url
+        browser.getControl('Change').click()
+        self.assertEqual(old_url, browser.url)
+        tag = Tag('error', 'div', text='Some series are packaged.',
+                  attrs={'class': 'message'})
+        self.assertThat(browser.contents, HTMLContains(tag))
 
     def test_change_information_type_public(self):
         owner = self.factory.makePerson(name='pting')
@@ -614,8 +631,8 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+rdf')
         content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        browser = self.getViewBrowser(product, view_name='+rdf')
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(

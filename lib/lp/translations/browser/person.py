@@ -40,6 +40,7 @@ from lp.services.webapp import (
     canonical_url,
     Link,
     )
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import NavigationMenu
@@ -210,6 +211,7 @@ class PersonTranslationView(LaunchpadView):
         # will result in faster queries (cache effects).
         today = now.replace(minute=0, second=0, microsecond=0)
         self.history_horizon = today - timedelta(90, 0, 0)
+        self.user_can_edit = check_permission('launchpad.Edit', self.context)
 
     @property
     def page_title(self):

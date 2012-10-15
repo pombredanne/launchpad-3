@@ -69,6 +69,7 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
@@ -155,6 +156,7 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -438,6 +440,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
         if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
+            if not self.packagings.is_empty():
+                raise CannotChangeInformationType('Some series are packaged.')
             # Create the complimentary commercial subscription for the product.
             self._ensure_complimentary_subscription()
 
@@ -641,16 +645,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
-        if self.bug_sharing_policy is not None:
-            return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-        return FREE_INFORMATION_TYPES
+        return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
 
     def getDefaultBugInformationType(self):
         """See `IProduct.`"""
-        if self.bug_sharing_policy is not None:
-            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
-        else:
-            return InformationType.PUBLIC
+        return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
@@ -1521,6 +1520,39 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        # We need the plain Storm Person object for the SQL query below
+        # but an IPersonRoles object for the team membership checks.
+        if IPersonRoles.providedBy(user):
+            plain_user = user.person
+        else:
+            plain_user = user
+            user = IPersonRoles(user)
+        if (user.in_commercial_admin or user.in_admin or
+            user.in_registry_experts):
+            self._known_viewers.add(user.id)
+            return True
+        policy = getUtility(IAccessPolicySource).find(
+            [(self, self.information_type)]).one()
+        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
+            [(policy, plain_user)])
+        if grants_for_user.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,
