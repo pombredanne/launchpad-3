@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -29,10 +29,10 @@ from lp.bugs.adapters.bugchange import (
     BranchUnlinkedFromBug,
     BugAttachmentChange,
     BugDuplicateChange,
+    BugInformationTypeChange,
     BugTagsChange,
     BugTaskStatusChange,
     BugTitleChange,
-    BugVisibilityChange,
     BugWatchAdded,
     BugWatchRemoved,
     CveLinkedToBug,
@@ -96,8 +96,6 @@ class MockBug:
     implements(IBug)
 
     duplicateof = None
-    private = False
-    security_related = False
     information_type = InformationType.PUBLIC
     messages = []
 
@@ -691,9 +689,9 @@ class EmailNotificationsBugMixin:
 
     def change_other(self):
         self.bug.addChange(
-            BugVisibilityChange(
-                self.ten_minutes_ago, self.person, "private",
-                False, True))
+            BugInformationTypeChange(
+                self.ten_minutes_ago, self.person, "information_type",
+                InformationType.PUBLIC, InformationType.USERDATA))
 
     def test_change_seen(self):
         # A smoketest.
