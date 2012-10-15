@@ -15,6 +15,10 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.security.checker import (
+    CheckerPublic,
+    getChecker,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -44,6 +48,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
+    SharingPermission,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
@@ -56,11 +61,13 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     License,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.product import (
     Product,
@@ -72,6 +79,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -387,7 +395,7 @@ class TestProduct(TestCaseWithFactory):
             license=License.OTHER_PROPRIETARY)
         self.assertEqual(InformationType.EMBARGOED, product.information_type)
         # Owner can set information_type
-        with person_logged_in(product.owner):
+        with person_logged_in(removeSecurityProxy(product).owner):
             product.information_type = InformationType.PROPRIETARY
         self.assertEqual(InformationType.PROPRIETARY, product.information_type)
         # Database persists information_type value
@@ -399,7 +407,9 @@ class TestProduct(TestCaseWithFactory):
 
     def test_product_information_type_default(self):
         # Default information_type is PUBLIC
-        product = self.createProduct()
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
         self.assertEqual(InformationType.PUBLIC, product.information_type)
 
     invalid_information_types = [info_type for info_type in
@@ -524,6 +534,349 @@ class TestProduct(TestCaseWithFactory):
             with ExpectedException(
                 CannotChangeInformationType, 'Some series are packaged.'):
                 product.information_type = InformationType.PROPRIETARY
+
+    def check_permissions(self, expected_permissions, used_permissions,
+                          type_):
+        expected = set(expected_permissions.keys())
+        self.assertEqual(
+            expected, set(used_permissions.values()),
+            'Unexpected %s permissions' % type_)
+        for permission in expected_permissions:
+            attribute_names = set(
+                name for name, value in used_permissions.items()
+                if value == permission)
+            self.assertEqual(
+                expected_permissions[permission], attribute_names,
+                'Unexpected set of attributes with %s permission %s:\n'
+                'Defined but not expected: %s\n'
+                'Expected but not defined: %s'
+                % (
+                    type_, permission,
+                    sorted(
+                        attribute_names - expected_permissions[permission]),
+                    sorted(
+                        expected_permissions[permission] - attribute_names)))
+
+    expected_get_permissions = {
+        CheckerPublic: set((
+            'active', 'id', 'information_type', 'pillar_category', 'private',
+            'userCanView',)),
+        'launchpad.View': set((
+            '_getOfficialTagClause', '_all_specifications',
+            '_valid_specifications', 'active_or_packaged_series',
+            'aliases', 'all_milestones',
+            'allowsTranslationEdits', 'allowsTranslationSuggestions',
+            'announce', 'answer_contacts', 'answers_usage', 'autoupdate',
+            'blueprints_usage', 'branch_sharing_policy',
+            'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+            'bug_sharing_policy', 'bug_subscriptions', 'bug_supervisor',
+            'bug_tracking_usage', 'bugtargetdisplayname', 'bugtargetname',
+            'bugtracker', 'canUserAlterAnswerContact',
+            'codehosting_usage',
+            'coming_sprints', 'commercial_subscription',
+            'commercial_subscription_is_due', 'createBug',
+            'createCustomLanguageCode', 'custom_language_codes',
+            'date_next_suggest_packaging', 'datecreated', 'description',
+            'development_focus', 'development_focusID',
+            'direct_answer_contacts', 'displayname', 'distrosourcepackages',
+            'downloadurl', 'driver', 'drivers', 'enable_bug_expiration',
+            'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
+            'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',
+            'getAllowedBugInformationTypes',
+            'getAllowedSpecificationInformationTypes', 'getAnnouncement',
+            'getAnnouncements', 'getAnswerContactsForLanguage',
+            'getAnswerContactRecipients', 'getBranches',
+            'getBugSummaryContextWhereClause', 'getBugTaskWeightFunction',
+            'getCustomLanguageCode', 'getDefaultBugInformationType',
+            'getDefaultSpecificationInformationType',
+            'getEffectiveTranslationPermission', 'getExternalBugTracker',
+            'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
+            'getMergeProposals', 'getMilestone', 'getMilestonesAndReleases',
+            'getQuestion', 'getQuestionLanguages', 'getPackage', 'getRelease',
+            'getSeries', 'getSpecification', 'getSubscription',
+            'getSubscriptions', 'getSupportedLanguages', 'getTimeline',
+            'getTopContributors', 'getTopContributorsGroupedByCategory',
+            'getTranslationGroups', 'getTranslationImportQueueEntries',
+            'getTranslators', 'getUsedBugTagsWithOpenCounts',
+            'getVersionSortedSeries',
+            'has_current_commercial_subscription',
+            'has_custom_language_codes', 'has_milestones', 'homepage_content',
+            'homepageurl', 'icon', 'invitesTranslationEdits',
+            'invitesTranslationSuggestions',
+            'license_info', 'license_status', 'licenses', 'logo', 'milestones',
+            'mugshot', 'name', 'name_with_project', 'newCodeImport',
+            'obsolete_translatable_series', 'official_answers',
+            'official_anything', 'official_blueprints', 'official_bug_tags',
+            'official_codehosting', 'official_malone', 'owner',
+            'parent_subscription_target', 'packagedInDistros', 'packagings',
+            'past_sprints', 'personHasDriverRights', 'pillar',
+            'primary_translatable', 'private_bugs',
+            'programminglang', 'project', 'qualifies_for_free_hosting',
+            'recipes', 'redeemSubscriptionVoucher', 'registrant', 'releases',
+            'remote_product', 'removeCustomLanguageCode',
+            'screenshotsurl',
+            'searchFAQs', 'searchQuestions', 'searchTasks', 'security_contact',
+            'series',
+            'sharesTranslationsWithOtherSide', 'sourceforgeproject',
+            'sourcepackages', 'specification_sharing_policy', 'specifications',
+            'sprints', 'summary', 'target_type_display', 'title',
+            'translatable_packages', 'translatable_series',
+            'translation_focus', 'translationgroup', 'translationgroups',
+            'translationpermission', 'translations_usage', 'ubuntu_packages',
+            'userCanAlterBugSubscription', 'userCanAlterSubscription',
+            'userCanEdit', 'userHasBugSubscriptions', 'uses_launchpad',
+            'wikiurl')),
+        'launchpad.AnyAllowedPerson': set((
+            'addAnswerContact', 'addBugSubscription',
+            'addBugSubscriptionFilter', 'addSubscription',
+            'createQuestionFromBug', 'newQuestion', 'removeAnswerContact',
+            'removeBugSubscription')),
+        'launchpad.Append': set(('newFAQ', )),
+        'launchpad.Driver': set(('newSeries', )),
+        'launchpad.Edit': set((
+            'addOfficialBugTag', 'removeOfficialBugTag',
+            'setBranchSharingPolicy', 'setBugSharingPolicy',
+            'setSpecificationSharingPolicy')),
+        'launchpad.Moderate': set((
+            'is_permitted', 'license_approved', 'project_reviewed',
+            'reviewer_whiteboard', 'setAliases')),
+        }
+
+    def test_get_permissions(self):
+        product = self.factory.makeProduct()
+        checker = getChecker(product)
+        self.check_permissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    def test_set_permissions(self):
+        expected_set_permissions = {
+            'launchpad.BugSupervisor': set((
+                'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+                'bugtracker', 'enable_bug_expiration',
+                'enable_bugfiling_duplicate_search', 'official_bug_tags',
+                'official_malone', 'remote_product')),
+            'launchpad.Edit': set((
+                'answers_usage', 'blueprints_usage', 'bug_supervisor',
+                'bug_tracking_usage', 'codehosting_usage',
+                'commercial_subscription', 'description', 'development_focus',
+                'displayname', 'downloadurl', 'driver', 'freshmeatproject',
+                'homepage_content', 'homepageurl', 'icon', 'information_type',
+                'license_info', 'licenses', 'logo', 'mugshot',
+                'official_answers', 'official_blueprints',
+                'official_codehosting', 'owner', 'private',
+                'programminglang', 'project', 'redeemSubscriptionVoucher',
+                'releaseroot', 'screenshotsurl', 'sourceforgeproject',
+                'summary', 'title', 'uses_launchpad', 'wikiurl')),
+            'launchpad.Moderate': set((
+                'active', 'autoupdate', 'license_approved', 'name',
+                'project_reviewed', 'registrant', 'reviewer_whiteboard')),
+            'launchpad.TranslationsAdmin': set((
+                'translation_focus', 'translationgroup',
+                'translationpermission', 'translations_usage')),
+            'launchpad.AnyAllowedPerson': set((
+                'date_next_suggest_packaging', )),
+            }
+        product = self.factory.makeProduct()
+        checker = getChecker(product)
+        self.check_permissions(
+            expected_set_permissions, checker.set_permissions, 'set')
+
+    def test_access_launchpad_View_public_product(self):
+        # Everybody, including anonymous users, has access to
+        # properties of public products that require the permission
+        # launchpad.View
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(None):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(product.owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_launchpad_View_public_inactive_product(self):
+        # Everybody, including anonymous users, has access to
+        # properties of public but inactvie products that require
+        # the permission launchpad.View.
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).active = False
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(None):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(product.owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_launchpad_View_proprietary_product(self):
+        # Only people with grants for a private product can access
+        # attributes protected by the permission launchpad.View.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        with person_logged_in(owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Admins can access proprietary products.
+        with celebrity_logged_in('admin'):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with celebrity_logged_in('registry_experts'):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Commercial admins have access to all products.
+        with celebrity_logged_in('commercial_admin'):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_launchpad_AnyAllowedPerson_public_product(self):
+        # Only logged in persons have access to properties of public products
+        # that require the permission launchpad.AnyAllowedPerson.
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(product.owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_launchpad_AnyAllowedPerson_proprietary_product(self):
+        # Only people with grants for a private product can access
+        # attributes protected by the permission launchpad.AnyAllowedPerson.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
+        names = self.expected_get_permissions['launchpad.AnyAllowedPerson']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        with person_logged_in(owner):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_set_launchpad_AnyAllowedPerson_public_product(self):
+        # Only logged in users can set attributes protected by the
+        # permission launchpad.AnyAllowedPerson.
+        product = self.factory.makeProduct()
+        with person_logged_in(None):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+        with person_logged_in(product.owner):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+
+    def test_set_launchpad_AnyAllowedPerson_proprietary_product(self):
+        # Only people with grants for a private product can set
+        # attributes protected by the permission launchpad.AnyAllowedPerson.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
+        with person_logged_in(None):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            self.assertRaises(
+                Unauthorized, setattr, product, 'date_next_suggest_packaging',
+                'foo')
+        with person_logged_in(owner):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+        # A user with a policy grant for the product can access attributes
+        # of a private product.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, ordinary_user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(ordinary_user):
+            setattr(product, 'date_next_suggest_packaging', 'foo')
+
+    def test_userCanView_caches_known_users(self):
+        # userCanView() maintains a cache of users known to have the
+        # permission to access a product.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        owner = removeSecurityProxy(product).owner
+        user = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            with StormStatementRecorder() as recorder:
+                # The first access to a property of the product from
+                # a user requires a DB query.
+                product.homepageurl
+                queries_for_first_user_access = len(recorder.queries)
+                # The second access does not require another query.
+                product.description
+                self.assertEqual(
+                queries_for_first_user_access, len(recorder.queries))
+
+    def test_userCanView_works_with_IPersonRoles(self):
+        # userCanView() maintains a cache of users known to have the
+        # permission to access a product.
+        product = self.createProduct(
+            information_type=InformationType.PROPRIETARY,
+            license=License.OTHER_PROPRIETARY)
+        user = self.factory.makePerson()
+        product.userCanView(user)
+        product.userCanView(IPersonRoles(user))
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
