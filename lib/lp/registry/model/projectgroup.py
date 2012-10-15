@@ -98,6 +98,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import shortlist
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
@@ -168,10 +169,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IPillar`."""
         return "Project Group"
 
-    @property
-    def products(self):
+    def getProducts(self):
         return Product.selectBy(
             project=self, active=True, orderBy='displayname')
+
+    @cachedproperty
+    def products(self):
+        return list(self.getProducts())
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
@@ -187,8 +191,12 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return [self.driver]
         return []
 
-    def translatables(self):
-        """See `IProjectGroup`."""
+    def getTranslatables(self):
+        """Return an iterator over products that are translatable in LP.
+
+        Only products with IProduct.translations_usage set to
+        ServiceUsage.LAUNCHPAD are considered translatable.
+        """
         store = Store.of(self)
         origin = [
             Product,
@@ -201,9 +209,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 
+    @cachedproperty
+    def translatables(self):
+        """See `IProjectGroup`."""
+        return list(self.getTranslatables())
+
     def has_translatable(self):
         """See `IProjectGroup`."""
-        return not self.translatables().is_empty()
+        return len(self.translatables) > 0
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -383,7 +396,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         This is to avoid situations where users try to file bugs against
         empty project groups (Malone bug #106523).
         """
-        return self.products.count() != 0
+        return len(self.products) != 0
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
