@@ -1462,7 +1462,7 @@ class Person(
         return list(Store.of(self).find(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
 
-    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+    def getAssignedSpecificationWorkItemsDueBefore(self, date, user):
         """See `IPerson`."""
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product

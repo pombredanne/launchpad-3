@@ -1225,7 +1225,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.future_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
 
@@ -1238,7 +1238,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             title=u'workitem', specification=assigned_spec, deleted=True)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
         self.assertEqual([], list(workitems))
 
     def test_workitems_assigned_to_others_working_on_blueprint(self):
@@ -1258,7 +1258,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             assignee=self.factory.makePerson())
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertContentEqual([workitem, workitem_for_other_person],
                                 list(workitems))
@@ -1273,7 +1273,8 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         self.factory.makeSpecificationWorkItem(
             title=u'workitem 1', specification=spec)
 
-        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(today)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            today, self.team)
 
         self.assertEqual([], list(workitems))
 
@@ -1293,7 +1294,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.current_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
 
@@ -1317,7 +1318,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             assignee=self.team.teamowner)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
 
@@ -1362,7 +1363,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             workitems = list(
                 self.team.getAssignedSpecificationWorkItemsDueBefore(
-                    dateexpected))
+                    dateexpected, self.team))
             for workitem in workitems:
                 workitem.assignee
                 workitem.milestone
