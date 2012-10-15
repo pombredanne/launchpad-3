@@ -413,79 +413,8 @@ product itself are included in the vocabulary.
     firefox: 1.0
     firefox: firefox-milestone-no-series
 
-If the context is a bugtask, only the bugtask's target's milestones are
-in the vocabulary.
-
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> firefox_task = bug_one.bugtasks[0]
-    >>> firefox_task.bugtargetdisplayname
-    u'Mozilla Firefox'
-
-    >>> firefox_task_milestones = get_naked_vocab(
-    ...     firefox_task, 'Milestone')
-    >>> for term in firefox_task_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    firefox: 1.0
-    firefox: firefox-milestone-no-series
-
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> debian_woody_task = bug_two.bugtasks[-1]
-    >>> debian_woody_task.bugtargetdisplayname
-    u'mozilla-firefox (Debian Woody)'
-
-    >>> debian_woody_milestones = get_naked_vocab(
-    ...     debian_woody_task, 'Milestone')
-    >>> debian_woody = debian_woody_task.distroseries
-    >>> len(debian_woody_milestones)
-    2
-
-If one of the milestones is disabled, it won't be included in the
-vocabulary anymore.
-
-    >>> milestone = debian_woody.milestones[0]
-    >>> milestone.active = False
-    >>> flush_database_updates()
-    >>> len(get_naked_vocab(debian_woody_task, 'Milestone'))
-    1
-
-If the milestone was used in a bugtask before it was marked inactive,
-though, it'll still show up on the vocabulary so that users can change
-it.
-
-    >>> debian_woody_task.milestone = milestone
-    >>> flush_database_updates()
-    >>> len(get_naked_vocab(debian_woody_task, 'Milestone'))
-    2
-
-This is true for inactive milestones used in bugtasks for products and
-product series as well.
-
-    >>> product_bugtask = factory.makeBugTask(target=firefox)
-    >>> product_bugtask.milestone = firefox_milestone
-    >>> product_target_milestones = get_naked_vocab(
-    ...     product_bugtask, 'Milestone')
-    >>> for term in product_target_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    firefox: 1.0
-    firefox: firefox-milestone-no-series
-
+Inactive milestones are not included in the vocabulary results.
     >>> firefox_milestone.active = False
-    >>> product_target_milestones = get_naked_vocab(
-    ...     product_bugtask, 'Milestone')
-    >>> for term in product_target_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    firefox: 1.0
-    firefox: firefox-milestone-no-series
-
-    >>> productseries_bugtask = factory.makeBugTask(target=firefox_trunk)
-    >>> productseries_bugtask.milestone = firefox_milestone
-    >>> productseries_target_milestones = get_naked_vocab(
-    ...     productseries_bugtask, 'Milestone')
-    >>> for term in productseries_target_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    firefox: 1.0
-    firefox: firefox-milestone-no-series
 
 If the context is a specification, only milestones from that
 specification target are in the vocabulary.
@@ -511,11 +440,6 @@ The vocabulary contains only active milestones.
 
     >>> firefox_milestones = get_naked_vocab(firefox, 'Milestone')
     >>> len(firefox_milestones)
-    0
-
-    >>> firefox_task_milestones = get_naked_vocab(
-    ...     firefox_task, 'Milestone')
-    >>> len(firefox_task_milestones)
     0
 
 
