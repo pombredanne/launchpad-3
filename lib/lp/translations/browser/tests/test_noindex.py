@@ -46,7 +46,12 @@ class TestRobotsMixin:
         # Using create_initialized_view for distroseries causes an error when
         # rendering the view due to the way the view is registered and menus
         # are adapted.  Getting the contents via a browser does work.
-        self.user_browser.open(self.url)
+        #
+        # Retrieve the URL before the user_browser is created. Products
+        # can only be access with an active interaction, and getUserBrowser()
+        # closes the current interaction.
+        url = self.url
+        self.user_browser.open(url)
         return self.user_browser.contents
 
     def getRobotsDirective(self):

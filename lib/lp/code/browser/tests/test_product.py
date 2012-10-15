@@ -222,8 +222,9 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login_person(product.owner)
         product.development_focus.branch = code_import.branch
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        product_url = canonical_url(product, rootsite='code')
         logout()
-        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        browser = self.getUserBrowser(product_url)
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')
         text = extract_text(content)
@@ -379,6 +380,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
 
     def test_is_public(self):
         product = self.factory.makeProduct()
+        product_displayname = product.displayname
         branch = self.factory.makeProductBranch(product=product)
         login_person(product.owner)
         product.development_focus.branch = branch
@@ -386,7 +388,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
         expected = (
             "New branches for %(name)s are Public.*"
-            % dict(name=product.displayname))
+            % dict(name=product_displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
 
