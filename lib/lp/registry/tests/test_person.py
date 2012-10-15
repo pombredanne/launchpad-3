@@ -1682,6 +1682,26 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertIn(informational, result)
         self.assertNotIn(plain, result)
 
+    def test_completeness(self):
+        implemented = self.factory.makeSpecification(
+            implementation_status=
+            SpecificationImplementationStatus.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.COMPLETE])
+        self.assertIn(implemented, result)
+        self.assertNotIn(non_implemented, result)
+
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INCOMPLETE])
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+        result = owner.specifications(
+            None)
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
     def test_text_search(self):
         # Text searches work.
         blueprint1 = self.makeSpec(title='abc')
