@@ -10,7 +10,6 @@ from unittest import TestCase
 from zope.component import getUtility
 
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -20,12 +19,11 @@ from lp.testing import (
     login,
     logout,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMilestoneVocabulary(TestCase):
-    """Test that the BranchVocabulary behaves as expected."""
+    """Test that the MilestoneVocabulary behaves as expected."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -69,74 +67,6 @@ class TestMilestoneVocabulary(TestCase):
         debian = getUtility(IDistributionSet).getByName('debian')
         woody = debian.getSeries('woody')
         vocabulary = MilestoneVocabulary(woody)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testUpstreamBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a upstraem bugtask."""
-        bugtask = getUtility(IBugTaskSet).get(2)
-        firefox = getUtility(IProductSet).getByName('firefox')
-        self.assertEqual(bugtask.product, firefox)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])
-
-    def testDistributionBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a distribution."""
-        bugtask = getUtility(IBugTaskSet).get(4)
-        debian = getUtility(IDistributionSet).getByName('debian')
-        self.assertEqual(bugtask.distribution, debian)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testDistroseriesBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a distroseries."""
-        bugtask = getUtility(IBugTaskSet).get(18)
-        debian = getUtility(IDistributionSet).getByName('debian')
-        woody = debian.getSeries('woody')
-        self.assertEqual(bugtask.distroseries, woody)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testProductseriesBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        bugtask = getUtility(IBugTaskSet).get(29)
-        firefox = getUtility(IProductSet).getByName('firefox')
-        series_1_0 = firefox.getSeries('1.0')
-        self.assertEqual(bugtask.productseries, series_1_0)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])
-
-    def testDistributionsourcepackageBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        factory = LaunchpadObjectFactory()
-        debian = getUtility(IDistributionSet).getByName('debian')
-        distro_sourcepackage = factory.makeDistributionSourcePackage(
-            distribution=debian)
-        factory.makeSourcePackagePublishingHistory(
-            distroseries=debian.currentseries,
-            sourcepackagename=distro_sourcepackage.sourcepackagename)
-        bugtask = factory.makeBugTask(target=distro_sourcepackage)
-        vocabulary = MilestoneVocabulary(bugtask)
-        self.assertEqual(
-            [term.title for term in vocabulary],
-            [u'Debian 3.1', u'Debian 3.1-rc1'])
-
-    def testSourcepackageBugTaskMilestoneVocabulary(self):
-        """Test of MilestoneVocabulary for a productseries."""
-        factory = LaunchpadObjectFactory()
-        debian = getUtility(IDistributionSet).getByName('debian')
-        woody = debian.getSeries('woody')
-        sourcepackage = factory.makeSourcePackage(
-            distroseries=woody)
-        bugtask = factory.makeBugTask(target=sourcepackage)
-        vocabulary = MilestoneVocabulary(bugtask)
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1'])
