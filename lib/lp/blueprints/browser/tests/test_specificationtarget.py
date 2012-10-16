@@ -9,7 +9,10 @@ from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.specificationtarget import (
@@ -18,7 +21,9 @@ from lp.blueprints.interfaces.specificationtarget import (
     )
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
+    BrowserTestCase,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -315,3 +320,19 @@ class SpecificationSetViewTestCase(TestCaseWithFactory):
         self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)
+
+
+class TestPrivacy(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_specs(self):
+        proprietary = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        product = proprietary.product
+        public = self.factory.makeSpecification(product=product)
+        with person_logged_in(product.owner):
+            product.blueprints_usage = ServiceUsage.LAUNCHPAD
+            browser = self.getViewBrowser(product, '+specs')
+        self.assertIn(public.name, browser.contents)
+        self.assertNotIn(proprietary.name, browser.contents)
