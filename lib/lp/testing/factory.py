@@ -2128,7 +2128,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
-                information_type, naked_spec.target.owner)
+                information_type, removeSecurityProxy(spec.target).owner)
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
