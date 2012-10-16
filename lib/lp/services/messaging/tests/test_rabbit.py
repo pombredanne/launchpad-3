@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from functools import partial
 from itertools import count
+import socket
 import thread
 
 from testtools.testcase import ExpectedException
@@ -123,6 +124,19 @@ class TestRabbitSession(RabbitTestCase):
         session.disconnect()
         self.assertFalse(session.is_connected)
 
+
+
+    def test_disconnect_with_error(self):
+        session = self.session_factory()
+        session.connect()
+        old_close = session._connection.close
+        def new_close(*args, **kwargs):
+            old_close(*args, **kwargs)
+            raise socket.error
+        session._connection.close = new_close
+        session.disconnect()
+        self.assertFalse(session.is_connected)
+    
     def test_is_connected(self):
         # is_connected is False once a connection has been closed.
         session = self.session_factory()

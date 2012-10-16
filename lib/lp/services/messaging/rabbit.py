@@ -15,6 +15,7 @@ from collections import deque
 from functools import partial
 import json
 import sys
+import socket
 import threading
 import time
 
@@ -117,6 +118,9 @@ class RabbitSession(threading.local):
         if self._connection is not None:
             try:
                 self._connection.close()
+            except socket.error as e:
+                # Socket error is fine; the connection is still closed.
+                pass
             finally:
                 self._connection = None
 
