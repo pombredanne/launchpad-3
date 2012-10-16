@@ -1300,6 +1300,8 @@ def get_specification_filters(filter):
     clauses = [Or(Specification.product == None,
                   Not(Specification.productID.is_in(Select(Product.id,
                       Product.active == False))))]
+    if SpecificationFilter.ALL in filter:
+        return clauses
     # look for informational specs
     if SpecificationFilter.INFORMATIONAL in filter:
         clauses.append(Specification.implementation_status ==
