@@ -93,6 +93,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
@@ -1351,7 +1352,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        clauses = [Specification.product == self]
+        clauses = [Specification.product == self,
+                   get_specification_privacy_filter(user)]
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         results.order_by(order)

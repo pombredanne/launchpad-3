@@ -1391,6 +1391,34 @@ class TestSpecifications(TestCaseWithFactory):
         result = list_result(product, ['def'])
         self.assertEqual([blueprint2], result)
 
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertEqual([], list_result(blueprint1.product))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.product, user=grant.grantee))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.product, user=grant.grantee))
+
 
 class TestWebService(WebServiceTestCase):
 
