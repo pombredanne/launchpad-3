@@ -17,6 +17,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
+from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -203,17 +204,20 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             bug_filter = subscription.bug_filters[0]
             bug_filter.bug_notification_level = BugNotificationLevel.METADATA
         bug = self.factory.makeBug(target=product)
-        first_recipients = bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA)
-#        with StormStatementRecorder() as recorder:
-#            second_recipients = bug.getBugNotificationRecipients(
-#                level=BugNotificationLevel.METADATA)
-#        self.assertThat(recorder, HasQueryCount(Equals(0)))
-        second_recipients = bug.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA)
+        # The factory call queue LIFECYCLE and COMMENT notifications.
+        clear_property_cache(bug)
+        with StormStatementRecorder() as recorder:
+            first_recipients = bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.METADATA)
+            self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
+        with StormStatementRecorder() as recorder:
+            second_recipients = bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.METADATA)
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertContentEqual([bug.owner, subscriber], first_recipients)
         self.assertContentEqual(first_recipients, second_recipients)
+        self.assertIsNot(first_recipients, second_recipients)
         with StormStatementRecorder() as recorder:
             bug.getBugNotificationRecipients(
                 level=BugNotificationLevel.COMMENTS)
-        self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
+            self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
