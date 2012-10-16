@@ -1702,6 +1702,15 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertNotIn(implemented, result)
         self.assertIn(non_implemented, result)
 
+    def test_all(self):
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None, filter=[SpecificationFilter.ALL])
+        self.assertContentEqual([implemented, non_implemented], result)
+
     def test_roles(self):
         created = self.factory.makeSpecification()
         person = created.owner
