@@ -1683,9 +1683,9 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertNotIn(plain, result)
 
     def test_completeness(self):
+        enum = SpecificationImplementationStatus
         implemented = self.factory.makeSpecification(
-            implementation_status =
-            SpecificationImplementationStatus.IMPLEMENTED)
+            implementation_status=enum.IMPLEMENTED)
         owner = implemented.owner
         non_implemented = self.factory.makeSpecification(owner=owner)
         result = owner.specifications(
@@ -1705,6 +1705,7 @@ class TestSpecifications(TestCaseWithFactory):
     def test_roles(self):
         created = self.factory.makeSpecification()
         person = created.owner
+
         def rlist(filter=None):
             return list(person.specifications(None, filter=filter))
         assigned = self.factory.makeSpecification(assignee=person)
