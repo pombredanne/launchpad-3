@@ -1312,6 +1312,11 @@ def get_specification_filters(filter):
         clauses.append(Specification.storm_completeness())
     if SpecificationFilter.INCOMPLETE in filter:
         clauses.append(Not(Specification.storm_completeness()))
+    if SpecificationFilter.VALID in filter:
+        clauses.append(Not(Specification.definition_status.is_in([
+            SpecificationDefinitionStatus.OBSOLETE,
+            SpecificationDefinitionStatus.SUPERSEDED,
+        ])))
     for constraint in filter:
         if isinstance(constraint, basestring):
             # a string in the filter is a text search filter
