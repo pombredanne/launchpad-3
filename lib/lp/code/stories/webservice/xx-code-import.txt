@@ -17,6 +17,7 @@ First we create some objects for use in the tests.
     >>> other_person = factory.makePerson(name='other-person')
     >>> removeSecurityProxy(person).join(team)
     >>> product = factory.makeProduct(name='scruff')
+    >>> product_name = product.name
     >>> svn_branch_url = "http://svn.domain.com/source"
     >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
     ...    registrant=person, product=product, branch_name='import',
@@ -122,7 +123,7 @@ and there is information available about the import itsef.
 
 We can create an import using the API by calling a method on the project.
 
-    >>> product_url = '/' + product.name
+    >>> product_url = '/' + product_name
     >>> new_remote_url = factory.getUniqueURL()
     >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='new-import', rcs_type='Git',
@@ -149,7 +150,7 @@ We can create an import using the API by calling a method on the project.
 
 If we must we can create a CVS import.
 
-    >>> product_url = '/' + product.name
+    >>> product_url = '/' + product_name
     >>> new_remote_url = factory.getUniqueURL()
     >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='cvs-import', rcs_type='Concurrent Versions System',

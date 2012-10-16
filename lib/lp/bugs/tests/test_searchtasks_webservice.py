@@ -54,6 +54,7 @@ class TestProductSearchTasks(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
+        self.product_name = self.product.name
         self.bug = self.factory.makeBug(
             target=self.product,
             information_type=InformationType.PRIVATESECURITY)
@@ -62,7 +63,7 @@ class TestProductSearchTasks(TestCaseWithFactory):
 
     def search(self, api_version, **kwargs):
         return self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
+            '/%s' % self.product_name, 'searchTasks',
             api_version=api_version, **kwargs).jsonBody()
 
     def test_linked_blueprints_in_devel(self):
@@ -102,7 +103,7 @@ class TestProductSearchTasks(TestCaseWithFactory):
     def test_search_with_wrong_orderby(self):
         # Calling searchTasks() with a wrong order_by is a Bad Request.
         response = self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
+            '/%s' % self.product_name, 'searchTasks',
             api_version='devel', order_by='date_created')
         self.assertEqual(400, response.status)
         self.assertRaisesWithContent(

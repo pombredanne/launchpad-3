@@ -135,7 +135,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
         level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
@@ -147,7 +146,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         bug = bug_delta.bug
         if isinstance(change, BugDuplicateChange):
             no_dupe_master_recipients = bug.getBugNotificationRecipients(
-                old_bug=bug_delta.bug_before_modification,
                 level=change.change_level)
             bug_delta.bug.addChange(
                 change, recipients=no_dupe_master_recipients)
@@ -169,7 +167,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
                 change_recipients = bug.getBugNotificationRecipients(
-                    old_bug=bug_delta.bug_before_modification,
                     level=change.change_level)
                 recipients.update(change_recipients)
             bug_delta.bug.addChange(change, recipients=recipients)
