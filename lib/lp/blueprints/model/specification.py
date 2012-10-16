@@ -1295,6 +1295,11 @@ def get_specification_privacy_filter(user):
 
 
 def get_specification_filters(filter):
+    """Return a list of Storm expressions for filtering Specifications.
+
+    :param filters: A collection of SpecificationFilter and/or strings.
+        Strings are used for searches.
+    """
     from lp.registry.model.product import Product
     # If Product is used, it must be active.
     clauses = [Or(Specification.product == None,

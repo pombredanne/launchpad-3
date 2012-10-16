@@ -122,9 +122,7 @@ from lp.app.validators.name import (
     valid_name,
     )
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     SpecificationSort,
     )
 from lp.blueprints.model.specification import (
@@ -841,7 +839,6 @@ class Person(
 
         # defaults for informationalness: we don't have to do anything
         # because the default if nothing is said is ANY
-
 
         roles = set([
             SpecificationFilter.CREATOR,
