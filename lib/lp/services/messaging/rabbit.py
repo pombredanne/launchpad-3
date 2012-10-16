@@ -118,7 +118,7 @@ class RabbitSession(threading.local):
         if self._connection is not None:
             try:
                 self._connection.close()
-            except socket.error as e:
+            except socket.error:
                 # Socket error is fine; the connection is still closed.
                 pass
             finally:
