@@ -704,6 +704,36 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             raise AssertionError(
                 'string %r does not end with %r' % (s, suffix))
 
+    def checkPermissions(self, expected_permissions, used_permissions,
+                          type_):
+        """Check if the used_permissions match expected_permissions.
+
+        :param expected_permissions: A dictionary mapping a permission
+            to a set of attribute names.
+        :param used_permissions: The property get_permissions or
+            set_permissions of getChecker(security_proxied_object).
+        :param type_: The string "set" or "get".
+        """
+        expected = set(expected_permissions.keys())
+        self.assertEqual(
+            expected, set(used_permissions.values()),
+            'Unexpected %s permissions' % type_)
+        for permission in expected_permissions:
+            attribute_names = set(
+                name for name, value in used_permissions.items()
+                if value == permission)
+            self.assertEqual(
+                expected_permissions[permission], attribute_names,
+                'Unexpected set of attributes with %s permission %s:\n'
+                'Defined but not expected: %s\n'
+                'Expected but not defined: %s'
+                % (
+                    type_, permission,
+                    sorted(
+                        attribute_names - expected_permissions[permission]),
+                    sorted(
+                        expected_permissions[permission] - attribute_names)))
+
 
 class TestCaseWithFactory(TestCase):
 

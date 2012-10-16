@@ -727,6 +727,25 @@ class EditProjectMilestoneNever(AuthorizationBase):
         return False
 
 
+class ViewMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
+class EditMilestone(ViewMilestone):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IMilestone
+
+    def checkUnauthenticated(self):
+        return False
+
+
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone

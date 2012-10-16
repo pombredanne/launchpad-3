@@ -6,11 +6,20 @@
 __metaclass__ = type
 
 from operator import attrgetter
+from storm.exceptions import NoneError
 import unittest
 
 from zope.component import getUtility
+from zope.security.checker import (
+    CheckerPublic,
+    getChecker,
+    )
+from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.app.errors import NotFoundError
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -99,6 +108,244 @@ class MilestoneTest(unittest.TestCase):
         self.assertEqual(
             all_visible_milestones_ids,
             [1, 2, 3])
+
+
+class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
+    """A TestCase for the security adapter of milestones."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(MilestoneSecurityAdaperTestCase, self).setUp()
+        self.public_product = self.factory.makeProduct()
+        self.public_milestone = self.factory.makeMilestone(
+            product=self.public_product)
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.proprietary_milestone = self.factory.makeMilestone(
+            product=self.proprietary_product)
+
+    expected_get_permissions = {
+        CheckerPublic: set((
+            'id', 'checkAuthenticated', 'checkUnauthenticated',
+            'userCanView',
+            )),
+        'launchpad.View': set((
+            'active', 'bug_subscriptions', 'bugtasks', 'code_name',
+            'dateexpected', 'displayname', 'distribution', 'distroseries',
+            '_getOfficialTagClause', 'getBugSummaryContextWhereClause',
+            'getBugTaskWeightFunction', 'getSubscription',
+            'getSubscriptions', 'getTags', 'getTagsData',
+            'getUsedBugTagsWithOpenCounts', 'name', 'official_bug_tags',
+            'parent_subscription_target', 'product', 'product_release',
+            'productseries', 'searchTasks', 'series_target',
+            'specifications', 'summary', 'target', 'target_type_display',
+            'title', 'userCanAlterBugSubscription',
+            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            )),
+        'launchpad.AnyAllowedPerson': set((
+            'addBugSubscription', 'addBugSubscriptionFilter',
+            'addSubscription', 'removeBugSubscription',
+            )),
+        'launchpad.Edit': set((
+            'closeBugsAndBlueprints', 'createProductRelease',
+            'destroySelf', 'setTags',
+            )),
+        }
+
+    def test_get_permissions(self):
+        milestone = self.factory.makeMilestone()
+        checker = getChecker(milestone)
+        self.checkPermissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    expected_set_permissions = {
+        'launchpad.Edit': set((
+            'active', 'code_name', 'dateexpected', 'distroseries', 'name',
+            'product_release', 'productseries', 'summary',
+            )),
+        }
+
+    def test_set_permissions(self):
+        milestone = self.factory.makeMilestone()
+        checker = getChecker(milestone)
+        self.checkPermissions(
+            self.expected_set_permissions, checker.set_permissions, 'set')
+
+    def assertAccessAuthorzized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. No exception
+        # should be raised.
+        for name in attribute_names:
+            # class Milestone does not implenet all attributes defined by
+            # class IMilestone. AttributeErrors caused by attempts to
+            # access these attribues are not relevant here: We simply
+            # want to be sure that no Unauthorized error is raised.
+            try:
+                getattr(obj, name)
+            except AttributeError:
+                pass
+
+    def assertAccessUnauthorzized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, getattr, obj, name)
+
+    def assertChangeAuthorzized(self, attribute_names, obj):
+        # Try to changes the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            # Not all attributes declared in configure.zcml to be
+            # settable actually exist. Attempts to set them raises
+            # an AttributeError. Setting an Attribute to None may no
+            # be allowed.
+            #
+            # Both errors can be ignored here: This method intends only
+            # to prove that Unauthorized is not raised.
+            try:
+                setattr(obj, name, None)
+            except (AttributeError, NoneError):
+                pass
+
+    def assertChangeUnauthorzized(self, attribute_names, obj):
+        # Try to changes the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, setattr, obj, name, None)
+
+    def test_access_for_anonymous(self):
+        # Anonymous users have to public attributes of milestones for
+        # private and public products.
+        with person_logged_in(ANONYMOUS):
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions[CheckerPublic],
+                self.public_milestone)
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_milestone)
+
+            # They have access to attributes requiring the permission
+            # launchpad.View of milestones for public products...
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_milestone)
+
+            # ...but not to the same attributes of milestones for private
+            # products.
+            self.assertAccessUnauthorzized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_milestone)
+
+            # They cannot access other attributes.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.View'):
+                    continue
+                self.assertAccessUnauthorzized(names, self.public_milestone)
+                self.assertAccessUnauthorzized(
+                    names, self.proprietary_milestone)
+
+            # They cannot change any attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeUnauthorzized(names, self.public_milestone)
+                self.assertChangeUnauthorzized(
+                    names, self.proprietary_milestone)
+
+    def test_access_for_ordinary_user(self):
+        # Regular users have to public attributes of milestones for
+        # private and public products.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions[CheckerPublic],
+                self.public_milestone)
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_milestone)
+
+            # They have access to attributes requiring the permission
+            # launchpad.View or launchpad.AnyAllowedPerson of milestones
+            # for public products...
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_milestone)
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.public_milestone)
+
+            # ...but not to the same attributes of milestones for private
+            # products.
+            self.assertAccessUnauthorzized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_milestone)
+            self.assertAccessUnauthorzized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_milestone)
+
+            # They cannot access other attributes.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (
+                    CheckerPublic, 'launchpad.View',
+                    'launchpad.AnyAllowedPerson'):
+                    continue
+                self.assertAccessUnauthorzized(names, self.public_milestone)
+                self.assertAccessUnauthorzized(
+                    names, self.proprietary_milestone)
+
+            # They cannot change attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeUnauthorzized(names, self.public_milestone)
+                self.assertChangeUnauthorzized(
+                    names, self.proprietary_milestone)
+
+    def test_access_for_user_with_grant_for_private_product(self):
+        # Users with a policy grant for a private product have access
+        # to most attributes of the private product.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.proprietary_product, user, self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+
+        with person_logged_in(user):
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_milestone)
+
+            # They have access to attributes requiring the permission
+            # launchpad.View or launchpad.AnyAllowedPerson of milestones
+            # for the private product.
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_milestone)
+            self.assertAccessAuthorzized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_milestone)
+
+            # They cannot access other attributes.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (
+                    CheckerPublic, 'launchpad.View',
+                    'launchpad.AnyAllowedPerson'):
+                    continue
+                self.assertAccessUnauthorzized(
+                    names, self.proprietary_milestone)
+
+            # They cannot change attributes.
+            for names in self.expected_set_permissions.values():
+                self.assertChangeUnauthorzized(
+                    names, self.proprietary_milestone)
+
+    def test_access_for_product_owner(self):
+        # The owner of a private product can access all attributes.
+        with person_logged_in(self.proprietary_product_owner):
+            for names in self.expected_get_permissions.values():
+                self.assertAccessAuthorzized(names, self.proprietary_milestone)
+
+            # They can change attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeAuthorzized(names, self.proprietary_milestone)
 
 
 class HasMilestonesSnapshotTestCase(TestCaseWithFactory):

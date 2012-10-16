@@ -535,28 +535,6 @@ class TestProduct(TestCaseWithFactory):
                 CannotChangeInformationType, 'Some series are packaged.'):
                 product.information_type = InformationType.PROPRIETARY
 
-    def check_permissions(self, expected_permissions, used_permissions,
-                          type_):
-        expected = set(expected_permissions.keys())
-        self.assertEqual(
-            expected, set(used_permissions.values()),
-            'Unexpected %s permissions' % type_)
-        for permission in expected_permissions:
-            attribute_names = set(
-                name for name, value in used_permissions.items()
-                if value == permission)
-            self.assertEqual(
-                expected_permissions[permission], attribute_names,
-                'Unexpected set of attributes with %s permission %s:\n'
-                'Defined but not expected: %s\n'
-                'Expected but not defined: %s'
-                % (
-                    type_, permission,
-                    sorted(
-                        attribute_names - expected_permissions[permission]),
-                    sorted(
-                        expected_permissions[permission] - attribute_names)))
-
     expected_get_permissions = {
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
@@ -645,7 +623,7 @@ class TestProduct(TestCaseWithFactory):
     def test_get_permissions(self):
         product = self.factory.makeProduct()
         checker = getChecker(product)
-        self.check_permissions(
+        self.checkPermissions(
             self.expected_get_permissions, checker.get_permissions, 'get')
 
     def test_set_permissions(self):
@@ -678,7 +656,7 @@ class TestProduct(TestCaseWithFactory):
             }
         product = self.factory.makeProduct()
         checker = getChecker(product)
-        self.check_permissions(
+        self.checkPermissions(
             expected_set_permissions, checker.set_permissions, 'set')
 
     def test_access_launchpad_View_public_product(self):
