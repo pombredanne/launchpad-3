@@ -296,7 +296,7 @@ class TestProductAddView(TestCaseWithFactory):
                 InformationType.PROPRIETARY, product.information_type)
 
 
-class TestProductView(TestCaseWithFactory):
+class TestProductView(BrowserTestCase):
     """Tests the ProductView."""
 
     layer = DatabaseFunctionalLayer
@@ -430,6 +430,18 @@ class TestProductView(TestCaseWithFactory):
         self.assertContentEqual(
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
+
+    def test_index_proprietary_specification(self):
+        proprietary = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        product = proprietary.product
+        with person_logged_in(product.owner):
+            product.blueprints_usage = ServiceUsage.LAUNCHPAD
+        public = self.factory.makeSpecification(product=product)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+index')
+        self.assertIn(public.name, browser.contents)
+        self.assertNotIn(proprietary.name, browser.contents)
 
 
 class TestProductEditView(BrowserTestCase):
