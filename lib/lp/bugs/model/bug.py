@@ -1085,20 +1085,13 @@ class Bug(SQLBase, InformationTypeMixin):
         """
         return get_also_notified_subscribers(self, recipients, level)
 
-    def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None):
+    def getBugNotificationRecipients(self,
+                                     level=BugNotificationLevel.LIFECYCLE):
         """See `IBug`."""
-        recipients = BugNotificationRecipients(duplicateof=duplicateof)
+        recipients = BugNotificationRecipients()
         self.getDirectSubscribers(
             recipients, level=level, filter_visible=True)
         self.getIndirectSubscribers(recipients, level=level)
-
-        # XXX Tom Berger 2008-03-18:
-        # We want to look up the recipients for `old_bug` too,
-        # but for this to work, this code has to move out of the
-        # class and into a free function, since `old_bug` is a
-        # `Snapshot`, and doesn't have any of the methods of the
-        # original `Bug`.
         return recipients
 
     def addCommentNotification(self, message, recipients=None, activity=None):
