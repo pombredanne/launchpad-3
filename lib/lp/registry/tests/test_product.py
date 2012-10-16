@@ -1308,7 +1308,7 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
 
     def test_priority_sort_fallback_name(self):
-        # Sorting by priority falls back to name
+        # Sorting by priority falls back to name.
         blueprint1 = self.makeSpec(name='b')
         product = blueprint1.product
         blueprint2 = self.makeSpec(product, name='c')
