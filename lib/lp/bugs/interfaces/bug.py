@@ -71,6 +71,7 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.app.validators.name import bug_name_validator
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -477,7 +478,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(level=BugNotificationLevel.LIFECYCLE):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
