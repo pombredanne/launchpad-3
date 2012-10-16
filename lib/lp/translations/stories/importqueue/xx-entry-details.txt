@@ -15,6 +15,7 @@ entry and its target that may be helpful in queue review.
     >>> queue = TranslationImportQueue()
     >>> product = factory.makeProduct(
     ...     translations_usage=ServiceUsage.LAUNCHPAD)
+    >>> product_displayname = product.displayname
     >>> trunk = product.getSeries('trunk')
     >>> uploader = factory.makePerson()
     >>> entry = queue.addOrUpdateEntry(
@@ -34,7 +35,7 @@ entry and its target that may be helpful in queue review.
 
 The details include the project the entry is for, and who uploaded it.
 
-    >>> product.displayname in details_text
+    >>> product_displayname in details_text
     True
 
     # Must remove the security proxy because IPerson.displayname is protected.

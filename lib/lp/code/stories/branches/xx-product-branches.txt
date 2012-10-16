@@ -180,10 +180,10 @@ The links are only shown if the user has permission to perform the task.
     >>> factory = LaunchpadObjectFactory()
     >>> login(ANONYMOUS)
     >>> product = getUtility(IProductSet).getByName('firefox')
+    >>> owner = product.owner
     >>> old_branch = product.development_focus.branch
     >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = None
-    >>> logout()
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'involvement')
     ...     if links is None:
@@ -203,13 +203,16 @@ hosting configured or if it is not using Launchpad.
 
     >>> print product.codehosting_usage.name
     UNKNOWN
+    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     None
 
     >>> setup_code_hosting('firefox')
+    >>> login(ANONYMOUS)
     >>> print product.codehosting_usage.name
     LAUNCHPAD
+    >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     Import a branch
@@ -233,7 +236,7 @@ And a regular user can only register and import branches.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import a branch' button is still shown.
 
-    >>> ignored = login_person(product.owner)
+    >>> ignored = login_person(owner)
     >>> product.development_focus.branch = old_branch
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')

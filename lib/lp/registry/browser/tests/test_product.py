@@ -631,9 +631,88 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+rdf')
         content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        browser = self.getViewBrowser(product, view_name='+rdf')
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
             'application/rdf+xml', browser.headers['Content-type'])
+
+
+class TestProductSet(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAllInformationTypes(self):
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC, owner=owner)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        return owner, public, proprietary, embargoed
+
+    def test_proprietary_products_skipped(self):
+        # Ignore proprietary products for anonymous users
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        browser = self.getViewBrowser(getUtility(IProductSet))
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners(self):
+        # Owners will see their proprietary products listed
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_skipped_all(self):
+        # Ignore proprietary products for anonymous users
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        product_set = getUtility(IProductSet)
+        browser = self.getViewBrowser(product_set, view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners_all(self):
+        # Owners will see their proprietary products listed
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
+                view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_review_exclude_proprietary_for_expert(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        expert = self.factory.makeRegistryExpert()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=expert)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_review_include_proprietary_for_admin(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        admin = self.factory.makeAdministrator()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=admin)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
