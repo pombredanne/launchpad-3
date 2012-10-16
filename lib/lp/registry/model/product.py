@@ -1749,6 +1749,7 @@ class ProductSet:
             AccessPolicy.product == Product.id,
             AccessPolicy.type == Product._information_type)
         return Or(Product._information_type == InformationType.PUBLIC,
+                  Product._information_type == None,
                   Product.id.is_in(Select(Product.id, granted_products)))
 
     @classmethod
