@@ -174,11 +174,11 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
         self.checkPermissions(
             self.expected_set_permissions, checker.set_permissions, 'set')
 
-    def assertAccessAuthorzized(self, attribute_names, obj):
+    def assertAccessAuthorized(self, attribute_names, obj):
         # Try to access the given attributes of obj. No exception
         # should be raised.
         for name in attribute_names:
-            # class Milestone does not implenet all attributes defined by
+            # class Milestone does not implement all attributes defined by
             # class IMilestone. AttributeErrors caused by attempts to
             # access these attribues are not relevant here: We simply
             # want to be sure that no Unauthorized error is raised.
@@ -187,19 +187,19 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             except AttributeError:
                 pass
 
-    def assertAccessUnauthorzized(self, attribute_names, obj):
+    def assertAccessUnauthorized(self, attribute_names, obj):
         # Try to access the given attributes of obj. Unauthorized
         # should be raised.
         for name in attribute_names:
             self.assertRaises(Unauthorized, getattr, obj, name)
 
-    def assertChangeAuthorzized(self, attribute_names, obj):
+    def assertChangeAuthorized(self, attribute_names, obj):
         # Try to changes the given attributes of obj. Unauthorized
         # should be raised.
         for name in attribute_names:
             # Not all attributes declared in configure.zcml to be
             # settable actually exist. Attempts to set them raises
-            # an AttributeError. Setting an Attribute to None may no
+            # an AttributeError. Setting an Attribute to None may not
             # be allowed.
             #
             # Both errors can be ignored here: This method intends only
@@ -209,32 +209,32 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             except (AttributeError, NoneError):
                 pass
 
-    def assertChangeUnauthorzized(self, attribute_names, obj):
+    def assertChangeUnauthorized(self, attribute_names, obj):
         # Try to changes the given attributes of obj. Unauthorized
         # should be raised.
         for name in attribute_names:
             self.assertRaises(Unauthorized, setattr, obj, name, None)
 
     def test_access_for_anonymous(self):
-        # Anonymous users have to public attributes of milestones for
-        # private and public products.
+        # Anonymous users have access to to public attributes of
+        # milestones for private and public products.
         with person_logged_in(ANONYMOUS):
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions[CheckerPublic],
                 self.public_milestone)
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions[CheckerPublic],
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
             # launchpad.View of milestones for public products...
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.public_milestone)
 
             # ...but not to the same attributes of milestones for private
             # products.
-            self.assertAccessUnauthorzized(
+            self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_milestone)
 
@@ -242,14 +242,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             for permission, names in self.expected_get_permissions.items():
                 if permission in (CheckerPublic, 'launchpad.View'):
                     continue
-                self.assertAccessUnauthorzized(names, self.public_milestone)
-                self.assertAccessUnauthorzized(
+                self.assertAccessUnauthorized(names, self.public_milestone)
+                self.assertAccessUnauthorized(
                     names, self.proprietary_milestone)
 
             # They cannot change any attributes.
             for permission, names in self.expected_set_permissions.items():
-                self.assertChangeUnauthorzized(names, self.public_milestone)
-                self.assertChangeUnauthorzized(
+                self.assertChangeUnauthorized(names, self.public_milestone)
+                self.assertChangeUnauthorized(
                     names, self.proprietary_milestone)
 
     def test_access_for_ordinary_user(self):
@@ -257,29 +257,29 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
         # private and public products.
         user = self.factory.makePerson()
         with person_logged_in(user):
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions[CheckerPublic],
                 self.public_milestone)
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions[CheckerPublic],
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
             # launchpad.View or launchpad.AnyAllowedPerson of milestones
             # for public products...
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.public_milestone)
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
                 self.public_milestone)
 
             # ...but not to the same attributes of milestones for private
             # products.
-            self.assertAccessUnauthorzized(
+            self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_milestone)
-            self.assertAccessUnauthorzized(
+            self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
                 self.proprietary_milestone)
 
@@ -289,14 +289,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                     CheckerPublic, 'launchpad.View',
                     'launchpad.AnyAllowedPerson'):
                     continue
-                self.assertAccessUnauthorzized(names, self.public_milestone)
-                self.assertAccessUnauthorzized(
+                self.assertAccessUnauthorized(names, self.public_milestone)
+                self.assertAccessUnauthorized(
                     names, self.proprietary_milestone)
 
             # They cannot change attributes.
             for permission, names in self.expected_set_permissions.items():
-                self.assertChangeUnauthorzized(names, self.public_milestone)
-                self.assertChangeUnauthorzized(
+                self.assertChangeUnauthorized(names, self.public_milestone)
+                self.assertChangeUnauthorized(
                     names, self.proprietary_milestone)
 
     def test_access_for_user_with_grant_for_private_product(self):
@@ -309,17 +309,17 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
 
         with person_logged_in(user):
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions[CheckerPublic],
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
             # launchpad.View or launchpad.AnyAllowedPerson of milestones
             # for the private product.
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_milestone)
-            self.assertAccessAuthorzized(
+            self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
                 self.proprietary_milestone)
 
@@ -329,23 +329,23 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                     CheckerPublic, 'launchpad.View',
                     'launchpad.AnyAllowedPerson'):
                     continue
-                self.assertAccessUnauthorzized(
+                self.assertAccessUnauthorized(
                     names, self.proprietary_milestone)
 
             # They cannot change attributes.
             for names in self.expected_set_permissions.values():
-                self.assertChangeUnauthorzized(
+                self.assertChangeUnauthorized(
                     names, self.proprietary_milestone)
 
     def test_access_for_product_owner(self):
         # The owner of a private product can access all attributes.
         with person_logged_in(self.proprietary_product_owner):
             for names in self.expected_get_permissions.values():
-                self.assertAccessAuthorzized(names, self.proprietary_milestone)
+                self.assertAccessAuthorized(names, self.proprietary_milestone)
 
             # They can change attributes.
             for permission, names in self.expected_set_permissions.items():
-                self.assertChangeAuthorzized(names, self.proprietary_milestone)
+                self.assertChangeAuthorized(names, self.proprietary_milestone)
 
 
 class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
