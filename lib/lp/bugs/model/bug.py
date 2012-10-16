@@ -1889,11 +1889,9 @@ class Bug(SQLBase, InformationTypeMixin):
         bap = self._getAffectedUser(user)
         if bap is None:
             BugAffectsPerson(bug=self, person=user, affected=affected)
-            self._flushAndInvalidate()
         else:
             if bap.affected != affected:
                 bap.affected = affected
-                self._flushAndInvalidate()
 
         dupe_bug_ids = [dupe.id for dupe in self.duplicates]
         # Where BugAffectsPerson records already exist for each duplicate,
@@ -1904,6 +1902,8 @@ class Bug(SQLBase, InformationTypeMixin):
                     BugAffectsPerson.person == user,
                     BugAffectsPerson.bugID.is_in(dupe_bug_ids)),
                 col_values={BugAffectsPerson.affected: affected})
+
+        self._flushAndInvalidate()
 
         if affected:
             self.maybeConfirmBugtasks()
