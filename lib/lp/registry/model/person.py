@@ -127,6 +127,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     )
@@ -864,7 +865,7 @@ class Person(
                     Select(SpecificationSubscription.specificationID,
                         [SpecificationSubscription.person == self]
                     )))
-        clauses = [Or(*role_clauses)]
+        clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
