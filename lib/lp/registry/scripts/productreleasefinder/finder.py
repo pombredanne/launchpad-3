@@ -103,7 +103,7 @@ class ProductReleaseFinder:
 
         self.ztm.begin()
         products = getUtility(IProductSet)
-        for product in products.get_all_active(eager_load=False):
+        for product in products.get_all_active(None, eager_load=False):
             filters = []
 
             for series in product.series:
