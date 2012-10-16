@@ -488,6 +488,14 @@ class IBugView(Interface):
         details of this implementation.
         """
 
+    def clearBugNotificationRecipientsCache():
+        """Clear the bug notification recipient BugNotificationLevel cache.
+
+        Call this when a change to a bug or bugtask would change the
+        notification recipients. Changing a a bugtask's milestone or
+        target is such a case.
+        """
+
     def canBeAQuestion():
         """Return True of False if a question can be created from this bug.
 

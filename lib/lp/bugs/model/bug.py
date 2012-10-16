@@ -1123,6 +1123,15 @@ class Bug(SQLBase, InformationTypeMixin):
             recipients.update(self._notification_recipients_for_comments)
         return recipients
 
+    def clearBugNotificationRecipientsCache(self):
+        cache = get_property_cache(self)
+        if getattr(cache, '_notification_recipients_for_lifecycle', False):
+            del cache._notification_recipients_for_lifecycle
+        if getattr(cache, '_notification_recipients_for_metadata', False):
+            del cache._notification_recipients_for_metadata
+        if getattr(cache, '_notification_recipients_for_comments', False):
+            del cache._notification_recipients_for_comments
+
     def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""
         if recipients is None:

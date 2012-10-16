@@ -17,7 +17,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
-from lp.services.propertycache import clear_property_cache
+from lp.services.propertycache import get_property_cache
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -205,7 +205,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             bug_filter.bug_notification_level = BugNotificationLevel.COMMENTS
         bug = self.factory.makeBug(target=product)
         # The factory call queued LIFECYCLE and COMMENT notifications.
-        clear_property_cache(bug)
+        bug.clearBugNotificationRecipientsCache()
         levels = [
             BugNotificationLevel.LIFECYCLE,
             BugNotificationLevel.METADATA,
@@ -223,3 +223,27 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             self.assertContentEqual([bug.owner, subscriber], first_recipients)
             self.assertContentEqual(first_recipients, second_recipients)
             self.assertIsNot(first_recipients, second_recipients)
+
+    def test_clearBugNotificationRecipientCache(self):
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(subscriber):
+            subscription = product.addBugSubscription(subscriber, subscriber)
+            bug_filter = subscription.bug_filters[0]
+            bug_filter.bug_notification_level = BugNotificationLevel.COMMENTS
+        bug = self.factory.makeBug(target=product)
+        levels = [
+            BugNotificationLevel.LIFECYCLE,
+            BugNotificationLevel.METADATA,
+            BugNotificationLevel.COMMENTS,
+            ]
+        for level in levels:
+            bug.getBugNotificationRecipients(level=level)
+        bug.clearBugNotificationRecipientsCache()
+        cache = get_property_cache(bug)
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_metadata', None))
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
