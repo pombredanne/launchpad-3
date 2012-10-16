@@ -702,7 +702,7 @@ class IBugEdit(Interface):
         If a BugActivity instance is provided as an `activity`, it is linked
         to the notification."""
 
-    def addChange(change, recipients=None):
+    def addChange(change, recipients=None, update_heat=True):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
@@ -710,6 +710,7 @@ class IBugEdit(Interface):
         :param recipients: A set of `IBugNotificationRecipient`s to whom
             to send notifications about this change. If None is passed
             the default list of recipients for the bug will be used.
+        :param update_heat: Whether to update the bug heat.
         """
 
     @operation_parameters(
@@ -978,9 +979,6 @@ class IBugEdit(Interface):
 
         Return None if no bugtask was edited.
         """
-
-    def updateHeat():
-        """Update the heat for the bug."""
 
 
 class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):

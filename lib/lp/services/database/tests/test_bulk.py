@@ -43,6 +43,7 @@ from lp.services.features.model import (
 from lp.services.job.model.job import Job
 from lp.soyuz.model.component import Component
 from lp.testing import (
+    person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -344,3 +345,117 @@ class TestCreate(TestCaseWithFactory):
               SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"),
               BugNotificationLevel.LIFECYCLE)], get_objects=True)
         self.assertEqual(get_transaction_timestamp(), sub.date_created)
+
+
+class TestUpdate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def _assert_references_and_enums(self, perform_update):
+        # update() correctly compiles plain types, enums and references.
+        bug = self.factory.makeBug()
+        people = [self.factory.makePerson() for i in range(5)]
+
+        with person_logged_in(bug.owner):
+            for person in people:
+                bug.subscribe(
+                    person, bug.owner, level=BugNotificationLevel.LIFECYCLE)
+        new_subscribed_by = self.factory.makePerson()
+        recorder, updated_count = perform_update(bug, new_subscribed_by)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(6, updated_count)
+
+        transaction.commit()
+        store = Store.of(bug)
+        store.flush()
+        store.invalidate(bug)
+
+        subs = list(bug.subscriptions)
+        self.assertEqual(6, len(subs))
+        for sub in subs:
+            self.assertEqual(new_subscribed_by, sub.subscribed_by)
+            self.assertEqual(
+                BugNotificationLevel.COMMENTS, sub.bug_notification_level)
+
+    def test_references_and_enums_using_map(self):
+        # update() correctly compiles plain types, enums and references when
+        # passed in as a map of columns->values.
+
+        def perform_update(bug, new_subscribed_by):
+            with StormStatementRecorder() as recorder:
+                updated_count = bulk.update(
+                    BugSubscription.bug_id == bug.id,
+                    {BugSubscription.subscribed_by: new_subscribed_by,
+                     BugSubscription.bug_notification_level:
+                         BugNotificationLevel.COMMENTS})
+            return recorder, updated_count
+
+        self._assert_references_and_enums(perform_update)
+
+    def test_references_and_enums_using_list(self):
+        # update() correctly compiles plain types, enums and references when
+        # passed in as as separate lists of columns and values.
+
+        def perform_update(bug, new_subscribed_by):
+            with StormStatementRecorder() as recorder:
+                updated_count = bulk.update(
+                    BugSubscription.bug_id == bug.id,
+                    [BugSubscription.subscribed_by,
+                     BugSubscription.bug_notification_level],
+                    [new_subscribed_by, BugNotificationLevel.COMMENTS])
+            return recorder, updated_count
+
+        self._assert_references_and_enums(perform_update)
+
+    def test_null_reference(self):
+        # update() handles None as a Reference value.
+        job = IStore(Job).add(Job())
+        branch = self.factory.makeBranch()
+        [branchjob] = bulk.create(
+            (BranchJob.branch, BranchJob.job, BranchJob.job_type),
+            [(branch, job, BranchJobType.RECLAIM_BRANCH_SPACE)],
+            get_objects=True)
+        bulk.update(
+            BranchJob.jobID == branchjob.job.id, {BranchJob.branch: None})
+
+        transaction.commit()
+        store = Store.of(branchjob)
+        store.flush()
+        store.invalidate(branchjob)
+
+        self.assertEqual(None, branchjob.branch)
+
+    def test_fails_on_multiple_classes(self):
+        # update() only works with columns on a single class.
+        self.assertRaises(
+            ValueError, bulk.update, True,
+            (BugSubscription.bug, BranchSubscription.branch))
+
+    def test_fails_on_reference_mismatch(self):
+        # update() handles Reference columns in a typesafe manner.
+        self.assertRaisesWithContent(
+            RuntimeError, "Property used in an unknown class",
+            bulk.update, True,
+            {BugSubscription.bug: self.factory.makeBranch()})
+
+    def test_sql_passed_through(self):
+        # update() passes SQL() expressions through untouched.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+
+        with person_logged_in(bug.owner):
+            bug.subscribe(
+                person, bug.owner, level=BugNotificationLevel.LIFECYCLE)
+        bulk.update(
+            BugSubscription.bug_id == bug.id,
+            {BugSubscription.date_created:
+                 SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")})
+
+        expected_timestamp = get_transaction_timestamp()
+        transaction.commit()
+        store = Store.of(bug)
+        store.flush()
+        store.invalidate(bug)
+
+        sub = bug.subscriptions[0]
+        self.assertEqual(expected_timestamp, sub.date_created)
