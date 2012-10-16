@@ -111,7 +111,7 @@ class MockBug:
     def title(self):
         return "Mock Bug #%s" % self.id
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         recipients = BugNotificationRecipients()
         no_priv = getUtility(IPersonSet).getByEmail(
             'no-priv@canonical.com')
@@ -126,14 +126,14 @@ class MockBug:
 class ExceptionBug(MockBug):
     """A bug which causes an exception to be raised."""
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         raise Exception('FUBAR')
 
 
 class DBExceptionBug(MockBug):
     """A bug which causes a DB constraint to be triggered."""
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         # Trigger a DB constraint, resulting in the transaction being
         # unusable.
         firefox = getUtility(IProductSet).getByName('firefox')

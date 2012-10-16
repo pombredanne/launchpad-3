@@ -127,6 +127,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     )
@@ -1394,7 +1395,7 @@ class Person(
         return list(Store.of(self).find(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
 
-    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+    def getAssignedSpecificationWorkItemsDueBefore(self, date, user):
         """See `IPerson`."""
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
@@ -1411,7 +1412,8 @@ class Person(
                           Specification.milestoneID) == Milestone.id),
             ]
         today = datetime.today().date()
-        query = AND(
+        query = And(
+            get_specification_privacy_filter(user),
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
