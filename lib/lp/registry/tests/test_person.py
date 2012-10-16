@@ -1338,7 +1338,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             milestone.dateexpected, self.team)
         self.assertNotIn(workitem, workitems)
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            milestone.dateexpected, product.owner)
+            milestone.dateexpected, removeSecurityProxy(product).owner)
         self.assertIn(workitem, workitems)
 
     def _makeProductSpec(self, milestone_dateexpected):
