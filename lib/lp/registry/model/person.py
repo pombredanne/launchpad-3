@@ -822,12 +822,26 @@ class Person(
         from lp.blueprints.model.specificationsubscription import (
             SpecificationSubscription,
             )
+        # Make a new copy of the filter, so that we do not mutate what we
+        # were passed as a filter
         if filter is None:
             filter = set()
         else:
             filter = set(filter)
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
         if SpecificationFilter.COMPLETE not in filter:
             filter.add(SpecificationFilter.INCOMPLETE)
+
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
 
         roles = set([
             SpecificationFilter.CREATOR,
@@ -835,6 +849,7 @@ class Person(
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
+        # if no roles are given then we want everything
         if filter.intersection(roles) == set():
             filter.update(roles)
         role_clauses = []
@@ -855,6 +870,8 @@ class Person(
         clauses = [Or(*role_clauses)]
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
+        # The default sort is priority descending, so only explictly sort for
+        # DATE.
         if sort == SpecificationSort.DATE:
             results = results.order_by(Desc(Specification.datecreated))
         if quantity is not None:

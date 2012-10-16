@@ -1300,6 +1300,7 @@ def get_specification_filters(filter):
     clauses = [Or(Specification.product == None,
                   Not(Specification.productID.is_in(Select(Product.id,
                       Product.active == False))))]
+    # ALL is the trump card
     if SpecificationFilter.ALL in filter:
         return clauses
     # look for informational specs
@@ -1312,11 +1313,15 @@ def get_specification_filters(filter):
         clauses.append(Specification.storm_completeness())
     if SpecificationFilter.INCOMPLETE in filter:
         clauses.append(Not(Specification.storm_completeness()))
+
+    # Filter for validity. If we want valid specs only then we should exclude
+    # all OBSOLETE or SUPERSEDED specs
     if SpecificationFilter.VALID in filter:
         clauses.append(Not(Specification.definition_status.is_in([
             SpecificationDefinitionStatus.OBSOLETE,
             SpecificationDefinitionStatus.SUPERSEDED,
         ])))
+    # Filter for specification text
     for constraint in filter:
         if isinstance(constraint, basestring):
             # a string in the filter is a text search filter
