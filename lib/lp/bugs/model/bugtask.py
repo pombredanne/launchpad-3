@@ -773,7 +773,8 @@ class BugTask(SQLBase):
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
         self.milestone = new_milestone
-        # Clear the recipient caches to include milestone subscribers.
+        # Clear the recipient caches so that the milestone subscribers are
+        # notified.
         self.bug.clearBugNotificationRecipientsCache()
 
     def transitionToImportance(self, new_importance, user):
