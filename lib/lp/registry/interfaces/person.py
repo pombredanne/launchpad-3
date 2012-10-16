@@ -1390,10 +1390,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: a boolean.
         """
 
-    def getAssignedSpecificationWorkItemsDueBefore(date):
+    def getAssignedSpecificationWorkItemsDueBefore(date, user):
         """Return SpecificationWorkItems assigned to this person (or members
         of this team) and whose milestone is due between today and the given
         date (inclusive).
+
+        user specifies the user who is viewing the list; items they cannot see
+        are filtered out.  None indicates the anonymous user who can only see
+        public items.
         """
 
     def getAssignedBugTasksDueBefore(date, user):
