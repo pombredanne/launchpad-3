@@ -10,6 +10,7 @@ from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.errors import (
     AddAnswerContactError,
@@ -83,6 +84,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             self.question = self.factory.makeQuestion(
                 title="This is a question")
+            self.target_name = self.question.target.name
 
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
@@ -105,7 +107,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
     def test_GET_xhtml_representation(self):
         # A question's xhtml representation is available on the api.
         response = self.webservice.get(
-            '/%s/+question/%d' % (self.question.target.name,
+            '/%s/+question/%d' % (self.target_name,
                 self.question.id),
             'application/xhtml+xml')
         self.assertEqual(response.status, 200)
@@ -119,7 +121,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         new_title = "No, this is a question"
 
         question_json = self.webservice.get(
-            '/%s/+question/%d' % (self.question.target.name,
+            '/%s/+question/%d' % (self.target_name,
                 self.question.id)).jsonBody()
 
         response = self.webservice.patch(
@@ -156,7 +158,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         # End any open lplib instance.
         logout()
         lp = launchpadlib_for("test", user)
-        return ws_object(lp, self.question)
+        return ws_object(lp, removeSecurityProxy(self.question))
 
     def _set_visibility(self, question):
         """Method to set visibility; needed for assertRaises."""

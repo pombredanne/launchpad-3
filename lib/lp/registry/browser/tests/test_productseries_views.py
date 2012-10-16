@@ -8,12 +8,14 @@ __metaclass__ = type
 
 import soupmatchers
 from testtools.matchers import Not
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -60,6 +62,11 @@ class TestWithBrowser(BrowserTestCase):
         browser = self.getViewBrowser(series)
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
 
+    def getBrowser(self, series, view_name=None):
+        series = removeSecurityProxy(series)
+        url = canonical_url(series, view_name=view_name)
+        return self.getUserBrowser(url, series.product.owner)
+
     def test_package_proprietary_error(self):
         """Packaging a proprietary product produces an error."""
         product = self.factory.makeProduct(
@@ -68,7 +75,7 @@ class TestWithBrowser(BrowserTestCase):
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series,
                                             publish=True)
-        browser = self.getViewBrowser(productseries, '+ubuntupkg')
+        browser = self.getBrowser(productseries, '+ubuntupkg')
         browser.getControl('Source Package Name').value = (
             sp.sourcepackagename.name)
         browser.getControl(ubuntu_series.displayname).selected = True
@@ -84,7 +91,7 @@ class TestWithBrowser(BrowserTestCase):
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product=product)
-        browser = self.getViewBrowser(series)
+        browser = self.getBrowser(series)
         tag = soupmatchers.Tag(
             'portlet-packages', True, attrs={'id': 'portlet-packages'})
         self.assertThat(browser.contents, Not(soupmatchers.HTMLContains(tag)))
