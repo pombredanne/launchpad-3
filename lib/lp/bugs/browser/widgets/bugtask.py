@@ -71,7 +71,6 @@ from lp.bugs.interfaces.bugwatch import (
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
@@ -508,18 +507,6 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
 
         distribution = self.getDistribution()
 
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            try:
-                self.context.vocabulary.setDistribution(distribution)
-                source = self.context.vocabulary.getTermByToken(input).value
-            except NotFoundError:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-            else:
-                return source
-        # Else the untrusted SPN vocab was used so it needs seconday
-        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:

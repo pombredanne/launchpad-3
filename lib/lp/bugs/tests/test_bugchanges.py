@@ -25,7 +25,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -47,8 +46,7 @@ class TestBugChanges(TestCaseWithFactory):
         super(TestBugChanges, self).setUp('foo.bar@canonical.com')
         self.admin_user = getUtility(ILaunchBag).user
         self.user = self.factory.makePerson(
-            displayname='Arthur Dent',
-            selfgenerated_bugnotifications=True)
+            displayname='Arthur Dent', selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
         self.bug = self.factory.makeBug(target=self.product, owner=self.user)
@@ -57,11 +55,9 @@ class TestBugChanges(TestCaseWithFactory):
         # Add some structural subscribers to show that notifications
         # aren't sent to LIFECYCLE subscribers by default.
         self.product_lifecycle_subscriber = self.newSubscriber(
-            self.product, "product-lifecycle",
-            BugNotificationLevel.LIFECYCLE)
+            self.product, "product-lifecycle", BugNotificationLevel.LIFECYCLE)
         self.product_metadata_subscriber = self.newSubscriber(
-            self.product, "product-metadata",
-            BugNotificationLevel.METADATA)
+            self.product, "product-metadata", BugNotificationLevel.METADATA)
 
         self.saveOldChanges()
 
@@ -226,8 +222,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertEqual(activity.target, None)
 
         unsubscribe_activity = dict(
-            whatchanged='removed subscriber Arthur Dent',
-            person=self.user)
+            whatchanged='removed subscriber Arthur Dent', person=self.user)
         self.assertRecordedChange(expected_activity=unsubscribe_activity)
 
     def test_unsubscribe_private_bug(self):
@@ -242,8 +237,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges(bug=bug)
         bug.unsubscribe(subscriber, subscriber)
         unsubscribe_activity = dict(
-            whatchanged=u'removed subscriber Mom',
-            person=subscriber)
+            whatchanged=u'removed subscriber Mom', person=subscriber)
         self.assertRecordedChange(
             expected_activity=unsubscribe_activity, bug=bug)
 
@@ -562,77 +556,17 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.unlinkBranch(branch, self.user)
         self.assertRecordedChange()
 
-    def test_make_private(self):
-        # Marking a bug as private adds items to the bug's activity log
-        # and notifications.
-        bug_before_modification = Snapshot(
-            self.bug, providing=providedBy(self.bug))
-        self.bug.setPrivate(True, self.user)
-        notify(ObjectModifiedEvent(
-            self.bug, bug_before_modification, ['private'], user=self.user))
-
-        visibility_change_activity = {
-            'person': self.user,
-            'whatchanged': 'visibility',
-            'oldvalue': 'public',
-            'newvalue': 'private',
-            }
-
-        visibility_change_notification = {
-            'text': '** Visibility changed to: Private',
-            'person': self.user,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=visibility_change_activity,
-            expected_notification=visibility_change_notification)
-
-    def test_make_public(self):
-        # Marking a bug as public adds items to the bug's activity log
-        # and notifications.
-        private_bug = self.factory.makeBug(
-            information_type=InformationType.USERDATA)
-        self.saveOldChanges(private_bug)
-        self.assertTrue(private_bug.private)
-        bug_before_modification = Snapshot(
-            private_bug, providing=providedBy(private_bug))
-        private_bug.transitionToInformationType(
-            InformationType.PUBLIC, self.user)
-        notify(ObjectModifiedEvent(
-            private_bug, bug_before_modification, ['private'],
-            user=self.user))
-
-        visibility_change_activity = {
-            'person': self.user,
-            'whatchanged': 'visibility',
-            'oldvalue': 'private',
-            'newvalue': 'public',
-            }
-
-        visibility_change_notification = {
-            'text': '** Visibility changed to: Public',
-            'person': self.user,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=visibility_change_activity,
-            expected_notification=visibility_change_notification,
-            bug=private_bug)
-
     def test_change_information_type(self):
         # Changing the information type of a bug adds items to the activity
         # log and notifications.
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
-        feature_flag = {
-            'disclosure.information_type_notifications.enabled': 'on'}
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        with FeatureFixture(feature_flag):
-            bug.transitionToInformationType(
-                InformationType.PRIVATESECURITY, self.user)
-            notify(ObjectModifiedEvent(
-                bug, bug_before_modification, ['information_type'],
-                user=self.user))
+        bug.transitionToInformationType(
+            InformationType.PRIVATESECURITY, self.user)
+        notify(ObjectModifiedEvent(
+            bug, bug_before_modification, ['information_type'],
+            user=self.user))
 
         information_type_change_activity = {
             'person': self.user,
@@ -656,13 +590,9 @@ class TestBugChanges(TestCaseWithFactory):
         person = self.factory.makePerson()
         bug = self.factory.makeBug(owner=person)
         self.saveOldChanges(bug=bug)
-        feature_flag = {
-            'disclosure.information_type_notifications.enabled': 'on'}
         webservice = launchpadlib_for('test', person)
         lp_bug = webservice.load(api_url(bug))
-        with FeatureFixture(feature_flag):
-            lp_bug.transitionToInformationType(
-                information_type='Private Security')
+        lp_bug.transitionToInformationType(information_type='Private Security')
 
         information_type_change_activity = {
             'person': person,
@@ -800,7 +730,7 @@ class TestBugChanges(TestCaseWithFactory):
         # This checks the activity's attribute and target attributes.
         activity = self.bug.activity[-1]
         self.assertEqual(activity.attribute, 'attachments')
-        self.assertEqual(activity.target, None)
+        self.assertIsNone(activity.target)
 
         attachment_added_activity = {
             'person': self.user,
@@ -1686,8 +1616,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=duplicate_bug)
+            expected_notification=expected_notification, bug=duplicate_bug)
 
     def test_convert_to_question_no_comment(self):
         # When a bug task is converted to a question, its status is
@@ -1754,8 +1683,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=new_bug)
+            expected_notification=expected_notification, bug=new_bug)
 
     def test_description_changed_no_self_email(self):
         # Users who have selfgenerated_bugnotifications set to False
@@ -1805,9 +1733,9 @@ class TestBugChanges(TestCaseWithFactory):
         # If a person has a structural METADATA subscription,
         # and a direct LIFECYCLE subscription, they should
         # get no emails for a non-LIFECYCLE change (bug 713382).
-        self.bug.subscribe(self.product_metadata_subscriber,
-                           self.product_metadata_subscriber,
-                           level=BugNotificationLevel.LIFECYCLE)
+        self.bug.subscribe(
+            self.product_metadata_subscriber, self.product_metadata_subscriber,
+            level=BugNotificationLevel.LIFECYCLE)
         self.changeAttribute(
             self.bug, 'description', 'New description')
 

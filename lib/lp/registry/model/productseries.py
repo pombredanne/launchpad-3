@@ -71,7 +71,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.packaging import PackagingUtil
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
 from lp.services.database.constants import UTC_NOW
@@ -83,6 +83,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language
@@ -227,6 +228,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ProductRelease.milestone == Milestone.id)
         result = result.order_by(Desc('datereleased'))
         return DecoratedResultSet(result, decorate)
+
+    @cachedproperty
+    def _cached_releases(self):
+        return self.releases
+
+    def getCachedReleases(self):
+        """See `IProductSeries`."""
+        return self._cached_releases
 
     @property
     def release_files(self):
@@ -495,7 +504,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(
+        pkg = PackagingUtil.createPackaging(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=self,

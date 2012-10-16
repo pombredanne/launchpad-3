@@ -243,9 +243,8 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     usedfor = IProjectGroup
     facet = 'overview'
     links = [
-        'branding', 'driver', 'reassign', 'top_contributors',
-        'announce', 'announcements', 'branch_visibility', 'rdf',
-        'new_product', 'administer', 'milestones']
+        'branding', 'driver', 'reassign', 'top_contributors', 'announce',
+        'announcements', 'rdf', 'new_product', 'administer', 'milestones']
 
     @enabled_with_permission('launchpad.Edit')
     def new_product(self):
@@ -276,11 +275,6 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download-icon')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def branch_visibility(self):
-        text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
 
 class IProjectGroupActionMenu(Interface):
@@ -396,7 +390,7 @@ class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
         The number of sub projects can break the preferred layout so the
         template may want to plan for a long list.
         """
-        return self.context.products.count() > 10
+        return len(self.context.products) > 10
 
     @property
     def project_group_milestone_tag(self):
@@ -522,6 +516,7 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
             displayname=data['displayname'],
             licenses=data['licenses'],
             license_info=data['license_info'],
+            information_type=data.get('information_type'),
             project=self.context,
             )
 

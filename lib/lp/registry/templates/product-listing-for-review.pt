@@ -45,7 +45,7 @@
         <dt>Has releases</dt>
         <dd
           tal:attributes="id string:${context/name/fmt:css-id}-releases"
-          tal:content="structure view/latest_release_with_download_files/image:boolean" />
+          tal:content="structure view/has_download_files/image:boolean" />
       </dl>
 
       <dl class="horizontal"

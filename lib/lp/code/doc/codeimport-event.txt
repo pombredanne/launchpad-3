@@ -163,20 +163,6 @@ And for a Git import, the git details are recorded.
     UPDATE_INTERVAL None
     URL u'git://git.example.org/main.git'
 
-And for a Mercurial import, the hg details are recorded.
-
-    >>> hg_import = factory.makeCodeImport(
-    ...     hg_repo_url='http://hg.example.org/main')
-    >>> hg_create_event = event_set.newCreate(hg_import, nopriv)
-    >>> print_items(hg_create_event)
-    CODE_IMPORT <muted>
-    OWNER ...
-    REVIEW_STATUS u'REVIEWED'
-    ASSIGNEE None
-    UPDATE_INTERVAL None
-    URL u'http://hg.example.org/main'
-
-
 MODIFY
 ------
 

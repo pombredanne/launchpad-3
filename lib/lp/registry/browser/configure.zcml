@@ -364,10 +364,6 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        name="+specs"
-        layer="lp.blueprints.publisher.BlueprintsLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+questions"
         layer="lp.answers.publisher.AnswersLayer"/>
     <browser:pages
@@ -462,10 +458,6 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         path_expression="string:+series/${name}"
         attribute_to_parent="project"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
-        name="+specs"
-        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:menus
         classes="
             ProjectActionMenu
@@ -787,7 +779,6 @@
                 PersonRelatedSoftwareNavigationMenu
                 PersonSetActionNavigationMenu
                 PersonSetContextMenu
-                PersonSpecsMenu
                 "/>
         <browser:menus
             module="lp.registry.browser.menu"
@@ -809,10 +800,6 @@
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
             name="+index"/>
-        <browser:defaultView
-            for="lp.registry.interfaces.person.IPerson"
-            layer="lp.blueprints.publisher.BlueprintsLayer"
-            name="+specs"/>
         <adapter
           factory="lp.registry.browser.person.PersonXHTMLRepresentation"
           name="lazr.restful.EntryResource" />
@@ -967,19 +954,6 @@
             permission="launchpad.Edit"
             class="lp.registry.browser.person.PersonVouchersView"
             template="../templates/person-vouchers.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+table-specworkload"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonSpecWorkloadTableView"
-            template="../../blueprints/templates/person-table-specworkload.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            name="+specworkload"
-            facet="specifications"
-            class="lp.registry.browser.person.PersonSpecWorkloadView"
-            permission="zope.Public"
-            template="../../blueprints/templates/person-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+rdf"
@@ -1371,10 +1345,6 @@
         name="+index"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProduct"
-        name="+specs"
-        layer="lp.blueprints.publisher.BlueprintsLayer"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.product.IProduct"
         name="+code-index"
         layer="lp.code.publisher.CodeLayer"/>
     <browser:defaultView
@@ -1499,7 +1469,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/project-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.Edit"
@@ -1663,10 +1633,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+specs"
-        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1798,10 +1764,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distribution.IDistribution"
-        name="+specs"
-        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         layer="lp.answers.publisher.AnswersLayer"

@@ -53,6 +53,7 @@ from lp.app.validators.url import validate_url
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.structuralsubscription import (
@@ -130,7 +131,7 @@ class IProductSeriesEditRestricted(Interface):
 
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
     IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     id = Int(title=_('ID'))
@@ -259,6 +260,11 @@ class IProductSeriesPublic(
         description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getCachedReleases():
+        """Gets a cached copy of this series' releases.
+
+        Returns None if there is no release."""
 
     def getLatestRelease():
         """Gets the most recent release in the series.

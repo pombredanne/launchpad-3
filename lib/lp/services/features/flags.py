@@ -184,13 +184,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.dsp_picker.enabled',
-     'boolean',
-     'Enables the use of the new DistributionSourcePackage vocabulary for '
-     'the source and binary package name pickers.',
-     '',
-     '',
-     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
@@ -224,13 +217,6 @@ flag_info = sorted([
     ('registry.upcoming_work_view.enabled',
      'boolean',
      ('If true, the new upcoming work view of teams is available.'),
-     '',
-     '',
-     ''),
-    ('disclosure.information_type_notifications.enabled',
-     'boolean',
-     ('If true, calculate and store bugchange notifications to reference '
-      'information_type rather than private/security_related.'),
      '',
      '',
      ''),

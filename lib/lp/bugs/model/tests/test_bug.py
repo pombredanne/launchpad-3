@@ -8,12 +8,12 @@ from datetime import (
     timedelta,
     )
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from pytz import UTC
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -69,6 +69,31 @@ class TestBug(TestCaseWithFactory):
             bug.addNomination(series.owner, series)
         nomination = bug.getNominationFor(sourcepackage)
         self.assertEqual(series, nomination.target)
+
+    def makeManyNominations(self):
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        bug = nomination.bug
+        other_series = self.factory.makeProductSeries()
+        other_target = other_series.product
+        self.factory.makeBugTask(bug=bug, target=other_target)
+        with person_logged_in(other_target.owner):
+            other_nomination = bug.addNomination(
+                other_target.owner, other_series)
+        return bug, [nomination, other_nomination]
+
+    def test_getNominations(self):
+        # The getNominations() method returns all the nominations for the bug.
+        bug, nominations = self.makeManyNominations()
+        self.assertContentEqual(nominations, bug.getNominations())
+
+    def test_getNominations_with_target(self):
+        # The target argument filters the nominations to just one pillar.
+        bug, nominations = self.makeManyNominations()
+        pillar = nominations[0].target.pillar
+        self.assertContentEqual([nominations[0]], bug.getNominations(pillar))
 
     def test_markAsDuplicate_None(self):
         # Calling markAsDuplicate(None) on a bug that is not currently a
@@ -586,7 +611,7 @@ class TestBug(TestCaseWithFactory):
             self.assertEqual(0, len(recorder.events))
 
 
-class TestBugPrivateAndSecurityRelatedUpdatesMixin:
+class TestBugPrivateAndSecurityRelatedUpdatesProject(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -625,8 +650,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor,
             driver=product_driver)
-        if self.private_project:
-            removeSecurityProxy(bug_product).private_bugs = True
         bug = self.factory.makeBug(owner=bug_owner, target=bug_product)
         with person_logged_in(bug_owner):
             if private_security_related:
@@ -937,24 +960,6 @@ class TestBugPrivacy(TestCaseWithFactory):
                 CannotChangeInformationType, "Forbidden by project policy.",
                 bug.transitionToInformationType,
                 InformationType.PUBLIC, bug.owner)
-
-
-class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
-        TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
-
-    def setUp(self):
-        s = super(TestBugPrivateAndSecurityRelatedUpdatesPrivateProject, self)
-        s.setUp()
-        self.private_project = True
-
-
-class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
-        TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
-
-    def setUp(self):
-        s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
-        s.setUp()
-        self.private_project = False
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):

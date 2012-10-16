@@ -47,7 +47,7 @@
           # the URL produced.
         </tal:XXX>
         <a href="/+recently-imported-branches">over 2000
-        <abbr>CVS</abbr>, <abbr>SVN</abbr>, Git and Mercurial projects</a>,
+        <abbr>CVS</abbr>, <abbr>SVN</abbr> and Git projects</a>,
         so you can use Bazaar with those too.
         (<a href="https://help.launchpad.net/Code">Read our guide</a>)
       </p>

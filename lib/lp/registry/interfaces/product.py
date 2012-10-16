@@ -90,15 +90,13 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
-    )
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy,
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
@@ -432,8 +430,8 @@ class IProductPublic(Interface):
 
 class IProductLimitedView(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones,
+    IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
@@ -634,24 +632,26 @@ class IProductLimitedView(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
-                        description=_(
-                            "Whether or not bugs reported into this project "
-                            "are private by default.")))
+    private_bugs = exported(
+        Bool(
+            title=_('Private bugs (obsolete; always False)'), readonly=True,
+            description=_("Replaced by bug_sharing_policy.")),
+        ('devel', dict(exported=False)))
+
     branch_sharing_policy = exported(Choice(
         title=_('Branch sharing policy'),
         description=_("Sharing policy for this project's branches."),
-        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        required=True, readonly=True, vocabulary=BranchSharingPolicy),
         as_of='devel')
     bug_sharing_policy = exported(Choice(
         title=_('Bug sharing policy'),
         description=_("Sharing policy for this project's bugs."),
-        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        required=True, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
     specification_sharing_policy = exported(Choice(
         title=_('Specification sharing policy'),
         description=_("Sharing policy for this project's specifications."),
-        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        required=True, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
 
     licenses = exported(
@@ -783,24 +783,6 @@ class IProductLimitedView(
             title=_('Security contact'), required=False, readonly=True,
             description=_('Security contact (obsolete; always None)')),
             ('devel', dict(exported=False)), as_of='1.0')
-
-    def checkPrivateBugsTransitionAllowed(private_bugs, user):
-        """Can the private_bugs attribute be changed to the value by the user?
-
-        Generally, the permission is restricted to ~registry or ~admin or
-        bug supervisors.
-        In addition, a valid commercial subscription is required to turn on
-        private bugs when being done by a bug supervisor. However, no
-        commercial subscription is required to turn off private bugs.
-        """
-
-    @mutator_for(private_bugs)
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(private_bugs=copy_field(private_bugs))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivateBugs(private_bugs, user):
-        """Mutator for private_bugs that checks entitlement."""
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.

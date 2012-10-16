@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -29,10 +29,10 @@ from lp.bugs.adapters.bugchange import (
     BranchUnlinkedFromBug,
     BugAttachmentChange,
     BugDuplicateChange,
+    BugInformationTypeChange,
     BugTagsChange,
     BugTaskStatusChange,
     BugTitleChange,
-    BugVisibilityChange,
     BugWatchAdded,
     BugWatchRemoved,
     CveLinkedToBug,
@@ -96,8 +96,6 @@ class MockBug:
     implements(IBug)
 
     duplicateof = None
-    private = False
-    security_related = False
     information_type = InformationType.PUBLIC
     messages = []
 
@@ -113,7 +111,7 @@ class MockBug:
     def title(self):
         return "Mock Bug #%s" % self.id
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         recipients = BugNotificationRecipients()
         no_priv = getUtility(IPersonSet).getByEmail(
             'no-priv@canonical.com')
@@ -128,14 +126,14 @@ class MockBug:
 class ExceptionBug(MockBug):
     """A bug which causes an exception to be raised."""
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         raise Exception('FUBAR')
 
 
 class DBExceptionBug(MockBug):
     """A bug which causes a DB constraint to be triggered."""
 
-    def getBugNotificationRecipients(self, duplicateof=None):
+    def getBugNotificationRecipients(self, level=None):
         # Trigger a DB constraint, resulting in the transaction being
         # unusable.
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -691,9 +689,9 @@ class EmailNotificationsBugMixin:
 
     def change_other(self):
         self.bug.addChange(
-            BugVisibilityChange(
-                self.ten_minutes_ago, self.person, "private",
-                False, True))
+            BugInformationTypeChange(
+                self.ten_minutes_ago, self.person, "information_type",
+                InformationType.PUBLIC, InformationType.USERDATA))
 
     def test_change_seen(self):
         # A smoketest.

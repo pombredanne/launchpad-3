@@ -346,12 +346,38 @@ class NewSpecificationTests:
 
     expected_keys = set(['PROPRIETARY', 'PUBLIC', 'EMBARGOED'])
 
+    def _create_form_data(self, context):
+        return {
+            'field.actions.register': 'Register Blueprint',
+            'field.definition_status': 'NEW',
+            'field.target': context,
+            'field.name': 'TestBlueprint',
+            'field.title': 'Test Blueprint',
+            'field.summary': 'Test Blueprint Summary',
+        }
+
+    def _assert_information_type_validation_error(self, context, form, owner):
+        """Helper to check for invalid information type on submit."""
+        with person_logged_in(owner):
+            view = create_initialized_view(context, '+addspec', form=form)
+            expected = (u'This information type is not permitted for'
+                        u' this product')
+            self.assertIn(expected, view.errors)
+
     def test_cache_contains_information_type(self):
         view = self.createInitializedView()
         cache = IJSONRequestCache(view.request)
         info_data = cache.objects.get('information_type_data')
         self.assertIsNot(None, info_data)
         self.assertEqual(self.expected_keys, set(info_data.keys()))
+
+    def test_default_info_type(self):
+        # The default selected information type needs to be PUBLIC for new
+        # specifications.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
@@ -360,8 +386,19 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
     layer = DatabaseFunctionalLayer
 
     def createInitializedView(self):
-        specs = getUtility(ISpecificationSet)
-        return create_initialized_view(specs, '+new')
+        context = getUtility(ISpecificationSet)
+        return create_initialized_view(context, '+new')
+
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        view = create_initialized_view(context, '+new', form=form)
+        expected = u'This information type is not permitted for this product'
+        self.assertIn(expected, view.errors)
 
 
 class TestNewSpecificationFromSprintView(TestCaseWithFactory,
@@ -373,6 +410,18 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
         sprint = self.factory.makeSprint()
         return create_initialized_view(sprint, '+addspec')
 
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        sprint = self.factory.makeSprint()
+        product = self.factory.makeProduct(owner=sprint.owner)
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        self._assert_information_type_validation_error(
+            sprint,
+            form,
+            sprint.owner)
+
 
 class TestNewSpecificationFromProjectView(TestCaseWithFactory,
                                           NewSpecificationTests):
@@ -382,6 +431,18 @@ class TestNewSpecificationFromProjectView(TestCaseWithFactory,
     def createInitializedView(self):
         project = self.factory.makeProject()
         return create_initialized_view(project, '+addspec')
+
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project)
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        self._assert_information_type_validation_error(
+            project,
+            form,
+            project.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,
@@ -396,6 +457,14 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         product = self.factory.makeProduct(
             specification_sharing_policy=policy)
         return create_initialized_view(product, '+addspec')
+
+    def test_default_info_type(self):
+        # In this case the default info type cannot be PUBlIC as it's not
+        # among the allowed types.
+        view = self.createInitializedView()
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
@@ -461,9 +530,6 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             if sharing_policy is not None:
                 self.factory.makeCommercialSubscription(product)
                 product.setSpecificationSharingPolicy(sharing_policy)
-            policy = self.factory.makeAccessPolicy(product, information_type)
-            self.factory.makeAccessPolicyGrant(
-                policy, grantee=self.user, grantor=self.user)
             browser = self.getViewBrowser(product, view_name='+addspec')
             control = browser.getControl(information_type.title)
             if not control.selected:
@@ -624,7 +690,6 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         self.assertThat(browser.contents, self.match_it)
         spec = self.getSpecification(target, self.submitSpec(browser))
         self.assertEqual(spec.information_type, InformationType.EMBARGOED)
-
 
 
 class TestNewSpecificationDefaultInformationTypeProduct(

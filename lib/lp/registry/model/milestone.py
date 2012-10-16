@@ -63,6 +63,7 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp.sorting import expand_numbers
 
 
@@ -277,6 +278,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        del get_property_cache(self.productseries).releases
         return release
 
     def closeBugsAndBlueprints(self, user):

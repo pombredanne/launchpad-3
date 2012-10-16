@@ -1,18 +1,30 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
 
 __metaclass__ = type
 
+__all__ = ['make_product_form']
+
 from lazr.restful.interfaces import IJSONRequestCache
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.registry.browser.product import (
@@ -27,7 +39,9 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.registry.model.product import Product
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -35,10 +49,15 @@ from lp.testing import (
     login_celebrity,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.fixture import DemoMode
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import find_tag_by_id
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
@@ -47,7 +66,7 @@ from lp.testing.views import (
     )
 
 
-class TestProductConfiguration(TestCaseWithFactory):
+class TestProductConfiguration(BrowserTestCase):
     """Tests the configuration links and helpers."""
 
     layer = DatabaseFunctionalLayer
@@ -77,6 +96,66 @@ class TestProductConfiguration(TestCaseWithFactory):
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
 
+    lp_tag = Tag('lp_tag', 'input', attrs={'value': 'LAUNCHPAD'})
+
+    def test_configure_answers_has_launchpad_for_public(self):
+        # Public projects support LAUNCHPAD for answers.
+        browser = self.getViewBrowser(self.product, '+configure-answers',
+            user=self.product.owner)
+        self.assertThat(browser.contents, HTMLContains(self.lp_tag))
+
+    def test_configure_answers_skips_launchpad_for_proprietary(self):
+        # Proprietary projects forbid LAUNCHPAD for answers.
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product = self.factory.makeProduct(information_type=info_type)
+            with person_logged_in(None):
+                browser = self.getViewBrowser(product, '+configure-answers',
+                    user=removeSecurityProxy(product).owner)
+            self.assertThat(browser.contents, Not(HTMLContains(self.lp_tag)))
+
+
+def make_product_form(person=None, action=1, proprietary=False):
+    """Return form data for product creation.
+
+    :param person: A person to associate with the product.  Mandatory for
+        proprietary.
+    :param action: 1 means submit step 1.  2 means submit step 2 (completion)
+    :param proprietary: If true, create a PROPRIETARY product.
+    """
+    if action == 1:
+        return {
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': ProjectAddStepOne.step_name,
+            'field.displayname': 'Fnord',
+            'field.name': 'fnord',
+            'field.title': 'fnord',
+            'field.summary': 'fnord summary',
+            }
+    else:
+        form = {
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': '%s|%s' % (
+                ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+            'field.displayname': 'Fnord',
+            'field.name': 'fnord',
+            'field.title': 'fnord',
+            'field.summary': 'fnord summary',
+            'field.disclaim_maintainer': 'off',
+            }
+        if proprietary:
+            form['field.information_type'] = 'PROPRIETARY'
+            form['field.owner'] = person.name
+            form['field.driver'] = person.name
+            form['field.bug_supervisor'] = person.name
+            form['field.licenses'] = License.OTHER_PROPRIETARY.title
+            form['field.license_info'] = 'Commercial Subscription'
+        else:
+            form['field.information_type'] = 0
+            form['field.owner'] = ''
+            form['field.licenses'] = ['MIT']
+            form['field.license_info'] = ''
+        return form
+
 
 class TestProductAddView(TestCaseWithFactory):
     """Tests the configuration links and helpers."""
@@ -86,32 +165,6 @@ class TestProductAddView(TestCaseWithFactory):
     def setUp(self):
         super(TestProductAddView, self).setUp()
         self.product_set = getUtility(IProductSet)
-
-    def makeForm(self, action):
-        if action == 1:
-            return {
-                'field.actions.continue': 'Continue',
-                'field.__visited_steps__': ProjectAddStepOne.step_name,
-                'field.displayname': 'Fnord',
-                'field.name': 'fnord',
-                'field.title': 'fnord',
-                'field.summary': 'fnord summary',
-                }
-        else:
-            return {
-                'field.actions.continue': 'Continue',
-                'field.__visited_steps__': '%s|%s' % (
-                    ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-                'field.displayname': 'Fnord',
-                'field.name': 'fnord',
-                'field.title': 'fnord',
-                'field.summary': 'fnord summary',
-                'field.owner': '',
-                'field.licenses': ['MIT'],
-                'field.license_info': '',
-                'field.disclaim_maintainer': 'off',
-                'field.information_type': 0,
-                }
 
     def test_view_data_model(self):
         # The view's json request cache contains the expected data.
@@ -143,7 +196,7 @@ class TestProductAddView(TestCaseWithFactory):
         registrant = self.factory.makePerson(name='pting')
         transaction.commit()
         login_person(registrant)
-        form = self.makeForm(action=1)
+        form = make_product_form(action=1)
         view = create_initialized_view(self.product_set, '+new', form=form)
         owner_widget = view.view.widgets['owner']
         self.assertEqual('pting', view.view.initial_values['owner'])
@@ -171,7 +224,7 @@ class TestProductAddView(TestCaseWithFactory):
             membership_policy=TeamMembershipPolicy.RESTRICTED)
         transaction.commit()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = team.name
         view = create_initialized_view(self.product_set, '+new', form=form)
         self.assertEqual(0, len(view.view.errors))
@@ -183,7 +236,7 @@ class TestProductAddView(TestCaseWithFactory):
         # and the registry team is made the maintainer.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = registrant.name
         form['field.disclaim_maintainer'] = 'on'
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -196,7 +249,7 @@ class TestProductAddView(TestCaseWithFactory):
         # not selected.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = ''
         del form['field.disclaim_maintainer']
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -208,7 +261,7 @@ class TestProductAddView(TestCaseWithFactory):
         # selected.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
+        form = make_product_form(action=2)
         form['field.owner'] = ''
         form['field.disclaim_maintainer'] = 'on'
         view = create_initialized_view(self.product_set, '+new', form=form)
@@ -221,9 +274,7 @@ class TestProductAddView(TestCaseWithFactory):
         # if the private projects feature flag is not enabled.
         registrant = self.factory.makePerson()
         login_person(registrant)
-        form = self.makeForm(action=2)
-        form['field.information_type'] = 'PROPRIETARY'
-        form['field.owner'] = registrant.name
+        form = make_product_form(registrant, action=2, proprietary=True)
         view = create_initialized_view(self.product_set, '+new', form=form)
         self.assertEqual(0, len(view.view.errors))
         product = self.product_set.getByName('fnord')
@@ -235,14 +286,8 @@ class TestProductAddView(TestCaseWithFactory):
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             registrant = self.factory.makePerson()
             login_person(registrant)
-            form = self.makeForm(action=2)
-            form['field.information_type'] = 'PROPRIETARY'
-            form['field.owner'] = registrant.name
-            form['field.driver'] = registrant.name
+            form = make_product_form(registrant, action=2, proprietary=True)
             form['field.maintainer'] = registrant.name
-            form['field.bug_supervisor'] = registrant.name
-            form['field.licenses'] = License.OTHER_PROPRIETARY.title
-            form['field.license_info'] = 'Commericial Subscription'
             view = create_initialized_view(
                 self.product_set, '+new', form=form)
             self.assertEqual(0, len(view.view.errors))
@@ -387,10 +432,95 @@ class TestProductView(TestCaseWithFactory):
             cache.objects['team_membership_policy_data'])
 
 
+class TestProductEditView(BrowserTestCase):
+    """Tests for the ProductEditView"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductEditView, self).setUp()
+
+    def _make_product_edit_form(self, product, proprietary=False):
+        """Return form data for product edit.
+
+        :param product: Factory product to base the form data base of.
+        """
+        if proprietary:
+            licenses = License.OTHER_PROPRIETARY.title
+            license_info = 'Commercial Subscription'
+            information_type = 'PROPRIETARY'
+        else:
+            licenses = ['MIT']
+            license_info = ''
+            information_type = 'PUBLIC'
+
+        return {
+            'field.actions.change': 'Change',
+            'field.name': product.name,
+            'field.displayname': product.displayname,
+            'field.title': product.title,
+            'field.summary': product.summary,
+            'field.information_type': information_type,
+            'field.licenses': licenses,
+            'field.license_info': license_info,
+        }
+
+    def test_change_information_type_proprietary(self):
+        product = self.factory.makeProduct(name='fnord')
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(product.owner)
+            form = self._make_product_edit_form(product, proprietary=True)
+            view = create_initialized_view(product, '+edit', form=form)
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            updated_product = product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PROPRIETARY, updated_product.information_type)
+            # A complimentary commercial subscription is auto generated for
+            # the product when the information type is changed.
+            self.assertIsNotNone(updated_product.commercial_subscription)
+
+    def test_change_information_type_proprietary_packaged(self):
+        # It should be an error to make a Product private if it is packaged.
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        product = self.factory.makeProduct()
+        sourcepackage = self.factory.makeSourcePackage()
+        sourcepackage.setPackaging(product.development_focus, product.owner)
+        browser = self.getViewBrowser(product, '+edit', user=product.owner)
+        info_type = browser.getControl(name='field.information_type')
+        info_type.value = ['PROPRIETARY']
+        old_url = browser.url
+        browser.getControl('Change').click()
+        self.assertEqual(old_url, browser.url)
+        tag = Tag('error', 'div', text='Some series are packaged.',
+                  attrs={'class': 'message'})
+        self.assertThat(browser.contents, HTMLContains(tag))
+
+    def test_change_information_type_public(self):
+        owner = self.factory.makePerson(name='pting')
+        product = self.factory.makeProduct(
+            name='fnord',
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(owner)
+            form = self._make_product_edit_form(product)
+            view = create_initialized_view(product, '+edit', form=form)
+            self.assertEqual(0, len(view.errors))
+
+            product_set = getUtility(IProductSet)
+            updated_product = product_set.getByName('fnord')
+            self.assertEqual(
+                InformationType.PUBLIC, updated_product.information_type)
+
+
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(ProductSetReviewLicensesViewTestCase, self).setUp()
@@ -478,6 +608,19 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
                 content.find(id='fnord-edit-license-approved').parent))
+
+    def test_review_licence_query_count(self):
+        # Ensure the query count is not O(n).
+        for _ in range(100):
+            product = self.factory.makeProduct()
+            for _ in range(5):
+                self.factory.makeProductReleaseFile(product=product)
+        IStore(Product).reset()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                self.product_set, '+review-licenses', principal=self.user)
+            view.render()
+            self.assertThat(recorder, HasQueryCount(LessThan(25)))
 
 
 class TestProductRdfView(BrowserTestCase):

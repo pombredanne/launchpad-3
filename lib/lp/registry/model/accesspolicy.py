@@ -477,7 +477,7 @@ class AccessPolicyGrantFlat(StormBase):
             return (
                 person[0],
                 permissions_cache[person[0]],
-                shared_artifact_info_types[person[0]])
+                sorted(shared_artifact_info_types[person[0]]))
 
         def load_permissions(people):
             # We now have the grantees and policies we want in the result so

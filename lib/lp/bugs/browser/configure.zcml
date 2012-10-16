@@ -69,7 +69,7 @@
             name="+bugs"
             template="../templates/buglisting-default.pt"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            for="lp.bugs.interfaces.bugtarget.IHasExpirableBugs"
             class="lp.bugs.browser.bugtask.BugTaskExpirableListingView"
             permission="zope.Public"
             name="+expirable-bugs"
@@ -947,13 +947,13 @@
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            class="lp.bugs.browser.bugtask.BugTasksNominationsView"
             permission="launchpad.View"
             name="+bugtasks-and-nominations-portal"
             template="../templates/bugtasks-and-nominations-portal.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            class="lp.bugs.browser.bugtask.BugTasksTableView"
             permission="launchpad.View"
             name="+bugtasks-and-nominations-table"
             template="../templates/bugtasks-and-nominations-table.pt"/>

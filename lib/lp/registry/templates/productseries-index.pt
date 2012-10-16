@@ -154,7 +154,8 @@
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
 
-          <div tal:content="structure context/@@+portlet-packages" />
+          <div tal:content="structure context/@@+portlet-packages"
+               tal:condition="not: context/product/private" />
         </div>
 
         <div class="yui-u">

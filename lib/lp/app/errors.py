@@ -9,6 +9,7 @@ __all__ = [
     'NameLookupFailed',
     'NotFoundError',
     'POSTToNonCanonicalURL',
+    'ServiceUsageForbidden',
     'SubscriptionPrivacyViolation',
     'TranslationUnavailable',
     'UnexpectedFormData',
@@ -79,6 +80,11 @@ class UserCannotUnsubscribePerson(Unauthorized):
 @error_status(httplib.BAD_REQUEST)
 class SubscriptionPrivacyViolation(Exception):
     """The subscription would violate privacy policies."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class ServiceUsageForbidden(Exception):
+    """The specified ServiceUsage is not allowed."""
 
 
 # Slam a 401 response code onto all ForbiddenAttribute errors.

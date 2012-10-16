@@ -9,15 +9,16 @@
   tal:define="link context/menu:context/visibility"
 >
   <div id="privacy-text">
-       <span id="information-type-summary"
-         tal:attributes="class view/information_type_css;">This report
-         contains
+     <span id="information-type-summary"
+         tal:attributes="class view/information_type_css;">This report contains
          <strong id="information-type" tal:content="view/information_type" />
          information
-       </span>&nbsp;<a class="sprite edit action-icon" id="privacy-link"
-           tal:attributes="href link/path" tal:condition="link/enabled"
-           >Edit</a>
-      <div id="information-type-description" style="padding-top: 5px"
-                tal:content="view/information_type_description"></div>
+     </span>&nbsp;<a class="sprite edit action-icon" id="privacy-link"
+         tal:attributes="href link/path" tal:condition="link/enabled"
+         >Edit</a>
+
+     <div id="information-type-description" style="padding-top: 5px"
+         tal:content="view/information_type_description">
+     </div>
   </div>
 </div>

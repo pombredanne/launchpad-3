@@ -60,6 +60,7 @@ from lp.app.validators.version import sane_version
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IHasBugs,
     IHasOfficialBugTags,
     )
@@ -173,7 +174,7 @@ class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
     IHasBuildRecords, IHasTranslationImports, IHasTranslationTemplates,
-    IServiceUsage):
+    IServiceUsage, IHasExpirableBugs):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")

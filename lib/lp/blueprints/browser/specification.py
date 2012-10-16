@@ -102,7 +102,10 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
-from lp.app.enums import PUBLIC_PROPRIETARY_INFORMATION_TYPES
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    )
 from lp.app.utilities import json_dump_information_types
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -218,7 +221,6 @@ class NewSpecificationView(LaunchpadFormView):
     label = "Register a new blueprint"
 
     custom_widget('specurl', TextWidget, displayWidth=60)
-
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def append_info_type(self, fields):
@@ -309,13 +311,42 @@ class NewSpecificationView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set initial values to honor sharing policy default value."""
-        information_type = None
+        information_type = InformationType.PUBLIC
         if (IProduct.providedBy(self.context) or
             IProductSeries.providedBy(self.context)):
             information_type = (
                 self.context.getDefaultSpecificationInformationType())
         values = {'information_type': information_type}
         return values
+
+    def validate(self, data):
+        """See `LaunchpadFormView`.`"""
+        super(NewSpecificationView, self).validate(data)
+        self.validate_information_type(data)
+
+    def validate_information_type(self, data):
+        """Validate the information type is allowed for this context."""
+        information_type = data.get('information_type', None)
+        if information_type is None:
+            # We rely on the model to set the correct default value.
+            return
+        else:
+            # In the case of views outside a target context it's part of the
+            # form.
+            product = IProduct(data.get('target', None), None)
+
+            if (IProduct.providedBy(self.context) or
+                IProductSeries.providedBy(self.context)):
+                product = self.context
+
+            if product:
+                allowed = product.getAllowedSpecificationInformationTypes()
+                # Check that the information type is a valid one for this
+                # Product.
+                if information_type not in allowed:
+                    error = ('This information type is not permitted for '
+                             'this product')
+                    self.setFieldError('information_type', error)
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
@@ -396,6 +427,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 
         The name must be unique within the context of the chosen target.
         """
+        super(NewSpecificationFromNonTargetView, self).validate(data)
         name = data.get('name')
         target = data.get('target')
         if name is not None and target is not None:
