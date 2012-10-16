@@ -195,29 +195,31 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
                 [owner, subscriber], bug.getBugNotificationRecipients())
 
     def test_cache_by_bug_notification_level(self):
-        # The BugNotificationRecipients set is cached by notificatio level
-        # to avoid duplicate work. The return set is copy of the cached set.
+        # The BugNotificationRecipients set is cached by notification level
+        # to avoid duplicate work. The returned set is copy of the cached set.
         subscriber = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(subscriber):
             subscription = product.addBugSubscription(subscriber, subscriber)
             bug_filter = subscription.bug_filters[0]
-            bug_filter.bug_notification_level = BugNotificationLevel.METADATA
+            bug_filter.bug_notification_level = BugNotificationLevel.COMMENTS
         bug = self.factory.makeBug(target=product)
-        # The factory call queue LIFECYCLE and COMMENT notifications.
+        # The factory call queued LIFECYCLE and COMMENT notifications.
         clear_property_cache(bug)
-        with StormStatementRecorder() as recorder:
-            first_recipients = bug.getBugNotificationRecipients(
-                level=BugNotificationLevel.METADATA)
-            self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
-        with StormStatementRecorder() as recorder:
-            second_recipients = bug.getBugNotificationRecipients(
-                level=BugNotificationLevel.METADATA)
-            self.assertThat(recorder, HasQueryCount(Equals(0)))
-        self.assertContentEqual([bug.owner, subscriber], first_recipients)
-        self.assertContentEqual(first_recipients, second_recipients)
-        self.assertIsNot(first_recipients, second_recipients)
-        with StormStatementRecorder() as recorder:
-            bug.getBugNotificationRecipients(
-                level=BugNotificationLevel.COMMENTS)
-            self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
+        levels = [
+            BugNotificationLevel.LIFECYCLE,
+            BugNotificationLevel.METADATA,
+            BugNotificationLevel.COMMENTS,
+            ]
+        for level in levels:
+            with StormStatementRecorder() as recorder:
+                first_recipients = bug.getBugNotificationRecipients(
+                    level=level)
+                self.assertThat(recorder, HasQueryCount(GreaterThan(1)))
+            with StormStatementRecorder() as recorder:
+                second_recipients = bug.getBugNotificationRecipients(
+                    level=level)
+                self.assertThat(recorder, HasQueryCount(Equals(0)))
+            self.assertContentEqual([bug.owner, subscriber], first_recipients)
+            self.assertContentEqual(first_recipients, second_recipients)
+            self.assertIsNot(first_recipients, second_recipients)
