@@ -1571,7 +1571,7 @@ class TestSpecifications(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSpecifications, self).setUp()
-        self.date_decided = datetime.now(pytz.utc)
+        self.date_created = datetime.now(pytz.utc)
 
     def makeSpec(self, owner=None, date_created=0, title=None,
                  status=NewSpecificationDefinitionStatus.NEW,
@@ -1581,7 +1581,7 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=information_type, owner=owner,
             )
         removeSecurityProxy(blueprint).datecreated = (
-            self.date_decided + timedelta(date_created))
+            self.date_created + timedelta(date_created))
         return blueprint
 
     def test_specifications_quantity(self):
@@ -1657,6 +1657,7 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
     def test_ignore_inactive(self):
+        # Specs for inactive products are skipped.
         product = self.factory.makeProduct()
         with celebrity_logged_in('admin'):
             product.active = False
@@ -1664,11 +1665,13 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertNotIn(spec, spec.owner.specifications(None))
 
     def test_include_distro(self):
+        # Specs for distributions are included.
         distribution = self.factory.makeDistribution()
         spec = self.factory.makeSpecification(distribution=distribution)
         self.assertIn(spec, spec.owner.specifications(None))
 
     def test_informational(self):
+        # INFORMATIONAL causes only informational specs to be shown.
         enum = SpecificationImplementationStatus
         informational = self.factory.makeSpecification(
             implementation_status=enum.INFORMATIONAL)
@@ -1683,6 +1686,9 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertNotIn(plain, result)
 
     def test_completeness(self):
+        # If COMPLETE is specified, completed specs are listed.  If INCOMPLETE
+        # is specified or neither is specified, only incomplete specs are
+        # listed.
         enum = SpecificationImplementationStatus
         implemented = self.factory.makeSpecification(
             implementation_status=enum.IMPLEMENTED)
@@ -1703,6 +1709,7 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertIn(non_implemented, result)
 
     def test_all(self):
+        # ALL causes both complete and incomplete to be listed.
         enum = SpecificationImplementationStatus
         implemented = self.factory.makeSpecification(
             implementation_status=enum.IMPLEMENTED)
@@ -1712,6 +1719,8 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertContentEqual([implemented, non_implemented], result)
 
     def test_valid(self):
+        # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
+        # (INCOMPLETE already excludes OBSOLETE and SUPERSEDED.)
         i_enum = SpecificationImplementationStatus
         d_enum = SpecificationDefinitionStatus
         implemented = self.factory.makeSpecification(
@@ -1719,13 +1728,13 @@ class TestSpecifications(TestCaseWithFactory):
         owner = implemented.owner
         self.factory.makeSpecification(owner=owner, status=d_enum.SUPERSEDED)
         self.factory.makeSpecification(owner=owner, status=d_enum.OBSOLETE)
-        # VALID adjusts the output of COMPLETE to exclude OBSOLETE and
-        # SUPERSEDED.  They are already exclude from INCOMPLETE.
         filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
         results = owner.specifications(None, filter=filter)
         self.assertContentEqual([implemented], results)
 
     def test_roles(self):
+        # If roles are specified, they control which specifications are shown.
+        # If no roles are specified, all roles are used.
         created = self.factory.makeSpecification()
         person = created.owner
 
