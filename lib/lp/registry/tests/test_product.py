@@ -1318,14 +1318,6 @@ class TestSpecifications(TestCaseWithFactory):
         result = product.specifications(None, sort=SpecificationSort.PRIORITY)
         self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
 
-    def test_ignore_inactive(self):
-        # Specs for inactive products are skipped.
-        product = self.factory.makeProduct()
-        with celebrity_logged_in('admin'):
-            product.active = False
-        spec = self.factory.makeSpecification(product=product)
-        self.assertNotIn(spec, spec.product.specifications(None))
-
     def test_informational(self):
         # INFORMATIONAL causes only informational specs to be shown.
         enum = SpecificationImplementationStatus
