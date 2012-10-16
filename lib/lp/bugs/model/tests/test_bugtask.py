@@ -2687,7 +2687,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
 
 class TransitionToMilestoneTestCase(TestCaseWithFactory):
-    """Tests for BugTask.transitionTo ilestonet."""
+    """Tests for BugTask.transitionToMilestone."""
 
     layer = DatabaseFunctionalLayer
 
