@@ -2636,6 +2636,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
             removeSecurityProxy(task).targetnamecache)
 
     def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToTarget() is called.
         new_product = self.factory.makeProduct()
         task = self.factory.makeBugTask()
         # The factory caused COMMENT notifications which filled the bug cache.
@@ -2692,6 +2694,8 @@ class TransitionToMilestoneTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToMilestone() is called.
         task = self.factory.makeBugTask()
         product = task.target
         milestone = self.factory.makeMilestone(product=product)
