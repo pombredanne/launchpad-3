@@ -819,13 +819,40 @@ class Person(
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
+        from lp.blueprints.model.specificationsubscription import (
+            SpecificationSubscription,
+            )
         if filter is None:
             filter = set()
         else:
             filter = set(filter)
-        clauses = [Specification.owner == self]
         if SpecificationFilter.COMPLETE not in filter:
             filter.add(SpecificationFilter.INCOMPLETE)
+
+        roles = set([
+            SpecificationFilter.CREATOR,
+            SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER,
+            SpecificationFilter.APPROVER,
+            SpecificationFilter.SUBSCRIBER])
+        if filter.intersection(roles) == set():
+            filter.update(roles)
+        role_clauses = []
+        if SpecificationFilter.CREATOR in filter:
+            role_clauses.append(Specification.owner == self)
+        if SpecificationFilter.ASSIGNEE in filter:
+            role_clauses.append(Specification.assignee == self)
+        if SpecificationFilter.DRAFTER in filter:
+            role_clauses.append(Specification.drafter == self)
+        if SpecificationFilter.APPROVER in filter:
+            role_clauses.append(Specification.approver == self)
+        if SpecificationFilter.SUBSCRIBER in filter:
+            role_clauses.append(
+                Specification.id.is_in(
+                    Select(SpecificationSubscription.specificationID,
+                        [SpecificationSubscription.person == self]
+                    )))
+        clauses = [Or(*role_clauses)]
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         if sort == SpecificationSort.DATE:
