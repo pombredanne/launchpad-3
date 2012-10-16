@@ -821,24 +821,24 @@ class Person(
             SpecificationSubscription,
             )
         # Make a new copy of the filter, so that we do not mutate what we
-        # were passed as a filter
+        # were passed as a filter.
         if filter is None:
             filter = set()
         else:
             filter = set(filter)
 
-        # now look at the filter and fill in the unsaid bits
+        # Now look at the filter and fill in the unsaid bits.
 
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
+        # Defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE.
         if SpecificationFilter.COMPLETE not in filter:
             filter.add(SpecificationFilter.INCOMPLETE)
 
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a person
+        # Defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person.
 
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
+        # Defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY.
 
         roles = set([
             SpecificationFilter.CREATOR,
@@ -846,7 +846,7 @@ class Person(
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
-        # if no roles are given then we want everything
+        # If no roles are given, then we want everything.
         if filter.intersection(roles) == set():
             filter.update(roles)
         role_clauses = []
