@@ -87,9 +87,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
@@ -187,7 +185,6 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
