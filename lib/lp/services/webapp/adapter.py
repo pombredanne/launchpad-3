@@ -97,6 +97,7 @@ __all__ = [
     'get_request_duration',
     'get_store_name',
     'print_queries',
+    'reset_request_started',
     'soft_timeout_expired',
     'start_sql_logging',
     'stop_sql_logging',
@@ -197,6 +198,22 @@ def set_request_started(
     _local.enable_timeout = enable_timeout
     _local.commit_logger = CommitLogger(transaction)
     transaction.manager.registerSynch(_local.commit_logger)
+
+
+def reset_request_started(start_time=None):
+    """Set the start time for the request being served by the current thread.
+
+    :param start_time: The start time of the request. If given, it is used as
+        the start time for the request, as returned by time().  If it is not
+        given, the current time is used.
+    """
+    if getattr(_local, 'request_start_time', None) is None:
+        warnings.warn('reset_request_started() called outside of a request',
+            stacklevel=2)
+
+    if start_time is None:
+        start_time = time()
+    _local.request_start_time = start_time
 
 
 def clear_request_started():

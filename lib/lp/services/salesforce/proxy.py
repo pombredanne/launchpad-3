@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 
+import time
 from xmlrpclib import (
     Fault,
     ServerProxy,
@@ -33,6 +34,10 @@ from lp.services.salesforce.interfaces import (
     SVPNotFoundException,
     )
 from lp.services.timeout import SafeTransportWithTimeout
+from lp.services.webapp.adapter import (
+    get_request_duration,
+    reset_request_started,
+    )
 
 
 def fault_mapper(func):
@@ -51,6 +56,23 @@ def fault_mapper(func):
                                           SalesforceVoucherProxyException)
             raise exception(fault.faultString)
         return results
+    return decorator
+
+
+def reset_timeout(func):
+    """Decorator to reset request start time to avoid unnecessary timeouts.
+
+    After executing the function, reset the request start time to take account
+    of the time spent inside the function. In other words, the time spent
+    inside the function does not contribute to the request timeout calculation.
+    This allows a call to the Salesforce backend to take a while to complete
+    and not trigger a Launchpad timeout oops.
+    """
+    def decorator(*args, **kwargs):
+        duration_before_call = get_request_duration()
+        result = func(*args, **kwargs)
+        reset_request_started(time.time() - duration_before_call)
+        return result
     return decorator
 
 
@@ -116,6 +138,7 @@ class SalesforceVoucherProxy:
                 in removeSecurityProxy(user.account).openid_identifiers]
 
     @fault_mapper
+    @reset_timeout
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
         all_vouchers = []
@@ -128,6 +151,7 @@ class SalesforceVoucherProxy:
         return [Voucher(voucher) for voucher in all_vouchers]
 
     @fault_mapper
+    @reset_timeout
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
         all_vouchers = []
@@ -140,12 +164,14 @@ class SalesforceVoucherProxy:
         return [Voucher(voucher) for voucher in all_vouchers]
 
     @fault_mapper
+    @reset_timeout
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
         status = self.server.getServerStatus()
         return status
 
     @fault_mapper
+    @reset_timeout
     def getVoucher(self, voucher_id):
         """See `ISalesforceVoucherProxy`."""
         voucher = self.server.getVoucher(voucher_id)
@@ -154,6 +180,7 @@ class SalesforceVoucherProxy:
         return voucher
 
     @fault_mapper
+    @reset_timeout
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
         for identifier in self._getUserIdentifiers(user):
@@ -172,6 +199,7 @@ class SalesforceVoucherProxy:
             project.id, project.displayname)
 
     @fault_mapper
+    @reset_timeout
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
         num_updated = self.server.updateProjectName(project.id,
@@ -179,6 +207,7 @@ class SalesforceVoucherProxy:
         return num_updated
 
     @fault_mapper
+    @reset_timeout
     def grantVoucher(self, admin, approver, recipient, term_months):
         """See `ISalesforceVoucherProxy`."""
         from zope.security.proxy import removeSecurityProxy
