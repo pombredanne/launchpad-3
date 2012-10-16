@@ -26,7 +26,6 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -96,7 +95,7 @@ class TestBugChanges(TestCaseWithFactory):
         else:
             self.old_activities = old_activities
             self.old_notification_ids = old_notification_ids
-        clear_property_cache(bug)
+        bug.clearBugNotificationRecipientsCache()
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
