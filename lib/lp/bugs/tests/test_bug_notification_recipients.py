@@ -6,17 +6,21 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from testtools.matchers import GreaterThan
 
 from lp.app.enums import InformationType
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicySource,
     )
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBugNotificationRecipients(TestCaseWithFactory):
@@ -185,3 +189,24 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             dupe.markAsDuplicate(bug)
             self.assertContentEqual(
                 [owner, subscriber], bug.getBugNotificationRecipients())
+
+    def test_cache_by_bug_notification_level(self):
+        # The BugNotificationRecipients set is cached by notificatio level
+        # to avoid duplicate work. The return set is copy of the cached set.
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(subscriber):
+            subscription = product.addBugSubscription(subscriber, subscriber)
+            bug_filter = subscription.bug_filters[0]
+            bug_filter.bug_notification_level = BugNotificationLevel.METADATA
+        bug = self.factory.makeBug(target=product)
+        first_recipients = bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA)
+        second_recipients = bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA)
+        self.assertContentEqual([bug.owner, subscriber], first_recipients)
+        self.assertContentEqual(first_recipients, second_recipients)
+        with StormStatementRecorder() as recorder:
+            bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.COMMENTS)
+        self.assertThat(recorder, HasQueryCount(GreaterThan(2)))
