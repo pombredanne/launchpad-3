@@ -327,6 +327,8 @@ class TestPrivacy(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_product_specs(self):
+        # Proprietary specs are only listed for users who can see them.
+        # Other users see the page, but not the private specs.
         proprietary = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
         product = proprietary.product
@@ -336,3 +338,8 @@ class TestPrivacy(BrowserTestCase):
             browser = self.getViewBrowser(product, '+specs')
         self.assertIn(public.name, browser.contents)
         self.assertNotIn(proprietary.name, browser.contents)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+specs',
+                                          user=product.owner)
+        self.assertIn(public.name, browser.contents)
+        self.assertIn(proprietary.name, browser.contents)

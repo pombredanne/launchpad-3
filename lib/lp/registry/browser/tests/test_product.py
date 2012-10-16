@@ -432,6 +432,8 @@ class TestProductView(BrowserTestCase):
             cache.objects['team_membership_policy_data'])
 
     def test_index_proprietary_specification(self):
+        # Ordinary users can see page, but proprietary specs are only listed
+        # for users with access to them.
         proprietary = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
         product = proprietary.product
@@ -441,6 +443,11 @@ class TestProductView(BrowserTestCase):
             browser = self.getViewBrowser(product, '+index')
         self.assertIn(public.name, browser.contents)
         self.assertNotIn(proprietary.name, browser.contents)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+index',
+                                          user=product.owner)
+        self.assertIn(public.name, browser.contents)
+        self.assertIn(proprietary.name, browser.contents)
 
 
 class TestProductEditView(BrowserTestCase):
