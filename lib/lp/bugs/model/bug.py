@@ -1092,7 +1092,9 @@ class Bug(SQLBase, InformationTypeMixin):
         self.getDirectSubscribers(
             recipients, level=level, filter_visible=True)
         self.getIndirectSubscribers(recipients, level=level)
-        return recipients
+        mutable_recipients = BugNotificationRecipients()
+        mutable_recipients.update(recipients)
+        return mutable_recipients
 
     def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""

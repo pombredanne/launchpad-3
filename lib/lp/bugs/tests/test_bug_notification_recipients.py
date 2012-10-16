@@ -6,7 +6,10 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from testtools.matchers import GreaterThan
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
@@ -202,6 +205,10 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         bug = self.factory.makeBug(target=product)
         first_recipients = bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA)
+#        with StormStatementRecorder() as recorder:
+#            second_recipients = bug.getBugNotificationRecipients(
+#                level=BugNotificationLevel.METADATA)
+#        self.assertThat(recorder, HasQueryCount(Equals(0)))
         second_recipients = bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA)
         self.assertContentEqual([bug.owner, subscriber], first_recipients)
