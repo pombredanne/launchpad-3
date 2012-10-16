@@ -417,7 +417,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         title=_('Milestone'),
         required=False,
         readonly=True,
-        vocabulary='Milestone',
+        vocabulary='BugTaskMilestone',
         schema=Interface))  # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 

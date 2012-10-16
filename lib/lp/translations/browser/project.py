@@ -52,7 +52,7 @@ class ProjectView(LaunchpadView):
 
     @property
     def untranslatables(self):
-        translatables = set(self.context.translatables())
+        translatables = set(self.context.translatables)
         all_products = set(self.context.products)
         return list(all_products - translatables)
 

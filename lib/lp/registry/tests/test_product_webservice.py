@@ -70,7 +70,7 @@ class TestProduct(TestCaseWithFactory):
     def test_branch_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only branch_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         owner = product.owner
         webservice = webservice_for_person(
             product.owner, permission=OAuthPermission.WRITE_PRIVATE)
@@ -81,7 +81,8 @@ class TestProduct(TestCaseWithFactory):
                 body=('A current commercial subscription is required to use '
                       'proprietary branches.')))
         with person_logged_in(owner):
-            self.assertIs(None, product.branch_sharing_policy)
+            self.assertEqual(
+                BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
 
     def test_bug_sharing_policy_can_be_set(self):
         # bug_sharing_policy can be set via the API.
@@ -100,7 +101,7 @@ class TestProduct(TestCaseWithFactory):
     def test_bug_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only bug_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeLegacyProduct()
+        product = self.factory.makeProduct()
         owner = product.owner
         webservice = webservice_for_person(
             product.owner, permission=OAuthPermission.WRITE_PRIVATE)
@@ -111,7 +112,8 @@ class TestProduct(TestCaseWithFactory):
                 body=('A current commercial subscription is required to use '
                       'proprietary bugs.')))
         with person_logged_in(owner):
-            self.assertIs(None, product.bug_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
 
     def fetch_product(self, webservice, product, api_version):
         with person_logged_in(webservice.user):

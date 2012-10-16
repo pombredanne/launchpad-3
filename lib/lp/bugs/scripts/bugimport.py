@@ -7,7 +7,6 @@ This code can import an XML bug dump into Launchpad.  The XML format
 is described in the RELAX-NG schema 'doc/bug-export.rnc'.
 """
 
-
 __metaclass__ = type
 
 __all__ = [
@@ -21,25 +20,14 @@ import datetime
 import logging
 import os
 import time
-
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+from xml.etree import cElementTree
 
 import pytz
-
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from lp.services.database.constants import UTC_NOW
-from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.messages.interfaces.message import IMessageSet
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -60,11 +48,16 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.scripts.bugexport import BUGS_XMLNS
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
-from lp.bugs.scripts.bugexport import BUGS_XMLNS
+from lp.services.database.constants import UTC_NOW
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
@@ -150,6 +143,10 @@ class BugImporter:
         # A mapping of old bug IDs to a list of Launchpad Bug IDs that are
         # duplicates of this bug.
         self.pending_duplicates = {}
+
+        # We can't currently sensibly import into non-PUBLIC products.
+        if self.product:
+            assert self.product.bug_sharing_policy == BugSharingPolicy.PUBLIC
 
     def getPerson(self, node):
         """Get the Launchpad user corresponding to the given XML node"""
@@ -256,7 +253,7 @@ class BugImporter:
 
     def importBugs(self, ztm):
         """Import bugs from a file."""
-        tree = ET.parse(self.bugs_filename)
+        tree = cElementTree.parse(self.bugs_filename)
         root = tree.getroot()
         assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS, (
             "Root element is wrong: %s" % root.tag)
@@ -295,9 +292,6 @@ class BugImporter:
 
         private = get_value(bugnode, 'private') == 'True'
         security_related = get_value(bugnode, 'security_related') == 'True'
-        # If the product has private_bugs, we force private to True.
-        if self.product.private_bugs:
-            private = True
         information_type = convert_to_information_type(
             private, security_related)
 
@@ -318,16 +312,11 @@ class BugImporter:
 
         # Process remaining comments
         for commentnode in comments:
-            msg = self.createMessage(commentnode,
-                                     defaulttitle=bug.followup_subject())
+            msg = self.createMessage(
+                commentnode, defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 
-        # Security bugs must be created private, so set it correctly.
-        if not self.product.private_bugs:
-            information_type = convert_to_information_type(
-                private, security_related)
-            bug.transitionToInformationType(information_type, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:

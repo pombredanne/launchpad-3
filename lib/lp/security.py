@@ -14,13 +14,8 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
-    And,
-    Exists,
-    Or,
     Select,
-    SQL,
     Union,
-    With,
     )
 from zope.component import (
     getUtility,
@@ -177,7 +172,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.account import IAccount
@@ -431,19 +425,15 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class ViewProduct(ViewPillar):
+class ViewProduct(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IProduct
 
     def checkAuthenticated(self, user):
-        return (
-            super(ViewProduct, self).checkAuthenticated(user) and
-            self.obj.userCanView(user))
+        return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
-        return (
-            self.obj.information_type in PUBLIC_INFORMATION_TYPES and
-            super(ViewProduct, self).checkUnauthenticated())
+        return self.obj.information_type in PUBLIC_INFORMATION_TYPES
 
 
 class ChangeProduct(ViewProduct):

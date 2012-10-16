@@ -286,8 +286,6 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(
             specification_sharing_policy=(
                 SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY))
-        self.factory.makeAccessPolicy(product, InformationType.PROPRIETARY)
-        self.factory.makeAccessPolicy(product, InformationType.EMBARGOED)
         owner = self.factory.makePerson()
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])

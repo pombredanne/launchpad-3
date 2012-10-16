@@ -39,13 +39,11 @@ from lp.bugs.browser.bugtask import (
     BugListingBatchNavigator,
     BugTaskEditView,
     BugTaskListingItem,
-    BugTasksAndNominationsView,
+    BugTasksNominationsView,
+    BugTasksTableView,
     )
 from lp.bugs.enums import BugNotificationLevel
-from lp.bugs.feed.bug import (
-    BugTargetBugsFeed,
-    PersonBugsFeed,
-    )
+from lp.bugs.feed.bug import PersonBugsFeed
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
@@ -136,14 +134,14 @@ class TestBugTaskView(TestCaseWithFactory):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
-        # This may seem large: it is; there is easily another 30% fat in
+        # This may seem large: it is; there is easily another 25% fat in
         # there.
-        # If this test is run in isolation, the query count is 94.
+        # If this test is run in isolation, the query count is 80.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(95)))
+        self.assertThat(recorder, HasQueryCount(LessThan(82)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -159,7 +157,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                97, self.factory.makePerson())
+                85, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -241,6 +239,52 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertEqual(1, len(view.interesting_activity))
         [activity] = view.interesting_activity
         self.assertEqual("description", activity.whatchanged)
+
+    def test_rendered_query_counts_constant_with_activities(self):
+        # More queries are not used for extra bug activities.
+        task = self.factory.makeBugTask()
+
+        def add_activity(what, who):
+            getUtility(IBugActivitySet).new(
+                task.bug, datetime.now(UTC), who, whatchanged=what)
+
+        # Render the view with one activity.
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                83, self.factory.makePerson())
+            person = self.factory.makePerson()
+            add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
+        # Render the view with many more activities by different people.
+        with celebrity_logged_in('admin'):
+            for _ in range(20):
+                person = self.factory.makePerson()
+                add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
+    def test_rendered_query_counts_constant_with_milestones(self):
+        # More queries are not used for extra milestones.
+        products = []
+        bug = self.factory.makeBug()
+
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                88, self.factory.makePerson())
+
+        self.assertThat(bug, browses_under_limit)
+
+        # Render the view with many milestones.
+        with celebrity_logged_in('admin'):
+            for _ in range(10):
+                product = self.factory.makeProduct()
+                products.append(product)
+                self.factory.makeBugTask(bug=bug, target=product)
+                self.factory.makeMilestone(product)
+
+        self.assertThat(bug, browses_under_limit)
 
     def test_error_for_changing_target_with_invalid_status(self):
         # If a user moves a bug task with a restricted status (say,
@@ -339,20 +383,20 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertIsNone(tag)
 
 
-class TestBugTasksAndNominationsView(TestCaseWithFactory):
+class TestBugTasksNominationsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTasksAndNominationsView, self).setUp()
+        super(TestBugTasksNominationsView, self).setUp()
         login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def refresh(self):
         # The view caches, to see different scenarios, a refresh is needed.
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def test_current_user_affected_status(self):
@@ -378,24 +422,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
-
-    def test_not_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks) - 1):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failIf(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failIf(row_view.many_bugtasks)
-
-    def test_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks)):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failUnless(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failUnless(row_view.many_bugtasks)
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
@@ -613,6 +639,41 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             "This bug affects 2 people", self.view.anon_affected_statement)
 
+
+class TestBugTasksTableView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTasksTableView, self).setUp()
+        login(ADMIN_EMAIL)
+        self.bug = self.factory.makeBug()
+        self.view = BugTasksTableView(
+            self.bug, LaunchpadTestRequest())
+
+    def refresh(self):
+        # The view caches, to see different scenarios, a refresh is needed.
+        self.view = BugTasksNominationsView(
+            self.bug, LaunchpadTestRequest())
+
+    def test_not_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks) - 1):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failIf(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failIf(row_view.many_bugtasks)
+
+    def test_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks)):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failUnless(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failUnless(row_view.many_bugtasks)
+
     def test_getTargetLinkTitle_product(self):
         # The target link title is always none for products.
         target = self.factory.makeProduct()
@@ -731,7 +792,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -755,7 +816,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -801,7 +862,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         any_person = self.factory.makePerson()
         login_person(any_person, request)
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
@@ -1435,7 +1496,35 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class TestPersonBugs(TestCaseWithFactory):
+class BugTaskViewTestMixin():
+
+    def _assert_shouldShowStructuralSubscriberWidget(self, show=True):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(show, view.shouldShowStructuralSubscriberWidget())
+
+    def _assert_structural_subscriber_label(self, label):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(label, view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+    def test_mustache_cache_is_none_for_advanced_form(self):
+        """No mustache model for the advanced search form."""
+        form = {
+            'advanced': 1,
+            }
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs', form=form)
+        cache = IJSONRequestCache(view.request)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+
+class TestPersonBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1445,24 +1534,14 @@ class TestPersonBugs(TestCaseWithFactory):
         self.target = self.factory.makePerson()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project, distribution, package, or series subscriber',
-            view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, PersonBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project, distribution, package, or series subscriber')
 
 
-class TestDistributionBugs(TestCaseWithFactory):
+class TestDistributionBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1471,24 +1550,15 @@ class TestDistributionBugs(TestCaseWithFactory):
         super(TestDistributionBugs, self).setUp()
         self.target = self.factory.makeDistribution()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
-
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package or series subscriber', view.structural_subscriber_label)
+        self._assert_structural_subscriber_label(
+            'Package or series subscriber')
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+    def test_shouldShowStructuralSubscriberWidget(self):
+        self._assert_shouldShowStructuralSubscriberWidget()
 
 
-class TestDistroSeriesBugs(TestCaseWithFactory):
+class TestDistroSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distro series."""
 
     layer = DatabaseFunctionalLayer
@@ -1498,23 +1568,14 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistroSeries()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Package subscriber')
 
 
-class TestDistributionSourcePackageBugs(TestCaseWithFactory):
+class TestDistributionSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distribution source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1524,17 +1585,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistributionSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distro series source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1544,17 +1599,10 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestProductBugs(TestCaseWithFactory):
+class TestProductBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for projects."""
 
     layer = DatabaseFunctionalLayer
@@ -1564,23 +1612,13 @@ class TestProductBugs(TestCaseWithFactory):
         self.target = self.factory.makeProduct()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Series subscriber')
 
 
-class TestProductSeriesBugs(TestCaseWithFactory):
+class TestProductSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project series."""
 
     layer = DatabaseFunctionalLayer
@@ -1589,18 +1627,8 @@ class TestProductSeriesBugs(TestCaseWithFactory):
         super(TestProductSeriesBugs, self).setUp()
         self.target = self.factory.makeProductSeries()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
-
-
-class TestProjectGroupBugs(TestCaseWithFactory):
+class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
@@ -1699,20 +1727,11 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         self.assertIs(None, help_link)
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project or series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project or series subscriber')
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -2017,10 +2036,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.invalidate_caches(bug)
         # count with single task
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(32)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
         # count with many tasks
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(32)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.

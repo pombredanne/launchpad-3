@@ -659,7 +659,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def url_is_web(self):
         """True if an imported branch's URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN, BZR, GIT or HG code
+        # You should only be calling this if it's an SVN, BZR or GIT code
         # import
         assert self.context.code_import
         url = self.context.code_import.url
