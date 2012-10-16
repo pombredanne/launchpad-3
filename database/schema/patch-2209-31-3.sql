@@ -2,7 +2,6 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
-ALTER TABLE product ALTER COLUMN specification_sharing_policy SET DEFAULT 1;
 ALTER TABLE product ALTER COLUMN specification_sharing_policy SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 31, 3);
