@@ -1717,17 +1717,13 @@ class TestSpecifications(TestCaseWithFactory):
         implemented = self.factory.makeSpecification(
             implementation_status=i_enum.IMPLEMENTED)
         owner = implemented.owner
-        superseded = self.factory.makeSpecification(
-            owner=owner, status=d_enum.SUPERSEDED)
-        Store.of(superseded).flush()
-        obsolete = self.factory.makeSpecification(
-            owner=owner, status=d_enum.OBSOLETE)
+        self.factory.makeSpecification(owner=owner, status=d_enum.SUPERSEDED)
+        self.factory.makeSpecification(owner=owner, status=d_enum.OBSOLETE)
         # VALID adjusts the output of COMPLETE to exclude OBSOLETE and
         # SUPERSEDED.  They are already exclude from INCOMPLETE.
         filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
         results = owner.specifications(None, filter=filter)
         self.assertContentEqual([implemented], results)
-
 
     def test_roles(self):
         created = self.factory.makeSpecification()
