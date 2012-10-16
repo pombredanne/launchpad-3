@@ -1700,7 +1700,8 @@ class ProductSetView(LaunchpadView):
 
     @cachedproperty
     def all_batched(self):
-        return BatchNavigator(self.context.all_active, self.request)
+        return BatchNavigator(self.context.get_all_active(self.user),
+                              self.request)
 
     @cachedproperty
     def matches(self):
@@ -1717,6 +1718,9 @@ class ProductSetView(LaunchpadView):
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
+
+    def latest(self):
+        return self.context.get_all_active(self.user)[:5]
 
 
 class ProductSetReviewLicensesView(LaunchpadFormView):
@@ -1793,8 +1797,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
-        return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=50)
+        result = self.context.forReview(self.user, **search_params)
+        return BatchNavigator(result, self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

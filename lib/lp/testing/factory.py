@@ -1025,7 +1025,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 specification_sharing_policy)
         if information_type is not None:
             naked_product.information_type = information_type
-
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1044,7 +1043,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         if owner is None:
-            owner = product.owner
+            owner = removeSecurityProxy(product).owner
         if name is None:
             name = self.getUniqueString()
         if summary is None:
@@ -1821,7 +1820,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(owner, target)
+        return removeSecurityProxy(bug).addTask(
+            owner, removeSecurityProxy(target))
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
@@ -2082,6 +2082,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         proprietary = (information_type not in PUBLIC_INFORMATION_TYPES and
             information_type is not None)
+        if (product is None and milestone is not None and
+            milestone.productseries is not None):
+            product = milestone.productseries.product
         if distribution is None and product is None:
             if proprietary:
                 specification_sharing_policy = (
@@ -2125,7 +2128,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if proprietary:
                 naked_spec.target._ensurePolicies([information_type])
             naked_spec.transitionToInformationType(
-                information_type, spec.target.owner)
+                information_type, removeSecurityProxy(spec.target).owner)
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
