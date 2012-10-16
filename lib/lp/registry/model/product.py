@@ -54,6 +54,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -69,6 +73,7 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
@@ -154,6 +159,7 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -171,6 +177,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -1479,6 +1486,39 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return weight_function
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        # We need the plain Storm Person object for the SQL query below
+        # but an IPersonRoles object for the team membership checks.
+        if IPersonRoles.providedBy(user):
+            plain_user = user.person
+        else:
+            plain_user = user
+            user = IPersonRoles(user)
+        if (user.in_commercial_admin or user.in_admin or
+            user.in_registry_experts):
+            self._known_viewers.add(user.id)
+            return True
+        policy = getUtility(IAccessPolicySource).find(
+            [(self, self.information_type)]).one()
+        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
+            [(policy, plain_user)])
+        if grants_for_user.is_empty():
+            return False
+        self._known_viewers.add(user.id)
+        return True
+
 
 def get_precached_products(products, need_licences=False, need_projects=False,
                         need_series=False, need_releases=False,
@@ -1654,11 +1694,29 @@ class ProductSet:
 
     @property
     def all_active(self):
-        return self.get_all_active()
+        return self.get_all_active(None)
 
-    def get_all_active(self, eager_load=True):
-        result = IStore(Product).find(Product, Product.active
-            ).order_by(Desc(Product.datecreated))
+    @staticmethod
+    def getProductPrivacyFilter(user):
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
+        granted_products = And(
+            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
+            TeamParticipation.person == user,
+            AccessPolicyGrantFlat.policy == AccessPolicy.id,
+            AccessPolicy.product == Product.id,
+            AccessPolicy.type == Product._information_type)
+        return Or(Product._information_type == InformationType.PUBLIC,
+                  Product._information_type == None,
+                  Product.id.is_in(Select(Product.id, granted_products)))
+
+    @classmethod
+    def get_all_active(cls, user, eager_load=True):
+        clause = cls.getProductPrivacyFilter(user)
+        result = IStore(Product).find(Product, Product.active,
+                    clause).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 
@@ -1768,7 +1826,7 @@ class ProductSet:
         product.development_focus = trunk
         return product
 
-    def forReview(self, search_text=None, active=None,
+    def forReview(self, user, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   created_after=None, created_before=None,
                   has_subscription=None,
@@ -1778,7 +1836,7 @@ class ProductSet:
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = []
+        conditions = [self.getProductPrivacyFilter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)

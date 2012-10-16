@@ -87,7 +87,7 @@ def main():
         '--dbuser', dest='dbuser', default='postgres', metavar='USERNAME',
         help='Connect as USERNAME to databases')
 
-    logger_options(parser)
+    logger_options(parser, milliseconds=True)
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")

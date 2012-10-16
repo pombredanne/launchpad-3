@@ -132,7 +132,7 @@
       <div class="portlet">
         <h2>Latest projects registered</h2>
         <table>
-          <tr tal:repeat="product context/latest">
+          <tr tal:repeat="product view/latest">
             <td>
               <tal:link replace="structure product/fmt:link" />
               registered
