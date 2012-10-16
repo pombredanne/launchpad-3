@@ -748,6 +748,8 @@ created:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(new_bug)
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 
