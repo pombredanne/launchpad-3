@@ -437,8 +437,7 @@ class TestProductView(BrowserTestCase):
         product = proprietary.product
         with person_logged_in(product.owner):
             product.blueprints_usage = ServiceUsage.LAUNCHPAD
-        public = self.factory.makeSpecification(product=product)
-        with person_logged_in(None):
+            public = self.factory.makeSpecification(product=product)
             browser = self.getViewBrowser(product, '+index')
         self.assertIn(public.name, browser.contents)
         self.assertNotIn(proprietary.name, browser.contents)
