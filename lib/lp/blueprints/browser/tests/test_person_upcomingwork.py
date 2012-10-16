@@ -11,6 +11,7 @@ from operator import attrgetter
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.blueprints.browser.person_upcomingwork import (
     GenericWorkItem,
     getWorkItemsDueBefore,
@@ -390,6 +391,29 @@ class TestPersonUpcomingWork(BrowserTestCase):
             tomorrows_group, 'Work items due in %s' % self.tomorrow)
         with anonymous_logged_in():
             self.assertIn(bugtask.bug.title, tomorrows_group)
+
+    def test_non_public_specifications(self):
+        """Work items for non-public specs are filtered correctly."""
+        person = self.factory.makePerson()
+        proprietary_spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        today_milestone = self.factory.makeMilestone(
+            dateexpected=self.today, product=proprietary_spec.product)
+        public_workitem = self.factory.makeSpecificationWorkItem(
+            assignee=person, milestone=today_milestone)
+        proprietary_workitem = self.factory.makeSpecificationWorkItem(
+            assignee=person, milestone=today_milestone,
+            specification=proprietary_spec)
+        browser = self.getViewBrowser(
+            person, view_name='+upcomingwork')
+        self.assertIn(public_workitem.specification.name, browser.contents)
+        self.assertNotIn(proprietary_workitem.specification.name,
+                         browser.contents)
+        browser = self.getViewBrowser(
+            person, view_name='+upcomingwork',
+            user=proprietary_workitem.specification.product.owner)
+        self.assertIn(proprietary_workitem.specification.name,
+                      browser.contents)
 
 
 class TestPersonUpcomingWorkView(TestCaseWithFactory):
