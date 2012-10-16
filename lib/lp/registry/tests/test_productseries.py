@@ -7,6 +7,10 @@ __metaclass__ = type
 
 from testtools.testcase import ExpectedException
 import transaction
+from zope.security.checker import (
+    CheckerPublic,
+    getChecker,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -552,3 +556,93 @@ class TestWebService(WebServiceTestCase):
         mode = TranslationsBranchImportMode.IMPORT_TRANSLATIONS
         ws_series.translations_autoimport_mode = mode.title
         ws_series.lp_save()
+
+
+class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
+    """Test for permissions of IProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProductSeriesSecurityAdaperTestCase, self).setUp()
+        self.public_product = self.factory.makeProduct()
+        self.public_series = self.factory.makeProductSeries(
+            product=self.public_product)
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.proprietary_series = self.factory.makeProductSeries(
+            product=self.proprietary_product)
+
+    expected_get_permissions = {
+        #xxxxxxx bad
+        CheckerPublic: set((
+            '_all_specifications', '_getOfficialTagClause',
+            '_valid_specifications', 'active', 'all_milestones',
+            'answers_usage', 'blueprints_usage', 'branch',
+            'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+            'bug_subscriptions', 'bug_supervisor', 'bug_tracking_usage',
+            'bugtarget_parent', 'bugtargetdisplayname', 'bugtargetname',
+            'codehosting_usage', 'createBug', 'datecreated', 'displayname',
+            'driver', 'drivers', 'enable_bugfiling_duplicate_search',
+            'getAllowedSpecificationInformationTypes',
+            'getBugSummaryContextWhereClause', 'getBugTaskWeightFunction',
+            'getCachedReleases', 'getCurrentTemplatesCollection',
+            'getCurrentTranslationFiles', 'getCurrentTranslationTemplates',
+            'getDefaultSpecificationInformationType', 'getFirstEntryToImport',
+            'getLatestRelease', 'getPOTemplate', 'getPackage',
+            'getPackagingInDistribution', 'getRelease', 'getSharingPartner',
+            'getSpecification', 'getSubscription', 'getSubscriptions',
+            'getTemplatesAndLanguageCounts', 'getTemplatesCollection',
+            'getTimeline', 'getTranslationImportQueueEntries',
+            'getTranslationTemplateByName', 'getTranslationTemplateFormats',
+            'getTranslationTemplates', 'getUbuntuTranslationFocusPackage',
+            'getUsedBugTagsWithOpenCounts',
+            'has_current_translation_templates', 'has_milestones',
+            'has_obsolete_translation_templates',
+            'has_sharing_translation_templates', 'has_translation_files',
+            'has_translation_templates', 'id', 'is_development_focus',
+            'milestones', 'name', 'official_bug_tags', 'owner', 'packagings',
+            'parent', 'parent_subscription_target', 'personHasDriverRights',
+            'pillar', 'potemplate_count', 'product', 'productID',
+            'productserieslanguages', 'release_files', 'releasefileglob',
+            'releases', 'releaseverstyle', 'searchTasks', 'series',
+            'setPackaging', 'sourcepackages', 'specifications', 'status',
+            'summary', 'target_type_display', 'title',
+            'translations_autoimport_mode', 'translations_branch',
+            'translations_usage', 'userCanAlterBugSubscription',
+            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            'uses_launchpad',
+            )),
+        #xxxxxxxx bad
+        'launchpad.AnyPerson': set((
+            'addBugSubscription', 'addBugSubscriptionFilter',
+            'addSubscription', 'removeBugSubscription',
+            )),
+        'launchpad.Edit': set(('newMilestone', )),
+        }
+
+    def test_get_permissions(self):
+        checker = getChecker(self.public_series)
+        self.checkPermissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    expected_set_permissions = {
+        'launchpad.Edit': set((
+            'answers_usage', 'blueprints_usage', 'branch',
+            'bug_tracking_usage', 'codehosting_usage', 'driver', 'name',
+            'owner', 'product', 'releasefileglob', 'status', 'summary',
+            'translations_autoimport_mode', 'translations_branch',
+            'translations_usage', 'uses_launchpad',
+            )),
+        'launchpad.AnyPerson': set((
+            'cvsbranch', 'cvsmodule', 'cvsroot', 'cvstarfileurl',
+            'importstatus', 'rcstype', 'svnrepository',
+            )),
+        }
+
+    def test_set_permissions(self):
+        checker = getChecker(self.public_series)
+        self.checkPermissions(
+            self.expected_set_permissions, checker.set_permissions, 'set')
