@@ -13,7 +13,6 @@ import logging
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.locals import (
-    And,
     Int,
     JSON,
     Not,
@@ -216,17 +215,16 @@ class PackageCopyJobDerived(BaseRunnableJob):
         while True:
             jobs = IStore(PackageCopyJob).find(
                 PackageCopyJob,
-                And(PackageCopyJob.job_type == cls.class_job_type,
-                    PackageCopyJob.job == Job.id,
-                    Job.id.is_in(Job.ready_jobs),
-                    Not(Job.id.is_in(seen))))
+                PackageCopyJob.job_type == cls.class_job_type,
+                PackageCopyJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs),
+                Not(Job.id.is_in(seen)))
             jobs.order_by(PackageCopyJob.copy_policy)
             job = jobs.first()
             if job is None:
                 break
-            else:
-                seen.add(job.job_id)
-                yield cls(job)
+            seen.add(job.job_id)
+            yield cls(job)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
