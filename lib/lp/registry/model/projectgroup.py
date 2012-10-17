@@ -170,8 +170,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return "Project Group"
 
     def getProducts(self):
-        return Product.selectBy(
-            project=self, active=True, orderBy='displayname')
+        results = Store.of(self).find(Product, Product.project==self,
+                                      Product.active==True)
+        return results.order_by(Product.displayname)
 
     @cachedproperty
     def products(self):
