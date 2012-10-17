@@ -126,6 +126,24 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertIsNot(None, project_2.commercial_subscription)
         self.assertEqual(0, len(view.redeemable_vouchers))
 
+    def test_pending_vouchers_excluded(self):
+        # Vouchers pending redemption in Salesforce are not included in choice.
+        commercial_admin = login_celebrity('commercial_admin')
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_id_1 = voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        voucher_id_2 = voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        project_1 = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(
+            project_1, False, 'pending-' + voucher_id_1)
+        view = create_initialized_view(commercial_admin, '+vouchers')
+        vouchers = list(view.widgets['voucher'].vocabulary)
+        # Only voucher2 in vocab since voucher1 is pending redemption.
+        self.assertEqual(1,len(vouchers))
+        self.assertEqual(voucher_id_2, vouchers[0].token)
+
     def test_redeem_twice_causes_error(self):
         # If a voucher is redeemed twice, the second attempt is rejected.
         commercial_admin = login_celebrity('commercial_admin')
