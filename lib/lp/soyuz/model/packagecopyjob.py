@@ -212,6 +212,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
             And(PackageCopyJob.job_type == cls.class_job_type,
                 PackageCopyJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
+        jobs.order_by(PackageCopyJob.copy_policy)
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):

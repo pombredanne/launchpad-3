@@ -478,6 +478,21 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         emails = pop_notifications()
         self.assertEqual(len(emails), 1)
 
+    def test_iterReady_orders_by_copy_policy(self):
+        # iterReady prioritises mass-sync copies below anything else.
+        jobs = [
+            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC),
+            self.makeJob(),
+            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC),
+            ]
+        source = getUtility(IPlainPackageCopyJobSource)
+        ready_jobs = list(source.iterReady())
+        self.assertEqual([
+            PackageCopyPolicy.INSECURE,
+            PackageCopyPolicy.MASS_SYNC,
+            PackageCopyPolicy.MASS_SYNC,
+            ], [job.copy_policy for job in ready_jobs])
+
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
