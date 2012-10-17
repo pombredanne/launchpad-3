@@ -206,14 +206,26 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready PackageCopyJobs."""
-        jobs = IStore(PackageCopyJob).find(
-            PackageCopyJob,
-            And(PackageCopyJob.job_type == cls.class_job_type,
-                PackageCopyJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        jobs.order_by(PackageCopyJob.copy_policy)
-        return (cls(job) for job in jobs)
+        """Iterate through all ready PackageCopyJobs.
+
+        Even though it's slower, we repeat the query each time in order that
+        very long queues of mass syncs can be pre-empted by other jobs.
+        """
+        seen = set()
+        while True:
+            jobs = IStore(PackageCopyJob).find(
+                PackageCopyJob,
+                And(PackageCopyJob.job_type == cls.class_job_type,
+                    PackageCopyJob.job == Job.id,
+                    Job.id.is_in(Job.ready_jobs)))
+            jobs.order_by(PackageCopyJob.copy_policy)
+            for job in jobs:
+                if job.id not in seen:
+                    seen.add(job.id)
+                    yield cls(job)
+                    break
+            else:
+                break
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
