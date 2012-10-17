@@ -35,6 +35,12 @@ attribute is correct.
     >>> print bzr.commercial_subscription.sales_system_id
     asdf123
 
+If a voucher is attempted to be redeemed twice, an error occurs.
+    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12)
+    Traceback (most recent call last):
+    ...
+    VoucherAlreadyRedeemed: Voucher asdf123 has already been redeemed for Bazaar
+
 Commercial subscriptions have zope.Public permissions for reading.
 
     >>> from lp.services.webapp.authorization import check_permission
@@ -143,7 +149,7 @@ End the subscription in November and add two months.
 
     >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 2,
+    >>> bzr.redeemSubscriptionVoucher('foo1456', owner, owner, 2,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2010-01-15...
@@ -152,7 +158,7 @@ End the subscription in November and add 11 months.
 
     >>> subscription.date_expires = datetime(2009,11,15,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 11,
+    >>> bzr.redeemSubscriptionVoucher('foo2456', owner, owner, 11,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2010-10-15...
@@ -165,7 +171,7 @@ nonexistent February 31.
 
     >>> subscription.date_expires = datetime(2009,10,31,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    >>> bzr.redeemSubscriptionVoucher('foo3456', owner, owner, 4,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2010-02-28...
@@ -175,7 +181,7 @@ the 29th.
 
     >>> subscription.date_expires = datetime(2011,10,31,tzinfo=UTC)
     >>> old_date_expires = bzr.commercial_subscription.date_expires
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 4,
+    >>> bzr.redeemSubscriptionVoucher('foo4456', owner, owner, 4,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2012-02-29...
@@ -186,7 +192,7 @@ the current date.
     >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
     >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
     >>> now = datetime(2010, 1, 1, tzinfo=UTC)
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    >>> bzr.redeemSubscriptionVoucher('foo5456', owner, owner, 12,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2011-01-01...
@@ -198,7 +204,7 @@ If the original subscription has not expired the start date is not affected.
     >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
     >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
     >>> now = datetime(2009, 1, 1, tzinfo=UTC)
-    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12,
+    >>> bzr.redeemSubscriptionVoucher('foo6456', owner, owner, 12,
     ...     'notes', current_datetime=now)
     >>> print subscription.date_expires
     2010-01-15...

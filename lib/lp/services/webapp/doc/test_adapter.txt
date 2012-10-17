@@ -17,7 +17,7 @@ Imports and test setup:
     >>> import lp.services.webapp.adapter
     >>> from lp.services.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
-    ...     reset_request_started, set_request_started)
+    ...     set_request_started)
     >>> from lp.testing.layers import DatabaseLayer
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
 
@@ -352,56 +352,6 @@ transaction will be doomed:
     ...
     DoomedTransaction
     <BLANKLINE>
-
-Set the timeout to 300ms for the next tests:
-
-    >>> test_data = dedent("""
-    ...     [database]
-    ...     db_statement_timeout: 300
-    ...     """)
-    >>> config.push('test', test_data)
-    >>> reset_store()
-    >>> set_request_started()
-    >>> print current_statement_timeout(store)
-    300ms
-    >>> clear_request_started()
-
-If the request includes a long running call to an external system, the request
-may timeout if the maximum request duration is exceeded. We simulate such a
-call using a sleep() and see that a timeout indeed occurs.
-
-    >>> set_request_started()
-
-    >>> time.sleep(1)
-    >>> store.execute('SELECT pg_sleep(0.200)', noresult=True)
-    Traceback (most recent call last):
-    ...
-    RequestExpired: request expired.
-
-    >>> clear_request_started()
-
-We may not wish slowness by an external system to cause a Launchpad timeout.
-We can reset the request start time after a long running external call so that
-no timeout is triggered, unless subsequent processing takes too long.
-
-    >>> set_request_started()
-    >>> time.sleep(1)
-    >>> reset_request_started()
-    >>> store.execute('SELECT pg_sleep(0.200)', noresult=True)
-
-    >>> clear_request_started()
-
-Even after resetting the request start time, a subsequent lengthy SQL statement
-will still trigger an exception.
-
-    >>> set_request_started()
-    >>> time.sleep(1)
-    >>> reset_request_started()
-    >>> store.execute('SELECT pg_sleep(0.400)', noresult=True)
-    Traceback (most recent call last):
-    ...
-    LaunchpadTimeoutError: Statement: 'SELECT pg_sleep(0.400)'
-    ...
 
 Cleanup:
 
