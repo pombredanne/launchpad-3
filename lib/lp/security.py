@@ -433,7 +433,7 @@ class ViewProduct(AuthorizationBase):
         return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
-        return self.obj.information_type in PUBLIC_INFORMATION_TYPES
+        return self.obj.userCanView(None)
 
 
 class ChangeProduct(ViewProduct):

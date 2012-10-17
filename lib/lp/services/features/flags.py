@@ -238,6 +238,12 @@ flag_info = sorted([
      'disabled',
      '',
      'https://dev.launchpad.net/LEP/PrivateProjects'),
+    ('disclosure.private_project.traversal_override',
+     'boolean',
+     'If set, allow all users to traverse to private projects.',
+     'Traversal to private projects requires special access.',
+     'Override traveral checks.',
+     'https://dev.launchpad.net/LEP/PrivateProjects'),
 
     ])
 

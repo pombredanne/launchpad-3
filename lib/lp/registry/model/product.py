@@ -197,6 +197,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1533,6 +1534,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanView(self, user):
         """See `IProductPublic`."""
+        if getFeatureFlag('disclosure.private_project.traversal_override'):
+            return True
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:

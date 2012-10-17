@@ -76,6 +76,7 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     celebrity_logged_in,
@@ -891,6 +892,29 @@ class TestProduct(TestCaseWithFactory):
         user = self.factory.makePerson()
         product.userCanView(user)
         product.userCanView(IPersonRoles(user))
+
+    def test_userCanView_override(self):
+        # userCanView is overridden by the traversal override.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        unprivileged = self.factory.makePerson()
+        with person_logged_in(unprivileged):
+            with FeatureFixture(
+                {'disclosure.private_project.traversal_override': 'on'}):
+                self.assertTrue(product.userCanView(unprivileged))
+            self.assertFalse(product.userCanView(unprivileged))
+
+    def test_anonymous_traversal_override(self):
+        # The traversal override affects the permissions granted to anonymous
+        # users.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            with FeatureFixture(
+                {'disclosure.private_project.traversal_override': 'on'}):
+                self.assertTrue(check_permission('launchpad.View', product))
+            self.assertFalse(check_permission('launchpad.View', product))
+
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
