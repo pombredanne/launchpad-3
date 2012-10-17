@@ -2132,7 +2132,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
-        if status == SpecificationDefinitionStatus.OBSOLETE:
+        if status in (SpecificationDefinitionStatus.OBSOLETE,
+                      SpecificationDefinitionStatus.SUPERSEDED):
             # This is to satisfy a DB constraint of obsolete specs.
             naked_spec.completer = owner
             naked_spec.date_completed = datetime.now(pytz.UTC)
