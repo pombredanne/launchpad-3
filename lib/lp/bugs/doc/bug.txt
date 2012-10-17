@@ -1269,7 +1269,6 @@ duplicate is also marked as not affecting her either.
     >>> dupe_one.users_affected_count
     1
     >>> test_bug.markUserAffected(dupe_affected_user, affected=False)
-    >>> IStore(Bug).invalidate(dupe_one)
     >>> dupe_one.users_affected_count
     0
 

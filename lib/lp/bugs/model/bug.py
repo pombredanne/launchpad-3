@@ -1892,6 +1892,8 @@ class Bug(SQLBase, InformationTypeMixin):
                 BugAffectsPerson.person == user,
                 BugAffectsPerson.bugID.is_in(dupe_bug_ids),
             ).set(affected=affected)
+            for dupe in self.duplicates:
+                dupe._flushAndInvalidate()
         self._flushAndInvalidate()
 
         if affected:
