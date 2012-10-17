@@ -15,8 +15,8 @@ A bug's heat is calculated automatically when it is created.
 Updating bug heat on-the-fly
 ----------------------------
 
-The IBug.updateHeat() method updates a Bug's heat using data already in
-the database. updateHeat() uses a stored procedure in the database to
+The update_bug_heat method updates a Bug's heat using data already in
+the database. update_bug_heat() uses a stored procedure in the database to
 calculate the heat overall.
 
 We'll create a new bug with a heat of 0 for the sake of testing.
@@ -26,11 +26,12 @@ We'll create a new bug with a heat of 0 for the sake of testing.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(bug).heat = 0
 
-Calling updateHeat() will update the bug's heat. Since this new bug has
+Calling update_bug_heat() will update the bug's heat. Since this new bug has
 one subscriber (the bug owner) and one affected user (ditto) its
 heat after update will be 6.
 
-    >>> bug.updateHeat()
+    >>> from lp.bugs.model.bug import update_bug_heat
+    >>> update_bug_heat([bug.id])
     >>> bug.heat
     6
 

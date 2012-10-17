@@ -1026,22 +1026,30 @@
         <allow
             attributes="
                 id
-                name
-                code_name
-                product
-                distribution
-                productseries
-                distroseries
-                dateexpected
+                userCanView
+                " />
+        <require
+            permission="launchpad.View"
+            attributes="
                 active
+                bugtasks
+                code_name
+                dateexpected
+                displayname
+                distribution
+                distroseries
+                getTags
+                getTagsData
+                name
+                product
+                product_release
+                productseries
+                series_target
+                specifications
                 summary
                 target
-                series_target
-                displayname
                 title
-                bugtasks
-                specifications
-                product_release"/>
+                "/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -1051,15 +1059,13 @@
                 setTags
                 "/>
         <require
-            permission="zope.Public"
-            attributes="
-                getTags
-                getTagsData
-                "/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
             interface="lp.app.interfaces.security.IAuthorization"/>
@@ -1070,10 +1076,11 @@
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>

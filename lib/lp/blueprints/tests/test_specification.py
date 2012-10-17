@@ -139,26 +139,6 @@ class SpecificationTests(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, getattr, specification, 'setTarget')
 
-    def check_permissions(self, expected_permissions, used_permissions,
-                             type_):
-        expected = set(expected_permissions.keys())
-        self.assertEqual(
-            expected, set(used_permissions.values()),
-            'Unexpected %s permissions' % type_)
-        for permission in expected_permissions:
-            attribute_names = set(
-                name for name, value in used_permissions.items()
-                if value == permission)
-            self.assertEqual(
-                expected_permissions[permission], attribute_names,
-                'Unexpected set of attributes with %s permission %s:\n'
-                'Defined but not expected: %s\n'
-                'Expected but not defined: %s'
-                % (
-                    type_, permission,
-                    attribute_names - expected_permissions[permission],
-                    expected_permissions[permission] - attribute_names))
-
     def test_get_permissions(self):
         expected_get_permissions = {
             CheckerPublic: set((
@@ -196,7 +176,7 @@ class SpecificationTests(TestCaseWithFactory):
             }
         specification = self.factory.makeSpecification()
         checker = getChecker(specification)
-        self.check_permissions(
+        self.checkPermissions(
             expected_get_permissions, checker.get_permissions, 'get')
 
     def test_set_permissions(self):
@@ -211,7 +191,7 @@ class SpecificationTests(TestCaseWithFactory):
             }
         specification = self.factory.makeSpecification()
         checker = getChecker(specification)
-        self.check_permissions(
+        self.checkPermissions(
             expected_get_permissions, checker.set_permissions, 'set')
 
     def test_security_adapters(self):
