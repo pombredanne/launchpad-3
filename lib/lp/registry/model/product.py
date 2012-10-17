@@ -1357,7 +1357,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #
         clauses = [Specification.product == self]
         clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).find(Specification, *clauses)
+        if prejoin_people:
+            results = self._preload_specifications_people(clauses)
+        else:
+            results = Store.of(self).find(Specification, *clauses)
         results.order_by(order)
         if quantity is not None:
             results = results[:quantity]

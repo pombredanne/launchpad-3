@@ -977,7 +977,7 @@ class HasSpecificationsMixin:
         elif sort == SpecificationSort.DATE:
             return (Desc(Specification.datecreated), Specification.id)
 
-    def _preload_specifications_people(self, query):
+    def _preload_specifications_people(self, clauses):
         """Perform eager loading of people and their validity for query.
 
         :param query: a string query generated in the 'specifications'
@@ -986,6 +986,8 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
+        if isinstance(clauses, basestring):
+            clauses = [SQL(clauses)]
 
         def cache_people(rows):
             # Find the people we need:
@@ -1018,7 +1020,7 @@ class HasSpecificationsMixin:
 
         results = Store.of(self).find(
             Specification,
-            SQL(query),
+            *clauses
             )
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
