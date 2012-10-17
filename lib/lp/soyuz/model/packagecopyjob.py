@@ -16,6 +16,7 @@ from storm.locals import (
     And,
     Int,
     JSON,
+    Not,
     Reference,
     Unicode,
     )
@@ -217,15 +218,15 @@ class PackageCopyJobDerived(BaseRunnableJob):
                 PackageCopyJob,
                 And(PackageCopyJob.job_type == cls.class_job_type,
                     PackageCopyJob.job == Job.id,
-                    Job.id.is_in(Job.ready_jobs)))
+                    Job.id.is_in(Job.ready_jobs),
+                    Not(Job.id.is_in(seen))))
             jobs.order_by(PackageCopyJob.copy_policy)
-            for job in jobs:
-                if job.id not in seen:
-                    seen.add(job.id)
-                    yield cls(job)
-                    break
-            else:
+            job = jobs.first()
+            if job is None:
                 break
+            else:
+                seen.add(job.job_id)
+                yield cls(job)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
