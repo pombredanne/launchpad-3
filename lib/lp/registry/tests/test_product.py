@@ -61,7 +61,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -914,7 +913,6 @@ class TestProduct(TestCaseWithFactory):
                 {'disclosure.private_project.traversal_override': 'on'}):
                 self.assertTrue(check_permission('launchpad.View', product))
             self.assertFalse(check_permission('launchpad.View', product))
-
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
