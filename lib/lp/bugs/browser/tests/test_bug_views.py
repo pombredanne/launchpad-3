@@ -320,7 +320,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         bug = self.factory.makeBug()
         for n in range(20):
             dupe = self.factory.makeBug()
-            removeSecurityProxy(dupe)._markAsDuplicate(bug)
+            removeSecurityProxy(dupe)._markAsDuplicate(bug, set())
             removeSecurityProxy(dupe).subscribe(user, dupe.owner)
         Store.of(bug).invalidate()
         with person_logged_in(user):
