@@ -22,6 +22,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
+    BrowserTestCase,
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
@@ -32,7 +33,7 @@ from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
-class TestProjectGroupView(TestCaseWithFactory):
+class TestProjectGroupView(BrowserTestCase):
     """Tests the +index view."""
 
     layer = DatabaseFunctionalLayer
@@ -52,6 +53,19 @@ class TestProjectGroupView(TestCaseWithFactory):
         self.assertContentEqual(
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
+
+    def test_proprietary_product(self):
+        # Proprietary projects are not listed for people without access to
+        # them.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            project=self.project_group, owner=owner)
+        owner_browser = self.getViewBrowser(self.project_group,
+                                            user=owner)
+        with person_logged_in(owner):
+            self.assertIn(product.name, owner_browser.contents)
+        browser = self.getViewBrowser(self.project_group)
 
 
 class TestProjectGroupEditView(TestCaseWithFactory):
