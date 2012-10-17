@@ -71,9 +71,11 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.product import (
     Product,
+    ProductSet,
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.database.lpstorm import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     celebrity_logged_in,
@@ -732,6 +734,18 @@ class TestProduct(TestCaseWithFactory):
                 getattr(product, attribute_name)
         # Commercial admins have access to all products.
         with celebrity_logged_in('commercial_admin'):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_admin_launchpad_View_proprietary_product(self):
+        # Admins and commercial admins can view proprietary products.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        names = self.expected_get_permissions['launchpad.View']
+        with person_logged_in(self.factory.makeAdministrator()):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        with person_logged_in(self.factory.makeCommercialAdmin()):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
@@ -1602,3 +1616,115 @@ class TestWebService(WebServiceTestCase):
         self.failUnlessEqual(
             [],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
+
+
+class TestProductSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAllInformationTypes(self):
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        return proprietary, embargoed, public
+
+    @staticmethod
+    def filterFind(user):
+        clause = ProductSet.getProductPrivacyFilter(user)
+        return IStore(Product).find(Product, clause)
+
+    def test_get_all_active_omits_proprietary(self):
+        # Ignore proprietary products for anonymous users
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        result = ProductSet.get_all_active(None)
+        self.assertNotIn(proprietary, result)
+        self.assertNotIn(embargoed, result)
+
+    def test_getProductPrivacyFilterAnonymous(self):
+        # Ignore proprietary products for anonymous users
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(None)
+        self.assertIn(public, result)
+        self.assertNotIn(embargoed, result)
+        self.assertNotIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_excludes_random_users(self):
+        # Exclude proprietary products for anonymous users
+        random = self.factory.makePerson()
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(random)
+        self.assertIn(public, result)
+        self.assertNotIn(embargoed, result)
+        self.assertNotIn(proprietary, result)
+
+    def grant(self, pillar, information_type, grantee):
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(pillar, information_type)])
+        self.factory.makeAccessPolicyGrant(policy, grantee)
+
+    def test_getProductPrivacyFilter_respects_grants(self):
+        # Include proprietary products for users with right grants.
+        grantee = self.factory.makePerson()
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        self.grant(embargoed, InformationType.EMBARGOED, grantee)
+        self.grant(proprietary, InformationType.PROPRIETARY, grantee)
+        result = self.filterFind(grantee)
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_ignores_wrong_product(self):
+        # Exclude proprietary products if grant is on wrong product.
+        grantee = self.factory.makePerson()
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        self.factory.makeAccessPolicyGrant(grantee=grantee)
+        result = self.filterFind(grantee)
+        self.assertIn(public, result)
+        self.assertNotIn(embargoed, result)
+        self.assertNotIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_ignores_wrong_info_type(self):
+        # Exclude proprietary products if grant is on wrong information type.
+        grantee = self.factory.makePerson()
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        self.grant(embargoed, InformationType.PROPRIETARY, grantee)
+        self.factory.makeAccessPolicy(proprietary, InformationType.EMBARGOED)
+        self.grant(proprietary, InformationType.EMBARGOED, grantee)
+        result = self.filterFind(grantee)
+        self.assertIn(public, result)
+        self.assertNotIn(embargoed, result)
+        self.assertNotIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_respects_team_grants(self):
+        # Include proprietary products for users in teams with right grants.
+        grantee = self.factory.makeTeam()
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        self.grant(embargoed, InformationType.EMBARGOED, grantee)
+        self.grant(proprietary, InformationType.PROPRIETARY, grantee)
+        result = self.filterFind(grantee.teamowner)
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_includes_admins(self):
+        # Launchpad admins can see everything.
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(self.factory.makeAdministrator())
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)
+
+    def test_getProductPrivacyFilter_includes_commercial_admins(self):
+        # Commercial admins can see everything.
+        proprietary, embargoed, public = self.makeAllInformationTypes()
+        result = self.filterFind(self.factory.makeCommercialAdmin())
+        self.assertIn(public, result)
+        self.assertIn(embargoed, result)
+        self.assertIn(proprietary, result)

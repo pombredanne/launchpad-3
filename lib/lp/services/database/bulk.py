@@ -199,7 +199,7 @@ def create(columns, values, get_objects=False,
            get_primary_keys=False):
     """Create a large number of objects efficiently.
 
-    :param cols: The Storm columns to insert values into. Must be from a
+    :param columns: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
     :param get_objects: Return the created objects.

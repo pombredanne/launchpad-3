@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_specification_filters',
     'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
@@ -34,6 +35,7 @@ from storm.expr import (
     Join,
     LeftJoin,
     Or,
+    Not,
     Select,
     )
 from storm.locals import (
@@ -104,6 +106,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -1289,3 +1292,43 @@ def get_specification_privacy_filter(user):
                 where=Or(
                     AccessPolicyGrantFlat.abstract_artifact_id == None,
                     AccessArtifact.specification_id == Specification.id))))
+
+
+def get_specification_filters(filter):
+    """Return a list of Storm expressions for filtering Specifications.
+
+    :param filters: A collection of SpecificationFilter and/or strings.
+        Strings are used for text searches.
+    """
+    from lp.registry.model.product import Product
+    # If Product is used, it must be active.
+    clauses = [Or(Specification.product == None,
+                  Not(Specification.productID.is_in(Select(Product.id,
+                      Product.active == False))))]
+    # ALL is the trump card.
+    if SpecificationFilter.ALL in filter:
+        return clauses
+    # Look for informational specs.
+    if SpecificationFilter.INFORMATIONAL in filter:
+        clauses.append(Specification.implementation_status ==
+                       SpecificationImplementationStatus.INFORMATIONAL)
+    # Filter based on completion.  See the implementation of
+    # Specification.is_complete() for more details.
+    if SpecificationFilter.COMPLETE in filter:
+        clauses.append(Specification.storm_completeness())
+    if SpecificationFilter.INCOMPLETE in filter:
+        clauses.append(Not(Specification.storm_completeness()))
+
+    # Filter for validity. If we want valid specs only, then we should exclude
+    # all OBSOLETE or SUPERSEDED specs.
+    if SpecificationFilter.VALID in filter:
+        clauses.append(Not(Specification.definition_status.is_in([
+            SpecificationDefinitionStatus.OBSOLETE,
+            SpecificationDefinitionStatus.SUPERSEDED,
+        ])))
+    # Filter for specification text.
+    for constraint in filter:
+        if isinstance(constraint, basestring):
+            # A string in the filter is a text search filter.
+            clauses.append(fti_search(Specification, constraint))
+    return clauses
