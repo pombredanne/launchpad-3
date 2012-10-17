@@ -64,8 +64,10 @@ class TestProjectGroupView(BrowserTestCase):
         owner_browser = self.getViewBrowser(self.project_group,
                                             user=owner)
         with person_logged_in(owner):
-            self.assertIn(product.name, owner_browser.contents)
+            product_name = product.name
+        self.assertIn(product_name, owner_browser.contents)
         browser = self.getViewBrowser(self.project_group)
+        self.assertNotIn(product_name, browser.contents)
 
 
 class TestProjectGroupEditView(TestCaseWithFactory):

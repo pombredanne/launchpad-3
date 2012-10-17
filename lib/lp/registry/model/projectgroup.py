@@ -87,7 +87,10 @@ from lp.registry.model.milestone import (
     ProjectMilestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.productseries import ProductSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -100,6 +103,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
@@ -169,14 +173,15 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IPillar`."""
         return "Project Group"
 
-    def getProducts(self):
-        results = Store.of(self).find(Product, Product.project==self,
-                                      Product.active==True)
+    def getProducts(self, user):
+        results = Store.of(self).find(
+            Product, Product.project == self, Product.active == True,
+            ProductSet.getProductPrivacyFilter(user))
         return results.order_by(Product.displayname)
 
     @cachedproperty
     def products(self):
-        return list(self.getProducts())
+        return list(self.getProducts(getUtility(ILaunchBag).user))
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)

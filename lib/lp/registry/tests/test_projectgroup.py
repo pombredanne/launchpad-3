@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,7 +6,9 @@ __metaclass__ = type
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
@@ -48,6 +50,19 @@ class TestProjectGroup(TestCaseWithFactory):
         for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProject(owner=closed_team)
+
+    def test_getProducts_with_proprietary(self):
+        # Proprietary projects are not listed for users without access to
+        # them.
+        project_group = removeSecurityProxy(self.factory.makeProject())
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            project=project_group, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        self.assertNotIn(product, project_group.getProducts(None))
+        outsider = self.factory.makePerson()
+        self.assertNotIn(product, project_group.getProducts(outsider))
+        self.assertIn(product, project_group.getProducts(owner))
 
 
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
