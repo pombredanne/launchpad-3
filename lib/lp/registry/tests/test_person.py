@@ -24,6 +24,14 @@ from zope.security.proxy import removeSecurityProxy
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
+    SpecificationPriority,
+    SpecificationFilter,
+    SpecificationSort,
+    )
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtasksearch import (
     get_person_bugtasks_search_params,
@@ -1225,7 +1233,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.future_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
 
@@ -1238,7 +1246,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             title=u'workitem', specification=assigned_spec, deleted=True)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
         self.assertEqual([], list(workitems))
 
     def test_workitems_assigned_to_others_working_on_blueprint(self):
@@ -1258,7 +1266,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             assignee=self.factory.makePerson())
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertContentEqual([workitem, workitem_for_other_person],
                                 list(workitems))
@@ -1273,7 +1281,8 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         self.factory.makeSpecificationWorkItem(
             title=u'workitem 1', specification=spec)
 
-        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(today)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            today, self.team)
 
         self.assertEqual([], list(workitems))
 
@@ -1293,7 +1302,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.current_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
 
@@ -1317,9 +1326,28 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             assignee=self.team.teamowner)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, self.team)
 
         self.assertEqual([workitem], list(workitems))
+
+    def test_listings_consider_spec_visibility(self):
+        # This spec is visible only to the product owner, even though it is
+        # assigned to self.team.teamowner.  Therefore, it is listed only for
+        # product.owner, not the team.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        milestone = self.factory.makeMilestone(
+            dateexpected=self.current_milestone.dateexpected, product=product)
+        spec = self.factory.makeSpecification(
+            milestone=milestone, information_type=InformationType.PROPRIETARY)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=spec, assignee=self.team.teamowner)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            milestone.dateexpected, self.team)
+        self.assertNotIn(workitem, workitems)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            milestone.dateexpected, removeSecurityProxy(product).owner)
+        self.assertIn(workitem, workitems)
 
     def _makeProductSpec(self, milestone_dateexpected):
         assignee = self.factory.makePerson()
@@ -1362,7 +1390,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             workitems = list(
                 self.team.getAssignedSpecificationWorkItemsDueBefore(
-                    dateexpected))
+                    dateexpected, self.team))
             for workitem in workitems:
                 workitem.assignee
                 workitem.milestone
@@ -1550,3 +1578,236 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
         # 10. One to get all distroseries of a bug's distro. (See comment on
         # getAssignedBugTasksDueBefore() to understand why it's needed)
         self.assertThat(recorder, HasQueryCount(Equals(12)))
+
+
+def list_result(sprint, filter=None, user=None):
+    result = sprint.specifications(user, SpecificationSort.DATE, filter=filter)
+    return list(result)
+
+
+class TestSpecifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecifications, self).setUp()
+        self.date_created = datetime.now(pytz.utc)
+
+    def makeSpec(self, owner=None, date_created=0, title=None,
+                 status=NewSpecificationDefinitionStatus.NEW,
+                 name=None, priority=None, information_type=None):
+        blueprint = self.factory.makeSpecification(
+            title=title, status=status, name=name, priority=priority,
+            information_type=information_type, owner=owner,
+            )
+        removeSecurityProxy(blueprint).datecreated = (
+            self.date_created + timedelta(date_created))
+        return blueprint
+
+    def test_specifications_quantity(self):
+        # Ensure the quantity controls the maximum number of entries.
+        owner = self.factory.makePerson()
+        for count in range(10):
+            self.factory.makeSpecification(owner=owner)
+        self.assertEqual(10, owner.specifications(None).count())
+        result = owner.specifications(None, quantity=None).count()
+        self.assertEqual(10, result)
+        self.assertEqual(8, owner.specifications(None, quantity=8).count())
+        self.assertEqual(10, owner.specifications(None, quantity=11).count())
+
+    def test_date_sort(self):
+        # Sort on date_created.
+        owner = self.factory.makePerson()
+        blueprint1 = self.makeSpec(owner, date_created=0)
+        blueprint2 = self.makeSpec(owner, date_created=-1)
+        blueprint3 = self.makeSpec(owner, date_created=1)
+        result = list_result(owner)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+
+    def test_date_sort_id(self):
+        # date-sorting when no date varies uses object id.
+        owner = self.factory.makePerson()
+        blueprint1 = self.makeSpec(owner)
+        blueprint2 = self.makeSpec(owner)
+        blueprint3 = self.makeSpec(owner)
+        result = list_result(owner)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_priority_sort(self):
+        # Sorting by priority works and is the default.
+        # When priority is supplied, status is ignored.
+        blueprint1 = self.makeSpec(priority=SpecificationPriority.UNDEFINED,
+                                   status=SpecificationDefinitionStatus.NEW)
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(
+            owner, priority=SpecificationPriority.NOTFORUS,
+            status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(
+            owner, priority=SpecificationPriority.LOW,
+            status=SpecificationDefinitionStatus.NEW)
+        result = owner.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_priority_sort_fallback_status(self):
+        # Sorting by priority falls back to defintion_status.
+        # When status is supplied, name is ignored.
+        blueprint1 = self.makeSpec(
+            status=SpecificationDefinitionStatus.NEW, name='a')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(
+            owner, status=SpecificationDefinitionStatus.APPROVED, name='c')
+        blueprint3 = self.makeSpec(
+            owner, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
+        result = owner.specifications(None)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+
+    def test_priority_sort_fallback_name(self):
+        # Sorting by priority falls back to name
+        blueprint1 = self.makeSpec(name='b')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(owner, name='c')
+        blueprint3 = self.makeSpec(owner, name='a')
+        result = owner.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_ignore_inactive(self):
+        # Specs for inactive products are skipped.
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('admin'):
+            product.active = False
+        spec = self.factory.makeSpecification(product=product)
+        self.assertNotIn(spec, spec.owner.specifications(None))
+
+    def test_include_distro(self):
+        # Specs for distributions are included.
+        distribution = self.factory.makeDistribution()
+        spec = self.factory.makeSpecification(distribution=distribution)
+        self.assertIn(spec, spec.owner.specifications(None))
+
+    def test_informational(self):
+        # INFORMATIONAL causes only informational specs to be shown.
+        enum = SpecificationImplementationStatus
+        informational = self.factory.makeSpecification(
+            implementation_status=enum.INFORMATIONAL)
+        owner = informational.owner
+        plain = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None)
+        self.assertIn(informational, result)
+        self.assertIn(plain, result)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INFORMATIONAL])
+        self.assertIn(informational, result)
+        self.assertNotIn(plain, result)
+
+    def test_completeness(self):
+        # If COMPLETE is specified, completed specs are listed.  If INCOMPLETE
+        # is specified or neither is specified, only incomplete specs are
+        # listed.
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.COMPLETE])
+        self.assertIn(implemented, result)
+        self.assertNotIn(non_implemented, result)
+
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INCOMPLETE])
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+        result = owner.specifications(
+            None)
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
+    def test_all(self):
+        # ALL causes both complete and incomplete to be listed.
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None, filter=[SpecificationFilter.ALL])
+        self.assertContentEqual([implemented, non_implemented], result)
+
+    def test_valid(self):
+        # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
+        # (INCOMPLETE already excludes OBSOLETE and SUPERSEDED.)
+        i_enum = SpecificationImplementationStatus
+        d_enum = SpecificationDefinitionStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=i_enum.IMPLEMENTED)
+        owner = implemented.owner
+        self.factory.makeSpecification(owner=owner, status=d_enum.SUPERSEDED)
+        self.factory.makeSpecification(owner=owner, status=d_enum.OBSOLETE)
+        filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
+        results = owner.specifications(None, filter=filter)
+        self.assertContentEqual([implemented], results)
+
+    def test_roles(self):
+        # If roles are specified, they control which specifications are shown.
+        # If no roles are specified, all roles are used.
+        created = self.factory.makeSpecification()
+        person = created.owner
+
+        def rlist(filter=None):
+            return list(person.specifications(None, filter=filter))
+        assigned = self.factory.makeSpecification(assignee=person)
+        drafting = self.factory.makeSpecification(drafter=person)
+        approving = self.factory.makeSpecification(approver=person)
+        subscribed = self.factory.makeSpecification()
+        subscribed.subscribe(person)
+        self.assertEqual([created, assigned, drafting, approving, subscribed],
+                         rlist([]))
+        self.assertEqual([created], rlist([SpecificationFilter.CREATOR]))
+        self.assertEqual([assigned], rlist([SpecificationFilter.ASSIGNEE]))
+        self.assertEqual([drafting], rlist([SpecificationFilter.DRAFTER]))
+        self.assertEqual([approving], rlist([SpecificationFilter.APPROVER]))
+        self.assertEqual([subscribed],
+                         rlist([SpecificationFilter.SUBSCRIBER]))
+
+    def test_text_search(self):
+        # Text searches work.
+        blueprint1 = self.makeSpec(title='abc')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(owner, title='def')
+        result = list_result(owner, ['abc'])
+        self.assertEqual([blueprint1], result)
+        result = list_result(owner, ['def'])
+        self.assertEqual([blueprint2], result)
+
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertEqual([], list_result(blueprint1.owner))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.owner, user=grant.grantee))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.owner, user=grant.grantee))

@@ -54,6 +54,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -174,6 +178,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -1729,11 +1734,29 @@ class ProductSet:
 
     @property
     def all_active(self):
-        return self.get_all_active()
+        return self.get_all_active(None)
 
-    def get_all_active(self, eager_load=True):
-        result = IStore(Product).find(Product, Product.active
-            ).order_by(Desc(Product.datecreated))
+    @staticmethod
+    def getProductPrivacyFilter(user):
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
+        granted_products = And(
+            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
+            TeamParticipation.person == user,
+            AccessPolicyGrantFlat.policy == AccessPolicy.id,
+            AccessPolicy.product == Product.id,
+            AccessPolicy.type == Product._information_type)
+        return Or(Product._information_type == InformationType.PUBLIC,
+                  Product._information_type == None,
+                  Product.id.is_in(Select(Product.id, granted_products)))
+
+    @classmethod
+    def get_all_active(cls, user, eager_load=True):
+        clause = cls.getProductPrivacyFilter(user)
+        result = IStore(Product).find(Product, Product.active,
+                    clause).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 
@@ -1843,7 +1866,7 @@ class ProductSet:
         product.development_focus = trunk
         return product
 
-    def forReview(self, search_text=None, active=None,
+    def forReview(self, user, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   created_after=None, created_before=None,
                   has_subscription=None,
@@ -1853,7 +1876,7 @@ class ProductSet:
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = []
+        conditions = [self.getProductPrivacyFilter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)
