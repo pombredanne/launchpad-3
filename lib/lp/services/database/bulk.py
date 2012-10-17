@@ -10,7 +10,6 @@ __all__ = [
     'load_referencing',
     'load_related',
     'reload',
-    'update',
     ]
 
 
@@ -28,7 +27,6 @@ from storm.expr import (
     Insert,
     Or,
     SQL,
-    Update,
     )
 from storm.info import (
     get_cls_info,
@@ -245,33 +243,3 @@ def create(columns, values, get_objects=False,
     else:
         IStore(cls).execute(Insert(db_cols, values=db_values))
         return None
-
-
-def update(where, col_values, values=None):
-    """Update a large number of objects efficiently.
-
-    :param col_values: Dictionary mapping columns to values, or the Storm
-        columns to update. Must be from a single class.
-    :param values: None, or a list of values for the columns. Only required
-        if col_values contains a list of columns rather than a dict.
-    :return: the number of records updated.
-    """
-    # Flatten Reference faux-columns into their primary keys.
-    columns = tuple(col_values)
-    db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
-    clses = set(col.cls for col in db_cols)
-    if len(clses) != 1:
-        raise ValueError(
-            "The Storm columns to insert values into must be from a single "
-            "class.")
-    [cls] = clses
-
-    # Mangle our value list into compilable values. Normal columns just
-    # get passed through the variable factory, while References get
-    # squashed into primary key variables.
-    values = values or col_values.values()
-    db_values = list(chain.from_iterable(
-            _dbify_value(col, val) for col, val in zip(columns, values)))
-
-    return IStore(cls).execute(
-        Update(dict(zip(db_cols, db_values)), where=where)).rowcount

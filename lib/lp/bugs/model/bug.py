@@ -1897,12 +1897,11 @@ class Bug(SQLBase, InformationTypeMixin):
         # Where BugAffectsPerson records already exist for each duplicate,
         # update the affected status.
         if dupe_bug_ids:
-            bulk.update(
-                where=And(
-                    BugAffectsPerson.person == user,
-                    BugAffectsPerson.bugID.is_in(dupe_bug_ids)),
-                col_values={BugAffectsPerson.affected: affected})
-
+            Store.of(self).find(
+                BugAffectsPerson,
+                BugAffectsPerson.person == user,
+                BugAffectsPerson.bugID.is_in(dupe_bug_ids),
+            ).set(affected=affected)
         self._flushAndInvalidate()
 
         if affected:
