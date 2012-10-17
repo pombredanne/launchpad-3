@@ -314,13 +314,10 @@ def update_bug_heat(bug_ids):
     if not bug_ids:
         return
     store = IStore(Bug)
-    store.flush()
-
     store.find(
         Bug, Bug.id.is_in(bug_ids)).set(
             heat=SQL('calculate_bug_heat(Bug.id)'),
             heat_last_updated=UTC_NOW)
-    store.flush()
 
 
 class Bug(SQLBase, InformationTypeMixin):
