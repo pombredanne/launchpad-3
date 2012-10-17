@@ -1336,17 +1336,21 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         # product.owner, not the team.
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
-        milestone = self.factory.makeMilestone(
-            dateexpected=self.current_milestone.dateexpected, product=product)
-        spec = self.factory.makeSpecification(
-            milestone=milestone, information_type=InformationType.PROPRIETARY)
-        workitem = self.factory.makeSpecificationWorkItem(
-            specification=spec, assignee=self.team.teamowner)
-        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            milestone.dateexpected, self.team)
+        with person_logged_in(removeSecurityProxy(product).owner):
+            milestone = self.factory.makeMilestone(
+                dateexpected=self.current_milestone.dateexpected,
+                product=product)
+            spec = self.factory.makeSpecification(
+                milestone=milestone,
+                information_type=InformationType.PROPRIETARY)
+            workitem = self.factory.makeSpecificationWorkItem(
+                specification=spec, assignee=self.team.teamowner)
+            workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+                milestone.dateexpected, self.team)
         self.assertNotIn(workitem, workitems)
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
-            milestone.dateexpected, removeSecurityProxy(product).owner)
+            removeSecurityProxy(milestone).dateexpected,
+            removeSecurityProxy(product).owner)
         self.assertIn(workitem, workitems)
 
     def _makeProductSpec(self, milestone_dateexpected):
