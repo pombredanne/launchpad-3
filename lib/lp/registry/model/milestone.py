@@ -351,6 +351,17 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         from lp.registry.model.milestonetag import MilestoneTag
         return list(self.getTagsData().values(MilestoneTag.tag))
 
+    def userCanView(self, user):
+        """See `IMilestone`."""
+        # A database constraint ensures that either self.product
+        # or self.distribution is not None.
+        if self.product is None:
+            # Distributions are always public, and so are their
+            # milestones.
+            return True
+        # Delegate the permission check
+        return self.product.userCanView(user)
+
 
 class MilestoneSet:
     implements(IMilestoneSet)
