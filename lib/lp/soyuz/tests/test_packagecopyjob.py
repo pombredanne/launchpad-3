@@ -480,13 +480,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     def test_iterReady_orders_by_copy_policy(self):
         # iterReady prioritises mass-sync copies below anything else.
-        jobs = [
-            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC),
-            self.makeJob(),
-            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC),
-            ]
-        source = getUtility(IPlainPackageCopyJobSource)
-        ready_jobs = list(source.iterReady())
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        self.makeJob()
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        ready_jobs = list(getUtility(IPlainPackageCopyJobSource).iterReady())
         self.assertEqual([
             PackageCopyPolicy.INSECURE,
             PackageCopyPolicy.MASS_SYNC,
