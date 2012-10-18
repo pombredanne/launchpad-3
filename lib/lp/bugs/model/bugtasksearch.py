@@ -92,6 +92,7 @@ from lp.services.database.stormexpr import (
     get_where_for_reference,
     Unnest,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -623,12 +624,15 @@ def _build_query(params):
         extra_clauses.append(BugTaskFlat.bug_owner == params.bug_reporter)
 
     if params.bug_commenter:
+        use_distinct = bool(getFeatureFlag(
+            'bug_comment_search.use_distinct.enabled'))
         extra_clauses.append(
             BugTaskFlat.bug_id.is_in(Select(
                 BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
-                    BugMessage.owner == params.bug_commenter))))
+                    BugMessage.owner == params.bug_commenter),
+                distinct=use_distinct)))
 
     if params.affects_me:
         params.affected_user = params.user
