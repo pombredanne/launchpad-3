@@ -27,7 +27,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_init_without_vouchers_or_projects(self):
-        # Thhe view provides common view properties, but the form is disabled.
+        # The view provides common view properties, but the form is disabled.
         user = self.factory.makePerson()
         self.factory.makeProduct(owner=user)
         voucher_proxy = TestSalesforceVoucherProxy()
@@ -38,7 +38,6 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(user_url, view.cancel_url)
         self.assertIs(None, view.next_url)
         self.assertEqual(0, len(view.redeemable_vouchers))
-        self.assertEqual([], view.form_fields)
 
     def test_init_with_vouchers_and_projects(self):
         # The fields are setup when the user hase both vouchers and projects.

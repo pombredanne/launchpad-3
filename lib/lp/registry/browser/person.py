@@ -1298,6 +1298,10 @@ class PersonVouchersView(LaunchpadFormView):
         return field
 
     @cachedproperty
+    def show_voucher_selection(self):
+        return self.redeemable_vouchers or self.errors
+
+    @cachedproperty
     def redeemable_vouchers(self):
         """Get the list redeemable vouchers owned by the user."""
         vouchers = [

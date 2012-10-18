@@ -22,9 +22,8 @@
         </tal:not_commercial>
         <tal:commercial condition="commercial_projects">
           <tal:define_vouchers
-              define="vouchers view/redeemable_vouchers;
-                view_errors view/errors" >
-            <tal:no_vouchers condition="python: not vouchers and not view_errors">
+              define="vouchers view/redeemable_vouchers" >
+            <tal:no_vouchers condition="not: view/show_voucher_selection">
               <p>
               <tal:name replace="context/fmt:displayname" />
               does not have any redeemable vouchers available.</p>
@@ -34,7 +33,7 @@
                  />
 
             </tal:no_vouchers>
-            <tal:has_voucher condition="python: vouchers or view_errors">
+            <tal:has_voucher condition="view/show_voucher_selection">
               <div metal:use-macro="context/@@launchpad_form/form">
                 <metal:widgets fill-slot="widgets">
                   <table class="form">
