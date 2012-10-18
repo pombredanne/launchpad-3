@@ -63,6 +63,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.revision import Revision
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -612,6 +613,13 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([
             Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
+
+    def isExclusive(self):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)],
+            table=Person,
+            join=Join(Person, Branch.owner == Person.id))
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
