@@ -619,7 +619,16 @@ class GenericBranchCollection:
         return self._filterBy(
             [Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)],
             table=Person,
-            join=Join(Person, Branch.owner == Person.id))
+            join=Join(Person, Branch.ownerID == Person.id))
+
+    def isSeries(self):
+        """See `IBranchCollection`."""
+        # ProductSeries import's this module.
+        from lp.registry.model.productseries import ProductSeries
+        return self._filterBy(
+            [Branch.id == ProductSeries.branchID],
+            table=ProductSeries,
+            join=Join(ProductSeries, Branch.id == ProductSeries.branchID))
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""

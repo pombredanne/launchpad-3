@@ -1755,6 +1755,11 @@ class Person(
                     "The team membership policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
+        # Does the team own a productseries.branch?
+        if getUtility(IAllBranches).ownedBy(self).isSeries().count() != 0:
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it owns "
+                "or more branches linked to project series." % policy)
         # Does this team subscribe or is assigned to any private bugs.
         # Circular imports.
         from lp.bugs.model.bug import Bug

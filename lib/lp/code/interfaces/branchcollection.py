@@ -166,6 +166,9 @@ class IBranchCollection(Interface):
     def isExclusive():
         """Restrict the collection to branches owned by exclusive people."""
 
+    def isSeries():
+        """Restrict the collection to branches those linked to series."""
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
