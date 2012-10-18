@@ -53,14 +53,10 @@ class TestProductSeries(BrowserTestCase):
         # A ProductSeries page should include a privacy portlet that
         # accurately describes the information_type.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        self.factory.makeCommercialSubscription(product)
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         series = self.factory.makeProductSeries(product=product)
-        policy = self.factory.makeAccessPolicy(pillar=product)
-        grant = self.factory.makeAccessPolicyGrant(
-            policy=policy, grantee=owner)
         privacy_portlet = soupmatchers.Tag(
             'info-type-portlet', 'span',
             attrs={'id': 'information-type-summary'})
