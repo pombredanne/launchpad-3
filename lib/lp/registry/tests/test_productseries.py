@@ -565,6 +565,27 @@ class TestWebService(WebServiceTestCase):
         ws_series.lp_save()
 
 
+class TestProductSeriesInformationType(TestCaseWithFactory):
+    """Test of the implementaion of IInformationType of ProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_private(self):
+        # The properties information_type and private are inherited
+        # from the parent product.
+        series = self.factory.makeProductSeries()
+        product = series.product
+        self.assertEqual(product.information_type, series.information_type)
+        self.assertEqual(product.private, series.private)
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+            self.assertEqual(product.information_type, series.information_type)
+            self.assertEqual(product.private, series.private)
+            product.information_type = InformationType.EMBARGOED
+            self.assertEqual(product.information_type, series.information_type)
+            self.assertEqual(product.private, series.private)
+
+
 class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
     """Test for permissions of IProductSeries."""
 
@@ -584,7 +605,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
 
     expected_get_permissions = {
         CheckerPublic: set((
-            'id', 'userCanView',
+            'id', 'information_type', 'private', 'userCanView',
             )),
         'launchpad.AnyAllowedPerson': set((
             'addBugSubscription', 'addBugSubscriptionFilter',

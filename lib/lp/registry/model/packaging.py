@@ -109,10 +109,7 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        # XXX: AaronBentley: 2012-08-12 bug=1066063 Cannot adapt ProductSeries
-        # to IInformationType.
-        # info_type = IInformationType(productseries).information_type
-        info_type = productseries.product.information_type
+        info_type = productseries.information_type
         if info_type != InformationType.PUBLIC:
             raise CannotPackageProprietaryProduct(
                 "Only Public project series can be packaged, not %s."

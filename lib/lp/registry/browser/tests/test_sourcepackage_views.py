@@ -319,6 +319,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
         product = self.factory.makeProduct(
             name=product_name, owner=product_owner)
         series = self.factory.makeProductSeries(product=product)
+        series_displayname = series.displayname
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
         browser = self.getViewBrowser(
@@ -327,7 +328,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
         browser.getControl('Continue').click()
         with person_logged_in(product_owner):
             product.information_type = InformationType.PROPRIETARY
-        browser.getControl(series.displayname).selected = True
+        browser.getControl(series_displayname).selected = True
         browser.getControl('Change').click()
         self.assertIn(
             'Only Public projects can be packaged, not Proprietary.',

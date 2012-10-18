@@ -334,7 +334,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
         with ExpectedException(CannotPackageProprietaryProduct,
             'Only Public project series can be packaged, not Proprietary.'):
-            sp.setPackaging(series, series.owner)
+            sp.setPackaging(series, removeSecurityProxy(series).owner)
 
     def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
         """An ordinary user can create a packaging link but he cannot
