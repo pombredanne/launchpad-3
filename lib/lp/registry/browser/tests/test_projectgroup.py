@@ -69,6 +69,32 @@ class TestProjectGroupView(BrowserTestCase):
         browser = self.getViewBrowser(self.project_group)
         self.assertNotIn(product_name, browser.contents)
 
+    def test_proprietary_product_milestone(self):
+        # Proprietary projects are not listed for people without access to
+        # them.
+        owner = self.factory.makePerson()
+        public_product = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            project=self.project_group, owner=owner)
+        public_milestone = self.factory.makeMilestone(product=public_product)
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            project=self.project_group, owner=owner)
+        milestone = self.factory.makeMilestone(product=product,
+                                               name=public_milestone.name)
+        (group_milestone,) = self.project_group.milestones
+        self.factory.makeSpecification(milestone=milestone)
+        self.factory.makeSpecification(milestone=public_milestone)
+        with person_logged_in(owner):
+            product_name = product.displayname
+        with person_logged_in(None):
+            owner_browser = self.getViewBrowser(group_milestone, user=owner)
+
+        self.assertIn(product_name, owner_browser.contents)
+        self.assertIn(public_product.displayname, owner_browser.contents)
+        browser = self.getViewBrowser(group_milestone)
+        self.assertNotIn(product_name, owner_browser.contents)
+        self.assertIn(public_product.displayname, owner_browser.contents)
 
 class TestProjectGroupEditView(TestCaseWithFactory):
     """Tests the edit view."""
