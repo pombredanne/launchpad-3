@@ -89,12 +89,12 @@ class TestProjectGroupView(BrowserTestCase):
             product_name = product.displayname
         with person_logged_in(None):
             owner_browser = self.getViewBrowser(group_milestone, user=owner)
+            browser = self.getViewBrowser(group_milestone)
 
         self.assertIn(product_name, owner_browser.contents)
         self.assertIn(public_product.displayname, owner_browser.contents)
-        browser = self.getViewBrowser(group_milestone)
-        self.assertNotIn(product_name, owner_browser.contents)
-        self.assertIn(public_product.displayname, owner_browser.contents)
+        self.assertNotIn(product_name, browser.contents)
+        self.assertIn(public_product.displayname, browser.contents)
 
 class TestProjectGroupEditView(TestCaseWithFactory):
     """Tests the edit view."""
