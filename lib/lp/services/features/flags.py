@@ -214,6 +214,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('bug_comment_search.use_distinct.enabled',
+     'boolean',
+     ('If true, the bug message sub query for finding commented bugs '
+      'uses DISTINCT.'),
+     '',
+     '',
+     ''),
     ('registry.upcoming_work_view.enabled',
      'boolean',
      ('If true, the new upcoming work view of teams is available.'),
