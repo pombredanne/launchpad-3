@@ -1035,10 +1035,6 @@ class Person(
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
-        # We don't need to filter out private projects if
-        # 1. This is an admin
-        # 2. This is a commercial admin
-        # 3. The user is viewing their own information
         if user is not None:
             roles = IPersonRoles(user)
             if roles.in_admin or roles.in_commercial_admin:

@@ -282,15 +282,6 @@ class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _make_information_types(self):
-        proprietary = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY)
-        embargoed = self.factory.makeProduct(
-            information_type=InformationType.EMBARGOED)
-        public = self.factory.makeProduct(
-            information_type=InformationType.PUBLIC)
-        return proprietary, embargoed, public
-
     def test_title_user(self):
         user = self.factory.makePerson(name='snarf')
         self.assertEqual('Snarf', user.title)
