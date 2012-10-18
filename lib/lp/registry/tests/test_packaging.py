@@ -174,25 +174,33 @@ class TestCreatePackaging(PackagingUtilMixin, TestCaseWithFactory):
 
     def test_createPackaging_refuses_PROPRIETARY(self):
         """Packaging cannot be created for PROPRIETARY productseries"""
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct(
+            owner=owner,
             information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product=product)
-        with ExpectedException(CannotPackageProprietaryProduct,
-            'Only Public project series can be packaged, not Proprietary.'):
-            self.packaging_util.createPackaging(
-                series, self.sourcepackagename, self.distroseries,
-                PackagingType.PRIME, owner=self.owner)
+        expected_message = (
+            'Only Public project series can be packaged, not Proprietary.')
+        with person_logged_in(owner):
+            with ExpectedException(CannotPackageProprietaryProduct,
+                                   expected_message):
+                self.packaging_util.createPackaging(
+                    series, self.sourcepackagename, self.distroseries,
+                    PackagingType.PRIME, owner=self.owner)
 
     def test_createPackaging_refuses_EMBARGOED(self):
         """Packaging cannot be created for EMBARGOED productseries"""
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct(
+            owner=owner,
             information_type=InformationType.EMBARGOED)
         series = self.factory.makeProductSeries(product=product)
-        with ExpectedException(CannotPackageProprietaryProduct,
-            'Only Public project series can be packaged, not Embargoed.'):
-            self.packaging_util.createPackaging(
-                series, self.sourcepackagename, self.distroseries,
-                PackagingType.PRIME, owner=self.owner)
+        with person_logged_in(owner):
+            with ExpectedException(CannotPackageProprietaryProduct,
+                'Only Public project series can be packaged, not Embargoed.'):
+                self.packaging_util.createPackaging(
+                    series, self.sourcepackagename, self.distroseries,
+                    PackagingType.PRIME, owner=self.owner)
 
 
 class TestPackagingEntryExists(PackagingUtilMixin, TestCaseWithFactory):
