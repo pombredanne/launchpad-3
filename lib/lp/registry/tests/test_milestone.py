@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -10,6 +10,7 @@ import unittest
 
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -178,6 +179,7 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
                                 self.milestone.getSpecifications(None))
 
 
+
 class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     """Milestones list specifications with some workitems targeted to it."""
 
@@ -207,6 +209,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.assertContentEqual([spec],
                                 target_milestone.getSpecifications(None))
 
+
     def test_milestones_on_distribution(self):
         spec, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
@@ -223,6 +226,23 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
         self.assertContentEqual([spec], milestone.getSpecifications(None))
+
+    def test_getSpecifications_privacy(self):
+        # Ensure getSpecifications respects privacy.
+        projectgroup = self.factory.makeProject()
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY,
+            project=projectgroup)
+        spec, target_milestone = self._create_milestones_on_target(
+            product=product)
+        with person_logged_in(owner):
+            milestone = projectgroup.getMilestone(name=target_milestone.name)
+        self.assertContentEqual([],
+                                milestone.getSpecifications(None))
+        self.assertContentEqual([spec],
+                                milestone.getSpecifications(owner))
+
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
