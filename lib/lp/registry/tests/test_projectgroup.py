@@ -19,6 +19,7 @@ from lp.testing import (
     launchpadlib_for,
     login_celebrity,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -176,6 +177,37 @@ class TestProjectGroupPermissions(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, setattr, self.pg, 'name', 'new-name')
         self.pg.owner = self.factory.makePerson(name='project-group-owner')
+
+
+class TestMilestones(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_milestones_privacy(self):
+        """ProjectGroup.milestones uses logged-in user."""
+        owner = self.factory.makePerson()
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            project=project_group)
+        milestone = self.factory.makeMilestone(product=product)
+        self.assertContentEqual([], project_group.milestones)
+        with person_logged_in(owner):
+            names = [ms.name for ms in project_group.milestones]
+        self.assertEqual([milestone.name], names)
+
+    def test_all_milestones_privacy(self):
+        """ProjectGroup.milestones uses logged-in user."""
+        owner = self.factory.makePerson()
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            project=project_group)
+        milestone = self.factory.makeMilestone(product=product)
+        self.assertContentEqual([], project_group.milestones)
+        with person_logged_in(owner):
+            names = [ms.name for ms in project_group.all_milestones]
+        self.assertEqual([milestone.name], names)
 
 
 class TestLaunchpadlibAPI(TestCaseWithFactory):

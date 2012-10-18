@@ -96,6 +96,7 @@ class TestProjectGroupView(BrowserTestCase):
         self.assertNotIn(product_name, browser.contents)
         self.assertIn(public_product.displayname, browser.contents)
 
+
 class TestProjectGroupEditView(TestCaseWithFactory):
     """Tests the edit view."""
 
