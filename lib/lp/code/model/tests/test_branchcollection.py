@@ -323,6 +323,17 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.isExclusive().inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_isSeries(self):
+        # 'isSeries' is restricted to branches linked to product series.
+        series = self.factory.makeProductSeries()
+        series_branch = self.factory.makeAnyBranch(product=series.product)
+        with person_logged_in(series.product.owner):
+            series.branch = series_branch
+        self.factory.makeAnyBranch(product=series.product)
+        collection = self.all_branches.isSeries()
+        self.assertContentEqual(
+            [series_branch], list(collection.getBranches()))
+
     def test_ownedBy_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular
