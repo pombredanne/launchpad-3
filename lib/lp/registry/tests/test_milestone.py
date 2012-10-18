@@ -253,13 +253,13 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
                                 milestone.getSpecifications(owner))
 
     def test_bugtasks_milestone_privacy(self):
-        # Ensure getSpecifications respects milestone privacy.
-        # This looks wrong, because the specification is actually public, and
-        # we don't normally hide specifications based on the visibility of
-        # their products.  But we're not trying to hide the specification.
-        # We're hiding the fact that this specification is associated with
-        # a proprietary Product milestone.  We create a proprietary product
-        # because that's the only way to get a proprietary milestone.
+        # Ensure bugtasks respects milestone privacy.
+        # This looks wrong, because the bugtask is actually public, and we
+        # don't normally hide bugtasks based on the visibility of their
+        # products.  But we're not trying to hide the bugtask.  We're hiding
+        # the fact that this bugtask is associated with a proprietary Product
+        # milestone.  We create a proprietary product because that's the only
+        # way to get a proprietary milestone.
         projectgroup = self.factory.makeProject()
         owner = self.factory.makePerson()
         public_product = self.factory.makeProduct(project=projectgroup)
