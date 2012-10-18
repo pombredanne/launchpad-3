@@ -730,6 +730,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # copy the archivepermissions.
         parent, unused = self.setupParent()
         uploader = self.factory.makePerson()
+        releaser = self.factory.makePerson()
         test1 = self.factory.makePackageset(
             u'test1', u'test 1 packageset', parent.owner,
             distroseries=parent)
@@ -740,41 +741,64 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         archive_permset = getUtility(IArchivePermissionSet)
         archive_permset.newPackagesetUploader(
             parent.main_archive, uploader, test1)
+        archive_permset.newPocketQueueAdmin(
+            parent.main_archive, releaser, PackagePublishingPocket.RELEASE,
+            distroseries=parent)
         # Create child series in the same distribution.
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution,
             previous_series=parent)
         self._fullInitialize([parent], child=child)
+        # Create a third series without any special permissions.
+        third = self.factory.makeDistroSeries(
+            distribution=parent.distribution)
 
-        # The uploader can upload to the new distroseries.
-        self.assertTrue(archive_permset.isSourceUploadAllowed(
-                parent.main_archive, 'udev', uploader,
-                distroseries=parent))
-        self.assertTrue(archive_permset.isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader,
-                distroseries=child))
+        # The uploader can upload to the new distroseries, but not to third.
+        # Likewise, the release team member can administer the release
+        # pocket in the new distroseries, but not in third.
+        for series, allowed in ((parent, True), (child, True), (third, False)):
+            self.assertEqual(
+                allowed,
+                archive_permset.isSourceUploadAllowed(
+                    series.main_archive, 'udev', uploader,
+                    distroseries=series))
+            self.assertEqual(
+                allowed,
+                series.main_archive.canAdministerQueue(
+                    releaser, pocket=PackagePublishingPocket.RELEASE,
+                    distroseries=series))
 
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
         uploader = self.factory.makePerson()
+        releaser = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
         test1.addSources('udev')
-        getUtility(IArchivePermissionSet).newPackagesetUploader(
+        archive_permset = getUtility(IArchivePermissionSet)
+        archive_permset.newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
+        archive_permset.newPocketQueueAdmin(
+            self.parent.main_archive, releaser,
+            PackagePublishingPocket.RELEASE, distroseries=self.parent)
         child = self._fullInitialize([self.parent])
 
-        # The uploader cannot upload to the new distroseries.
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent.main_archive, 'udev', uploader,
-                distroseries=self.parent))
-        self.assertFalse(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader,
-                distroseries=child))
+        # The uploader cannot upload to the new distroseries.  Likewise, the
+        # release team member cannot administer the release pocket in the
+        # new distroseries.
+        for series, allowed in ((self.parent, True), (child, False)):
+            self.assertEqual(
+                allowed,
+                archive_permset.isSourceUploadAllowed(
+                    series.main_archive, 'udev', uploader,
+                    distroseries=series))
+            self.assertEqual(
+                allowed,
+                series.main_archive.canAdministerQueue(
+                    releaser, pocket=PackagePublishingPocket.RELEASE,
+                    distroseries=series))
 
     def test_packageset_owner_preserved_within_distro(self):
         # When initializing a new series within a distro, the copied

@@ -282,6 +282,7 @@ class InitializeDistroSeries:
         self._set_nominatedarchindep()
         self._copy_packages()
         self._copy_packagesets()
+        self._copy_pocket_permissions()
         self._create_dsds()
         self._set_initialized()
         transaction.commit()
@@ -702,3 +703,19 @@ class InitializeDistroSeries:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))
+
+    def _copy_pocket_permissions(self):
+        """Copy per-distroseries/pocket permissions from the parent series."""
+        for parent in self.derivation_parents:
+            if self.distroseries.distribution == parent.distribution:
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, packageset, explicit,
+                     pocket, distroseries)
+                    SELECT person, permission, %s, packageset, explicit,
+                           pocket, %s
+                    FROM Archivepermission
+                    WHERE packageset IS NULL AND distroseries = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, self.distroseries.id,
+                        parent.id))
