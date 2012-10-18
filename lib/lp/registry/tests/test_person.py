@@ -282,6 +282,15 @@ class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def _make_information_types(self):
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC)
+        return proprietary, embargoed, public
+
     def test_title_user(self):
         user = self.factory.makePerson(name='snarf')
         self.assertEqual('Snarf', user.title)
@@ -336,7 +345,7 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             distribution.name, project_group.name, project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getAffiliatedPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_getAffiliatedPillars_roles(self):
@@ -352,7 +361,7 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             driven_project.name, owned_project.name, supervised_project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getAffiliatedPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_getAffiliatedPillars_active_pillars(self):
@@ -364,7 +373,76 @@ class TestPerson(TestCaseWithFactory):
             inactive_project.active = False
         expected_pillars = [active_project.name]
         received_pillars = [pillar.name for pillar in
-            user.getAffiliatedPillars()]
+            user.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_minus_embargoed(self):
+        # Skip non public products if not allowed to see them.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [public.name]
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_self(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        embargoed = self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(owner)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeAdministrator()
+        embargoed = self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_commercial_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeCommercialAdmin()
+        embargoed = self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):

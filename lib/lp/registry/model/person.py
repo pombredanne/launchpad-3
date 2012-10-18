@@ -61,7 +61,6 @@ from storm.expr import (
     Alias,
     And,
     Coalesce,
-    Compile,
     Desc,
     Exists,
     In,
@@ -1068,7 +1067,8 @@ class Person(
                 AND ap.type = p.information_type
         """ % sqlvalues(user=user)
 
-        query_values = sqlvalues(person=self, information_type=InformationType.PUBLIC)
+        query_values = sqlvalues(person=self,
+                                 information_type=InformationType.PUBLIC)
         query_values.update(granted_sql=granted_products)
 
         query = """
@@ -2188,7 +2188,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getAffiliatedPillars():
+        for pillar_name in self.getAffiliatedPillars(self):
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
