@@ -684,14 +684,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         # Deleate the permission check to the parent product.
         return self.product.userCanView(user)
 
-    @property
-    def information_type(self):
-        return self.product.information_type
-
-    @property
-    def private(self):
-        return self.product.private
-
 
 class TimelineProductSeries:
     """See `ITimelineProductSeries`."""

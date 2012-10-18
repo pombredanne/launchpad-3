@@ -47,7 +47,6 @@ from zope.schema import (
 
 from lp import _
 from lp.app.errors import NameLookupFailed
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
@@ -131,7 +130,7 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(IInformationType):
+class IProductSeriesPublic(Interface):
     """Public IProductSeries properties."""
     id = Int(title=_('ID'))
 
