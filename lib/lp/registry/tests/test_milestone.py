@@ -228,6 +228,19 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         milestone = projectgroup.getMilestone(name=target_milestone.name)
         self.assertContentEqual([spec], milestone.getSpecifications(None))
 
+    def makeMixedMilestone(self):
+        projectgroup = self.factory.makeProject()
+        owner = self.factory.makePerson()
+        public_product = self.factory.makeProduct(project=projectgroup)
+        public_milestone = self.factory.makeMilestone(product=public_product)
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY,
+            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
+        target_milestone = self.factory.makeMilestone(
+            product=product, name=public_milestone.name)
+        milestone = projectgroup.getMilestone(name=public_milestone.name)
+        return milestone, target_milestone, owner
+
     def test_getSpecifications_milestone_privacy(self):
         # Ensure getSpecifications respects milestone privacy.
         # This looks wrong, because the specification is actually public, and
@@ -236,17 +249,8 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # We're hiding the fact that this specification is associated with
         # a proprietary Product milestone.  We create a proprietary product
         # because that's the only way to get a proprietary milestone.
-        projectgroup = self.factory.makeProject()
-        owner = self.factory.makePerson()
-        public_product = self.factory.makeProduct(project=projectgroup)
-        public_milestone = self.factory.makeMilestone(product=public_product)
-        product = self.factory.makeProduct(
-            owner=owner, information_type=InformationType.PROPRIETARY,
-            project=projectgroup)
-        target_milestone = self.factory.makeMilestone(
-            product=product, name=public_milestone.name)
+        milestone, target_milestone, owner = self.makeMixedMilestone()
         spec = self.factory.makeSpecification(milestone=target_milestone)
-        milestone = projectgroup.getMilestone(name=public_milestone.name)
         self.assertContentEqual([],
                                 milestone.getSpecifications(None))
         self.assertContentEqual([spec],
@@ -260,21 +264,12 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # the fact that this bugtask is associated with a proprietary Product
         # milestone.  We create a proprietary product because that's the only
         # way to get a proprietary milestone.
-        projectgroup = self.factory.makeProject()
-        owner = self.factory.makePerson()
-        public_product = self.factory.makeProduct(project=projectgroup)
-        public_milestone = self.factory.makeMilestone(product=public_product)
-        product = self.factory.makeProduct(
-            owner=owner, information_type=InformationType.PROPRIETARY,
-            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
-        target_milestone = self.factory.makeMilestone(
-            product=product, name=public_milestone.name)
-        bugtask = self.factory.makeBugTask(target=product)
+        milestone, target_milestone, owner = self.makeMixedMilestone()
+        bugtask = self.factory.makeBugTask(target=target_milestone.product)
         with person_logged_in(bugtask.owner):
             bugtask.transitionToMilestone(target_milestone, owner)
-        milestone = projectgroup.getMilestone(name=public_milestone.name)
-        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
         self.assertContentEqual([], milestone.bugtasks(None))
+        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
