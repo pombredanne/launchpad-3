@@ -628,8 +628,7 @@ def _build_query(params):
                 BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
-                    BugMessage.owner == params.bug_commenter),
-                distinct=True)))
+                    BugMessage.owner == params.bug_commenter))))
 
     if params.affects_me:
         params.affected_user = params.user
