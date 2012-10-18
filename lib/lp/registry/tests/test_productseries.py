@@ -17,6 +17,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import SharingPermission
 from lp.registry.errors import CannotPackageProprietaryProduct
@@ -45,6 +46,23 @@ from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+
+
+
+class TestProductSeries(TestCaseWithFactory):
+    """Tests for ProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_from_product(self):
+        # ProductSeries should inherit information_type from its product."""
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        information_type = InformationType.PROPRIETARY
+        removeSecurityProxy(product).information_type = information_type
+        series = self.factory.makeProductSeries(product=product)
+        self.assertEqual(
+            IInformationType(series).information_type, information_type)
 
 
 class ProductSeriesReleasesTestCase(TestCaseWithFactory):

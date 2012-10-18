@@ -133,3 +133,8 @@ def distribution_to_publisherconfig(distro):
 def package_to_sourcepackagename(package):
     """Adapts a package to its `ISourcePackageName`."""
     return package.sourcepackagename
+
+
+def information_type_from_product(milestone):
+    """Adapts a milestone to product for information_type."""
+    return milestone.product

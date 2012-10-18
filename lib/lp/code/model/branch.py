@@ -60,6 +60,7 @@ from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -185,7 +186,7 @@ from lp.services.webapp.authorization import check_permission
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu, IPrivacy)
+    implements(IBranch, IBranchNavigationMenu, IPrivacy, IInformationType)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
