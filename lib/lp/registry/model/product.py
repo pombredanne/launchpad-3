@@ -92,11 +92,11 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
@@ -193,7 +193,6 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -1358,47 +1357,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        base = 'Specification.product = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
+        clauses = [Specification.product == self,
+                   get_specification_privacy_filter(user)]
+        clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(query)
+            results = self._preload_specifications_people(clauses)
         else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
+            results = Store.of(self).find(Specification, *clauses)
         results.order_by(order)
         if quantity is not None:
             results = results[:quantity]
