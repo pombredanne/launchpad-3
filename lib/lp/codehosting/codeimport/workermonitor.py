@@ -144,7 +144,7 @@ class CodeImportWorkerMonitor:
         config = errorlog.globalErrorUtility._oops_config
         context = {
             'twisted_failure': failure,
-            'request': errorlog.ScriptRequest(
+            'http_request': errorlog.ScriptRequest(
                 [('code_import_job_id', self._job_id)], self._branch_url),
             }
         report = config.create(context)
