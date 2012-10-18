@@ -2172,37 +2172,32 @@ class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
 
     def test_flag_False(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, u'   ')
+        with FeatureFixture({self.flag: u'   '}):
             self.assertFalse(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, bug_task.pillar.name)
+        with FeatureFixture({self.flag: bug_task.pillar.name}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag_of_many(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(
-                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+        flag_value = u'  foo bar  ' + bug_task.pillar.name + '    baz '
+        with FeatureFixture({self.flag: flag_value}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_match_all_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, u'*')
+        with FeatureFixture({self.flag: u'*'}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_alt_flag_does_not_affect(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+        with FeatureFixture({self.alt_flag: bug_task.pillar.name}):
             self.assertFalse(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
@@ -2257,9 +2252,9 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         person = self.factory.makePerson()
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
-        with feature_flags():
-            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
-                             autoconfirm_product.name)
+        with FeatureFixture({
+            u'bugs.autoconfirm.enabled_product_names':
+            autoconfirm_product.name}):
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
             with person_logged_in(person):
@@ -2274,9 +2269,9 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         another_person = self.factory.makePerson()
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
-        with feature_flags():
-            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
-                             autoconfirm_product.name)
+        with FeatureFixture({
+            u'bugs.autoconfirm.enabled_product_names':
+            autoconfirm_product.name}):
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
             with person_logged_in(another_person):
