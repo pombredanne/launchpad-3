@@ -1342,12 +1342,6 @@ class PersonVouchersView(LaunchpadFormView):
         voucher = data['voucher']
 
         try:
-#            # The call to redeemVoucher returns True if it succeeds or it
-#            # raises an exception.  Therefore the return value does not need
-#            # to be checked.
-#            salesforce_proxy.redeemVoucher(voucher.voucher_id,
-#                                           self.context,
-#                                           project)
             # Perform a check that the submitted voucher id is valid.
             check_voucher = salesforce_proxy.getVoucher(voucher.voucher_id)
             if not check_voucher.status in REDEEMABLE_VOUCHER_STATUSES:

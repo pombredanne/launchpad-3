@@ -141,7 +141,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         view = create_initialized_view(commercial_admin, '+vouchers')
         vouchers = list(view.widgets['voucher'].vocabulary)
         # Only voucher2 in vocab since voucher1 is pending redemption.
-        self.assertEqual(1,len(vouchers))
+        self.assertEqual(1, len(vouchers))
         self.assertEqual(voucher_id_2, vouchers[0].token)
 
     def test_redeem_twice_causes_error(self):
