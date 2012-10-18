@@ -48,7 +48,6 @@ from lp.translations.interfaces.translations import (
     )
 
 
-
 class TestProductSeries(TestCaseWithFactory):
     """Tests for ProductSeries."""
 
@@ -56,13 +55,14 @@ class TestProductSeries(TestCaseWithFactory):
 
     def test_information_type_from_product(self):
         # ProductSeries should inherit information_type from its product."""
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
+        owner = self.factory.makePerson()
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         series = self.factory.makeProductSeries(product=product)
-        self.assertEqual(
-            IInformationType(series).information_type, information_type)
+        with person_logged_in(owner):
+            self.assertEqual(
+                IInformationType(series).information_type, information_type)
 
 
 class ProductSeriesReleasesTestCase(TestCaseWithFactory):
