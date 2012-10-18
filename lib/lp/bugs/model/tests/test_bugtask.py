@@ -86,6 +86,7 @@ from lp.services.database.sqlbase import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
 from lp.services.log.logger import FakeLogger
+from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
@@ -2634,6 +2635,20 @@ class TestTransitionToTarget(TestCaseWithFactory):
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
 
+    def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToTarget() is called.
+        new_product = self.factory.makeProduct()
+        task = self.factory.makeBugTask()
+        # The factory caused COMMENT notifications which filled the bug cache.
+        cache = get_property_cache(task.bug)
+        self.assertIsNotNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+        with person_logged_in(task.owner):
+            task.transitionToTarget(new_product, task.owner)
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+
     def test_accesspolicyartifacts_updated(self):
         # transitionToTarget updates the AccessPolicyArtifacts related
         # to the bug.
@@ -2671,6 +2686,27 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.assertContentEqual(
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
+
+
+class TransitionToMilestoneTestCase(TestCaseWithFactory):
+    """Tests for BugTask.transitionToMilestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToMilestone() is called.
+        task = self.factory.makeBugTask()
+        product = task.target
+        milestone = self.factory.makeMilestone(product=product)
+        # The factory caused COMMENT notifications which filled the bug cache.
+        cache = get_property_cache(task.bug)
+        self.assertIsNotNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+        with person_logged_in(task.target.owner):
+            task.transitionToMilestone(milestone, task.target.owner)
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
