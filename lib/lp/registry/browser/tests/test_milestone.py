@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+import soupmatchers
 from testtools.matchers import LessThan
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -20,6 +22,7 @@ from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     login_person,
     login_team,
     logout,
@@ -36,7 +39,7 @@ from lp.testing.matchers import (
 from lp.testing.views import create_initialized_view
 
 
-class TestMilestoneViews(TestCaseWithFactory):
+class TestMilestoneViews(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -53,6 +56,50 @@ class TestMilestoneViews(TestCaseWithFactory):
             specification=specification, milestone=milestone)
         view = create_initialized_view(milestone, '+index')
         self.assertIn('some work for this milestone', view.render())
+
+    def test_information_type_public(self):
+        # A milestone's view should include its information_type,
+        # which defaults to Public for new projects.
+        milestone = self.factory.makeMilestone()
+        view = create_initialized_view(milestone, '+index')
+        self.assertEqual('Public', view.information_type)
+
+    def test_information_type_proprietary(self):
+        # A milestone's view should get its information_type
+        # from the related product even if the product is changed to
+        # PROPRIETARY.
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                milestone, '+index', principal=owner)
+            self.assertEqual('Proprietary', view.information_type)
+
+    def test_privacy_portlet(self):
+        # A milestone's page should include a privacy portlet that
+        # accurately describes the information_type.
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        milestone = self.factory.makeMilestone(product=product)
+        privacy_portlet = soupmatchers.Tag(
+            'info-type-portlet', 'span',
+            attrs={'id': 'information-type-summary'})
+        privacy_portlet_proprietary = soupmatchers.Tag(
+            'info-type-text', 'strong', attrs={'id': 'information-type'},
+            text='Proprietary')
+        browser = self.getViewBrowser(milestone, '+index', user=owner)
+        # First, assert that the portlet exists.
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_portlet))
+        # Then, assert that the text displayed matches the information_type.
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(
+            privacy_portlet_proprietary))
 
 
 class TestAddMilestoneViews(TestCaseWithFactory):

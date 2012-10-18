@@ -93,6 +93,7 @@ from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
@@ -323,7 +324,7 @@ def update_bug_heat(bug_ids):
 class Bug(SQLBase, InformationTypeMixin):
     """A bug."""
 
-    implements(IBug)
+    implements(IBug, IInformationType)
 
     _defaultOrder = '-id'
 

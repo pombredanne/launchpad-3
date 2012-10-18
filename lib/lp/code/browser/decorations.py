@@ -11,6 +11,7 @@ __all__ = [
 from lazr.delegates import delegates
 from zope.interface import implements
 
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
@@ -25,7 +26,7 @@ class DecoratedBranch(BzrIdentityMixin):
     This avoids repeated db queries.
     """
     implements(IPrivacy)
-    delegates(IBranch, 'branch')
+    delegates([IBranch, IInformationType], 'branch')
 
     def __init__(self, branch):
         self.branch = branch

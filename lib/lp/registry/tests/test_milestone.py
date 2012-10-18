@@ -15,10 +15,12 @@ from zope.security.checker import (
     getChecker,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.services import IService
 from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -478,3 +480,21 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
         self.assertContentEqual([], milestone.specifications)
+
+
+class TestMilestoneInformationType(TestCaseWithFactory):
+    """Tests for information_type and Milestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_from_product(self):
+        # Milestones should inherit information_type from its product."""
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            self.assertEqual(
+                IInformationType(milestone).information_type,
+                information_type)

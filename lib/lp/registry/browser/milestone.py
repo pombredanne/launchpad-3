@@ -38,6 +38,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -355,7 +356,8 @@ class MilestoneViewMixin(object):
 
 
 class MilestoneView(
-    LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin):
+    LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin,
+    InformationTypePortletMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
