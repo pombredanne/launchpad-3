@@ -710,9 +710,8 @@ class InitializeDistroSeries:
             if self.distroseries.distribution == parent.distribution:
                 self._store.execute("""
                     INSERT INTO Archivepermission
-                    (person, permission, archive, packageset,
-                     pocket, distroseries)
-                    SELECT person, permission, %s, packageset, pocket, %s
+                    (person, permission, archive, pocket, distroseries)
+                    SELECT person, permission, %s, pocket, %s
                     FROM Archivepermission
                     WHERE pocket IS NOT NULL AND distroseries = %s
                     """ % sqlvalues(
