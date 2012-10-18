@@ -489,10 +489,12 @@ class TestMilestoneInformationType(TestCaseWithFactory):
 
     def test_information_type_from_product(self):
         # Milestones should inherit information_type from its product."""
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
+        owner = self.factory.makePerson()
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         milestone = self.factory.makeMilestone(product=product)
-        self.assertEqual(
-            IInformationType(milestone).information_type, information_type)
+        with person_logged_in(owner):
+            self.assertEqual(
+                IInformationType(milestone).information_type,
+                information_type)

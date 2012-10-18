@@ -68,26 +68,24 @@ class TestMilestoneViews(BrowserTestCase):
         # A milestone's view should get its information_type
         # from the related product even if the product is changed to
         # PROPRIETARY.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
+        owner = self.factory.makePerson()
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         milestone = self.factory.makeMilestone(product=product)
-        view = create_initialized_view(milestone, '+index')
-        self.assertEqual('Proprietary', view.information_type)
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                milestone, '+index', principal=owner)
+            self.assertEqual('Proprietary', view.information_type)
 
     def test_privacy_portlet(self):
         # A milestone's page should include a privacy portlet that
         # accurately describes the information_type.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        self.factory.makeCommercialSubscription(product)
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         milestone = self.factory.makeMilestone(product=product)
-        policy = self.factory.makeAccessPolicy(pillar=product)
-        grant = self.factory.makeAccessPolicyGrant(
-            policy=policy, grantee=owner)
         privacy_portlet = soupmatchers.Tag(
             'info-type-portlet', 'span',
             attrs={'id': 'information-type-summary'})
