@@ -409,7 +409,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return And(Milestone.productID == Product.id,
                    Product.projectID == self.id)
 
-    def _getMilestones(self, only_active):
+    def _getMilestones(self, user, only_active):
         """Return a list of milestones for this project group.
 
         If only_active is True, only active milestones are returned,
@@ -427,7 +427,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             )
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
-                         Product.active == True)
+                         Product.active == True,
+                         ProductSet.getProductPrivacyFilter(user))
         result = store.find(columns, conditions)
         result.group_by(Milestone.name)
         if only_active:
@@ -455,7 +456,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(only_active=True)
+        user = getUtility(ILaunchBag).user
+        return self._getMilestones(user, only_active=True)
 
     @property
     def product_milestones(self):
@@ -467,7 +469,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def all_milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(only_active=False)
+        user = getUtility(ILaunchBag).user
+        return self._getMilestones(user, only_active=False)
 
     def getMilestone(self, name):
         """See `IProjectGroup`."""

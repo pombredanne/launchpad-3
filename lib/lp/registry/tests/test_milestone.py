@@ -174,7 +174,8 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
             owner=self.owner,
             product=self.product,
             )
-        self.assertContentEqual(specifications, self.milestone.specifications)
+        self.assertContentEqual(specifications,
+                                self.milestone.getSpecifications(None))
 
 
 class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
@@ -203,12 +204,14 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     def test_milestones_on_product(self):
         spec, target_milestone = self._create_milestones_on_target(
             product=self.factory.makeProduct())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_distribution(self):
         spec, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_project(self):
         # A Project (Project Group) milestone contains all specifications
@@ -219,7 +222,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         spec, target_milestone = self._create_milestones_on_target(
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
-        self.assertContentEqual([spec], milestone.specifications)
+        self.assertContentEqual([spec], milestone.getSpecifications(None))
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
@@ -230,4 +233,4 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
-        self.assertContentEqual([], milestone.specifications)
+        self.assertContentEqual([], milestone.getSpecifications(None))

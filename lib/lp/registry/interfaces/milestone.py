@@ -123,8 +123,10 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
                 "The product, distribution, or project group for this "
                 "milestone."),
             required=False))
-    specifications = Attribute(
-        "A list of specifications targeted to this object.")
+
+    def getSpecifications(user):
+        """Return the specifications visible to this user."""
+
     dateexpected = exported(
         FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),

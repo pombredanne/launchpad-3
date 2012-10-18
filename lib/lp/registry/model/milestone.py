@@ -147,15 +147,14 @@ class MilestoneData:
     def title(self):
         raise NotImplementedError
 
-    @property
-    def specifications(self):
+    def getSpecifications(self, user):
         from lp.registry.model.person import Person
         store = Store.of(self.target)
         origin = [
             Specification,
             LeftJoin(Person, Specification.assigneeID == Person.id),
             ]
-        milestones = self._milestone_ids_expr
+        milestones = self._milestone_ids_expr(user)
 
         results = store.using(*origin).find(
             (Specification, Person),
@@ -219,8 +218,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    @property
-    def _milestone_ids_expr(self):
+    def _milestone_ids_expr(self, user):
         return (self.id,)
 
     @property
@@ -429,16 +427,19 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
         self.series_target = None
         self.summary = None
 
-    @property
-    def _milestone_ids_expr(self):
-        from lp.registry.model.product import Product
+    def _milestone_ids_expr(self, user):
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+            )
         return Select(
             Milestone.id,
             tables=[Milestone, Product],
             where=And(
                 Milestone.name == self.name,
                 Milestone.productID == Product.id,
-                Product.project == self.target))
+                Product.project == self.target,
+                ProductSet.getProductPrivacyFilter(user)))
 
     @property
     def displayname(self):
