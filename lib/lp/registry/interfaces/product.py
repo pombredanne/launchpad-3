@@ -1026,7 +1026,9 @@ class IProductSet(Interface):
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
     @export_operation_as('licensing_search')
-    def forReview(search_text=None,
+    @call_with(user=REQUEST_USER)
+    def forReview(user,
+                  search_text=None,
                   active=None,
                   project_reviewed=None,
                   licenses=None,

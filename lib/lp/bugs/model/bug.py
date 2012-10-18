@@ -192,6 +192,7 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -304,6 +305,19 @@ class BugBecameQuestionEvent:
         self.bug = bug
         self.question = question
         self.user = user
+
+
+def update_bug_heat(bug_ids):
+    """Update the heat for the specified bugs."""
+    # We need to flush the store first to ensure that changes are
+    # reflected in the new bug heat total.
+    if not bug_ids:
+        return
+    store = IStore(Bug)
+    store.find(
+        Bug, Bug.id.is_in(bug_ids)).set(
+            heat=SQL('calculate_bug_heat(Bug.id)'),
+            heat_last_updated=UTC_NOW)
 
 
 class Bug(SQLBase, InformationTypeMixin):
@@ -823,7 +837,7 @@ class Bug(SQLBase, InformationTypeMixin):
         if suppress_notify is False:
             notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
-        self.updateHeat()
+        update_bug_heat([self.id])
         return sub
 
     def unsubscribe(self, person, unsubscribed_by, **kwargs):
@@ -857,7 +871,7 @@ class Bug(SQLBase, InformationTypeMixin):
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
-                self.updateHeat()
+                update_bug_heat([self.id])
                 del get_property_cache(self)._known_viewers
 
                 # Revoke access to bug
@@ -1103,7 +1117,8 @@ class Bug(SQLBase, InformationTypeMixin):
              bug=self, is_comment=True,
              message=message, recipients=recipients, activity=activity)
 
-    def addChange(self, change, recipients=None, deferred=False):
+    def addChange(self, change, recipients=None, deferred=False,
+                  update_heat=True):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -1135,7 +1150,8 @@ class Bug(SQLBase, InformationTypeMixin):
                 recipients=recipients, activity=activity,
                 deferred=deferred)
 
-        self.updateHeat()
+        if update_heat:
+            update_bug_heat([self.id])
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1760,7 +1776,7 @@ class Bug(SQLBase, InformationTypeMixin):
             if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
 
-        self.updateHeat()
+        update_bug_heat([self.id])
 
         # As a result of the transition, some subscribers may no longer
         # have access to the bug. We need to run a job to remove any such
@@ -1863,23 +1879,29 @@ class Bug(SQLBase, InformationTypeMixin):
         bap = self._getAffectedUser(user)
         if bap is None:
             BugAffectsPerson(bug=self, person=user, affected=affected)
-            self._flushAndInvalidate()
         else:
             if bap.affected != affected:
                 bap.affected = affected
-                self._flushAndInvalidate()
 
-        # Loop over dupes.
-        for dupe in self.duplicates:
-            if dupe._getAffectedUser(user) is not None:
-                dupe.markUserAffected(user, affected)
+        dupe_bug_ids = [dupe.id for dupe in self.duplicates]
+        # Where BugAffectsPerson records already exist for each duplicate,
+        # update the affected status.
+        if dupe_bug_ids:
+            Store.of(self).find(
+                BugAffectsPerson,
+                BugAffectsPerson.person == user,
+                BugAffectsPerson.bugID.is_in(dupe_bug_ids),
+            ).set(affected=affected)
+            for dupe in self.duplicates:
+                dupe._flushAndInvalidate()
+        self._flushAndInvalidate()
 
         if affected:
             self.maybeConfirmBugtasks()
 
-        self.updateHeat()
+        update_bug_heat(dupe_bug_ids + [self.id])
 
-    def _markAsDuplicate(self, duplicate_of):
+    def _markAsDuplicate(self, duplicate_of, affected_bug_ids):
         """Mark this bug as a duplicate of another.
 
         Marking a bug as a duplicate requires a recalculation of the
@@ -1898,7 +1920,7 @@ class Bug(SQLBase, InformationTypeMixin):
                 user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
                     old_value = duplicate.duplicateof
-                    duplicate._markAsDuplicate(duplicate_of)
+                    duplicate._markAsDuplicate(duplicate_of, affected_bug_ids)
                     # Put an entry into the BugNotification table for
                     # later processing.
                     change = BugDuplicateChange(
@@ -1908,12 +1930,15 @@ class Bug(SQLBase, InformationTypeMixin):
                         new_value=duplicate_of)
                     empty_recipients = BugNotificationRecipients()
                     duplicate.addChange(
-                        change, empty_recipients, deferred=True)
+                        change, empty_recipients, deferred=True,
+                        update_heat=False)
+                    affected_bug_ids.add(duplicate.id)
 
             self.duplicateof = duplicate_of
         except LaunchpadValidationError as validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
+            affected_bug_ids.add(duplicate_of.id)
             # Maybe confirm bug tasks, now that more people might be affected
             # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
@@ -1921,13 +1946,13 @@ class Bug(SQLBase, InformationTypeMixin):
         # Update the former duplicateof's heat, as it will have been
         # reduced by the unduping.
         if current_duplicateof is not None:
-            current_duplicateof.updateHeat()
+            affected_bug_ids.add(current_duplicateof.id)
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
-        self._markAsDuplicate(duplicate_of)
-        if duplicate_of is not None:
-            duplicate_of.updateHeat()
+        affected_bug_ids = set()
+        self._markAsDuplicate(duplicate_of, affected_bug_ids)
+        update_bug_heat(affected_bug_ids)
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -2059,17 +2084,6 @@ class Bug(SQLBase, InformationTypeMixin):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
-
-    def updateHeat(self):
-        """See `IBug`."""
-        # We need to flush the store first to ensure that changes are
-        # reflected in the new bug heat total.
-        store = Store.of(self)
-        store.flush()
-
-        self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
-        self.heat_last_updated = UTC_NOW
-        store.flush()
 
     def _reconcileAccess(self):
         # reconcile_access_for_artifact will only use the pillar list if
@@ -2622,7 +2636,7 @@ class BugSet:
             notify(event)
 
         # Calculate the bug's initial heat.
-        bug.updateHeat()
+        update_bug_heat([bug.id])
 
         if not notify_event:
             return bug, event

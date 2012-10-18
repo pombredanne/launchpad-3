@@ -17,9 +17,7 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
-    Not,
     Or,
-    Select,
     Store,
     )
 from zope.component import getUtility
@@ -33,7 +31,6 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.blueprints.enums import (
     SpecificationFilter,
-    SpecificationImplementationStatus,
     SpecificationSort,
     SprintSpecificationStatus,
     )
@@ -42,6 +39,7 @@ from lp.blueprints.interfaces.sprint import (
     ISprintSet,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
     get_specification_privacy_filter,
     HasSpecificationsMixin,
     )
@@ -59,7 +57,6 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )
-from lp.services.database.stormexpr import fti_search
 from lp.services.propertycache import cachedproperty
 
 
@@ -124,12 +121,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         """
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        from lp.registry.model.product import Product
         query = [SprintSpecification.sprintID == self.id,
-                 SprintSpecification.specificationID == Specification.id,
-                 Or(Specification.product == None,
-                    Not(Specification.productID.is_in(Select(Product.id,
-                        Product.active == False))))]
+                 SprintSpecification.specificationID == Specification.id]
         query.append(get_specification_privacy_filter(user))
         if not filter:
             # filter could be None or [] then we decide the default
@@ -144,16 +137,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         #  - informational.
         #
 
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query.append(Specification.implementation_status ==
-                         SpecificationImplementationStatus.INFORMATIONAL)
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        if SpecificationFilter.COMPLETE in filter:
-            query.append(Specification.storm_completeness())
-        if SpecificationFilter.INCOMPLETE in filter:
-            query.append(Not(Specification.storm_completeness()))
         sprint_status = []
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
@@ -168,10 +151,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query.append(fti_search(Specification, constraint))
+        query.extend(get_specification_filters(filter))
         return query
 
     def all_specifications(self, user):

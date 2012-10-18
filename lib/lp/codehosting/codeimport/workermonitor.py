@@ -144,7 +144,7 @@ class CodeImportWorkerMonitor:
         config = errorlog.globalErrorUtility._oops_config
         context = {
             'twisted_failure': failure,
-            'request': errorlog.ScriptRequest(
+            'http_request': errorlog.ScriptRequest(
                 [('code_import_job_id', self._job_id)], self._branch_url),
             }
         report = config.create(context)
@@ -297,7 +297,8 @@ class CodeImportWorkerMonitor:
         if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
-            self._logOopsFromFailure(reason)
+            self._logger.info(
+                "Import failed: %s: %s" % (reason.type, reason.value))
         else:
             self._logger.info('Import succeeded.')
         return self.finishJob(status)
