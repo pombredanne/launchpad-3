@@ -110,7 +110,10 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -235,7 +238,6 @@ from lp.registry.model.karma import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
@@ -1047,23 +1049,55 @@ class Person(
                     WHERE
                         active = True AND
                         (driver = %(person)s
-                        OR owner = %(person)s
-                        OR bug_supervisor = %(person)s
+                         OR owner = %(person)s
+                         OR bug_supervisor = %(person)s
+                        )
                 """ % sqlvalues(person=self)
 
-        import pdb;from pprint import pprint; pdb.set_trace()
-        return Compile(ProductSet.getproductPrivacyFilter(user))
+        granted_products = """
+            SELECT p.id
+            FROM product p,
+                 accesspolicygrantflat apflat,
+                 teamparticipation part,
+                 accesspolicy ap
+             WHERE
+                apflat.grantee = part.team
+                AND part.person = %(user)s
+                AND apflat.policy = ap.id
+                AND ap.product = p.id
+                AND ap.type = p.information_type
+        """ % sqlvalues(user=user)
+
+        query_values = sqlvalues(person=self, information_type=InformationType.PUBLIC)
+        query_values.update(granted_sql=granted_products)
+
+        query = """
+            SELECT name, 3 as kind, displayname
+            FROM product p
+            WHERE
+                p.active = True
+                AND (
+                    p.driver = %(person)s
+                    OR p.owner = %(person)s
+                    OR p.bug_supervisor = %(person)s
+                )
+                AND (
+                    p.information_type = %(information_type)s
+                    OR p.information_type is NULL
+                    OR p.id IN (%(granted_sql)s)
+                )
+        """ % query_values
+        return query
 
     def getAffiliatedPillars(self, user):
         """See `IPerson`."""
-        import pdb;from pprint import pprint; pdb.set_trace()
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
         base = """PillarName
                   JOIN (
                     %s
-            """ % self._genAffiliatedProductSql
+            """ % self._genAffiliatedProductSql(user=user)
 
-        origin = SQL(base + """
+        origin = base + """
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1080,8 +1114,9 @@ class Person(
                     OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
-            """ % sqlvalues(person=self))
-        results = IStore(self).using(origin).find(find_spec)
+            """ % sqlvalues(person=self)
+
+        results = IStore(self).using(SQL(origin)).find(find_spec)
         results = results.order_by('kind', 'displayname')
 
         def get_pillar_name(result):

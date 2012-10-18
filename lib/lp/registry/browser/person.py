@@ -633,7 +633,8 @@ class CommonMenuLinks:
     def projects(self):
         target = '+related-projects'
         text = 'Related projects'
-        enabled = bool(self.person.getAffiliatedPillars())
+        user = getUtility(ILaunchBag).user
+        enabled = bool(self.person.getAffiliatedPillars(user))
         return Link(target, text, enabled=enabled, icon='info')
 
     def subscriptions(self):
@@ -3506,7 +3507,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
-        return self.context.getAffiliatedPillars()
+        user = getUtility(ILaunchBag).user
+        return self.context.getAffiliatedPillars(user)
 
     def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""
