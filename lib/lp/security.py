@@ -510,7 +510,7 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewMilestone(AnonymousAuthorization):
+class ViewAbstractMilestone(AnonymousAuthorization):
     """Anyone can view an IMilestone or an IProjectGroupMilestone."""
     usedfor = IAbstractMilestone
 
@@ -724,6 +724,25 @@ class EditProjectMilestoneNever(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """IProjectGroupMilestone is a fake content object."""
+        return False
+
+
+class ViewMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
+class EditMilestone(ViewMilestone):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IMilestone
+
+    def checkUnauthenticated(self):
         return False
 
 
