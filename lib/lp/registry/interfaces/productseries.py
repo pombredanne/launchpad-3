@@ -12,6 +12,7 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'IProductSeriesView',
     'NoSuchProductSeries',
     'ITimelineProductSeries',
     ]
@@ -129,13 +130,18 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(
-    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
-    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
+class IProductSeriesPublic(Interface):
     """Public IProductSeries properties."""
     id = Int(title=_('ID'))
 
+    def userCanView(user):
+        """True if the given user has access to this product."""
+
+
+class IProductSeriesView(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     product = exported(
         ReferenceChoice(title=_('Project'), required=True,
             vocabulary='Product', schema=Interface),  # really IProduct
@@ -330,7 +336,7 @@ class IProductSeriesPublic(
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
-                     IStructuralSubscriptionTarget):
+                     IProductSeriesView, IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
