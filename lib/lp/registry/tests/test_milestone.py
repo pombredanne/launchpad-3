@@ -227,22 +227,29 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         milestone = projectgroup.getMilestone(name=target_milestone.name)
         self.assertContentEqual([spec], milestone.getSpecifications(None))
 
-    def test_getSpecifications_privacy(self):
-        # Ensure getSpecifications respects privacy.
+    def test_getSpecifications_milestone_privacy(self):
+        # Ensure getSpecifications respects milestone privacy.
+        # This looks wrong, because the specification is actually public, and
+        # we don't normally hide specifications based on the visibility of
+        # their products.  But we're not trying to hide the specification.
+        # We're hiding the fact that this specification is associated with
+        # a proprietary Product milestone.  We create a proprietary product
+        # because that's the only way to get a proprietary milestone.
         projectgroup = self.factory.makeProject()
         owner = self.factory.makePerson()
+        public_product = self.factory.makeProduct(project=projectgroup)
+        public_milestone = self.factory.makeMilestone(product=public_product)
         product = self.factory.makeProduct(
             owner=owner, information_type=InformationType.PROPRIETARY,
             project=projectgroup)
-        spec, target_milestone = self._create_milestones_on_target(
-            product=product)
-        with person_logged_in(owner):
-            milestone = projectgroup.getMilestone(name=target_milestone.name)
+        target_milestone = self.factory.makeMilestone(
+            product=product, name=public_milestone.name)
+        spec = self.factory.makeSpecification(milestone=target_milestone)
+        milestone = projectgroup.getMilestone(name=public_milestone.name)
         self.assertContentEqual([],
                                 milestone.getSpecifications(None))
         self.assertContentEqual([spec],
                                 milestone.getSpecifications(owner))
-
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
