@@ -61,6 +61,7 @@ from storm.expr import (
     Alias,
     And,
     Coalesce,
+    Compile,
     Desc,
     Exists,
     In,
@@ -234,6 +235,7 @@ from lp.registry.model.karma import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
+from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
@@ -1030,19 +1032,38 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getAffiliatedPillars(self):
+    def _genAffiliatedProductSql(self, user=None):
+        """Helper to generate the product sql for getAffiliatePillars"""
+        # We don't need to filter out private projects if
+        # 1. This is an admin
+        # 2. This is a commercial admin
+        # 3. The user is viewing their own information
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return """
+                    SELECT name, 3 as kind, displayname
+                    FROM product
+                    WHERE
+                        active = True AND
+                        (driver = %(person)s
+                        OR owner = %(person)s
+                        OR bug_supervisor = %(person)s
+                """ % sqlvalues(person=self)
+
+        import pdb;from pprint import pprint; pdb.set_trace()
+        return Compile(ProductSet.getproductPrivacyFilter(user))
+
+    def getAffiliatedPillars(self, user):
         """See `IPerson`."""
+        import pdb;from pprint import pprint; pdb.set_trace()
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
-        origin = SQL("""
-            PillarName
-            JOIN (
-                SELECT name, 3 as kind, displayname
-                FROM product
-                WHERE
-                    active = True AND
-                    (driver = %(person)s
-                    OR owner = %(person)s
-                    OR bug_supervisor = %(person)s)
+        base = """PillarName
+                  JOIN (
+                    %s
+            """ % self._genAffiliatedProductSql
+
+        origin = SQL(base + """
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
