@@ -748,6 +748,7 @@ created:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
+    >>> new_bug.clearBugNotificationRecipientsCache()
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 

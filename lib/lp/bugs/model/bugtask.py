@@ -772,8 +772,10 @@ class BugTask(SQLBase):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
-        else:
-            self.milestone = new_milestone
+        self.milestone = new_milestone
+        # Clear the recipient caches so that the milestone subscribers are
+        # notified.
+        self.bug.clearBugNotificationRecipientsCache()
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
@@ -1141,6 +1143,7 @@ class BugTask(SQLBase):
         # As a result of the transition, some subscribers may no longer
         # have access to the parent bug. We need to run a job to remove any
         # such subscriptions.
+        self.bug.clearBugNotificationRecipientsCache()
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, [self.bug], pillar=target_before_change.pillar)
 

@@ -95,6 +95,7 @@ class TestBugChanges(TestCaseWithFactory):
         else:
             self.old_activities = old_activities
             self.old_notification_ids = old_notification_ids
+        bug.clearBugNotificationRecipientsCache()
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
