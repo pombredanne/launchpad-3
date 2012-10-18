@@ -310,6 +310,14 @@ class LaunchpadView(UserAttributeCache):
             return None
         return information_typed.information_type.title
 
+    @property
+    def information_type_description(self):
+        """A view has the information_type_description of its context."""
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.description
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

@@ -20,6 +20,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    In,
     Join,
     SQL,
     )
@@ -431,8 +432,24 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.order_by(
             'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
             'DESC')
+        # An extra query is required here in order to get the correct
+        # products without affecting the group/order of the query above.
+        products_by_name = {}
+        if result.any() is not None:
+            milestone_names = [data[0] for data in result]
+            product_conditions = And(
+                Product.project == self,
+                Milestone.product == Product.id,
+                Product.active == True,
+                In(Milestone.name, milestone_names))
+            for product, name in (
+                store.find((Product, Milestone.name), product_conditions)):
+                if name not in products_by_name.keys():
+                    products_by_name[name] = product
         return shortlist(
-            [ProjectMilestone(self, name, dateexpected, active)
+            [ProjectMilestone(
+                self, name, dateexpected, active,
+                products_by_name.get(name, None))
              for name, dateexpected, active in result])
 
     @property
