@@ -5,12 +5,6 @@
 
 __metaclass__ = type
 
-import os
-import subprocess
-import sys
-
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
@@ -21,7 +15,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
