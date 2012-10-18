@@ -291,6 +291,38 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inProject(project)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_isExclusive(self):
+        # 'isExclusive' is restricted to branches owned by exclusive
+        # teams and users.
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        team_branch = self.factory.makeAnyBranch(owner=team)
+        user_branch = self.factory.makeAnyBranch(owner=user)
+        self.factory.makeAnyBranch(owner=other_team)
+        collection = self.all_branches.isExclusive()
+        self.assertContentEqual(
+            [team_branch, user_branch], list(collection.getBranches()))
+
+    def test_inProduct_and_isExclusive(self):
+        # 'inProduct' and 'isExclusive' can combine to form a collection that
+        # is restricted to branches of a particular product owned exclusive
+        # teams and users.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=team)
+        self.factory.makeAnyBranch(owner=team)
+        self.factory.makeProductBranch(product=product, owner=other_team)
+        collection = self.all_branches.inProduct(product).isExclusive()
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.isExclusive().inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_ownedBy_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular
