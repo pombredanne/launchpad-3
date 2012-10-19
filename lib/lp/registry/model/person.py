@@ -1049,6 +1049,7 @@ class Person(
                         )
                 """ % sqlvalues(person=self)
 
+        # This is the raw sql version of model/product getProductPrivacyFilter
         granted_products = """
             SELECT p.id
             FROM product p,
@@ -1063,6 +1064,9 @@ class Person(
                 AND ap.type = p.information_type
         """ % sqlvalues(user=user)
 
+        # We have to generate the sqlvalues first so that they're properly
+        # setup and escaped. Then we combine the above query which is already
+        # processed.
         query_values = sqlvalues(person=self,
                                  information_type=InformationType.PUBLIC)
         query_values.update(granted_sql=granted_products)
