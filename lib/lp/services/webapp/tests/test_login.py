@@ -439,6 +439,19 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         main_content = extract_text(find_main_content(html))
         self.assertIn('Team email address conflict', main_content)
 
+    def test_missing_fields(self):
+        # If the OpenID provider response does not include required fields
+        # (full name or email missing), the login error page is shown.
+        person = self.factory.makePerson()
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(
+                person.account, email=None)
+        self.assertFalse(view.login_called)
+        main_content = extract_text(find_main_content(html))
+        self.assertIn(
+            'No email address or full name found in sreg response',
+            main_content)
+
     def test_negative_openid_assertion(self):
         # The OpenID provider responded with a negative assertion, so the
         # login error page is shown.
