@@ -381,16 +381,30 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         self.assertEqual(
             PackageUploadStatus.ACCEPTED, copied_upload.packageupload.status)
 
-    def test_copyUpload_unapproves_uefi(self):
+    def test_copyUpload_unapproves_uefi_from_different_archive(self):
         # Copies of UEFI custom uploads to a primary archive are set to
         # UNAPPROVED, since they will normally end up being signed.
+        target_series = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=target_series.distribution)
+        original_upload = self.makeUpload(
+            archive=archive, custom_type=PackageUploadCustomFormat.UEFI)
+        copier = CustomUploadsCopier(
+            target_series, target_archive=target_series.main_archive)
+        copied_upload = copier.copyUpload(original_upload)
+        self.assertEqual(
+            PackageUploadStatus.UNAPPROVED, copied_upload.packageupload.status)
+
+    def test_copyUpload_approves_uefi_from_same_archive(self):
+        # Copies of UEFI custom uploads within the same archive are
+        # automatically accepted, since they have already been signed.
         original_upload = self.makeUpload(
             custom_type=PackageUploadCustomFormat.UEFI)
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
         copied_upload = copier.copyUpload(original_upload)
         self.assertEqual(
-            PackageUploadStatus.UNAPPROVED, copied_upload.packageupload.status)
+            PackageUploadStatus.ACCEPTED, copied_upload.packageupload.status)
 
     def test_copyUpload_approves_uefi_to_ppa(self):
         # Copies of UEFI custom uploads to a PPA are automatically accepted,
