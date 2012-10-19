@@ -1268,6 +1268,9 @@
         <browser:page
             name="+productrelease-data"
             template="../templates/productrelease-portlet-data.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/milestone-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+pillar-table-row"
@@ -1660,6 +1663,9 @@
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/productseries-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+ubuntupkg"

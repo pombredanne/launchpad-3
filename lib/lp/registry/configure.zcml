@@ -1026,22 +1026,31 @@
         <allow
             attributes="
                 id
-                name
-                code_name
-                product
-                distribution
-                productseries
-                distroseries
-                dateexpected
+                userCanView
+                " />
+        <require
+            permission="launchpad.View"
+            attributes="
                 active
+                bugtasks
+                code_name
+                dateexpected
+                displayname
+                distribution
+                distroseries
+                getSpecifications
+                getTags
+                getTagsData
+                name
+                product
+                product_release
+                productseries
+                series_target
+                specifications
                 summary
                 target
-                series_target
-                displayname
                 title
-                bugtasks
-                getSpecifications
-                product_release"/>
+                "/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -1051,15 +1060,13 @@
                 setTags
                 "/>
         <require
-            permission="zope.Public"
-            attributes="
-                getTags
-                getTagsData
-                "/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
             interface="lp.app.interfaces.security.IAuthorization"/>
@@ -1070,13 +1077,18 @@
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
 
     <!-- IMilestoneSet -->
 
@@ -1094,6 +1106,10 @@
         <allow
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
     <class
         class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
         <allow

@@ -269,6 +269,9 @@ class IMilestone(IAbstractMilestone):
         why this is not a property.
         """
 
+    def userCanView(user):
+        """True if the given user has access to this product."""
+
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone

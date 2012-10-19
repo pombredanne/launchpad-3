@@ -214,6 +214,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('bug_comment_search.use_distinct.enabled',
+     'boolean',
+     ('If true, the bug message sub query for finding commented bugs '
+      'uses DISTINCT.'),
+     '',
+     '',
+     ''),
     ('registry.upcoming_work_view.enabled',
      'boolean',
      ('If true, the new upcoming work view of teams is available.'),
@@ -237,6 +244,12 @@ flag_info = sorted([
      'If true, enabled access to private project registration features.',
      'disabled',
      '',
+     'https://dev.launchpad.net/LEP/PrivateProjects'),
+    ('disclosure.private_project.traversal_override',
+     'boolean',
+     'If set, allow all users to traverse to private projects.',
+     'Traversal to private projects requires special access.',
+     'Override traveral checks.',
      'https://dev.launchpad.net/LEP/PrivateProjects'),
 
     ])

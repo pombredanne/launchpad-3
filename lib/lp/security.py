@@ -29,7 +29,6 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
@@ -433,7 +432,7 @@ class ViewProduct(AuthorizationBase):
         return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
-        return self.obj.information_type in PUBLIC_INFORMATION_TYPES
+        return self.obj.userCanView(None)
 
 
 class ChangeProduct(ViewProduct):
@@ -510,7 +509,7 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewMilestone(AnonymousAuthorization):
+class ViewAbstractMilestone(AnonymousAuthorization):
     """Anyone can view an IMilestone or an IProjectGroupMilestone."""
     usedfor = IAbstractMilestone
 
@@ -724,6 +723,25 @@ class EditProjectMilestoneNever(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """IProjectGroupMilestone is a fake content object."""
+        return False
+
+
+class ViewMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
+class EditMilestone(ViewMilestone):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IMilestone
+
+    def checkUnauthenticated(self):
         return False
 
 
