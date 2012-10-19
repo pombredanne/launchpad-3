@@ -148,7 +148,10 @@ from lp.registry.model.person import (
     Person,
     )
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
@@ -291,11 +294,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
             query = ensure_unicode(query)
             like_query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
+            like_query = "'%%%%' || %s || '%%%%'" % quote_like(like_query)
             fti_query = quote(query)
-            where_clause = SQL(
-                "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query))
+            where_clause = And(
+                SQL(
+                    "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
+                        like_query, fti_query)),
+                ProductSet.getProductPrivacyFilter(
+                    getUtility(ILaunchBag).user))
             order_by = SQL(
                 '(CASE name WHEN %s THEN 1 '
                 ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
