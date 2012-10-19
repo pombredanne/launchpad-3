@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -15,13 +15,15 @@ from zope.security.checker import (
     getChecker,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
-from lp.registry.enums import SharingPermission
+from lp.registry.enums import (
+    BugSharingPolicy,
+    SharingPermission,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -138,14 +140,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'active', 'bug_subscriptions', 'bugtasks', 'code_name',
             'dateexpected', 'displayname', 'distribution', 'distroseries',
             '_getOfficialTagClause', 'getBugSummaryContextWhereClause',
-            'getBugTaskWeightFunction', 'getSubscription',
-            'getSubscriptions', 'getTags', 'getTagsData',
+            'getBugTaskWeightFunction', 'getSpecifications',
+            'getSubscription', 'getSubscriptions', 'getTags', 'getTagsData',
             'getUsedBugTagsWithOpenCounts', 'name', 'official_bug_tags',
             'parent_subscription_target', 'product', 'product_release',
             'productseries', 'searchTasks', 'series_target',
-            'specifications', 'summary', 'target', 'target_type_display',
-            'title', 'userCanAlterBugSubscription',
-            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            'summary', 'target', 'target_type_display', 'title',
+            'userCanAlterBugSubscription', 'userCanAlterSubscription',
+            'userHasBugSubscriptions',
             )),
         'launchpad.AnyAllowedPerson': set((
             'addBugSubscription', 'addBugSubscriptionFilter',
@@ -423,7 +425,8 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
             owner=self.owner,
             product=self.product,
             )
-        self.assertContentEqual(specifications, self.milestone.specifications)
+        self.assertContentEqual(specifications,
+                                self.milestone.getSpecifications(None))
 
 
 class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
@@ -452,12 +455,14 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     def test_milestones_on_product(self):
         spec, target_milestone = self._create_milestones_on_target(
             product=self.factory.makeProduct())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_distribution(self):
         spec, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_project(self):
         # A Project (Project Group) milestone contains all specifications
@@ -468,7 +473,53 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         spec, target_milestone = self._create_milestones_on_target(
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
-        self.assertContentEqual([spec], milestone.specifications)
+        self.assertContentEqual([spec], milestone.getSpecifications(None))
+
+    def makeMixedMilestone(self):
+        projectgroup = self.factory.makeProject()
+        owner = self.factory.makePerson()
+        public_product = self.factory.makeProduct(project=projectgroup)
+        public_milestone = self.factory.makeMilestone(product=public_product)
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY,
+            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
+        target_milestone = self.factory.makeMilestone(
+            product=product, name=public_milestone.name)
+        milestone = projectgroup.getMilestone(name=public_milestone.name)
+        return milestone, target_milestone, owner
+
+    def test_getSpecifications_milestone_privacy(self):
+        # Ensure getSpecifications respects milestone privacy.
+        # This looks wrong, because the specification is actually public, and
+        # we don't normally hide specifications based on the visibility of
+        # their products.  But we're not trying to hide the specification.
+        # We're hiding the fact that this specification is associated with
+        # a proprietary Product milestone.  We create a proprietary product
+        # because that's the only way to get a proprietary milestone.
+        milestone, target_milestone, owner = self.makeMixedMilestone()
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(milestone=target_milestone)
+        self.assertContentEqual([],
+                                milestone.getSpecifications(None))
+        self.assertContentEqual([spec],
+                                milestone.getSpecifications(owner))
+
+    def test_bugtasks_milestone_privacy(self):
+        # Ensure bugtasks respects milestone privacy.
+        # This looks wrong, because the bugtask is actually public, and we
+        # don't normally hide bugtasks based on the visibility of their
+        # products.  But we're not trying to hide the bugtask.  We're hiding
+        # the fact that this bugtask is associated with a proprietary Product
+        # milestone.  We create a proprietary product because that's the only
+        # way to get a proprietary milestone.
+        milestone, target_milestone, owner = self.makeMixedMilestone()
+        with person_logged_in(owner):
+            bugtask = self.factory.makeBugTask(
+                target=target_milestone.product)
+        with person_logged_in(bugtask.owner):
+            bugtask.transitionToMilestone(target_milestone, owner)
+        self.assertContentEqual([], milestone.bugtasks(None))
+        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
@@ -479,7 +530,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
-        self.assertContentEqual([], milestone.specifications)
+        self.assertContentEqual([], milestone.getSpecifications(None))
 
 
 class TestMilestoneInformationType(TestCaseWithFactory):
