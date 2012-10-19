@@ -19,6 +19,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     anonymous_logged_in,
+    monkey_patch,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -32,6 +33,7 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     revert_unselected_translations,
+    convert_translationmessage_to_submission,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
@@ -477,3 +479,29 @@ class TestHelpers(TestCaseWithFactory):
             {1: u''},
             revert_unselected_translations(
                 new_translations, current_message, []))
+
+class TestBadSubmission(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    from lp.translations.browser.translationmessage import convert_translationmessage_to_submission
+
+    def getSubmission(self):
+        original_translations = {0: self.getUniqueString()}
+        pofile = self.factory.makePOFile()
+        current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        message = self.factory.makeSuggestion(pofile=pofile)
+        submission = convert_translationmessage_to_submission(
+            message=message,
+            current_message=current,
+            plural_form=0,
+            pofile=pofile,
+            legal_warning_needed=False)
+        return submission
+
+    def test_submission_traversable_guard(self):
+        # If a submission doesn't have a sequence greater than 1, it's not
+        # traversable.
+        sub = self.getSubmission()
+        self.assertEqual(0, sub.translationmessage.sequence)
+        self.assertFalse(sub.is_traversable)
