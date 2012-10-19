@@ -15,7 +15,6 @@ from zope.security.checker import (
     getChecker,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
@@ -430,7 +429,6 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
                                 self.milestone.getSpecifications(None))
 
 
-
 class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     """Milestones list specifications with some workitems targeted to it."""
 
@@ -459,7 +457,6 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=self.factory.makeProduct())
         self.assertContentEqual([spec],
                                 target_milestone.getSpecifications(None))
-
 
     def test_milestones_on_distribution(self):
         spec, target_milestone = self._create_milestones_on_target(
