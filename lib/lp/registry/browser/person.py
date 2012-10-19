@@ -941,7 +941,9 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['comment'])
+        # We override the can_deactivate since validation already processed
+        # this information.
+        self.context.deactivateAccount(data['comment'], can_deactivate=True)
         logoutPerson(self.request)
         self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
