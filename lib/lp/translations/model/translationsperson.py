@@ -32,6 +32,10 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
@@ -95,7 +99,8 @@ class TranslationsPerson:
         """See `ITranslationsPerson`."""
         return getUtility(ITranslatorSet).getByTranslator(self.person)
 
-    def get_translations_relicensing_agreement(self):
+    @cachedproperty
+    def _translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
 
         If she has made no explicit decision yet, return None.
@@ -106,6 +111,9 @@ class TranslationsPerson:
             return None
         else:
             return relicensing_agreement.allow_relicensing
+
+    def get_translations_relicensing_agreement(self):
+        return self._translations_relicensing_agreement
 
     def set_translations_relicensing_agreement(self, value):
         """Set a translations relicensing decision by translator.
@@ -120,6 +128,7 @@ class TranslationsPerson:
                 allow_relicensing=value)
         else:
             relicensing_agreement.allow_relicensing = value
+        del get_property_cache(self)._translations_relicensing_agreement
 
     translations_relicensing_agreement = property(
         get_translations_relicensing_agreement,

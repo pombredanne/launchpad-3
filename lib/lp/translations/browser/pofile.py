@@ -275,22 +275,22 @@ class POFileView(LaunchpadView):
     def contributors(self):
         return list(self.context.contributors)
 
-    @property
+    @cachedproperty
     def user_can_edit(self):
         """Does the user have full edit rights for this translation?"""
         return self.context.canEditTranslations(self.user)
 
-    @property
+    @cachedproperty
     def user_can_suggest(self):
         """Is the user allowed to make suggestions here?"""
         return self.context.canAddSuggestions(self.user)
 
-    @property
+    @cachedproperty
     def has_translationgroup(self):
         """Is there a translation group for this translation?"""
         return self.context.potemplate.translationgroups
 
-    @property
+    @cachedproperty
     def is_managed(self):
         """Is a translation group member assigned to this translation?"""
         for group in self.context.potemplate.translationgroups:
@@ -298,7 +298,7 @@ class POFileView(LaunchpadView):
                 return True
         return False
 
-    @property
+    @cachedproperty
     def managers(self):
         """List translation groups and translation teams for this translation.
 
