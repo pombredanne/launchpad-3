@@ -1137,14 +1137,28 @@ class Person(
 
     def getRedeemableCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
+        # Circular imports.
+        from lp.registry.model.commercialsubscription import (
+            CommercialSubscription,
+            )
         if voucher_proxy is None:
             voucher_proxy = getUtility(ISalesforceVoucherProxy)
         vouchers = voucher_proxy.getUnredeemedVouchers(self)
-        for voucher in vouchers:
+        # Exclude pending vouchers being sent to Salesforce and vouchers which
+        # have already been redeemed.
+        voucher_ids = [unicode(voucher.voucher_id) for voucher in vouchers]
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = list(Store.of(self).using(CommercialSubscription)
+            .find(SQL(voucher_expr), SQL(voucher_expr).is_in(voucher_ids)))
+        redeemable_vouchers = [voucher for voucher in vouchers
+                               if voucher.voucher_id not in already_redeemed]
+        for voucher in redeemable_vouchers:
             assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
                 "Voucher %s has invalid status %s" %
                 (voucher.voucher_id, voucher.status))
-        return vouchers
+        return redeemable_vouchers
 
     def hasCurrentCommercialSubscription(self):
         """See `IPerson`."""
