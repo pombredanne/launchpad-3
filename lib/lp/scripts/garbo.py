@@ -29,7 +29,6 @@ from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
     In,
-    Like,
     Select,
     Update,
     )
@@ -61,7 +60,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.config import config
@@ -94,10 +92,6 @@ from lp.services.looptuner import TunableLoop
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
-from lp.services.salesforce.interfaces import (
-    ISalesforceVoucherProxy,
-    SalesforceVoucherProxyException,
-    )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LOCK_PATH,
@@ -369,58 +363,6 @@ class BugSummaryJournalRollup(TunableLoop):
             "SELECT bugsummary_rollup_journal(%s)", (chunk_size,),
             noresult=True)
         self.store.commit()
-
-
-class VoucherRedeemer(TunableLoop):
-    """Redeem pending sales vouchers with Salesforce."""
-    maximum_chunk_size = 5
-
-    voucher_expr = (
-        "trim(leading 'pending-' "
-        "from CommercialSubscription.sales_system_id)")
-
-    def __init__(self, log, abort_time=None):
-        super(VoucherRedeemer, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-    @cachedproperty
-    def _salesforce_proxy(self):
-        return getUtility(ISalesforceVoucherProxy)
-
-    @property
-    def _pending_subscriptions(self):
-        return self.store.find(
-            CommercialSubscription,
-            Like(CommercialSubscription.sales_system_id, u'pending-%')
-        )
-
-    def isDone(self):
-        return self._pending_subscriptions.count() == 0
-
-    def __call__(self, chunk_size):
-        successful_ids = []
-        for sub in self._pending_subscriptions[:chunk_size]:
-            sales_system_id = sub.sales_system_id[len('pending-'):]
-            try:
-                # The call to redeemVoucher returns True if it succeeds or it
-                # raises an exception.  Therefore the return value does not
-                # need to be checked.
-                self._salesforce_proxy.redeemVoucher(
-                    sales_system_id, sub.purchaser, sub.product)
-                successful_ids.append(unicode(sub.sales_system_id))
-            except SalesforceVoucherProxyException as error:
-                self.log.error(
-                    "Failed to redeem voucher %s: %s"
-                    % (sales_system_id, error.message))
-        # Update the successfully redeemed voucher ids to be not pending.
-        if successful_ids:
-            self.store.find(
-                CommercialSubscription,
-                CommercialSubscription.sales_system_id.is_in(successful_ids)
-            ).set(
-                CommercialSubscription.sales_system_id ==
-                SQL(self.voucher_expr))
-        transaction.commit()
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
@@ -1338,7 +1280,6 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
-        VoucherRedeemer,
         ]
     experimental_tunable_loops = []
 
