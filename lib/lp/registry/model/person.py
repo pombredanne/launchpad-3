@@ -2234,10 +2234,13 @@ class Person(
             if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = None
                 changed = True
-            if (pillar.bug_supervisor is not None and
-                pillar.bug_supervisor.id == self.id):
-                pillar.bug_supervisor = None
-                changed = True
+
+            # Products need to change the bug supervisor as well.
+            if IProduct.providedBy(pillar):
+                if (pillar.bug_supervisor is not None and
+                    pillar.bug_supervisor.id == self.id):
+                    pillar.bug_supervisor = None
+                    changed = True
 
             if not changed:
                 # Since we removed the person from all teams, something is
