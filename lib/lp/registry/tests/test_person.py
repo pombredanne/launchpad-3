@@ -371,7 +371,7 @@ class TestPerson(TestCaseWithFactory):
         # Skip non public products if not allowed to see them.
         owner = self.factory.makePerson()
         user = self.factory.makePerson()
-        embargoed = self.factory.makeProduct(
+        self.factory.makeProduct(
             information_type=InformationType.EMBARGOED,
             owner=owner)
         public = self.factory.makeProduct(
@@ -386,11 +386,11 @@ class TestPerson(TestCaseWithFactory):
     def test_getAffiliatedPillars_visible_to_self(self):
         # Users can see their own non-public affiliated products.
         owner = self.factory.makePerson()
-        embargoed = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'embargoed',
             information_type=InformationType.EMBARGOED,
             owner=owner)
-        public = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
@@ -404,11 +404,11 @@ class TestPerson(TestCaseWithFactory):
         # Users can see their own non-public affiliated products.
         owner = self.factory.makePerson()
         admin = self.factory.makeAdministrator()
-        embargoed = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'embargoed',
             information_type=InformationType.EMBARGOED,
             owner=owner)
-        public = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
@@ -422,11 +422,11 @@ class TestPerson(TestCaseWithFactory):
         # Users can see their own non-public affiliated products.
         owner = self.factory.makePerson()
         admin = self.factory.makeCommercialAdmin()
-        embargoed = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'embargoed',
             information_type=InformationType.EMBARGOED,
             owner=owner)
-        public = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=u'public',
             information_type=InformationType.PUBLIC,
             owner=owner)
