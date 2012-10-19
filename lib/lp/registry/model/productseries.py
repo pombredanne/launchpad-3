@@ -679,6 +679,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
 
+    def userCanView(self, user):
+        """See `IproductSeriesPublic`."""
+        # Deleate the permission check to the parent product.
+        return self.product.userCanView(user)
+
 
 class TimelineProductSeries:
     """See `ITimelineProductSeries`."""

@@ -1508,10 +1508,16 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+        <require
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1522,16 +1528,17 @@
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
