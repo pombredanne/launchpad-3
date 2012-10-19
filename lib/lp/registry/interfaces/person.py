@@ -1742,7 +1742,7 @@ class IPersonSpecialRestricted(Interface):
         :return tuple: boolean, list of error messages.
         """
 
-    def deactivateAccount(comment, can_be_deactivated=None):
+    def deactivateAccount(comment, can_deactivate=None):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:

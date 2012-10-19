@@ -935,7 +935,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        can_deactivate, errors = self.context.canDeactivateAccount()
+        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
         if not can_deactivate:
             [self.addError(message) for message in errors]
 
