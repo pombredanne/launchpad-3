@@ -1277,6 +1277,7 @@ class BugTask(SQLBase):
             role.in_bug_watch_updater or role.in_bug_importer or
             role.in_janitor):
             return True
+
         # If you're the owner or a driver, you can change bug details.
         owner_context = context
         if IBugTarget.providedBy(context):

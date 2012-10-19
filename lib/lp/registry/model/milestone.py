@@ -149,6 +149,7 @@ class MilestoneData:
         raise NotImplementedError
 
     def getSpecifications(self, user):
+        """See `IMilestoneData`"""
         from lp.registry.model.person import Person
         store = Store.of(self.target)
         origin = [
