@@ -799,12 +799,15 @@ class TestPersonStates(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=user)
         with person_logged_in(user):
             product.driver = user
+            product.bug_supervisor = user
             user.deactivateAccount("Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         self.assertEqual(registry_team, product.owner,
                          "Owner is not registry team.")
-        self.assertEqual(registry_team, product.driver,
-                         "Driver is not registry team.")
+        self.assertEqual(None, product.driver,
+                         "Driver is not emptied.")
+        self.assertEqual(None, product.bug_supervisor,
+                         "Driver is not emptied.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')

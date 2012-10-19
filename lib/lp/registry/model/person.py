@@ -2185,12 +2185,12 @@ class Person(
             raise AssertionError(
                 "You can only deactivate an account of a valid person.")
 
-        if can_be_deactivated is None:
+        if can_deactivate is None:
             # The person can only be deactivated if they do not own any
             # non-public products.
-            can_be_deactivated = self.canDeactivateUser(self)
+            can_deactivate = self.canDeactivateAccount()
 
-        if not can_be_deactivated:
+        if not can_deactivate:
             message = ("You cannot deactivate an account that owns a "
                        "non-public product.")
             raise AssertionError(message)
@@ -2232,7 +2232,10 @@ class Person(
                 pillar.owner = registry_experts
                 changed = True
             if pillar.driver is not None and pillar.driver.id == self.id:
-                pillar.driver = registry_experts
+                pillar.driver = None
+                changed = True
+            if pillar.bug_supervisor is not None and pillar.bug_supervisor.id == self.id:
+                pillar.bug_supervisor = None
                 changed = True
 
             if not changed:
