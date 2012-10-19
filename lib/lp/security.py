@@ -154,6 +154,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesView,
     ITimelineProductSeries,
     )
 from lp.registry.interfaces.projectgroup import (
@@ -1285,9 +1286,26 @@ class DriveProduct(SeriesDrivers):
             or False)
 
 
-class ViewProductSeries(AnonymousAuthorization):
+class ViewProductSeries(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProductSeriesView
 
-    usedfor = IProductSeries
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class ChangeProductSeries(ViewProductSeries):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProductSeriesView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditProductSeries(EditByOwnersOrAdmins):

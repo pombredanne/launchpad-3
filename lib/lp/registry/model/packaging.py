@@ -111,6 +111,10 @@ class PackagingUtil:
                 (sourcepackagename.name, distroseries.name))
         # XXX: AaronBentley: 2012-08-12 bug=1066063 Cannot adapt ProductSeries
         # to IInformationType.
+        # The line below causes a failure of
+        # lp.registry.tests.test_distroseries.TestDistroSeriesPackaging.
+        # test_getPrioritizedPackagings_bug_tracker because
+        # productseries.product loses all set permissions.
         # info_type = IInformationType(productseries).information_type
         info_type = productseries.product.information_type
         if info_type != InformationType.PUBLIC:

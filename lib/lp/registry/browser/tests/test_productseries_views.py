@@ -41,13 +41,14 @@ class TestProductSeries(BrowserTestCase):
         # A ProductSeries view should get its information_type
         # from the related product even if the product is changed to
         # PROPRIETARY.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
+        owner = self.factory.makePerson()
         information_type = InformationType.PROPRIETARY
-        removeSecurityProxy(product).information_type = information_type
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
         series = self.factory.makeProductSeries(product=product)
-        view = create_initialized_view(series, '+index')
-        self.assertEqual('Proprietary', view.information_type)
+        with person_logged_in(owner):
+            view = create_initialized_view(series, '+index')
+            self.assertEqual('Proprietary', view.information_type)
 
     def test_privacy_portlet(self):
         # A ProductSeries page should include a privacy portlet that

@@ -71,6 +71,7 @@ All translation templates for a product series are available using the
 
     >>> login('admin@canonical.com')
     >>> productseries = factory.makeProductSeries()
+    >>> productseries_name = productseries.name
     >>> product_name = productseries.product.name
     >>> potemplate_1 = factory.makePOTemplate(productseries=productseries)
     >>> potemplate_2 = factory.makePOTemplate(productseries=productseries)
@@ -79,7 +80,7 @@ All translation templates for a product series are available using the
     >>> all_translation_templates = anon_webservice.named_get(
     ...     '/%s/%s' % (
     ...         product_name,
-    ...         productseries.name),
+    ...         productseries_name),
     ...     'getTranslationTemplates'
     ...     ).jsonBody()
     >>> api_count = all_translation_templates['total_size']
