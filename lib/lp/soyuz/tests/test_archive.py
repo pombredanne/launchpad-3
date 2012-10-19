@@ -2603,6 +2603,22 @@ class TestCopyPackage(TestCaseWithFactory):
                 [source_name], target_archive, to_pocket.name,
                 target_archive.owner)
 
+    def test_copyPackages_to_pocket(self):
+        # copyPackages respects the to_pocket parameter.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        to_pocket = PackagePublishingPocket.PROPOSED
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.distribution.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackages(
+            [source_name], source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False, person=person)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(to_pocket, copy_job.target_pocket)
+
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):
 

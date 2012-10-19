@@ -1709,7 +1709,7 @@ class Archive(SQLBase):
                 from_archive,
                 self,
                 series if series is not None else source.distroseries,
-                PackagePublishingPocket.RELEASE
+                pocket,
                 )
             copy_tasks.append(task)
 
