@@ -77,8 +77,7 @@ class ProjectGroupMilestoneTag(MilestoneData):
         """See IMilestoneData."""
         return self.displayname
 
-    @property
-    def _milestone_ids_expr(self):
+    def _milestone_ids_expr(self, user):
         tag_constraints = And(*[
             Exists(
                 Select(

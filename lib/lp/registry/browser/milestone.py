@@ -214,7 +214,7 @@ class MilestoneViewMixin(object):
     @cachedproperty
     def specifications(self):
         """The list of specifications targeted to this milestone."""
-        return list(self.context.specifications)
+        return list(self.context.getSpecifications(self.user))
 
     @cachedproperty
     def _bugtasks(self):

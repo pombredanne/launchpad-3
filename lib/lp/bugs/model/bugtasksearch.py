@@ -80,7 +80,10 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -387,7 +390,8 @@ def _build_query(params):
                         where=And(
                             Product.project == params.milestone.target,
                             Milestone.productID == Product.id,
-                            Milestone.name == params.milestone.name))))
+                            Milestone.name == params.milestone.name,
+                            ProductSet.getProductPrivacyFilter(params.user)))))
         else:
             extra_clauses.append(
                 search_value_to_storm_where_condition(

@@ -189,21 +189,21 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
         # Ensure that all specifications on a milestone can be retrieved.
         specs, milestonetag = self._create_items_for_retrieval(
             self._create_specifications)
-        self.assertContentEqual(specs, milestonetag.specifications)
+        self.assertContentEqual(specs, milestonetag.getSpecifications(None))
 
     def test_specifications_for_untagged_milestone(self):
         # Ensure that specifications for a project group are retrieved
         # only if associated with milestones having specified tags.
         specs, milestonetag = self._create_items_for_untagged_milestone(
             self._create_specifications)
-        self.assertContentEqual(specs, milestonetag.specifications)
+        self.assertContentEqual(specs, milestonetag.getSpecifications(None))
 
     def test_specifications_multiple_tags(self):
         # Ensure that, in presence of multiple tags, only specifications
         # for milestones associated with all the tags are retrieved.
         specs, milestonetag = self._create_items_for_multiple_tags(
             self._create_specifications)
-        self.assertContentEqual(specs, milestonetag.specifications)
+        self.assertContentEqual(specs, milestonetag.getSpecifications(None))
 
 
 class MilestoneTagWebServiceTest(WebServiceTestCase):
