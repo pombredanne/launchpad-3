@@ -4266,8 +4266,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             }
         return fileupload
 
-    def makeCommercialSubscription(self, product, expired=False,
-                                   voucher_id='new'):
+    def makeCommercialSubscription(self, product, expired=False):
         """Create a commercial subscription for the given product."""
         if CommercialSubscription.selectOneBy(product=product) is not None:
             raise AssertionError(
@@ -4282,7 +4281,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_expires=expiry,
             registrant=product.owner,
             purchaser=product.owner,
-            sales_system_id=voucher_id,
+            sales_system_id='new',
             whiteboard='')
 
     def grantCommercialSubscription(self, person, months=12):

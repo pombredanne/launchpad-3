@@ -17,7 +17,6 @@ import time
 from pytz import UTC
 from storm.expr import (
     In,
-    Like,
     Min,
     Not,
     SQL,
@@ -60,7 +59,6 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -99,8 +97,6 @@ from lp.services.oauth.model import (
     OAuthNonce,
     )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
-from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
-from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
 from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
@@ -110,7 +106,6 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    FakeAdapterMixin,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -375,7 +370,7 @@ class TestSessionPruner(TestCase):
         self.assertEqual(expected_sessions, found_sessions)
 
 
-class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
+class TestGarbo(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -970,36 +965,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         num_rows = store.execute(
             "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
         self.assertThat(num_rows, Equals(0))
-
-    def test_VoucherRedeemer(self):
-        switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        voucher_proxy = TestSalesforceVoucherProxy()
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
-
-        # Mark has some unredeemed vouchers so set one of them as pending.
-        mark = getUtility(IPersonSet).getByName('mark')
-        voucher = voucher_proxy.getUnredeemedVouchers(mark)[0]
-        product = self.factory.makeProduct(owner=mark)
-        redeemed_id = voucher.voucher_id
-        self.factory.makeCommercialSubscription(
-            product, False, 'pending-%s' % redeemed_id)
-        transaction.commit()
-
-        self.runFrequently()
-
-        # There should now be 0 pending vouchers in Launchpad.
-        num_rows = store.find(
-            CommercialSubscription,
-            Like(CommercialSubscription.sales_system_id, u'pending-%')
-            ).count()
-        self.assertThat(num_rows, Equals(0))
-        # Salesforce should also now have redeemed the voucher.
-        unredeemed_ids = [
-            voucher.voucher_id
-            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
-        self.assertNotIn(redeemed_id, unredeemed_ids)
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
