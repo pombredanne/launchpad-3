@@ -935,8 +935,9 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        if self.context.account_status != AccountStatus.ACTIVE:
-            self.addError('This account is already deactivated.')
+        can_deactivate, errors = self.context.canDeactivateAccount()
+        if not can_deactivate:
+            [self.addError(message) for message in errors]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):

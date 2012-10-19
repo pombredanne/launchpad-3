@@ -744,6 +744,26 @@ class TestPersonStates(TestCaseWithFactory):
         self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.UTC)
 
+    def test_canDeactivateAccount_private_projects(self):
+        """A user owning non-public products cannot be deactivated."""
+        user = self.factory.makePerson()
+        public_product = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            name="public",
+            owner=user)
+        public_product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            name="private",
+            owner=user)
+
+        login(user.preferredemail.email)
+        can_deactivate, errors = user.canDeactivateAccountWithErrors()
+
+        self.assertFalse(can_deactivate)
+        expected_error = ('This account cannot be deactivated because it owns '
+                        'the following non-public products: private')
+        self.assertIn(expected_error, errors)
+
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 

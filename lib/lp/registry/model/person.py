@@ -205,7 +205,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
@@ -2151,14 +2154,46 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def canDeactivateAccount(self):
+        """See `IPerson`."""
+        can_deactivate, errors = self.canDeactivateAccountWithErrors()
+        return can_deactivate
+
+    def canDeactivateAccountWithErrors(self):
+        """See `IPerson`."""
+        # Users that own non-public products cannot be deactivated until the
+        # products are reassigned.
+        errors = []
+        product_set = getUtility(IProductSet)
+        non_public_products = product_set.get_users_private_products(self)
+        if non_public_products.count() != 0:
+            errors.append(('This account cannot be deactivated because it owns '
+                        'the following non-public products: ') +
+                        ','.join([p.name for p in non_public_products]))
+
+        if self.account_status != AccountStatus.ACTIVE:
+            errors.append('This account is already deactivated.')
+
+        return (not errors), errors
+
     # XXX: salgado, 2009-04-16: This should be called just deactivate(),
     # because it not only deactivates this person's account but also the
     # person.
-    def deactivateAccount(self, comment):
+    def deactivateAccount(self, comment, can_deactivate=None):
         """See `IPersonSpecialRestricted`."""
         if not self.is_valid_person:
             raise AssertionError(
                 "You can only deactivate an account of a valid person.")
+
+        if can_be_deactivated is None:
+            # The person can only be deactivated if they do not own any
+            # non-public products.
+            can_be_deactivated = self.canDeactivateUser(self)
+
+        if not can_be_deactivated:
+            message = ("You cannot deactivate an account that owns a "
+                       "non-public product.")
+            raise AssertionError(message)
 
         for membership in self.team_memberships:
             self.leave(membership.team)
