@@ -327,14 +327,19 @@ class TestSourcePackage(TestCaseWithFactory):
 
     def test_refuses_PROPRIETARY(self):
         """Packaging cannot be created for PROPRIETARY productseries"""
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct(
+            owner=owner,
             information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product=product)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
-        with ExpectedException(CannotPackageProprietaryProduct,
-            'Only Public project series can be packaged, not Proprietary.'):
-            sp.setPackaging(series, removeSecurityProxy(series).owner)
+        with person_logged_in(owner):
+            with ExpectedException(
+                CannotPackageProprietaryProduct,
+                'Only Public project series can be packaged, not '
+                'Proprietary.'):
+                sp.setPackaging(series, owner)
 
     def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
         """An ordinary user can create a packaging link but he cannot

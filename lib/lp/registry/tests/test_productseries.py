@@ -602,7 +602,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
 
     expected_get_permissions = {
         CheckerPublic: set((
-            'id', 'information_type', 'private', 'userCanView',
+            'id', 'userCanView',
             )),
         'launchpad.AnyAllowedPerson': set((
             'addBugSubscription', 'addBugSubscriptionFilter',
