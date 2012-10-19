@@ -34,6 +34,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     canonical_url,
     DataDownloadView,
@@ -175,7 +176,8 @@ class RegistryDeleteViewMixin:
         if IProductSeries.providedBy(target):
             return list(target._all_specifications)
         else:
-            return list(target.specifications)
+            user = getUtility(ILaunchBag).user
+            return list(target.getSpecifications(user))
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""

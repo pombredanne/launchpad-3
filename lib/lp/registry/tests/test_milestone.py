@@ -141,14 +141,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'active', 'bug_subscriptions', 'bugtasks', 'code_name',
             'dateexpected', 'displayname', 'distribution', 'distroseries',
             '_getOfficialTagClause', 'getBugSummaryContextWhereClause',
-            'getBugTaskWeightFunction', 'getSubscription',
-            'getSubscriptions', 'getTags', 'getTagsData',
+            'getBugTaskWeightFunction', 'getSpecifications',
+            'getSubscription', 'getSubscriptions', 'getTags', 'getTagsData',
             'getUsedBugTagsWithOpenCounts', 'name', 'official_bug_tags',
             'parent_subscription_target', 'product', 'product_release',
             'productseries', 'searchTasks', 'series_target',
-            'specifications', 'summary', 'target', 'target_type_display',
-            'title', 'userCanAlterBugSubscription',
-            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            'summary', 'target', 'target_type_display', 'title',
+            'userCanAlterBugSubscription', 'userCanAlterSubscription',
+            'userHasBugSubscriptions',
             )),
         'launchpad.AnyAllowedPerson': set((
             'addBugSubscription', 'addBugSubscriptionFilter',
@@ -500,7 +500,8 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # a proprietary Product milestone.  We create a proprietary product
         # because that's the only way to get a proprietary milestone.
         milestone, target_milestone, owner = self.makeMixedMilestone()
-        spec = self.factory.makeSpecification(milestone=target_milestone)
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(milestone=target_milestone)
         self.assertContentEqual([],
                                 milestone.getSpecifications(None))
         self.assertContentEqual([spec],
@@ -515,7 +516,9 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # milestone.  We create a proprietary product because that's the only
         # way to get a proprietary milestone.
         milestone, target_milestone, owner = self.makeMixedMilestone()
-        bugtask = self.factory.makeBugTask(target=target_milestone.product)
+        with person_logged_in(owner):
+            bugtask = self.factory.makeBugTask(
+                target=target_milestone.product)
         with person_logged_in(bugtask.owner):
             bugtask.transitionToMilestone(target_milestone, owner)
         self.assertContentEqual([], milestone.bugtasks(None))

@@ -83,9 +83,9 @@ class TestProjectGroupView(BrowserTestCase):
         milestone = self.factory.makeMilestone(product=product,
                                                name=public_milestone.name)
         (group_milestone,) = self.project_group.milestones
-        self.factory.makeSpecification(milestone=milestone)
         self.factory.makeSpecification(milestone=public_milestone)
         with person_logged_in(owner):
+            self.factory.makeSpecification(milestone=milestone)
             product_name = product.displayname
         with person_logged_in(None):
             owner_browser = self.getViewBrowser(group_milestone, user=owner)

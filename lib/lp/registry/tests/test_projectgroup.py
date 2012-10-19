@@ -194,7 +194,7 @@ class TestMilestones(TestCaseWithFactory):
         self.assertContentEqual([], project_group.milestones)
         with person_logged_in(owner):
             names = [ms.name for ms in project_group.milestones]
-        self.assertEqual([milestone.name], names)
+            self.assertEqual([milestone.name], names)
 
     def test_all_milestones_privacy(self):
         """ProjectGroup.milestones uses logged-in user."""
@@ -207,7 +207,7 @@ class TestMilestones(TestCaseWithFactory):
         self.assertContentEqual([], project_group.milestones)
         with person_logged_in(owner):
             names = [ms.name for ms in project_group.all_milestones]
-        self.assertEqual([milestone.name], names)
+            self.assertEqual([milestone.name], names)
 
 
 class TestLaunchpadlibAPI(TestCaseWithFactory):
