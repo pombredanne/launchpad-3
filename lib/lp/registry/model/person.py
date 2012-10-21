@@ -1038,19 +1038,22 @@ class Person(
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
+        base_query = """
+            SELECT name, 3 as kind, displayname
+            FROM product p
+            WHERE
+                p.active = True
+                AND (
+                    p.driver = %(person)s
+                    OR p.owner = %(person)s
+                    OR p.bug_supervisor = %(person)s
+                )
+        """ % sqlvalues(person=self)
+
         if user is not None:
             roles = IPersonRoles(user)
             if roles.in_admin or roles.in_commercial_admin:
-                return """
-                    SELECT name, 3 as kind, displayname
-                    FROM product
-                    WHERE
-                        active = True AND
-                        (driver = %(person)s
-                         OR owner = %(person)s
-                         OR bug_supervisor = %(person)s
-                        )
-                """ % sqlvalues(person=self)
+                return base_query
 
         # This is the raw sql version of model/product getProductPrivacyFilter
         granted_products = """
@@ -1070,20 +1073,10 @@ class Person(
         # We have to generate the sqlvalues first so that they're properly
         # setup and escaped. Then we combine the above query which is already
         # processed.
-        query_values = sqlvalues(person=self,
-                                 information_type=InformationType.PUBLIC)
+        query_values = sqlvalues(information_type=InformationType.PUBLIC)
         query_values.update(granted_sql=granted_products)
 
-        query = """
-            SELECT name, 3 as kind, displayname
-            FROM product p
-            WHERE
-                p.active = True
-                AND (
-                    p.driver = %(person)s
-                    OR p.owner = %(person)s
-                    OR p.bug_supervisor = %(person)s
-                )
+        query = base_query + """
                 AND (
                     p.information_type = %(information_type)s
                     OR p.information_type is NULL
