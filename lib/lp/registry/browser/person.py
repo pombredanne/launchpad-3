@@ -157,6 +157,7 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.teamjoin import TeamJoinMixin
 from lp.registry.enums import PersonVisibility
+from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -230,6 +231,7 @@ from lp.services.propertycache import (
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
     SalesforceVoucherProxyException,
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
@@ -1257,10 +1259,7 @@ class PersonVouchersView(LaunchpadFormView):
         """Set up the fields for this view."""
 
         self.form_fields = []
-        # Make the less expensive test for commercial projects first
-        # to avoid the more costly fetching of redeemable vouchers.
-        if (self.has_commercial_projects and
-            len(self.redeemable_vouchers) > 0):
+        if self.has_commercial_projects:
             self.form_fields = (self.createProjectField() +
                                 self.createVoucherField())
 
@@ -1297,6 +1296,10 @@ class PersonVouchersView(LaunchpadFormView):
                    required=True),
             render_context=self.render_context)
         return field
+
+    @cachedproperty
+    def show_voucher_selection(self):
+        return self.redeemable_vouchers or self.errors
 
     @cachedproperty
     def redeemable_vouchers(self):
@@ -1343,17 +1346,25 @@ class PersonVouchersView(LaunchpadFormView):
         voucher = data['voucher']
 
         try:
-            # The call to redeemVoucher returns True if it succeeds or it
-            # raises an exception.  Therefore the return value does not need
-            # to be checked.
-            salesforce_proxy.redeemVoucher(voucher.voucher_id,
-                                           self.context,
-                                           project)
-            project.redeemSubscriptionVoucher(
-                voucher=voucher.voucher_id,
-                registrant=self.context,
-                purchaser=self.context,
-                subscription_months=voucher.term_months)
+            # Perform a check that the submitted voucher id is valid.
+            check_voucher = salesforce_proxy.getVoucher(voucher.voucher_id)
+            if not check_voucher.status in REDEEMABLE_VOUCHER_STATUSES:
+                self.addError(
+                    _("Voucher %s has invalid status %s"
+                      % (check_voucher.voucher_id, check_voucher.status)))
+                return
+            # Redeem the voucher in Launchpad, marking the subscription as
+            # pending. Launchpad will honour the subscription but a job will
+            # still need to be run to notify Salesforce.
+            try:
+                project.redeemSubscriptionVoucher(
+                    voucher='pending-' + voucher.voucher_id,
+                    registrant=self.context,
+                    purchaser=self.context,
+                    subscription_months=voucher.term_months)
+            except VoucherAlreadyRedeemed as error:
+                self.setFieldError('voucher', _(error.message))
+                return
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
             self.removeRedeemableVoucher(voucher)

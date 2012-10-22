@@ -116,7 +116,15 @@ class with_timeout:
         """Wraps the method."""
         def call_with_timeout(*args, **kwargs):
             # Ensure that we have a timeout before we start the thread
-            timeout = self.timeout
+            if getattr(self.timeout, '__call__', None):
+                # timeout may be a method or a function on the calling
+                # instance class.
+                if args:
+                    timeout = self.timeout(args[0])
+                else:
+                    timeout = self.timeout()
+            else:
+                timeout = self.timeout
             t = ThreadCapturingResult(f, args, kwargs)
             t.start()
             t.join(timeout)
@@ -215,12 +223,19 @@ class TransportWithTimeout(Transport):
 class SafeTransportWithTimeout(SafeTransport):
     """Create a HTTPS transport for XMLRPC with timeouts."""
 
+    timeout = None
+
+    def __init__(self, timeout=None):
+        # Old style class call to super required.
+        SafeTransport.__init__(self)
+        self.timeout = timeout
+
     def make_connection(self, host):
         """Create the connection for the transport and save it."""
         self.conn = SafeTransport.make_connection(self, host)
         return self.conn
 
-    @with_timeout(cleanup='cleanup')
+    @with_timeout(cleanup='cleanup', timeout=lambda self: self.timeout)
     def request(self, host, handler, request_body, verbose=0):
         """Make the request but using the with_timeout decorator."""
         return SafeTransport.request(
