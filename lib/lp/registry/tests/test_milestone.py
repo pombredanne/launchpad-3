@@ -549,3 +549,63 @@ class TestMilestoneInformationType(TestCaseWithFactory):
             self.assertEqual(
                 IInformationType(milestone).information_type,
                 information_type)
+
+
+class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
+    """A TestCase for the security adapter of IProjectGroupMilestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProjectMilestoneSecurityAdaperTestCase, self).setUp()
+        self.project_group = self.factory.makeProject()
+        self.public_product = self.factory.makeProduct(
+            project=self.project_group)
+        self.factory.makeMilestone(
+            product=self.public_product, name='public-milestone')
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            project=self.project_group,
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.factory.makeMilestone(
+            product=self.proprietary_product, name='proprietary-milestone')
+        with person_logged_in(self.proprietary_product_owner):
+            milestone_1, milestone_2 = self.project_group.milestones
+            if milestone_1.name == 'public-milestone':
+                self.public_projectgroup_milestone = milestone_1
+                self.proprietary_projectgroup_milestone = milestone_2
+            else:
+                self.public_projectgroup_milestone = milestone_2
+                self.proprietary_projectgroup_milestone = milestone_1
+
+    expected_get_permissions = {
+        CheckerPublic: set((
+            '_getOfficialTagClause', 'active', 'addBugSubscription',
+            'addBugSubscriptionFilter', 'addSubscription',
+            'bug_subscriptions', 'bugtasks', 'closeBugsAndBlueprints',
+            'code_name', 'createProductRelease', 'dateexpected',
+            'destroySelf', 'displayname', 'distribution', 'distroseries',
+            'getBugTaskWeightFunction', 'getSpecifications',
+            'getSubscription', 'getSubscriptions',
+            'getUsedBugTagsWithOpenCounts', 'id', 'name',
+            'official_bug_tags', 'parent_subscription_target', 'product',
+            'product_release', 'productseries', 'removeBugSubscription',
+            'searchTasks', 'series_target', 'summary', 'target',
+            'target_type_display', 'title', 'userCanAlterBugSubscription',
+            'userCanAlterSubscription', 'userHasBugSubscriptions')),
+        }
+
+    def test_get_permissions(self):
+        checker = getChecker(self.public_projectgroup_milestone)
+        self.checkPermissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    # Project milestones are read-only objects, so no set permissions.
+    expected_set_permissions = {
+        }
+
+    def test_set_permissions(self):
+        checker = getChecker(self.public_projectgroup_milestone)
+        self.checkPermissions(
+            self.expected_set_permissions, checker.set_permissions, 'set')
