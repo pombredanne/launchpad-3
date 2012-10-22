@@ -12,6 +12,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import smartquote
 import pytz
 from storm.store import Store
+from storm.locals import Desc
 from testtools.matchers import (
     Equals,
     LessThan,
@@ -1815,3 +1816,13 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual(
             [blueprint1],
             list_result(blueprint1.owner, user=grant.grantee))
+
+    def test_storm_sort(self):
+        # A Storm expression can be used to sort specs.
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner, name='a')
+        spec2 = self.factory.makeSpecification(owner=owner, name='z')
+        spec3 = self.factory.makeSpecification(owner=owner, name='b')
+        self.assertEqual([spec2, spec3, spec],
+                list(owner.specifications(owner,
+                     sort=Desc(Specification.name))))

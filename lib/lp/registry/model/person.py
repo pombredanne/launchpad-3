@@ -871,7 +871,11 @@ class Person(
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
-            results = results.order_by(Desc(Specification.datecreated))
+            sort = Desc(Specification.datecreated)
+        elif getattr(sort, 'enum', None) is SpecificationSort:
+            sort = None
+        if sort is not None:
+            results = results.order_by(sort)
         if quantity is not None:
             results = results[:quantity]
         return results
