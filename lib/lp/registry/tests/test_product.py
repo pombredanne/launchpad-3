@@ -87,6 +87,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -1958,3 +1959,31 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
+
+    def test_getTranslatables_filters_private_products(self):
+        # ProductSet.getTranslatables() returns rivate translatable
+        # products only for user that have grants for these products.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD)
+        series = self.factory.makeProductSeries(product)
+        po_template = self.factory.makePOTemplate(productseries=series)
+        with person_logged_in(owner):
+            product.information_type=InformationType.PROPRIETARY
+        # Anonymous users do not see private products.
+        with person_logged_in(ANONYMOUS):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertNotIn(product, list(translatables))
+        # Ordinary users do not see private products.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertNotIn(product, list(translatables))
+        # Users with policy grants on private products see them.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertIn(product, list(translatables))
