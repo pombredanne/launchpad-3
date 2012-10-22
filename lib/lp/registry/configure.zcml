@@ -1038,6 +1038,7 @@
                 displayname
                 distribution
                 distroseries
+                getSpecifications
                 getTags
                 getTagsData
                 name
@@ -1045,7 +1046,6 @@
                 product_release
                 productseries
                 series_target
-                specifications
                 summary
                 target
                 title
@@ -1102,7 +1102,8 @@
 
     <class
         class="lp.registry.model.milestone.ProjectMilestone">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
     <adapter
