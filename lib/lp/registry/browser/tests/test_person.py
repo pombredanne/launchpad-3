@@ -217,6 +217,7 @@ class TestPersonIndexView(BrowserTestCase):
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
         self.assertIn(public_spec.name, browser.contents)
+        self.assertNotIn(private_spec.name, browser.contents)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

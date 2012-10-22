@@ -1705,7 +1705,8 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return list(self.context.assigned_specs_in_progress)
+        specs = self.context.findVisibleAssignedInProgressSpecs(self.user)
+        return list(specs)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
