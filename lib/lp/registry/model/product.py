@@ -1721,6 +1721,15 @@ class ProductSet:
                   Product.id.is_in(Select(Product.id, granted_products)))
 
     @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
+
+    @classmethod
     def get_all_active(cls, user, eager_load=True):
         clause = cls.getProductPrivacyFilter(user)
         result = IStore(Product).find(Product, Product.active,

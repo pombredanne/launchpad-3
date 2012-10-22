@@ -633,7 +633,8 @@ class CommonMenuLinks:
     def projects(self):
         target = '+related-projects'
         text = 'Related projects'
-        enabled = bool(self.person.getAffiliatedPillars())
+        user = getUtility(ILaunchBag).user
+        enabled = bool(self.person.getAffiliatedPillars(user))
         return Link(target, text, enabled=enabled, icon='info')
 
     def subscriptions(self):
@@ -934,12 +935,15 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        if self.context.account_status != AccountStatus.ACTIVE:
-            self.addError('This account is already deactivated.')
+        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
+        if not can_deactivate:
+            [self.addError(message) for message in errors]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['comment'])
+        # We override the can_deactivate since validation already processed
+        # this information.
+        self.context.deactivateAccount(data['comment'], can_deactivate=True)
         logoutPerson(self.request)
         self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
@@ -3506,7 +3510,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
-        return self.context.getAffiliatedPillars()
+        user = getUtility(ILaunchBag).user
+        return self.context.getAffiliatedPillars(user)
 
     def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""
