@@ -138,6 +138,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
@@ -752,6 +753,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))

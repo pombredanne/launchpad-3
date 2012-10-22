@@ -93,7 +93,8 @@ class SalesforceVoucherProxy:
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
-        self.xmlrpc_transport = SafeTransportWithTimeout()
+        self.xmlrpc_transport = SafeTransportWithTimeout(
+            config.commercial.voucher_proxy_timeout / 1000.0)
 
     @cachedproperty
     def url(self):
