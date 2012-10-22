@@ -477,3 +477,8 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
     def userHasBugSubscriptions(self, user):
         """See `IStructuralSubscriptionTarget`."""
         return False
+
+    def userCanView(self, user):
+        """See `IMilestone`."""
+        # Delegate the permission check
+        return self.product.userCanView(user)

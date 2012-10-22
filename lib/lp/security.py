@@ -718,6 +718,17 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewProjectMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProjectGroupMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone

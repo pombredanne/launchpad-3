@@ -220,7 +220,7 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             self.assertRaises(Unauthorized, setattr, obj, name, None)
 
     def test_access_for_anonymous(self):
-        # Anonymous users have access to to public attributes of
+        # Anonymous users have access to public attributes of
         # milestones for private and public products.
         with person_logged_in(ANONYMOUS):
             self.assertAccessAuthorized(
@@ -558,20 +558,19 @@ class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(ProjectMilestoneSecurityAdaperTestCase, self).setUp()
-        self.project_group = self.factory.makeProject()
-        self.public_product = self.factory.makeProduct(
-            project=self.project_group)
+        project_group = self.factory.makeProject()
+        public_product = self.factory.makeProduct(project=project_group)
         self.factory.makeMilestone(
-            product=self.public_product, name='public-milestone')
+            product=public_product, name='public-milestone')
         self.proprietary_product_owner = self.factory.makePerson()
         self.proprietary_product = self.factory.makeProduct(
-            project=self.project_group,
+            project=project_group,
             owner=self.proprietary_product_owner,
             information_type=InformationType.PROPRIETARY)
         self.factory.makeMilestone(
             product=self.proprietary_product, name='proprietary-milestone')
         with person_logged_in(self.proprietary_product_owner):
-            milestone_1, milestone_2 = self.project_group.milestones
+            milestone_1, milestone_2 = project_group.milestones
             if milestone_1.name == 'public-milestone':
                 self.public_projectgroup_milestone = milestone_1
                 self.proprietary_projectgroup_milestone = milestone_2
@@ -580,7 +579,7 @@ class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_projectgroup_milestone = milestone_1
 
     expected_get_permissions = {
-        CheckerPublic: set((
+        'launchpad.View': set((
             '_getOfficialTagClause', 'active', 'addBugSubscription',
             'addBugSubscriptionFilter', 'addSubscription',
             'bug_subscriptions', 'bugtasks', 'closeBugsAndBlueprints',
@@ -609,3 +608,69 @@ class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
         checker = getChecker(self.public_projectgroup_milestone)
         self.checkPermissions(
             self.expected_set_permissions, checker.set_permissions, 'set')
+
+    def assertAccessAuthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. No exception
+        # should be raised.
+        for name in attribute_names:
+            # class Milestone does not implement all attributes defined by
+            # class IMilestone. AttributeErrors caused by attempts to
+            # access these attribues are not relevant here: We simply
+            # want to be sure that no Unauthorized error is raised.
+            try:
+                getattr(obj, name)
+            except AttributeError:
+                pass
+
+    def assertAccessUnauthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, getattr, obj, name)
+
+    def test_access_for_anonymous(self):
+        # Anonymous users have access to public project group milestones.
+        with person_logged_in(ANONYMOUS):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_projectgroup_milestone)
+
+            # ...but not to private project group milestones.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_ordinary_user(self):
+        # Regular users have to public project group milestones.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_projectgroup_milestone)
+
+            # ...but not to private project group milestones.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_user_with_grant_for_private_product(self):
+        # Users with a policy grant for a private product have access
+        # to private project group milestones.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.proprietary_product, user, self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_product_owner(self):
+        # The owner of a private product can access a rpivate project group
+        # milestone.
+        with person_logged_in(self.proprietary_product_owner):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
