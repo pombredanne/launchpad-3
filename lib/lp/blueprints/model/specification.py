@@ -577,28 +577,10 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         else:
             return False
 
-    # NB NB If you change this definition, please update the equivalent
-    # DB constraint Specification.specification_start_recorded_chk
-    # We choose to define "started" as the set of delivery states NOT
-    # in the values we select. Another option would be to say "anything less
-    # than a threshold" and to comment the dbschema that "anything not
-    # started should be less than the threshold". We'll see how maintainable
-    # this is.
-    started_clause = """
-        Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
-        (Specification.implementation_status = %s AND
-         Specification.definition_status = %s)
-        """ % sqlvalues(SpecificationImplementationStatus.UNKNOWN.value,
-                        SpecificationImplementationStatus.NOTSTARTED.value,
-                        SpecificationImplementationStatus.DEFERRED.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationDefinitionStatus.APPROVED.value)
-
     @property
     def is_started(self):
         """See ISpecification. This is a code implementation of the
-        SQL in self.started_clause
+        SQL in spec_started_clause
         """
         return (self.implementation_status not in [
                     SpecificationImplementationStatus.UNKNOWN,
@@ -1337,6 +1319,13 @@ def get_specification_filters(filter):
     return clauses
 
 
+# NB NB If you change this definition, please update the equivalent
+# DB constraint Specification.specification_start_recorded_chk
+# We choose to define "started" as the set of delivery states NOT
+# in the values we select. Another option would be to say "anything less
+# than a threshold" and to comment the dbschema that "anything not
+# started should be less than the threshold". We'll see how maintainable
+# this is.
 spec_started_clause = Or(Not(Specification.implementation_status.is_in([
     SpecificationImplementationStatus.UNKNOWN,
     SpecificationImplementationStatus.NOTSTARTED,

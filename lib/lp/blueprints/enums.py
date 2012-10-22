@@ -36,10 +36,10 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     feature.
 
     Note that some of the states associated with this schema correlate
-    to a "not started" definition. See Specification.started_clause for
-    further information, and make sure that it is updated (together with
-    the relevant database checks) if additional states are added that
-    are also "not started".
+    to a "not started" definition. See spec_started_clause for further
+    information, and make sure that it is updated (together with the relevant
+    database checks) if additional states are added that are also "not
+    started".
     """
     # The `UNKNOWN` state is considered "not started"
     UNKNOWN = DBItem(0, """
