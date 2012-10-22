@@ -116,15 +116,14 @@ class with_timeout:
         """Wraps the method."""
         def call_with_timeout(*args, **kwargs):
             # Ensure that we have a timeout before we start the thread
-            if getattr(self.timeout, '__call__', None):
+            timeout = self.timeout
+            if getattr(timeout, '__call__', None):
                 # timeout may be a method or a function on the calling
                 # instance class.
                 if args:
-                    timeout = self.timeout(args[0])
+                    timeout = timeout(args[0])
                 else:
-                    timeout = self.timeout()
-            else:
-                timeout = self.timeout
+                    timeout = timeout()
             t = ThreadCapturingResult(f, args, kwargs)
             t.start()
             t.join(timeout)
