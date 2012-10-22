@@ -207,6 +207,7 @@ class TestPersonIndexView(BrowserTestCase):
 
     def test_assigned_blueprints(self):
         person = self.factory.makePerson()
+
         def make_started_spec(information_type):
             enum = SpecificationImplementationStatus
             return self.factory.makeSpecification(

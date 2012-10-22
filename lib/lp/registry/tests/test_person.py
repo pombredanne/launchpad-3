@@ -1835,9 +1835,8 @@ class TestSpecifications(TestCaseWithFactory):
         owner = notstarted.owner
         started = self.factory.makeSpecification(
             owner=owner, implementation_status=enum.STARTED)
-        implemented = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             owner=owner, implementation_status=enum.IMPLEMENTED)
-
         specs = list(owner.specifications(owner, in_progress=True))
         self.assertEqual([started], specs)
 
