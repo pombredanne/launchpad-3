@@ -65,6 +65,32 @@ Same thing if a function decorated using @with_timeout is called.
       ...
     RequestExpired: request expired.
 
+@with_timeout allows the actual timeout value to be specified, either as a
+numeric argument or a function argument returning the required value. Here we
+specify a timeout of 2 seconds to allow the called function to complete
+successfully.
+
+    >>> @with_timeout(timeout=2)
+    ... def wait_a_little_more():
+    ...     time.sleep(1)
+    >>> wait_a_little_more()
+
+    >>> def _timeout():
+    ...     return 2
+    >>> @with_timeout(timeout=_timeout)
+    ... def wait_a_little_again():
+    ...     time.sleep(1)
+    >>> wait_a_little_again()
+
+    >>> class Foo:
+    ...     @property
+    ...     def _timeout(self):
+    ...         return 2
+    ...     @with_timeout(timeout=lambda self: self._timeout)
+    ...     def wait_a_little(self):
+    ...         time.sleep(1)
+    >>> Foo().wait_a_little()
+
 If there is no db_statement_timeout, then the default timeout is None
 and a TimeoutError is never raised.
 
