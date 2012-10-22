@@ -14,6 +14,7 @@ __all__ = [
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
+    'spec_started_clause',
     ]
 
 from lazr.lifecycle.event import (
@@ -1334,3 +1335,16 @@ def get_specification_filters(filter):
             # A string in the filter is a text search filter.
             clauses.append(fti_search(Specification, constraint))
     return clauses
+
+
+spec_started_clause = Or(Not(Specification.implementation_status.is_in([
+    SpecificationImplementationStatus.UNKNOWN,
+    SpecificationImplementationStatus.NOTSTARTED,
+    SpecificationImplementationStatus.DEFERRED,
+    SpecificationImplementationStatus.INFORMATIONAL,
+    ])),
+    And(Specification.implementation_status ==
+            SpecificationImplementationStatus.INFORMATIONAL,
+        Specification.definition_status ==
+            SpecificationDefinitionStatus.APPROVED
+    ))

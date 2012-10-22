@@ -1826,3 +1826,50 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual([spec2, spec3, spec],
                 list(owner.specifications(owner,
                      sort=Desc(Specification.name))))
+
+    def test_in_progress(self):
+        # In-progress filters to exclude not-started and completed.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        started = self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.STARTED)
+        implemented = self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.IMPLEMENTED)
+
+        specs = list(owner.specifications(owner, in_progress=True))
+        self.assertEqual([started], specs)
+
+    def test_in_progress_all(self):
+        # SpecificationFilter.ALL overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.ALL], in_progress=True))
+        self.assertEqual([notstarted], specs)
+
+    def test_complete_overrides_in_progress(self):
+        # SpecificationFilter.COMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        started = self.factory.makeSpecification(
+            implementation_status=enum.STARTED)
+        owner = started.owner
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED, owner=owner)
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.COMPLETE], in_progress=True))
+        self.assertEqual([implemented], specs)
+
+    def test_incomplete_overrides_in_progress(self):
+        # SpecificationFilter.INCOMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.INCOMPLETE],
+            in_progress=True))
+        self.assertEqual([notstarted], specs)
