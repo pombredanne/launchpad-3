@@ -2826,17 +2826,18 @@ class Person(
                         Archive.purpose == ArchivePurpose.PRIMARY),
                     order_by=[spph.distroseriesID,
                               SourcePackageRelease.sourcepackagenameID,
-                              spph.datecreated, spph.id],
+                              Desc(spph.datecreated), Desc(spph.id)],
                     distinct=(
                         spph.distroseriesID,
                         SourcePackageRelease.sourcepackagenameID)
                     ))).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
 
         def load_related_objects(rows):
             bulk.load_related(
                 SourcePackageRelease, rows, ['sourcepackagereleaseID'])
-            bulk.load_related(Archive, rows, ['upload_archiveID'])
+            bulk.load_related(Archive, rows, ['archiveID'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
