@@ -607,27 +607,25 @@ class CommonMenuLinks:
     def maintained(self):
         target = '+maintained-packages'
         text = 'Maintained packages'
-        enabled = bool(self.person.getLatestMaintainedPackages())
+        enabled = self.person.hasMaintainedPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        enabled = bool(
-            self.person.getLatestUploadedButNotMaintainedPackages())
+        enabled = self.person.hasUploadedButNotMaintainedPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
         target = '+ppa-packages'
         text = 'Related PPA packages'
-        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        enabled = self.person.hasUploadedPPAPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def synchronised(self):
         target = '+synchronised-packages'
         text = 'Synchronised packages'
-        enabled = bool(
-            self.person.getLatestSynchronisedPublishings())
+        enabled = self.person.hasSynchronisedPublishings()
         return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
