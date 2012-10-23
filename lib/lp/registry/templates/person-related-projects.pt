@@ -46,19 +46,19 @@
                tal:content="project/title">
             </a>
           </td>
-          <td style="text-align: right">
+          <td>
             <a tal:attributes="href string:${project/url}/+bugs"
-               tal:content="project/bug_count">
+               class="sprite bug action-icon">
             </a>
           </td>
-          <td style="text-align: right">
+          <td>
             <a tal:attributes="href string:${project/url}/+specs"
-               tal:content="project/spec_count">
+               class="sprite blueprint action-icon">
             </a>
           </td>
-          <td style="text-align: right">
+          <td>
             <a tal:attributes="href string:${project/url}/+questions"
-               tal:content="project/question_count">
+               class="sprite question action-icon">
             </a>
           </td>
         </tr>

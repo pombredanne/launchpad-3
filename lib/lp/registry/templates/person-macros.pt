@@ -167,14 +167,14 @@
           </tal:not_failed>
       </tal:built>
     </td>
-    <td style="text-align: right">
+    <td>
       <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
-         tal:content="spr/open_bugs">
+         class="sprite bug action-icon">
       </a>
     </td>
-    <td style="text-align: right">
+    <td>
       <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+questions"
-         tal:content="spr/open_questions">
+         class="sprite question action-icon">
       </a>
     </td>
   </tal:define>

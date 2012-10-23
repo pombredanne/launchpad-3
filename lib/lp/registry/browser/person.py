@@ -113,7 +113,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -3412,11 +3411,8 @@ class BaseWithStats:
     failed_builds = None
     needs_building = None
 
-    def __init__(self, object, open_bugs, open_questions,
-                 failed_builds, needs_building):
+    def __init__(self, object, failed_builds, needs_building):
         self.context = object
-        self.open_bugs = open_bugs
-        self.open_questions = open_questions
         self.failed_builds = failed_builds
         self.needs_building = needs_building
 
@@ -3657,28 +3653,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
-        distro_packages = [
-            package_release.distrosourcepackage
-            for package_release in package_releases]
-        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, distro_packages)
-        open_bugs = {}
-        for bug_count in package_bug_counts:
-            distro_package = bug_count['package']
-            open_bugs[distro_package] = bug_count['open']
-
-        question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getOpenQuestionCountByPackages(
-            distro_packages)
-
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             package_releases)
 
         return [
             SourcePackageReleaseWithStats(
-                package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage],
-                builds_by_package[package],
+                package, builds_by_package[package],
                 needs_build_by_package[package])
             for package in package_releases]
 
@@ -3687,30 +3667,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         filtered_spphs = [
             spph for spph in publishings if
             check_permission('launchpad.View', spph)]
-        distro_packages = [
-            spph.meta_sourcepackage.distribution_sourcepackage
-            for spph in filtered_spphs]
-        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, distro_packages)
-        open_bugs = {}
-        for bug_count in package_bug_counts:
-            distro_package = bug_count['package']
-            open_bugs[distro_package] = bug_count['open']
-
-        question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getOpenQuestionCountByPackages(
-            distro_packages)
-
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             [spph.sourcepackagerelease for spph in filtered_spphs])
 
         return [
             SourcePackagePublishingHistoryWithStats(
-                spph,
-                open_bugs[spph.meta_sourcepackage.distribution_sourcepackage],
-                package_question_counts[
-                    spph.meta_sourcepackage.distribution_sourcepackage],
-                builds_by_package[spph.sourcepackagerelease],
+                spph, builds_by_package[spph.sourcepackagerelease],
                 needs_build_by_package[spph.sourcepackagerelease])
             for spph in filtered_spphs]
 
