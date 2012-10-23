@@ -227,7 +227,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         # The spec for firefox (not a gnome product) is not included
         # in the specifications, while the other two specs are included.
         self.assertEqual(
-            [spec.name for spec in gnome_milestone.specifications],
+            [spec.name for spec in gnome_milestone.getSpecifications(None)],
             ['evolution-specification', 'gnomebaker-specification'])
 
     def _createProductBugtask(self, product_name, milestone_name):

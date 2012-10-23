@@ -718,6 +718,15 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewProjectMilestone(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = IProjectGroupMilestone
+
+    def __init__(self, obj):
+        super(ViewProjectMilestone, self).__init__(
+            obj, obj.product, 'launchpad.View')
+
+
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
