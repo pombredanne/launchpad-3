@@ -2374,6 +2374,32 @@ class TestCopyPackage(TestCaseWithFactory):
                 source_name, version, target_archive, to_pocket.name,
                 target_archive.owner)
 
+    def test_copyPackage_with_source_series_and_pocket(self):
+        # The from_series and from_pocket parameters cause copyPackage to
+        # select a matching source publication.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        other_series = self.factory.makeDistroSeries(
+            distribution=source_archive.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        with person_logged_in(source_archive.owner):
+            source.copyTo(
+                other_series, PackagePublishingPocket.UPDATES, source_archive)
+            source.requestDeletion(source_archive.owner)
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket.name,
+                include_binaries=False, person=target_archive.owner,
+                from_series=source.distroseries.name,
+                from_pocket=source.pocket.name)
+
+        # There should be one copy job, with the source distroseries and
+        # pocket set.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(source.distroseries, copy_job.source_distroseries)
+        self.assertEqual(source.pocket, copy_job.source_pocket)
+
     def test_copyPackages_with_single_package(self):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
