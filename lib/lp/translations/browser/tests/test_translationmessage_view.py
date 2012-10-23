@@ -19,7 +19,6 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     anonymous_logged_in,
-    monkey_patch,
     person_logged_in,
     TestCaseWithFactory,
     )
