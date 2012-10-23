@@ -484,13 +484,13 @@ class TestBadSubmission(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    from lp.translations.browser.translationmessage import convert_translationmessage_to_submission
-
-    def getSubmission(self):
+    def getSubmission(self, good=True):
         original_translations = {0: self.getUniqueString()}
         pofile = self.factory.makePOFile()
         current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         message = self.factory.makeSuggestion(pofile=pofile)
+        if good:
+            message.setPOFile(pofile)
         submission = convert_translationmessage_to_submission(
             message=message,
             current_message=current,
@@ -502,6 +502,10 @@ class TestBadSubmission(TestCaseWithFactory):
     def test_submission_traversable_guard(self):
         # If a submission doesn't have a sequence greater than 1, it's not
         # traversable.
-        sub = self.getSubmission()
-        self.assertEqual(0, sub.translationmessage.sequence)
-        self.assertFalse(sub.is_traversable)
+        bad_sub = self.getSubmission(good=False)
+        self.assertEqual(0, bad_sub.translationmessage.sequence)
+        self.assertFalse(bad_sub.is_traversable)
+
+        good_sub = self.getSubmission()
+        self.assertNotEqual(0, good_sub.translationmessage.sequence)
+        self.assertTrue(good_sub.is_traversable)
