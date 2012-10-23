@@ -73,7 +73,7 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
     setupBrowserForUser,
-    )
+    find_tags_by_class)
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -924,8 +924,12 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
         expected_base = '/%s/+source/%s' % (
             self.spph.distroseries.distribution.name,
             self.spph.source_package_name)
-        self.assertIn('<a href="%s/+bugs">' % expected_base, html)
-        self.assertIn('<a href="%s/+questions">' % expected_base, html)
+        bugs_link = find_tags_by_class(html, 'sprite bug action-icon', True)
+        self.assertEqual('%s/+bugs' % expected_base, bugs_link.get('href'))
+        questions_link = find_tags_by_class(
+            html, 'sprite question action-icon', True)
+        self.assertEqual(
+            '%s/+questions' % expected_base, questions_link.get('href'))
 
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):

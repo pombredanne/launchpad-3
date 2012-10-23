@@ -96,8 +96,19 @@ to the page that lists maintained packages in batches.
     1...5 of 7 results
     ...
     Name        Uploaded to  Version   When        Failures   Bugs  Questions
-    alsa-utils  Debian Sid   1.0.9a-4  2005-07-01  None       0     0
+    alsa-utils  Debian Sid   1.0.9a-4  2005-07-01  None
     ...
+
+    >>> bug_link = find_tags_by_class(
+    ...     browser.contents, 'sprite bug action-icon', True)
+    >>> print bug_link.get('href')
+    /debian/+source/alsa-utils/+bugs
+
+    >>> question_link = find_tags_by_class(
+    ...     browser.contents, 'sprite question action-icon', True)
+    >>> print question_link.get('href')
+    /debian/+source/alsa-utils/+questions
+
 
 The Maintained packages page only has data if the person or team has
 maintained packages to show. No-priv does not maintain packages.
@@ -121,8 +132,19 @@ page that lists uploaded packages in batches.
     1...5 of 6 results
     ...
     Name    Uploaded to          Version When        Failures  Bugs Questions
-    foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386      0    0
+    foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386
     ...
+
+    >>> bug_link = find_tags_by_class(
+    ...     browser.contents, 'sprite bug action-icon', True)
+    >>> print bug_link.get('href')
+    /ubuntu/+source/foobar/+bugs
+
+    >>> question_link = find_tags_by_class(
+    ...     browser.contents, 'sprite question action-icon', True)
+    >>> print question_link.get('href')
+    /ubuntu/+source/foobar/+questions
+
 
 The navigation link to "PPA packages" takes the user to the
 page that lists PPA packages in batches.
@@ -221,14 +243,14 @@ The logged-in user's case:
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 The not logged-in (anonymous) user's case:
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 However no-priv himself and any Launchpad Administrator can still see
 both packages:
@@ -237,16 +259,16 @@ both packages:
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(nopriv_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 Let's move the publication of source1 from mark's public archive to his
 private one and the view the page again.
@@ -261,12 +283,12 @@ private one and the view the page again.
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 Notice that the source1 package is still appearing because it is also
 published in some non-private archives, which override the private nature
@@ -309,12 +331,12 @@ archive is public.
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 Even after the package is superseded, the package remains visibile in
 the listings.
@@ -327,12 +349,12 @@ the listings.
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 
 Packages deleted from a PPA
@@ -348,9 +370,9 @@ First list the packages in the PPA.
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 Then delete the 'source2' package.
 
@@ -384,9 +406,9 @@ appears.
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
-        ...ago None - -
+        ...ago None
 
 Please note also that disabled archives are not viewable by anonymous users.
 

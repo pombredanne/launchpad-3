@@ -930,7 +930,7 @@
         <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
             name="+projects"
-            new_name="+related-software"/>
+            new_name="+related-projects"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"

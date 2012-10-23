@@ -228,14 +228,14 @@
           </tal:not_failed>
       </tal:built>
     </td>
-    <td style="text-align: right">
+    <td>
       <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+bugs"
-         tal:content="spph/open_bugs">
+         class="sprite bugs action-icon">
       </a>
     </td>
-    <td style="text-align: right">
+    <td>
       <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+questions"
-         tal:content="spph/open_questions">
+         class="sprite question action-icon">
       </a>
     </td>
   </tal:define>
