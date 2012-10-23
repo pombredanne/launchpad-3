@@ -679,7 +679,8 @@ def _build_query(params):
         if clause:
             extra_clauses.append(clause)
             decorators.append(decorator)
-        extra_clauses.append(ProductSet.getProductPrivacyFilter(params.user))
+        if params.product is not None:
+            extra_clauses.append(ProductSet.getProductPrivacyFilter(params.user))
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
