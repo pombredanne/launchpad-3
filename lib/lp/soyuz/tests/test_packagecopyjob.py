@@ -1478,6 +1478,22 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(override, pcj.getSourceOverride())
 
+    def test_findSourcePublication_with_source_series_and_pocket(self):
+        # The source_distroseries and source_pocket parameters cause
+        # findSourcePublication to select a matching source publication.
+        spph = self.publisher.getPubSource()
+        other_series = self.factory.makeDistroSeries(
+            distribution=spph.distroseries.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        spph.copyTo(
+            other_series, PackagePublishingPocket.PROPOSED, spph.archive)
+        spph.requestDeletion(spph.archive.owner)
+        job = self.createCopyJobForSPPH(
+            spph, spph.archive, spph.archive,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            source_distroseries=spph.distroseries, source_pocket=spph.pocket)
+        self.assertEqual(spph, job.findSourcePublication())
+
     def test_getPolicyImplementation_returns_policy(self):
         # getPolicyImplementation returns the ICopyPolicy that was
         # chosen for the job.

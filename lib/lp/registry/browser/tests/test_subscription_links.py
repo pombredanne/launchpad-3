@@ -163,9 +163,10 @@ class ProjectGroupMilestone(TestCaseWithFactory):
             # IStructuralSubscriptionTargetHelper would attempt to look them
             # up in the database, raising an exception.
             project = self.factory.makeProject()
-            self.factory.makeProduct(project=project)
+            product = self.factory.makeProduct(project=project)
             mixin = StructuralSubscriptionMenuMixin()
-            mixin.context = ProjectMilestone(project, '11.04', None, True)
+            mixin.context = ProjectMilestone(
+                project, '11.04', None, True, product)
             # Before bug 778689 was fixed, this would raise an exception.
             mixin._enabled
 

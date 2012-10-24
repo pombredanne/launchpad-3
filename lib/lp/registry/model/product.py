@@ -92,11 +92,11 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
@@ -138,6 +138,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
@@ -193,10 +194,10 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -752,6 +753,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
@@ -1357,47 +1371,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        base = 'Specification.product = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
+        clauses = [Specification.product == self,
+                   get_specification_privacy_filter(user)]
+        clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(query)
+            results = self._preload_specifications_people(clauses)
         else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
+            results = Store.of(self).find(Specification, *clauses)
         results.order_by(order)
         if quantity is not None:
             results = results[:quantity]
@@ -1533,6 +1513,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def userCanView(self, user):
         """See `IProductPublic`."""
+        if getFeatureFlag('disclosure.private_project.traversal_override'):
+            return True
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
@@ -1751,6 +1733,15 @@ class ProductSet:
         return Or(Product._information_type == InformationType.PUBLIC,
                   Product._information_type == None,
                   Product.id.is_in(Select(Product.id, granted_products)))
+
+    @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
 
     @classmethod
     def get_all_active(cls, user, eager_load=True):

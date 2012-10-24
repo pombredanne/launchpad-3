@@ -29,7 +29,6 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
@@ -155,6 +154,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesView,
     ITimelineProductSeries,
     )
 from lp.registry.interfaces.projectgroup import (
@@ -433,7 +433,7 @@ class ViewProduct(AuthorizationBase):
         return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
-        return self.obj.information_type in PUBLIC_INFORMATION_TYPES
+        return self.obj.userCanView(None)
 
 
 class ChangeProduct(ViewProduct):
@@ -716,6 +716,15 @@ class AdminProductTranslations(AuthorizationBase):
                 user.isOneOfDrivers(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
+
+
+class ViewProjectMilestone(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = IProjectGroupMilestone
+
+    def __init__(self, obj):
+        super(ViewProjectMilestone, self).__init__(
+            obj, obj.product, 'launchpad.View')
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
@@ -1286,9 +1295,26 @@ class DriveProduct(SeriesDrivers):
             or False)
 
 
-class ViewProductSeries(AnonymousAuthorization):
+class ViewProductSeries(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProductSeriesView
 
-    usedfor = IProductSeries
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class ChangeProductSeries(ViewProductSeries):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProductSeriesView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditProductSeries(EditByOwnersOrAdmins):

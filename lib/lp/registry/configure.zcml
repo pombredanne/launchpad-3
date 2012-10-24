@@ -1038,6 +1038,7 @@
                 displayname
                 distribution
                 distroseries
+                getSpecifications
                 getTags
                 getTagsData
                 name
@@ -1045,7 +1046,6 @@
                 product_release
                 productseries
                 series_target
-                specifications
                 summary
                 target
                 title
@@ -1084,6 +1084,10 @@
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
 
     <!-- IMilestoneSet -->
 
@@ -1098,9 +1102,14 @@
 
     <class
         class="lp.registry.model.milestone.ProjectMilestone">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
     <class
         class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
         <allow
@@ -1500,10 +1509,16 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+        <require
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1514,16 +1529,17 @@
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>

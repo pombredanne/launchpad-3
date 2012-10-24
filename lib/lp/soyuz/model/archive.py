@@ -1639,13 +1639,15 @@ class Archive(SQLBase):
             sources, to_pocket, to_series, include_binaries,
             person=person)
 
-    def _validateAndFindSource(self, from_archive, source_name, version):
+    def _validateAndFindSource(self, from_archive, source_name, version,
+                               from_series=None, from_pocket=None):
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True).first()
+            name=source_name, version=version, exact_match=True,
+            distroseries=from_series, pocket=from_pocket).first()
         if source is None:
             raise CannotCopy(
                 "%s is not published in %s." %
@@ -1664,15 +1666,22 @@ class Archive(SQLBase):
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False, auto_approve=False):
+                    sponsored=None, unembargo=False, auto_approve=False,
+                    from_pocket=None, from_series=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
+        if from_pocket:
+            from_pocket = self._text_to_pocket(from_pocket)
+        if from_series:
+            from_series = self._text_to_series(
+                from_series, distribution=from_archive.distribution)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
         source = self._validateAndFindSource(
-            from_archive, source_name, version)
+            from_archive, source_name, version, from_series=from_series,
+            from_pocket=from_pocket)
         if series is None:
             series = source.distroseries
         check_copy_permissions(person, self, series, pocket, [source])
@@ -1685,7 +1694,8 @@ class Archive(SQLBase):
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
             sponsored=sponsored, unembargo=unembargo,
-            auto_approve=auto_approve)
+            auto_approve=auto_approve, source_distroseries=from_series,
+            source_pocket=from_pocket)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
@@ -1709,7 +1719,7 @@ class Archive(SQLBase):
                 from_archive,
                 self,
                 series if series is not None else source.distroseries,
-                PackagePublishingPocket.RELEASE
+                pocket,
                 )
             copy_tasks.append(task)
 

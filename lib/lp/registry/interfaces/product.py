@@ -942,6 +942,13 @@ class IProductSet(Interface):
     all_active = Attribute(
         "All the active products, sorted newest first.")
 
+    def get_users_private_products(user):
+        """Get users non-public products.
+
+        :param user: Which user are we searching products for.
+        :return: An iterable of IProduct
+        """
+
     def get_all_active(eager_load=True):
         """Get all active products.
 

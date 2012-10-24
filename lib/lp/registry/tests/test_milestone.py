@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -17,9 +17,13 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
 from lp.app.errors import NotFoundError
-from lp.registry.enums import SharingPermission
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.services import IService
+from lp.registry.enums import (
+    BugSharingPolicy,
+    SharingPermission,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -136,14 +140,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'active', 'bug_subscriptions', 'bugtasks', 'code_name',
             'dateexpected', 'displayname', 'distribution', 'distroseries',
             '_getOfficialTagClause', 'getBugSummaryContextWhereClause',
-            'getBugTaskWeightFunction', 'getSubscription',
-            'getSubscriptions', 'getTags', 'getTagsData',
+            'getBugTaskWeightFunction', 'getSpecifications',
+            'getSubscription', 'getSubscriptions', 'getTags', 'getTagsData',
             'getUsedBugTagsWithOpenCounts', 'name', 'official_bug_tags',
             'parent_subscription_target', 'product', 'product_release',
             'productseries', 'searchTasks', 'series_target',
-            'specifications', 'summary', 'target', 'target_type_display',
-            'title', 'userCanAlterBugSubscription',
-            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            'summary', 'target', 'target_type_display', 'title',
+            'userCanAlterBugSubscription', 'userCanAlterSubscription',
+            'userHasBugSubscriptions',
             )),
         'launchpad.AnyAllowedPerson': set((
             'addBugSubscription', 'addBugSubscriptionFilter',
@@ -216,7 +220,7 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             self.assertRaises(Unauthorized, setattr, obj, name, None)
 
     def test_access_for_anonymous(self):
-        # Anonymous users have access to to public attributes of
+        # Anonymous users have access to public attributes of
         # milestones for private and public products.
         with person_logged_in(ANONYMOUS):
             self.assertAccessAuthorized(
@@ -421,7 +425,8 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
             owner=self.owner,
             product=self.product,
             )
-        self.assertContentEqual(specifications, self.milestone.specifications)
+        self.assertContentEqual(specifications,
+                                self.milestone.getSpecifications(None))
 
 
 class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
@@ -450,12 +455,14 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     def test_milestones_on_product(self):
         spec, target_milestone = self._create_milestones_on_target(
             product=self.factory.makeProduct())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_distribution(self):
         spec, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
-        self.assertContentEqual([spec], target_milestone.specifications)
+        self.assertContentEqual([spec],
+                                target_milestone.getSpecifications(None))
 
     def test_milestones_on_project(self):
         # A Project (Project Group) milestone contains all specifications
@@ -466,7 +473,53 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         spec, target_milestone = self._create_milestones_on_target(
             product=product)
         milestone = projectgroup.getMilestone(name=target_milestone.name)
-        self.assertContentEqual([spec], milestone.specifications)
+        self.assertContentEqual([spec], milestone.getSpecifications(None))
+
+    def makeMixedMilestone(self):
+        projectgroup = self.factory.makeProject()
+        owner = self.factory.makePerson()
+        public_product = self.factory.makeProduct(project=projectgroup)
+        public_milestone = self.factory.makeMilestone(product=public_product)
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY,
+            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
+        target_milestone = self.factory.makeMilestone(
+            product=product, name=public_milestone.name)
+        milestone = projectgroup.getMilestone(name=public_milestone.name)
+        return milestone, target_milestone, owner
+
+    def test_getSpecifications_milestone_privacy(self):
+        # Ensure getSpecifications respects milestone privacy.
+        # This looks wrong, because the specification is actually public, and
+        # we don't normally hide specifications based on the visibility of
+        # their products.  But we're not trying to hide the specification.
+        # We're hiding the fact that this specification is associated with
+        # a proprietary Product milestone.  We create a proprietary product
+        # because that's the only way to get a proprietary milestone.
+        milestone, target_milestone, owner = self.makeMixedMilestone()
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(milestone=target_milestone)
+        self.assertContentEqual([],
+                                milestone.getSpecifications(None))
+        self.assertContentEqual([spec],
+                                milestone.getSpecifications(owner))
+
+    def test_bugtasks_milestone_privacy(self):
+        # Ensure bugtasks respects milestone privacy.
+        # This looks wrong, because the bugtask is actually public, and we
+        # don't normally hide bugtasks based on the visibility of their
+        # products.  But we're not trying to hide the bugtask.  We're hiding
+        # the fact that this bugtask is associated with a proprietary Product
+        # milestone.  We create a proprietary product because that's the only
+        # way to get a proprietary milestone.
+        milestone, target_milestone, owner = self.makeMixedMilestone()
+        with person_logged_in(owner):
+            bugtask = self.factory.makeBugTask(
+                target=target_milestone.product)
+        with person_logged_in(bugtask.owner):
+            bugtask.transitionToMilestone(target_milestone, owner)
+        self.assertContentEqual([], milestone.bugtasks(None))
+        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
@@ -477,4 +530,147 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=milestone.product)
         self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
-        self.assertContentEqual([], milestone.specifications)
+        self.assertContentEqual([], milestone.getSpecifications(None))
+
+
+class TestMilestoneInformationType(TestCaseWithFactory):
+    """Tests for information_type and Milestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_from_product(self):
+        # Milestones should inherit information_type from its product."""
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            self.assertEqual(
+                IInformationType(milestone).information_type,
+                information_type)
+
+
+class ProjectMilestoneSecurityAdaperTestCase(TestCaseWithFactory):
+    """A TestCase for the security adapter of IProjectGroupMilestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProjectMilestoneSecurityAdaperTestCase, self).setUp()
+        project_group = self.factory.makeProject()
+        public_product = self.factory.makeProduct(project=project_group)
+        self.factory.makeMilestone(
+            product=public_product, name='public-milestone')
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            project=project_group,
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.factory.makeMilestone(
+            product=self.proprietary_product, name='proprietary-milestone')
+        with person_logged_in(self.proprietary_product_owner):
+            milestone_1, milestone_2 = project_group.milestones
+            if milestone_1.name == 'public-milestone':
+                self.public_projectgroup_milestone = milestone_1
+                self.proprietary_projectgroup_milestone = milestone_2
+            else:
+                self.public_projectgroup_milestone = milestone_2
+                self.proprietary_projectgroup_milestone = milestone_1
+
+    expected_get_permissions = {
+        'launchpad.View': set((
+            '_getOfficialTagClause', 'active', 'addBugSubscription',
+            'addBugSubscriptionFilter', 'addSubscription',
+            'bug_subscriptions', 'bugtasks', 'closeBugsAndBlueprints',
+            'code_name', 'createProductRelease', 'dateexpected',
+            'destroySelf', 'displayname', 'distribution', 'distroseries',
+            'getBugTaskWeightFunction', 'getSpecifications',
+            'getSubscription', 'getSubscriptions',
+            'getUsedBugTagsWithOpenCounts', 'id', 'name',
+            'official_bug_tags', 'parent_subscription_target', 'product',
+            'product_release', 'productseries', 'removeBugSubscription',
+            'searchTasks', 'series_target', 'summary', 'target',
+            'target_type_display', 'title', 'userCanAlterBugSubscription',
+            'userCanAlterSubscription', 'userHasBugSubscriptions')),
+        }
+
+    def test_get_permissions(self):
+        checker = getChecker(self.public_projectgroup_milestone)
+        self.checkPermissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    # Project milestones are read-only objects, so no set permissions.
+    expected_set_permissions = {
+        }
+
+    def test_set_permissions(self):
+        checker = getChecker(self.public_projectgroup_milestone)
+        self.checkPermissions(
+            self.expected_set_permissions, checker.set_permissions, 'set')
+
+    def assertAccessAuthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. No exception
+        # should be raised.
+        for name in attribute_names:
+            # class Milestone does not implement all attributes defined by
+            # class IMilestone. AttributeErrors caused by attempts to
+            # access these attribues are not relevant here: We simply
+            # want to be sure that no Unauthorized error is raised.
+            try:
+                getattr(obj, name)
+            except AttributeError:
+                pass
+
+    def assertAccessUnauthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, getattr, obj, name)
+
+    def test_access_for_anonymous(self):
+        # Anonymous users have access to public project group milestones.
+        with person_logged_in(ANONYMOUS):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_projectgroup_milestone)
+
+            # ...but not to private project group milestones.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_ordinary_user(self):
+        # Regular users have to public project group milestones.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_projectgroup_milestone)
+
+            # ...but not to private project group milestones.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_user_with_grant_for_private_product(self):
+        # Users with a policy grant for a private product have access
+        # to private project group milestones.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.proprietary_product, user, self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)
+
+    def test_access_for_product_owner(self):
+        # The owner of a private product can access a rpivate project group
+        # milestone.
+        with person_logged_in(self.proprietary_product_owner):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_projectgroup_milestone)

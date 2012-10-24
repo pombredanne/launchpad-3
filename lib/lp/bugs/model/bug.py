@@ -93,6 +93,7 @@ from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
@@ -323,7 +324,7 @@ def update_bug_heat(bug_ids):
 class Bug(SQLBase, InformationTypeMixin):
     """A bug."""
 
-    implements(IBug)
+    implements(IBug, IInformationType)
 
     _defaultOrder = '-id'
 
@@ -1099,14 +1100,52 @@ class Bug(SQLBase, InformationTypeMixin):
         """
         return get_also_notified_subscribers(self, recipients, level)
 
-    def getBugNotificationRecipients(self,
-                                     level=BugNotificationLevel.LIFECYCLE):
-        """See `IBug`."""
+    def _getBugNotificationRecipients(self, level):
+        """Get the recipients for the BugNotificationLevel."""
         recipients = BugNotificationRecipients()
         self.getDirectSubscribers(
             recipients, level=level, filter_visible=True)
         self.getIndirectSubscribers(recipients, level=level)
         return recipients
+
+    @cachedproperty
+    def _notification_recipients_for_lifecycle(self):
+        """The cached BugNotificationRecipients for LIFECYCLE events."""
+        return self._getBugNotificationRecipients(
+            BugNotificationLevel.LIFECYCLE)
+
+    @cachedproperty
+    def _notification_recipients_for_metadata(self):
+        """The cached BugNotificationRecipients for METADATA events."""
+        return self._getBugNotificationRecipients(
+            BugNotificationLevel.METADATA)
+
+    @cachedproperty
+    def _notification_recipients_for_comments(self):
+        """The cached BugNotificationRecipients for COMMENT events."""
+        return self._getBugNotificationRecipients(
+            BugNotificationLevel.COMMENTS)
+
+    def getBugNotificationRecipients(self,
+                                     level=BugNotificationLevel.LIFECYCLE):
+        """See `IBug`."""
+        recipients = BugNotificationRecipients()
+        if level == BugNotificationLevel.LIFECYCLE:
+            recipients.update(self._notification_recipients_for_lifecycle)
+        elif level == BugNotificationLevel.METADATA:
+            recipients.update(self._notification_recipients_for_metadata)
+        else:
+            recipients.update(self._notification_recipients_for_comments)
+        return recipients
+
+    def clearBugNotificationRecipientsCache(self):
+        cache = get_property_cache(self)
+        if getattr(cache, '_notification_recipients_for_lifecycle', False):
+            del cache._notification_recipients_for_lifecycle
+        if getattr(cache, '_notification_recipients_for_metadata', False):
+            del cache._notification_recipients_for_metadata
+        if getattr(cache, '_notification_recipients_for_comments', False):
+            del cache._notification_recipients_for_comments
 
     def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""

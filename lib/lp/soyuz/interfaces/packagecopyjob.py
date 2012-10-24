@@ -128,7 +128,8 @@ class IPlainPackageCopyJobSource(IJobSource):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None, unembargo=False, auto_approve=False):
+               sponsored=None, unembargo=False, auto_approve=False,
+               source_distroseries=None, source_pocket=None):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -150,6 +151,12 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param auto_approve: if True and the user requesting the sync has
             queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param source_distroseries: The `IDistroSeries` from which to copy
+            the packages. If omitted, copy from any series with a matching
+            version.
+        :param source_pocket: The pocket from which to copy the packages.
+            Must be a member of `PackagePublishingPocket`. If omitted, copy
+            from any pocket with a matching version.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
@@ -227,6 +234,14 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Automatic approval"),
         required=False, readonly=True)
 
+    source_distroseries = Reference(
+        schema=IDistroSeries, title=_('Source DistroSeries.'),
+        required=False, readonly=True)
+
+    source_pocket = Int(
+        title=_("Source package publishing pocket"), required=False,
+        readonly=True)
+
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
 
@@ -235,6 +250,9 @@ class IPlainPackageCopyJob(IRunnableJob):
 
     def getSourceOverride():
         """Get an `ISourceOverride` from the metadata."""
+
+    def findSourcePublication():
+        """Find the appropriate origin `ISourcePackagePublishingHistory`."""
 
     copy_policy = Choice(
         title=_("Applicable copy policy"),
