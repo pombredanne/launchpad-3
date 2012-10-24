@@ -203,6 +203,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -2008,13 +2009,16 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        user = getUtility(ILaunchBag).user
+        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID).config(
+            Person.id == Product._ownerID,
+            privacy_clause).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
