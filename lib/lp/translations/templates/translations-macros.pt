@@ -84,10 +84,13 @@
       <td style="overflow: auto;"
           tal:condition="not:submission/is_local_to_pofile">
         <tal:source content="string:${context/title}" />
-        <a tal:content="submission/pofile/potemplate/displayname"
+        <a tal:condition="submission/is_traversable"
+           tal:content="submission/pofile/potemplate/displayname"
            tal:attributes="href string:${submission/translationmessage/fmt:url}/+translate">
-          Spanish translation for evolution
-        </a> by
+           Spanish translation for evolution </a>
+        <tal:fallback
+          condition="not:submission/is_traversable"
+          content="submission/pofile/potemplate/displayname" /> by
         <a tal:content="submission/person/displayname"
            tal:attributes="href submission/person/fmt:url">Foo Bar</a>
         <span
