@@ -137,6 +137,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
@@ -3449,8 +3450,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """Return a list of project dicts owned or driven by this person.
 
         The number of projects returned is limited by max_results_to_display.
-        A project dict has the following keys: title, url, bug_count,
-        spec_count, and question_count.
+        A project dict has the following keys: title, url, is_owner,
+        is_driver, is_bugsupervisor.
         """
         projects = []
         user = getUtility(ILaunchBag).user
@@ -3466,14 +3467,13 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project = {}
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
-            if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(
-                    pillar.id, 0)
-            else:
-                project['bug_count'] = pillar.searchTasks(
-                    BugTaskSet().open_bugtask_search).count()
-            project['spec_count'] = pillar.specifications(user).count()
-            project['question_count'] = pillar.searchQuestions().count()
+            person = self.context
+            project['is_owner'] = person.inTeam(pillar.owner)
+            project['is_driver'] = person.inTeam(pillar.driver)
+            project['is_bug_supervisor'] = False
+            if IHasBugSupervisor.providedBy(pillar):
+                project['is_bug_supervisor'] = (
+                    person.inTeam(pillar.bug_supervisor))
             projects.append(project)
         return projects
 
