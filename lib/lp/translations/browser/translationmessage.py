@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'BaseTranslationView',
     'contains_translations',
+    'convert_translationmessage_to_submission',
     'CurrentTranslationMessageAppMenus',
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
@@ -1669,6 +1670,7 @@ def convert_translationmessage_to_submission(
     """
 
     submission = Submission()
+    submission.is_traversable = (message.sequence != 0)
     submission.translationmessage = message
     for attribute in ['id', 'language', 'potmsgset', 'date_created']:
         setattr(submission, attribute, getattr(message, attribute))
