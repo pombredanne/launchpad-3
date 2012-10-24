@@ -71,7 +71,8 @@ class TranslationsPerson:
 
     def getTranslationHistory(self, no_older_than=None):
         """See `ITranslationsPerson`."""
-        conditions = (POFileTranslator.person == self.person)
+        conditions = And(
+            POFileTranslator.person == self.person)
         if no_older_than is not None:
             conditions = And(
                 conditions,
@@ -294,10 +295,6 @@ class TranslationsPerson:
 
         ProductSeriesJoin = LeftJoin(
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
