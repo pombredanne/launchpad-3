@@ -1970,17 +1970,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
             policy="insecure")
         self.switchToAdmin()
         self.ubuntu.redirect_release_uploads = True
+        # Don't bother with announcements.
+        self.breezy.changeslist = None
         self.switchToUploader()
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        _, _, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-        body = msg.get_payload(0).get_payload(decode=True)
-        self.assertIn(
-            "Redirecting ubuntu breezy to ubuntu breezy-proposed.", body)
+        self.assertEmail(
+            contents=["Redirecting ubuntu breezy to ubuntu breezy-proposed."],
+            recipients=[])
         [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.NEW, name=u"bar",
             version=u"1.0-1", exact_match=True)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
+
+        queue_item.acceptFromQueue()
+        pop_notifications()
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEmail(
+            contents=["Redirecting ubuntu breezy to ubuntu breezy-proposed."],
+            recipients=[])
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-2", exact_match=True)
         self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
 
 
