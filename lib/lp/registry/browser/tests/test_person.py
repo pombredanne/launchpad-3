@@ -787,18 +787,18 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(True, self.view.has_participations)
 
 
-class TestPersonRelatedSoftwareView(TestCaseWithFactory):
+class TestPersonRelatedPackagesView(TestCaseWithFactory):
     """Test the related software view."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareView, self).setUp()
+        super(TestPersonRelatedPackagesView, self).setUp()
         self.user = self.factory.makePerson()
         self.factory.makeGPGKey(self.user)
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.warty = self.ubuntu.getSeries('warty')
-        self.view = create_initialized_view(self.user, '+related-software')
+        self.view = create_initialized_view(self.user, '+related-packages')
 
     def publishSources(self, archive, maintainer):
         publisher = SoyuzTestPublisher()
@@ -828,7 +828,7 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
-        self.assertEqual('Related software', self.view.page_title)
+        self.assertEqual('Related packages', self.view.page_title)
         self.assertEqual('summary_list_size', self.view._max_results_key)
         self.assertEqual(
             config.launchpad.summary_list_size,
@@ -1019,13 +1019,13 @@ class TestPersonRelatedProjectsView(TestCaseWithFactory):
             self.view.max_results_to_display)
 
 
-class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
-    """The related software views display links to failed builds."""
+class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
+    """The related packages views display links to failed builds."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        super(TestPersonRelatedPackagesFailedBuild, self).setUp()
         self.user = self.factory.makePerson()
 
         # First we need to publish some PPA packages with failed builds
@@ -1064,13 +1064,13 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
                 self.build.id) in html)
 
 
-class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
-    """The related software views display links to synchronised packages."""
+class TestPersonRelatedPackagesSynchronisedPackages(TestCaseWithFactory):
+    """The related packages views display links to synchronised packages."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareSynchronisedPackages, self).setUp()
+        super(TestPersonRelatedPackagesSynchronisedPackages, self).setUp()
         self.user = self.factory.makePerson()
         self.spph = self.factory.makeSourcePackagePublishingHistory()
 

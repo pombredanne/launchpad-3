@@ -7,7 +7,7 @@ person's home page.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-software")
     >>> print browser.title
-    Related software : Mark Shuttleworth
+    Related packages : Mark Shuttleworth
 
 This page is just a summary of the user's packages and will only
 display up to the most recent 30 items in each category.  However, it
@@ -15,7 +15,7 @@ has more links that take the user to batched listings in each category
 where all items can be perused.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'navlinks'))
-    Related software
+    Related packages
     Maintained packages
     Uploaded packages
     Related PPA packages
@@ -95,20 +95,9 @@ to the page that lists maintained packages in batches.
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...5 of 7 results
     ...
-    Name        Uploaded to  Version   When        Failures   Bugs  Questions
+    Name        Uploaded to  Version   When        Failures
     alsa-utils  Debian Sid   1.0.9a-4  2005-07-01  None
     ...
-
-    >>> bug_link = find_tags_by_class(
-    ...     browser.contents, 'sprite bug action-icon', True)
-    >>> print bug_link.get('href')
-    /debian/+source/alsa-utils/+bugs
-
-    >>> question_link = find_tags_by_class(
-    ...     browser.contents, 'sprite question action-icon', True)
-    >>> print question_link.get('href')
-    /debian/+source/alsa-utils/+questions
-
 
 The Maintained packages page only has data if the person or team has
 maintained packages to show. No-priv does not maintain packages.
@@ -131,20 +120,9 @@ page that lists uploaded packages in batches.
     >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
     1...5 of 6 results
     ...
-    Name    Uploaded to          Version When        Failures  Bugs Questions
+    Name    Uploaded to          Version When        Failures
     foobar  Ubuntu Breezy-autotest  1.0  2006-12-01  i386
     ...
-
-    >>> bug_link = find_tags_by_class(
-    ...     browser.contents, 'sprite bug action-icon', True)
-    >>> print bug_link.get('href')
-    /ubuntu/+source/foobar/+bugs
-
-    >>> question_link = find_tags_by_class(
-    ...     browser.contents, 'sprite question action-icon', True)
-    >>> print question_link.get('href')
-    /ubuntu/+source/foobar/+questions
-
 
 The navigation link to "PPA packages" takes the user to the
 page that lists PPA packages in batches.

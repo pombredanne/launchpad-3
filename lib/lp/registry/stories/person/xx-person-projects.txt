@@ -13,8 +13,7 @@ team.
     ubuntutest
     Tomcat
 
-The +related-software page displays a table with links to open bugs,
-unimplemented specs and open questions.
+The +related-projects page displays a table with project names.
 
     >>> anon_browser.getLink('Show related projects').click()
     >>> print anon_browser.title
@@ -23,67 +22,29 @@ unimplemented specs and open questions.
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
     >>> print extract_text(related_projects)
-    Name            Bugs    Blueprints  Questions
+    Name
     Ubuntu Linux
     Ubuntu Test
     Tomcat
 
-    >>> bugs_links = find_tags_by_class(
-    ...     anon_browser.contents, 'sprite bug action-icon')
-    >>> for b in bugs_links:
-    ...     print b.get('href')
-    http://launchpad.dev/ubuntu/+bugs
-    http://launchpad.dev/ubuntutest/+bugs
-    http://launchpad.dev/tomcat/+bugs
 
-A person's projects are listed on the 'Related software' page,
-accessible through the main navigation menu.
+A person's projects are accessible via a link on the 'Related packages' page.
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
-    >>> anon_browser.getLink('Related software').click()
+    >>> anon_browser.getLink('Related packages').click()
     >>> print anon_browser.url
-    http://launchpad.dev/~mark/+related-software
+    http://launchpad.dev/~mark/+related-packages
     >>> print anon_browser.title
-    Related software : Mark Shuttleworth
+    Related packages : Mark Shuttleworth
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
     >>> anon_browser.getLink('Related projects').click()
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
     >>> print extract_text(related_projects)
-    Name                            Bugs    Blueprints  Questions
+    Name
     Debian GNU/Linux
     The Gentoo Linux
     Kubuntu - Free KDE-based Linux
     Redhat Advanced Server
     Apache
-
-    >>> bugs_links = find_tags_by_class(
-    ...     anon_browser.contents, 'sprite bug action-icon')
-    >>> for b in bugs_links:
-    ...     print b.get('href')
-    http://launchpad.dev/debian/+bugs
-    http://launchpad.dev/gentoo/+bugs
-    http://launchpad.dev/kubuntu/+bugs
-    http://launchpad.dev/redhat/+bugs
-    http://launchpad.dev/apache/+bugs
-
-    >>> question_links = find_tags_by_class(
-    ...     anon_browser.contents, 'sprite question action-icon')
-    >>> for q in question_links:
-    ...     print q.get('href')
-    http://launchpad.dev/debian/+questions
-    http://launchpad.dev/gentoo/+questions
-    http://launchpad.dev/kubuntu/+questions
-    http://launchpad.dev/redhat/+questions
-    http://launchpad.dev/apache/+questions
-
-    >>> spec_links = find_tags_by_class(
-    ...     anon_browser.contents, 'sprite blueprint action-icon')
-    >>> for s in spec_links:
-    ...     print s.get('href')
-    http://launchpad.dev/debian/+specs
-    http://launchpad.dev/gentoo/+specs
-    http://launchpad.dev/kubuntu/+specs
-    http://launchpad.dev/redhat/+specs
-    http://launchpad.dev/apache/+specs

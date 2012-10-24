@@ -909,7 +909,7 @@
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonRelatedSoftwareView"
-            name="+related-software"
+            name="+related-packages"
             template="../templates/person-related-software.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -925,8 +925,12 @@
             template="../templates/person-related-software-navlinks.pt"/>
         <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
+            name="+related-software"
+            new_name="+related-packages"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
             name="+packages"
-            new_name="+related-software"/>
+            new_name="+related-packages"/>
         <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
             name="+projects"

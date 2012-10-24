@@ -600,7 +600,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Related software'
+        text = 'Related packages'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -706,7 +706,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Related software'
+        text = 'Related packages'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -3442,7 +3442,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Related software'
+        return 'Related packages'
 
     @cachedproperty
     def related_projects(self):
