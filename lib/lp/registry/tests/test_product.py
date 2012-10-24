@@ -1866,6 +1866,22 @@ class TestProductSet(TestCaseWithFactory):
         clause = ProductSet.getProductPrivacyFilter(user)
         return IStore(Product).find(Product, clause)
 
+    def test_users_private_products(self):
+        # Ignore any public products the user may own.
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        result = ProductSet.get_users_private_products(owner)
+        self.assertIn(proprietary, result)
+        self.assertIn(embargoed, result)
+
     def test_get_all_active_omits_proprietary(self):
         # Ignore proprietary products for anonymous users
         proprietary = self.factory.makeProduct(

@@ -1318,8 +1318,9 @@ class IArchiveView(IHasBuildRecords):
         version=TextLine(title=_("Version")),
         from_archive=Reference(schema=Interface),
         # Really IArchive, see below
-        to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
+        to_pocket=TextLine(title=_("Target pocket name")),
+        to_series=TextLine(
+            title=_("Target distroseries name"), required=False),
         include_binaries=Bool(
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
@@ -1335,12 +1336,16 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        from_pocket=TextLine(title=_("Source pocket name"), required=False),
+        from_series=TextLine(
+            title=_("Source distroseries name"), required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False, auto_approve=False):
+                    sponsored=None, unembargo=False, auto_approve=False,
+                    from_pocket=None, from_series=None):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1367,6 +1372,10 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param from_pocket: the source pocket (as a string). If omitted,
+            copy from any pocket with a matching version.
+        :param from_series: the source distroseries (as a string). If
+            omitted, copy from any series with a matching version.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

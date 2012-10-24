@@ -109,7 +109,10 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -202,7 +205,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
@@ -1030,19 +1036,64 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getAffiliatedPillars(self):
+    def _genAffiliatedProductSql(self, user=None):
+        """Helper to generate the product sql for getAffiliatePillars"""
+        base_query = """
+            SELECT name, 3 as kind, displayname
+            FROM product p
+            WHERE
+                p.active = True
+                AND (
+                    p.driver = %(person)s
+                    OR p.owner = %(person)s
+                    OR p.bug_supervisor = %(person)s
+                )
+        """ % sqlvalues(person=self)
+
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return base_query
+
+        # This is the raw sql version of model/product getProductPrivacyFilter
+        granted_products = """
+            SELECT p.id
+            FROM product p,
+                 accesspolicygrantflat apflat,
+                 teamparticipation part,
+                 accesspolicy ap
+             WHERE
+                apflat.grantee = part.team
+                AND part.person = %(user)s
+                AND apflat.policy = ap.id
+                AND ap.product = p.id
+                AND ap.type = p.information_type
+        """ % sqlvalues(user=user)
+
+        # We have to generate the sqlvalues first so that they're properly
+        # setup and escaped. Then we combine the above query which is already
+        # processed.
+        query_values = sqlvalues(information_type=InformationType.PUBLIC)
+        query_values.update(granted_sql=granted_products)
+
+        query = base_query + """
+                AND (
+                    p.information_type = %(information_type)s
+                    OR p.information_type is NULL
+                    OR p.id IN (%(granted_sql)s)
+                )
+        """ % query_values
+        return query
+
+    def getAffiliatedPillars(self, user):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
-        origin = SQL("""
-            PillarName
-            JOIN (
-                SELECT name, 3 as kind, displayname
-                FROM product
-                WHERE
-                    active = True AND
-                    (driver = %(person)s
-                    OR owner = %(person)s
-                    OR bug_supervisor = %(person)s)
+        base = """PillarName
+                  JOIN (
+                    %s
+            """ % self._genAffiliatedProductSql(user=user)
+
+        origin = base + """
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1059,8 +1110,9 @@ class Person(
                     OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
-            """ % sqlvalues(person=self))
-        results = IStore(self).using(origin).find(find_spec)
+            """ % sqlvalues(person=self)
+
+        results = IStore(self).using(SQL(origin)).find(find_spec)
         results = results.order_by('kind', 'displayname')
 
         def get_pillar_name(result):
@@ -2109,14 +2161,46 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def canDeactivateAccount(self):
+        """See `IPerson`."""
+        can_deactivate, errors = self.canDeactivateAccountWithErrors()
+        return can_deactivate
+
+    def canDeactivateAccountWithErrors(self):
+        """See `IPerson`."""
+        # Users that own non-public products cannot be deactivated until the
+        # products are reassigned.
+        errors = []
+        product_set = getUtility(IProductSet)
+        non_public_products = product_set.get_users_private_products(self)
+        if non_public_products.count() != 0:
+            errors.append(('This account cannot be deactivated because it owns '
+                        'the following non-public products: ') +
+                        ','.join([p.name for p in non_public_products]))
+
+        if self.account_status != AccountStatus.ACTIVE:
+            errors.append('This account is already deactivated.')
+
+        return (not errors), errors
+
     # XXX: salgado, 2009-04-16: This should be called just deactivate(),
     # because it not only deactivates this person's account but also the
     # person.
-    def deactivateAccount(self, comment):
+    def deactivateAccount(self, comment, can_deactivate=None):
         """See `IPersonSpecialRestricted`."""
         if not self.is_valid_person:
             raise AssertionError(
                 "You can only deactivate an account of a valid person.")
+
+        if can_deactivate is None:
+            # The person can only be deactivated if they do not own any
+            # non-public products.
+            can_deactivate = self.canDeactivateAccount()
+
+        if not can_deactivate:
+            message = ("You cannot deactivate an account that owns a "
+                       "non-public product.")
+            raise AssertionError(message)
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2146,7 +2230,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getAffiliatedPillars():
+        for pillar_name in self.getAffiliatedPillars(self):
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
@@ -2155,8 +2239,15 @@ class Person(
                 pillar.owner = registry_experts
                 changed = True
             if pillar.driver is not None and pillar.driver.id == self.id:
-                pillar.driver = registry_experts
+                pillar.driver = None
                 changed = True
+
+            # Products need to change the bug supervisor as well.
+            if IProduct.providedBy(pillar):
+                if (pillar.bug_supervisor is not None and
+                    pillar.bug_supervisor.id == self.id):
+                    pillar.bug_supervisor = None
+                    changed = True
 
             if not changed:
                 # Since we removed the person from all teams, something is
@@ -2219,7 +2310,8 @@ class Person(
             return self._visibility_warning_cache
 
         cur = cursor()
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        references = list(
+            postgresql.listReferences(cur, 'person', 'id', indirect=False))
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
@@ -2262,17 +2354,24 @@ class Person(
                          ])
 
         warnings = set()
+        ref_query = []
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
                 continue
-            cur.execute('SELECT 1 FROM %s WHERE %s=%d LIMIT 1'
-                        % (src_tab, src_col, self.id))
-            if cur.rowcount > 0:
-                if src_tab[0] in 'aeiou':
+            ref_query.append(
+                "SELECT '%(table)s' AS table FROM %(table)s "
+                "WHERE %(col)s = %(person_id)d"
+                % {'col': src_col, 'table': src_tab, 'person_id': self.id})
+        if ref_query:
+            cur.execute(' UNION '.join(ref_query))
+            for src_tab in cur.fetchall():
+                table_name = (
+                    src_tab[0] if isinstance(src_tab, tuple) else src_tab)
+                if table_name[0] in 'aeiou':
                     article = 'an'
                 else:
                     article = 'a'
-                warnings.add('%s %s' % (article, src_tab))
+                warnings.add('%s %s' % (article, table_name))
 
         # Private teams may have structural subscription, so the following
         # test is not applied to them.
