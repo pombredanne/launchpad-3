@@ -1132,7 +1132,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                           the icons which represent that category.
         """
 
-    def getAffiliatedPillars():
+    def getAffiliatedPillars(user):
         """Return the pillars that this person directly has a role with.
 
         Returns distributions, project groups, and projects that this person
