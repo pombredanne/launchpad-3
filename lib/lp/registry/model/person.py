@@ -2310,7 +2310,8 @@ class Person(
             return self._visibility_warning_cache
 
         cur = cursor()
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        references = list(
+            postgresql.listReferences(cur, 'person', 'id', indirect=False))
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
@@ -2353,17 +2354,24 @@ class Person(
                          ])
 
         warnings = set()
+        ref_query = []
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
                 continue
-            cur.execute('SELECT 1 FROM %s WHERE %s=%d LIMIT 1'
-                        % (src_tab, src_col, self.id))
-            if cur.rowcount > 0:
-                if src_tab[0] in 'aeiou':
+            ref_query.append(
+                "SELECT '%(table)s' AS table FROM %(table)s "
+                "WHERE %(col)s = %(person_id)d"
+                % {'col': src_col, 'table': src_tab, 'person_id': self.id})
+        if ref_query:
+            cur.execute(' UNION '.join(ref_query))
+            for src_tab in cur.fetchall():
+                table_name = (
+                    src_tab[0] if isinstance(src_tab, tuple) else src_tab)
+                if table_name[0] in 'aeiou':
                     article = 'an'
                 else:
                     article = 'a'
-                warnings.add('%s %s' % (article, src_tab))
+                warnings.add('%s %s' % (article, table_name))
 
         # Private teams may have structural subscription, so the following
         # test is not applied to them.
