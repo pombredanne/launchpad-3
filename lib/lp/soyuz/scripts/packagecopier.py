@@ -206,7 +206,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
 
         # Is the destination pocket open at all?
         reason = archive.checkUploadToPocket(
-            dest_series, pocket, check_redirect=True)
+            dest_series, pocket, person=person)
         if reason is not None:
             raise CannotCopy(reason)
 

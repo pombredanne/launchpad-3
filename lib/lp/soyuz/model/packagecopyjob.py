@@ -585,7 +585,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             can deal with.
         """
         reason = self.target_archive.checkUploadToPocket(
-            self.target_distroseries, self.target_pocket, check_redirect=True)
+            self.target_distroseries, self.target_pocket,
+            person=self.requester)
         if reason:
             # Wrap any forbidden-pocket error in CannotCopy.
             raise CannotCopy(unicode(reason))

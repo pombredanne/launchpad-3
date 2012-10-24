@@ -455,11 +455,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # uploaders may not copy directly into the release pocket.
         job = create_proper_job(self.factory)
         job.target_archive.distribution.redirect_release_uploads = True
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
         transaction.commit()
-        # CannotCopy exceptions when copying into a primary archive are
-        # swallowed, but reportFailure is still called.
         self.runJob(job)
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
@@ -471,7 +471,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         with person_logged_in(job.target_archive.owner):
             job.target_archive.newPocketQueueAdmin(
                 job.requester, PackagePublishingPocket.RELEASE)
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+        transaction.commit()
         self.runJob(job)
+        self.assertEqual(0, naked_job.reportFailure.call_count)
 
     def test_run(self):
         # A proper test run synchronizes packages.

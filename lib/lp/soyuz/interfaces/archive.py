@@ -612,11 +612,13 @@ class IArchiveView(IHasBuildRecords):
         Return True if the upload is allowed and False if denied.
         """
 
-    def checkUploadToPocket(distroseries, pocket):
+    def checkUploadToPocket(distroseries, pocket, person=None):
         """Check if an upload to a particular archive and pocket is possible.
 
         :param distroseries: A `IDistroSeries`
         :param pocket: A `PackagePublishingPocket`
+        :param person: Check for redirected pockets if this person is not a
+            queue admin.
         :return: Reason why uploading is not possible or None
         """
 

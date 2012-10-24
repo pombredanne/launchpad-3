@@ -1267,7 +1267,7 @@ class Archive(SQLBase):
         # Allow anything else.
         return True
 
-    def checkUploadToPocket(self, distroseries, pocket, check_redirect=False):
+    def checkUploadToPocket(self, distroseries, pocket, person=None):
         """See `IArchive`."""
         if self.is_partner:
             if pocket not in (
@@ -1283,7 +1283,9 @@ class Archive(SQLBase):
             # existing builds after a series is released.
             return
         else:
-            if (check_redirect and
+            if (person is not None and
+                not self.canAdministerQueue(
+                    person, pocket=pocket, distroseries=distroseries) and
                 pocket == PackagePublishingPocket.RELEASE and
                 self.distribution.redirect_release_uploads):
                 return RedirectedPocket(
@@ -1796,7 +1798,7 @@ class Archive(SQLBase):
 
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
-        reason = self.checkUploadToPocket(series, pocket, check_redirect=True)
+        reason = self.checkUploadToPocket(series, pocket, person=person)
         if reason:
             # Wrap any forbidden-pocket error in CannotCopy.
             raise CannotCopy(unicode(reason))
