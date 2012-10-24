@@ -2021,27 +2021,6 @@ class ProductSet:
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
 
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
-
     @cachedproperty
     def stats(self):
         return getUtility(ILaunchpadStatisticSet)
