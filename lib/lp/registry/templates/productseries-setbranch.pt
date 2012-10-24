@@ -86,14 +86,6 @@
 
               <tr>
                 <td>
-                  <label tal:replace="structure view/rcs_type_hg">
-                    Mercurial
-                  </label>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
                   <label tal:replace="structure view/rcs_type_cvs">
                     CVS
                   </label>

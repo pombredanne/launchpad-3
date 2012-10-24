@@ -16,14 +16,14 @@
 
 <div metal:fill-slot="main">
 
-  <p class="portlet" tal:condition="not: view/specs" id="no-blueprints">
+  <p class="portlet" tal:condition="view/specs/is_empty" id="no-blueprints">
     There are no open blueprints.
   </p>
 
-  <div tal:condition="view/specs" class="portlet">
+  <div tal:condition="not: view/specs/is_empty" class="portlet">
     <p>
       This listing shows the assignment of work for
-      blueprints currently associated with 
+      blueprints currently associated with
       <span tal:replace="context/displayname">Mozilla</span>.
       The drafter is responsible for getting the specification correctly
       written up and approved.
@@ -84,7 +84,7 @@
             </a>
           </td>
           <td>
-            <a tal:condition="spec/approver" 
+            <a tal:condition="spec/approver"
                tal:replace="structure spec/approver/fmt:link">
               Approver Foo
             </a>

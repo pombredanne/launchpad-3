@@ -5,37 +5,24 @@
 
 __metaclass__ = type
 
-from contextlib import contextmanager
-
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
-    feature_flags,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
-
-
-@contextmanager
-def dynamic_listings():
-    """Context manager to enable new bug listings."""
-    with feature_flags():
-        set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
-        yield
 
 
 class TestMaloneView(TestCaseWithFactory):
@@ -111,13 +98,9 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertIn(focus_script, text)
 
     def test_search_all_bugs_rendering(self):
-        with dynamic_listings():
-            view = create_initialized_view(
-                self.application,
-                '+bugs',
-                rootsite='bugs')
-            content = view.render()
-
+        view = create_initialized_view(
+            self.application, '+bugs', rootsite='bugs')
+        content = view.render()
         # we should get some valid content out of this
         self.assertIn('Search all bugs', content)
 
@@ -158,74 +141,31 @@ class TestMaloneView(TestCaseWithFactory):
         related_bug = self.factory.makeBug()
         self._assert_getBugData(related_bug)
 
-    def test_createBug_default_private_bugs_true(self):
+    def test_createBug_public_bug_sharing_policy_public(self):
         # createBug() does not adapt the default kwargs when they are none.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-            bug = self.application.createBug(
-                project.owner, 'title', 'description', project)
-            self.assertEqual(InformationType.USERDATA, bug.information_type)
-
-    def test_createBug_public_bug_private_bugs_true(self):
-        # createBug() adapts a kwarg to InformationType if one is is not None.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-            bug = self.application.createBug(
-                project.owner, 'title', 'description', project, private=False)
-            self.assertEqual(InformationType.PUBLIC, bug.information_type)
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
+        bug = self.application.createBug(
+            product.owner, 'title', 'description', product)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_createBug_default_sharing_policy_proprietary(self):
         # createBug() does not adapt the default kwargs when they are none.
-        project = self.factory.makeProduct(
+        product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
-            project.owner, 'title', 'description', project)
+            product.owner, 'title', 'description', product)
         self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
 
     def test_createBug_public_bug_sharing_policy_proprietary(self):
         # createBug() adapts a kwarg to InformationType if one is is not None.
-        project = self.factory.makeProduct(
+        product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
-            project.owner, 'title', 'description', project, private=False)
+            product.owner, 'title', 'description', product, private=False)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
-
-    def test_createBug_default_private_bugs_false(self):
-        # createBug() does not adapt the default kwargs when they are none.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(False, project.owner)
-            bug = self.application.createBug(
-                project.owner, 'title', 'description', project)
-            self.assertEqual(InformationType.PUBLIC, bug.information_type)
-
-    def test_createBug_proprietary_project(self):
-        # crateBug() make proprietary bugs for proprietary projects.
-        project = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(False, project.owner)
-            bug = self.application.createBug(
-                project.owner, 'title', 'description', project)
-            self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
-
-    def test_createBug_private_bug_private_bugs_false(self):
-        # createBug() adapts a kwarg to InformationType if one is is not None.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(False, project.owner)
-            bug = self.application.createBug(
-                project.owner, 'title', 'description', project, private=True)
-            self.assertEqual(InformationType.USERDATA, bug.information_type)

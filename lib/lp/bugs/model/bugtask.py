@@ -67,7 +67,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
@@ -93,10 +96,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.registry.enums import (
-    PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -132,6 +131,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
@@ -144,12 +148,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def bugtask_sort_key(bugtask):
@@ -773,8 +772,10 @@ class BugTask(SQLBase):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
-        else:
-            self.milestone = new_milestone
+        self.milestone = new_milestone
+        # Clear the recipient caches so that the milestone subscribers are
+        # notified.
+        self.bug.clearBugNotificationRecipientsCache()
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
@@ -1142,6 +1143,7 @@ class BugTask(SQLBase):
         # As a result of the transition, some subscribers may no longer
         # have access to the parent bug. We need to run a job to remove any
         # such subscriptions.
+        self.bug.clearBugNotificationRecipientsCache()
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, [self.bug], pillar=target_before_change.pillar)
 
@@ -1936,6 +1938,8 @@ class BugTaskSet:
             distro_ids.add(task.distributionID)
             distro_series_ids.add(task.distroseriesID)
             product_ids.add(task.productID)
+            if task.productseries:
+                product_ids.add(task.productseries.productID)
             product_series_ids.add(task.productseriesID)
 
         distro_ids.discard(None)
@@ -1945,6 +1949,7 @@ class BugTaskSet:
 
         milestones = store.find(
             Milestone,
+            Milestone.active == True,
             Or(
                 Milestone.distributionID.is_in(distro_ids),
                 Milestone.distroseriesID.is_in(distro_series_ids),

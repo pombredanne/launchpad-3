@@ -44,9 +44,9 @@
 
       <tal:participants repeat="member members_batch">
 
-        <tal:specs define="specifications member/specifications">
+        <tal:specs define="specifications member/@@+specworkload/specifications">
 
-          <div style="margin-bottom: 1em;" tal:condition="specifications">
+          <div style="margin-bottom: 1em;" tal:condition="not: specifications/is_empty">
             <p>
               <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
               specifications:
@@ -55,7 +55,7 @@
             <div tal:replace="structure member/@@+table-specworkload" />
           </div>
 
-          <p tal:condition="not: specifications">
+          <p tal:condition="specifications/is_empty">
             <a tal:replace="structure member/fmt:link">Foo Bar</a>
             has no outstanding specifications.<br />
           </p>

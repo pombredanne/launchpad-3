@@ -216,6 +216,8 @@ If a product is translatable, translations is enabled in the involvment menu.
     ...     productseries=series,
     ...     language_codes=['es'])
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(project_group)
     >>> project_group.has_translatable()
     True
 

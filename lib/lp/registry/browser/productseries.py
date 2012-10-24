@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -29,7 +29,6 @@ __all__ = [
     'ProductSeriesView',
     ]
 
-import cgi
 from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
@@ -55,6 +54,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -112,6 +112,7 @@ from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarInvolvementView,
     )
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -143,11 +144,6 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
-
-
-def quote(text):
-    """Escape and quote text."""
-    return cgi.escape(text, quote=True)
 
 
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
@@ -260,8 +256,7 @@ class ProductSeriesInvolvementView(PillarInvolvementView):
             configured = True
         else:
             configured = False
-        return [dict(link=set_branch,
-                     configured=configured)]
+        return [dict(link=set_branch, configured=configured)]
 
 
 class ProductSeriesOverviewMenu(
@@ -292,8 +287,8 @@ class ProductSeriesOverviewMenu(
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'
         return Link(
-            canonical_url(self.context.product,
-                          view_name='+configure-bugtracker'),
+            canonical_url(
+                self.context.product, view_name='+configure-bugtracker'),
             text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -317,9 +312,7 @@ class ProductSeriesOverviewMenu(
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def link_branch(self):
-        """Return a link to set the bazaar branch for this series."""
+    def _fetch_branch_link(self):
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
@@ -328,6 +321,12 @@ class ProductSeriesOverviewMenu(
             text = "Change branch"
             icon = 'edit'
             summary = 'Change the branch for this series'
+        return (text, icon, summary)
+
+    @enabled_with_permission('launchpad.Edit')
+    def link_branch(self):
+        """Return a link to set the bazaar branch for this series."""
+        text, icon, summary = self._fetch_branch_link()
         return Link('+linkbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
@@ -335,14 +334,7 @@ class ProductSeriesOverviewMenu(
         """Return a link to set the bazaar branch for this series."""
         # Once +setbranch has been beta tested thoroughly, it should
         # replace the +linkbranch page.
-        if self.context.branch is None:
-            text = 'Link to branch'
-            icon = 'add'
-            summary = 'Set the branch for this series'
-        else:
-            text = "Change branch"
-            icon = 'edit'
-            summary = 'Change the branch for this series'
+        text, icon, summary = self._fetch_branch_link()
         return Link('+setbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -424,14 +416,12 @@ def get_series_branch_error(product, branch):
     if branch.product != product:
         return structured(
             '<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.',
-            canonical_url(branch),
-            branch.unique_name,
-            canonical_url(product),
+            canonical_url(branch), branch.unique_name, canonical_url(product),
             product.displayname)
-    return None
 
 
-class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
+class ProductSeriesView(
+    LaunchpadView, MilestoneOverlayMixin, InformationTypePortletMixin):
     """A view to show a series with translations."""
 
     def initialize(self):
@@ -649,8 +639,11 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
             sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
             return
-        self.context.setPackaging(
-            distroseries, sourcepackagename, self.user)
+        try:
+            self.context.setPackaging(
+                distroseries, sourcepackagename, self.user)
+        except CannotPackageProprietaryProduct, e:
+            self.request.response.addErrorNotification(str(e))
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -690,10 +683,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
+    cancel_url = next_url
 
 
 class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
@@ -820,9 +810,7 @@ BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
 
-    use_template(
-        ICodeImport,
-        ['cvs_module'])
+    use_template(ICodeImport, ['cvs_module'])
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=False, vocabulary=RevisionControlSystems,
@@ -833,42 +821,27 @@ class SetBranchForm(Interface):
         title=_("Branch URL"), required=True,
         description=_("The URL of the branch."),
         allowed_schemes=["http", "https"],
-        allow_userinfo=False,
-        allow_port=True,
-        allow_query=False,
-        allow_fragment=False,
-        trailing_slash=False)
+        allow_userinfo=False, allow_port=True, allow_query=False,
+        allow_fragment=False, trailing_slash=False)
 
     branch_location = copy_field(
-        IProductSeries['branch'],
-        __name__='branch_location',
+        IProductSeries['branch'], __name__='branch_location',
         title=_('Branch'),
         description=_(
             "The Bazaar branch for this series in Launchpad, "
-            "if one exists."),
-        )
+            "if one exists."))
 
     branch_type = Choice(
-        title=_('Import type'),
-        vocabulary=BRANCH_TYPE_VOCABULARY,
-        description=_("The type of import"),
-        required=True)
+        title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
+        description=_("The type of import"), required=True)
 
     branch_name = copy_field(
-        IBranch['name'],
-        __name__='branch_name',
-        title=_('Branch name'),
-        description=_(''),
-        required=True,
-        )
+        IBranch['name'], __name__='branch_name', title=_('Branch name'),
+        description=_(''), required=True)
 
     branch_owner = copy_field(
-        IBranch['owner'],
-        __name__='branch_owner',
-        title=_('Branch owner'),
-        description=_(''),
-        required=True,
-        )
+        IBranch['owner'], __name__='branch_owner', title=_('Branch owner'),
+        description=_(''), required=True)
 
 
 class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
@@ -916,8 +889,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             widget, vocab.BZR_SVN, current_value, 'SVN')
         self.rcs_type_git = render_radio_widget_part(
             widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render_radio_widget_part(
-            widget, vocab.HG, current_value)
         self.rcs_type_bzr = render_radio_widget_part(
             widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
@@ -943,9 +914,16 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         rcs_type = data.get('rcs_type')
         repo_url = data.get('repo_url')
 
+        # Private teams are forbidden from owning code imports.
+        branch_owner = data.get('branch_owner')
+        if branch_owner is not None and branch_owner.private:
+            self.setFieldError(
+                'branch_owner', 'Private teams are forbidden from owning '
+                'external imports.')
+
         if repo_url is None:
-            self.setFieldError('repo_url',
-                               'You must set the external repository URL.')
+            self.setFieldError(
+                'repo_url', 'You must set the external repository URL.')
         else:
             # Ensure this URL has not been imported before.
             code_import = getUtility(ICodeImportSet).getByURL(repo_url)
@@ -976,12 +954,10 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         """Validate that branch name and owner are set."""
         if 'branch_name' not in data:
             self.setFieldError(
-                'branch_name',
-                'The branch name must be set.')
+                'branch_name', 'The branch name must be set.')
         if 'branch_owner' not in data:
             self.setFieldError(
-                'branch_owner',
-                'The branch owner must be set.')
+                'branch_owner', 'The branch owner must be set.')
 
     def _setRequired(self, names, value):
         """Mark the widget field as optional."""
@@ -1084,7 +1060,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 rcs_item = RevisionControlSystems.items[rcs_type.name]
                 try:
                     code_import = getUtility(ICodeImportSet).new(
-                        registrant=branch_owner,
+                        owner=branch_owner,
+                        registrant=self.user,
                         target=IBranchTarget(self.context.product),
                         branch_name=branch_name,
                         rcs_type=rcs_item,
@@ -1092,8 +1069,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
                 except BranchExists as e:
-                    self._setBranchExists(e.existing_branch,
-                                          'branch_name')
+                    self._setBranchExists(
+                        e.existing_branch, 'branch_name')
                     self.errors_in_action = True
                     # Abort transaction. This is normally handled
                     # by LaunchpadFormView, but we are already in
@@ -1102,8 +1079,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     return
                 self.context.branch = code_import.branch
                 self.request.response.addInfoNotification(
-                    'Code import created and branch linked to the '
-                    'series.')
+                    'Code import created and branch linked to the series.')
             else:
                 raise UnexpectedFormData(branch_type)
 
@@ -1115,10 +1091,9 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch = None
         try:
             namespace = self.target.getNamespace(branch_owner)
-            branch = namespace.createBranch(branch_type=BranchType.HOSTED,
-                                            name=branch_name,
-                                            registrant=self.user,
-                                            url=repo_url)
+            branch = namespace.createBranch(
+                branch_type=BranchType.HOSTED, name=branch_name,
+                registrant=self.user, url=repo_url)
         except BranchCreationForbidden:
             self.addError(
                 "You are not allowed to create branches in %s." %
@@ -1133,8 +1108,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         return branch
 
 
-class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
-                                  ProductSeriesView,
+class ProductSeriesLinkBranchView(ReturnToReferrerMixin, ProductSeriesView,
                                   LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
@@ -1147,10 +1121,7 @@ class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
         return 'Link an existing branch to %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
@@ -1187,10 +1158,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
         return 'Administer %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     @property
     def cancel_url(self):

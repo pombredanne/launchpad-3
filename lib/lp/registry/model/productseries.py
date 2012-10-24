@@ -71,7 +71,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.packaging import PackagingUtil
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
 from lp.services.database.constants import UTC_NOW
@@ -83,6 +83,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language
@@ -228,6 +229,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         result = result.order_by(Desc('datereleased'))
         return DecoratedResultSet(result, decorate)
 
+    @cachedproperty
+    def _cached_releases(self):
+        return self.releases
+
+    def getCachedReleases(self):
+        """See `IProductSeries`."""
+        return self._cached_releases
+
     @property
     def release_files(self):
         """See `IProductSeries`."""
@@ -297,24 +306,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return ret
 
     @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    @property
     def is_development_focus(self):
         """See `IProductSeries`."""
         return self == self.product.development_focus
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 
@@ -508,7 +504,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(
+        pkg = PackagingUtil.createPackaging(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=self,
@@ -682,6 +678,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def userCanView(self, user):
+        """See `IproductSeriesPublic`."""
+        # Deleate the permission check to the parent product.
+        return self.product.userCanView(user)
 
 
 class TimelineProductSeries:

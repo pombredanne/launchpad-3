@@ -785,7 +785,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     if custom_files:
         # Custom uploads aren't modelled as publication history records, so
         # we have to send these through the upload queue.
-        custom_copier = CustomUploadsCopier(series, target_pocket=pocket)
+        custom_copier = CustomUploadsCopier(
+            series, target_pocket=pocket, target_archive=archive)
         for custom in custom_files:
             if custom_copier.isCopyable(custom):
                 custom_copier.copyUpload(custom)

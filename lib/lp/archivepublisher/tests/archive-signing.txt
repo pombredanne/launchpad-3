@@ -122,7 +122,7 @@ location defined by the system configuration.
 
     >>> from lp.services.config import config
     >>> print config.personalpackagearchive.signing_keys_root
-    /var/tmp/ppa-signing-keys
+    /var/tmp/ppa-signing-keys.test
 
 In order to manipulate 'signing_keys' securily the target archive
 object has to be adapted to `IArchiveSigningKey`.

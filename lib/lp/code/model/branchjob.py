@@ -97,6 +97,11 @@ from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.database.locking import (
     AdvisoryLockHeld,
     LockType,
@@ -114,11 +119,6 @@ from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
     errorlog,
-    )
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,

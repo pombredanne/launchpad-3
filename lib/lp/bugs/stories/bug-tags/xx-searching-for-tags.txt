@@ -9,10 +9,8 @@ On the advanced search page it's possible to search for a specific tag.
 
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    10 another test bug
-       linux-source-2.6.15 Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
 
 If more than one tag is entered, bugs with any those tags will be
 shown.
@@ -22,12 +20,9 @@ shown.
     >>> anon_browser.getControl('Tags').value = 'crash dataloss'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    9 Thunderbird crashes
-      thunderbird Medium Confirmed
-    10 another test bug
-       linux-source-2.6.15 Medium New
-    2 Blackhole Trash folder
-      &mdash; Medium New
+    9 Thunderbird crashes thunderbird (Ubuntu) Medium Confirmed
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 If an invalid tag name is entered, an error message will be displayed.
 

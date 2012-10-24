@@ -9,28 +9,18 @@ from soupmatchers import (
     HTMLContains,
     Tag,
     )
-from storm.expr import LeftJoin
-from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    Not,
-    )
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.model.bugtask import BugTask
-from lp.registry.model.person import Person
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
     find_main_content,
@@ -157,12 +147,10 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         product = self.factory.makeProduct()
         form = {
             'search': 'Search',
-            'advanced': 1,
             'field.component': 1,
             'field.component-empty-marker': 1}
         with person_logged_in(product.owner):
             view = create_initialized_view(product, '+bugs', form=form)
-            view.searchUnbatched()
         response = view.request.response
         self.assertEqual(1, len(response.notifications))
         expected = (
@@ -218,85 +206,23 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertFalse(
             'Y.lp.app.batchnavigator.BatchNavigatorHooks' in view())
 
-    def test_dynamic_bug_listing_feature_flag(self):
-        # BugTaskSearchListingView.dynamic_bug_listing_enabled provides
-        # access to the feature flag bugs.dynamic_bug_listings.enabled.
-        # The property is False by default.
-        product = self.factory.makeProduct()
-        view = create_initialized_view(product, '+bugs')
-        self.assertFalse(view.dynamic_bug_listing_enabled)
-        # When the feature flag is turned on, dynamic_bug_listing_enabled
-        # is True.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertTrue(view.dynamic_bug_listing_enabled)
-
     def test_search_macro_title(self):
-        # BugTaskSearchListingView.dynamic_bug_listing_enabled returns
-        # the title text for the macro `simple-search-form`.
+        # The title text is displayed for the macro `simple-search-form`.
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
         view = create_initialized_view(product, '+bugs')
         self.assertEqual(
             'Search bugs in Test Product', view.search_macro_title)
 
-        # The title not shown by default.
+        # The title is shown.
         form_title_matches = Tag(
             'Search form title', 'h3', text=view.search_macro_title)
-        self.assertThat(view.render(), Not(HTMLContains(form_title_matches)))
-
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the title is shown.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(view.render(), HTMLContains(form_title_matches))
-
-    def test_search_macro_sort_widget_hidden_for_dynamic_bug_listing(self):
-        # The macro `simple-search-form` has by default a sort widget.
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
         view = create_initialized_view(product, '+bugs')
-        sort_selector_matches = Tag(
-            'Sort widget found', tag_type='select', attrs={'id': 'orderby'})
-        self.assertThat(view.render(), HTMLContains(sort_selector_matches))
+        self.assertThat(view.render(), HTMLContains(form_title_matches))
 
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the sort widget is not rendered.
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(
-                view.render(), Not(HTMLContains(sort_selector_matches)))
-
-    def test_search_macro_div_node_no_css_class_by_default(self):
+    def test_search_macro_div_node_with_css_class(self):
         # The <div> enclosing the search form in the macro
-        # `simple-search-form` has by default no CSS class.
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
-        view = create_initialized_view(product, '+bugs')
-        # The <div> node exists.
-        rendered_view = view.render()
-        search_div_matches = Tag(
-            'Main search div', tag_type='div',
-            attrs={'id': 'bugs-search-form'})
-        self.assertThat(
-            rendered_view, HTMLContains(search_div_matches))
-        # But it has no 'class' attribute.
-        attributes = {
-            'id': 'bugs-search-form',
-            'class': True,
-            }
-        search_div_with_class_attribute_matches = Tag(
-            'Main search div', tag_type='div', attrs=attributes)
-        self.assertThat(
-            rendered_view,
-            HTMLContains(Not(search_div_with_class_attribute_matches)))
-
-    def test_search_macro_div_node_with_css_class_for_dynamic_listings(self):
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the <div> node has the CSS class "dynamic_bug_listing".
+        # `simple-search-form` has the CSS class "dynamic_bug_listing".
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
         attributes = {
@@ -304,37 +230,14 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             'class': 'dynamic_bug_listing',
             }
         search_div_with_class_attribute_matches = Tag(
-            'Main search div feature flag bugs.dynamic_bug_listings.enabled',
-            tag_type='div', attrs=attributes)
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(
-                view.render(),
-                HTMLContains(search_div_with_class_attribute_matches))
-
-    def test_search_macro_css_for_form_node_default(self):
-        # The <form> node of the search form in the macro
-        # `simple-search-form` has by default the CSS classes
-        # 'prmary search'
-        product = self.factory.makeProduct(
-            displayname='Test Product', official_malone=True)
+            'Main search div', tag_type='div', attrs=attributes)
         view = create_initialized_view(product, '+bugs')
-        # The <div> node exists.
-        rendered_view = view.render()
-        attributes = {
-            'name': 'search',
-            'class': 'primary search',
-            }
-        search_form_matches = Tag(
-            'Default search form CSS classes', tag_type='form',
-            attrs=attributes)
         self.assertThat(
-            rendered_view, HTMLContains(search_form_matches))
+            view.render(),
+            HTMLContains(search_div_with_class_attribute_matches))
 
-    def test_search_macro_css_for_form_node_with_dynamic_bug_listings(self):
-        # If the feature flag bugs.dynamic_bug_listings.enabled
-        # is set, the <form> node has the CSS classes
+    def test_search_macro_css_for_form_node(self):
+        # The <form> node has the CSS classes
         # "primary search dynamic_bug_listing".
         product = self.factory.makeProduct(
             displayname='Test Product', official_malone=True)
@@ -343,13 +246,9 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             'class': 'primary search dynamic_bug_listing',
             }
         search_form_matches = Tag(
-            'Search form CSS classes with feature flag '
-            'bugs.dynamic_bug_listings.enabled', tag_type='form',
-            attrs=attributes)
-        flags = {u"bugs.dynamic_bug_listings.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(product, '+bugs')
-            self.assertThat(view.render(), HTMLContains(search_form_matches))
+            'Search form CSS classes', tag_type='form', attrs=attributes)
+        view = create_initialized_view(product, '+bugs')
+        self.assertThat(view.render(), HTMLContains(search_form_matches))
 
 
 class BugTargetTestCase(TestCaseWithFactory):
@@ -395,8 +294,12 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
 
     def test_has_bugtracker_external_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='external')
-        view = create_initialized_view(bug_target, '+bugs')
+        user = self.factory.makePerson()
+        view = create_initialized_view(bug_target, '+bugs', principal=user)
         self.assertEqual(True, view.has_bugtracker)
+        markup = view.render()
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-search-form'))
+        self.assertIsNone(find_tag_by_id(markup, 'bugs-table-listings'))
 
     def test_has_bugtracker_launchpad_is_true(self):
         bug_target = self._makeBugTargetProduct(bug_tracker='launchpad')

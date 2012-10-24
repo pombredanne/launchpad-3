@@ -99,10 +99,7 @@ member, and therefore should be able to edit any spec attached to it
 
 SpecificationSet implements the ISpecificationSet interface
 
-    >>> ubuspec in specset.all_specifications
-    True
-
-    >>> specset.has_any_specifications
+    >>> ubuspec in specset._all_specifications
     True
 
     >>> from lp.services.webapp.testing import verifyObject
@@ -225,7 +222,7 @@ The "SpecificationSet" can be used to search across all specifications.
 We can filter for specifications that contain specific text, across all
 specifications:
 
-    >>> for spec in specset.specifications(filter=['install']):
+    >>> for spec in specset.specifications(None, filter=['install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     extension-manager-upgrades firefox
@@ -242,7 +239,7 @@ Specs from inactive products are filtered out.
     >>> unlink_source_packages(upstream_firefox)
     >>> upstream_firefox.active = False
     >>> flush_database_updates()
-    >>> for spec in specset.specifications(filter=['install']):
+    >>> for spec in specset.specifications(None, filter=['install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     media-integrity-check ubuntu

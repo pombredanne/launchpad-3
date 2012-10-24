@@ -48,7 +48,7 @@ subscriptions work.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -748,6 +748,7 @@ created:
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
+    >>> new_bug.clearBugNotificationRecipientsCache()
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 

@@ -41,7 +41,9 @@ from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.interfaces import IStoreSelector
 from lp.services.database.lpstorm import IStore
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -49,11 +51,7 @@ from lp.services.identity.interfaces.account import (
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
-from lp.services.webapp.interfaces import (
-    ILaunchpadApplication,
-    IStoreSelector,
-    )
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.webapp.login import (
     OpenIDCallbackView,
     OpenIDLogin,
@@ -440,6 +438,19 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Team email address conflict', main_content)
+
+    def test_missing_fields(self):
+        # If the OpenID provider response does not include required fields
+        # (full name or email missing), the login error page is shown.
+        person = self.factory.makePerson()
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(
+                person.account, email=None)
+        self.assertFalse(view.login_called)
+        main_content = extract_text(find_main_content(html))
+        self.assertIn(
+            'No email address or full name found in sreg response',
+            main_content)
 
     def test_negative_openid_assertion(self):
         # The OpenID provider responded with a negative assertion, so the

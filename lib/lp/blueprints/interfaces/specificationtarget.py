@@ -26,10 +26,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import TextLine
 
 from lp import _
@@ -42,7 +39,7 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    all_specifications = exported(doNotSnapshot(
+    _all_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("All specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -50,13 +47,9 @@ class IHasSpecifications(Interface):
             description=_(
                 'A list of all specifications, regardless of status or '
                 'approval or completion, for this object.'))),
-                                  as_of="devel")
+        exported_as="all_specifications", as_of="devel")
 
-    has_any_specifications = Attribute(
-        'A true or false indicator of whether or not this object has any '
-        'specifications associated with it, regardless of their status.')
-
-    valid_specifications = exported(doNotSnapshot(
+    _valid_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("Valid specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -65,18 +58,13 @@ class IHasSpecifications(Interface):
                 'All specifications that are not obsolete. When called from '
                 'an ISpecificationGoal it will also exclude the ones that '
                 'have not been accepted for that goal'))),
-                                    as_of="devel")
+        exported_as="valid_specifications", as_of="devel")
 
-    latest_specifications = Attribute(
-        "The latest 5 specifications registered for this context.")
-
-    latest_completed_specifications = Attribute(
-        "The 5 specifications most recently completed for this context.")
-
-    def specifications(quantity=None, sort=None, filter=None,
+    def specifications(user, quantity=None, sort=None, filter=None,
                        prejoin_people=True):
         """Specifications for this target.
 
+        The user specifies which user to use for calculation of visibility.
         The sort is a dbschema which indicates the preferred sort order. The
         filter is an indicator of the kinds of specs to be returned, and
         appropriate filters depend on the kind of object this method is on.

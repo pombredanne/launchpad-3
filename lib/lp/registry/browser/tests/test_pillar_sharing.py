@@ -19,11 +19,11 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
@@ -243,10 +243,10 @@ class PillarSharingViewTestMixin:
 
     def test_sharing_menu(self):
         url = canonical_url(self.pillar)
+        sharing_url = canonical_url(self.pillar, view_name='+sharing')
         browser = setupBrowserForUser(user=self.driver)
         browser.open(url)
         soup = BeautifulSoup(browser.contents)
-        sharing_url = canonical_url(self.pillar, view_name='+sharing')
         sharing_menu = soup.find('a', {'href': sharing_url})
         self.assertIsNotNone(sharing_menu)
 

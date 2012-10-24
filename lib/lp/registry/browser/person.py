@@ -42,9 +42,6 @@ __all__ = [
     'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
-    'PersonSpecWorkloadTableView',
-    'PersonSpecWorkloadView',
-    'PersonSpecsMenu',
     'PersonView',
     'PersonVouchersView',
     'PPANavigationMenuMixIn',
@@ -589,45 +586,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonSpecsMenu(NavigationMenu):
-
-    usedfor = IPerson
-    facet = 'specifications'
-    links = ['assignee', 'drafter', 'approver',
-             'subscriber', 'registrant', 'workload']
-
-    def registrant(self):
-        text = 'Registrant'
-        summary = 'List specs registered by %s' % self.context.displayname
-        return Link('+specs?role=registrant', text, summary, icon='blueprint')
-
-    def approver(self):
-        text = 'Approver'
-        summary = 'List specs with %s is supposed to approve' % (
-            self.context.displayname)
-        return Link('+specs?role=approver', text, summary, icon='blueprint')
-
-    def assignee(self):
-        text = 'Assignee'
-        summary = 'List specs for which %s is the assignee' % (
-            self.context.displayname)
-        return Link('+specs?role=assignee', text, summary, icon='blueprint')
-
-    def drafter(self):
-        text = 'Drafter'
-        summary = 'List specs drafted by %s' % self.context.displayname
-        return Link('+specs?role=drafter', text, summary, icon='blueprint')
-
-    def subscriber(self):
-        text = 'Subscriber'
-        return Link('+specs?role=subscriber', text, icon='blueprint')
-
-    def workload(self):
-        text = 'Workload'
-        summary = 'Show all specification work assigned'
-        return Link('+specworkload', text, summary, icon='info')
-
-
 class CommonMenuLinks:
 
     @property
@@ -675,7 +633,8 @@ class CommonMenuLinks:
     def projects(self):
         target = '+related-projects'
         text = 'Related projects'
-        enabled = bool(self.person.getAffiliatedPillars())
+        user = getUtility(ILaunchBag).user
+        enabled = bool(self.person.getAffiliatedPillars(user))
         return Link(target, text, enabled=enabled, icon='info')
 
     def subscriptions(self):
@@ -976,12 +935,15 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        if self.context.account_status != AccountStatus.ACTIVE:
-            self.addError('This account is already deactivated.')
+        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
+        if not can_deactivate:
+            [self.addError(message) for message in errors]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['comment'])
+        # We override the can_deactivate since validation already processed
+        # this information.
+        self.context.deactivateAccount(data['comment'], can_deactivate=True)
         logoutPerson(self.request)
         self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
@@ -1219,8 +1181,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from lp.services.database.lpstorm import IMasterObject
-        self.context = IMasterObject(self.context.account)
+        self.context = self.person.account
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
         if self.viewed_by_admin:
@@ -1280,58 +1241,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
                 u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)
-
-
-class PersonSpecWorkloadView(LaunchpadView):
-    """View to render the specification workload for a person or team.
-
-    It shows the set of specifications with which this person has a role.  If
-    the person is a team, then all members of the team are presented using
-    batching with their individual specifications.
-    """
-
-    label = 'Blueprint workload'
-
-    @cachedproperty
-    def members(self):
-        """Return a batch navigator for all members.
-
-        This batch does not test for whether the person has specifications or
-        not.
-        """
-        members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request, size=20)
-        return batch_nav
-
-
-class PersonSpecWorkloadTableView(LaunchpadView):
-    """View to render the specification workload table for a person.
-
-    It shows the set of specifications with which this person has a role
-    in a single table.
-    """
-
-    page_title = 'Blueprint workload'
-
-    class PersonSpec:
-        """One record from the workload list."""
-
-        def __init__(self, spec, person):
-            self.spec = spec
-            self.assignee = spec.assignee == person
-            self.drafter = spec.drafter == person
-            self.approver = spec.approver == person
-
-    @cachedproperty
-    def workload(self):
-        """This code is copied in large part from browser/sprint.py. It may
-        be worthwhile refactoring this to use a common code base.
-
-        Return a structure that lists the specs for which this person is the
-        approver, the assignee or the drafter.
-        """
-        return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
-                for spec in self.context.specifications()]
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -3573,7 +3482,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
             else:
                 project['bug_count'] = pillar.searchTasks(
                     BugTaskSet().open_bugtask_search).count()
-            project['spec_count'] = pillar.specifications().count()
+            project['spec_count'] = pillar.specifications(user).count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects
@@ -3601,7 +3510,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @cachedproperty
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
-        return self.context.getAffiliatedPillars()
+        user = getUtility(ILaunchBag).user
+        return self.context.getAffiliatedPillars(user)
 
     def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""

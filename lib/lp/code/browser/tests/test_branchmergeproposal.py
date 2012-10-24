@@ -30,6 +30,7 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -45,7 +46,6 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
-    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff
@@ -54,7 +54,6 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import (
-    InformationType,
     PersonVisibility,
     TeamMembershipPolicy,
     )
@@ -213,9 +212,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         owner = self.bmp.source_branch.owner
         if not is_branch_visible:
             branch = self.bmp.source_branch
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
-            branch.setPrivate(True, owner)
+            branch.transitionToInformationType(InformationType.USERDATA, owner)
 
         # Set up some review requests.
         public_person1 = self.factory.makePerson()

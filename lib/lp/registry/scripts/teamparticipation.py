@@ -27,17 +27,17 @@ import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.teammembership import ACTIVE_STATES
-from lp.services.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
-from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from lp.services.scripts.base import LaunchpadScriptFailure
 
 
 def get_master_store():

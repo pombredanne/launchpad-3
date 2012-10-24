@@ -14,13 +14,8 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
-    And,
-    Exists,
-    Or,
     Select,
-    SQL,
     Union,
-    With,
     )
 from zope.component import (
     getUtility,
@@ -159,6 +154,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesView,
     ITimelineProductSeries,
     )
 from lp.registry.interfaces.projectgroup import (
@@ -176,7 +172,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.account import IAccount
@@ -430,6 +425,30 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
+class ViewProduct(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class ChangeProduct(ViewProduct):
+    """Used for attributes of IProduct that are accessible to any logged
+    in user for public product but only to persons with access grants
+    for private products.
+    """
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProduct
+
+    def checkUnauthenticated(self):
+        return False
+
+
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 
@@ -491,7 +510,7 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewMilestone(AnonymousAuthorization):
+class ViewAbstractMilestone(AnonymousAuthorization):
     """Anyone can view an IMilestone or an IProjectGroupMilestone."""
     usedfor = IAbstractMilestone
 
@@ -640,8 +659,8 @@ class Sprint(AuthorizationBase):
 
 
 class EditSpecificationSubscription(AuthorizationBase):
-    """The people related to the spec or the target of the
-    spec who can determine who is essential."""
+    """The subscriber, and people related to the spec or the target of the
+    spec can determine who is essential."""
     permission = 'launchpad.Edit'
     usedfor = ISpecificationSubscription
 
@@ -652,9 +671,11 @@ class EditSpecificationSubscription(AuthorizationBase):
         else:
             if user.isOneOfDrivers(self.obj.specification.target):
                 return True
-        spec_roles = ['owner', 'drafter', 'assignee', 'approver']
-        return (user.isOneOf(self.obj.specification, spec_roles)
-                or user.in_admin)
+        return (user.inTeam(self.obj.person) or
+                user.isOneOf(
+                    self.obj.specification,
+                    ['owner', 'drafter', 'assignee', 'approver']) or
+                user.in_admin)
 
 
 class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
@@ -703,6 +724,25 @@ class EditProjectMilestoneNever(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """IProjectGroupMilestone is a fake content object."""
+        return False
+
+
+class ViewMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
+class EditMilestone(ViewMilestone):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IMilestone
+
+    def checkUnauthenticated(self):
         return False
 
 
@@ -1246,9 +1286,26 @@ class DriveProduct(SeriesDrivers):
             or False)
 
 
-class ViewProductSeries(AnonymousAuthorization):
+class ViewProductSeries(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProductSeriesView
 
-    usedfor = IProductSeries
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class ChangeProductSeries(ViewProductSeries):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProductSeriesView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditProductSeries(EditByOwnersOrAdmins):

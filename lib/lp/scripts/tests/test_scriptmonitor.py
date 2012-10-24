@@ -25,6 +25,7 @@ class CheckScriptTestCase(TestCase):
             log_file = None
             loglevel = 1000
             verbose = False
+            milliseconds = False
         self.con = connect()
         self.log = logger(FakeOptions())
 

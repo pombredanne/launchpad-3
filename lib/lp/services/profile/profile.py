@@ -36,16 +36,14 @@ from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
 from lp.services.config import config
+from lp.services.database.interfaces import DisallowedStore
 from lp.services.features import getFeatureFlag
 from lp.services.profile.mem import (
     memory,
     resident,
     )
 import lp.services.webapp.adapter as da
-from lp.services.webapp.interfaces import (
-    DisallowedStore,
-    IStartRequestEvent,
-    )
+from lp.services.webapp.interfaces import IStartRequestEvent
 
 
 class ProfilingOops(Exception):

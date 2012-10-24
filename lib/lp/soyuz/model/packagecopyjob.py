@@ -13,9 +13,9 @@ import logging
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.locals import (
-    And,
     Int,
     JSON,
+    Not,
     Reference,
     Unicode,
     )
@@ -76,6 +76,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     PackageCopyJobType,
     )
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
@@ -205,13 +206,25 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready PackageCopyJobs."""
-        jobs = IStore(PackageCopyJob).find(
-            PackageCopyJob,
-            And(PackageCopyJob.job_type == cls.class_job_type,
+        """Iterate through all ready PackageCopyJobs.
+
+        Even though it's slower, we repeat the query each time in order that
+        very long queues of mass syncs can be pre-empted by other jobs.
+        """
+        seen = set()
+        while True:
+            jobs = IStore(PackageCopyJob).find(
+                PackageCopyJob,
+                PackageCopyJob.job_type == cls.class_job_type,
                 PackageCopyJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (cls(job) for job in jobs)
+                Job.id.is_in(Job.ready_jobs),
+                Not(Job.id.is_in(seen)))
+            jobs.order_by(PackageCopyJob.copy_policy)
+            job = jobs.first()
+            if job is None:
+                break
+            seen.add(job.job_id)
+            yield cls(job)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -602,7 +615,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
         send_email = copy_policy.send_email(self.target_archive)
-        copied_sources = do_copy(
+        copied_publications = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
@@ -612,16 +625,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             unembargo=self.unembargo)
 
         # Add a PackageDiff for this new upload if it has ancestry.
-        if copied_sources and not ancestry.is_empty():
-            from_spr = copied_sources[0].sourcepackagerelease
-            for ancestor in ancestry:
-                to_spr = ancestor.sourcepackagerelease
-                if from_spr != to_spr:
-                    try:
-                        to_spr.requestDiffTo(self.requester, from_spr)
-                    except PackageDiffAlreadyRequested:
-                        pass
+        if copied_publications and not ancestry.is_empty():
+            from_spr = None
+            for publication in copied_publications:
+                if ISourcePackagePublishingHistory.providedBy(publication):
+                    from_spr = publication.sourcepackagerelease
                     break
+            if from_spr:
+                for ancestor in ancestry:
+                    to_spr = ancestor.sourcepackagerelease
+                    if from_spr != to_spr:
+                        try:
+                            to_spr.requestDiffTo(self.requester, from_spr)
+                        except PackageDiffAlreadyRequested:
+                            pass
+                        break
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be

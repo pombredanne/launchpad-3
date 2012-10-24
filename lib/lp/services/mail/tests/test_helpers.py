@@ -177,7 +177,8 @@ class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
             signed_msg, 'test')
         self.assertEqual(
             "The message you sent included commands to modify the test,\n"
-            "but you didn't sign the message with your OpenPGP key.\n",
+            "but you didn't sign the message with an OpenPGP key that is\n"
+            "registered in Launchpad.\n",
             error.message)
 
     def test_weakly_authenticated_with_sig(self):

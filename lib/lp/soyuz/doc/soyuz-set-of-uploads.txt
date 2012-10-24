@@ -589,73 +589,6 @@ rest of the test:
     >>> breezy.syncUpdate()
 
 
-Staged Security Uploads
------------------------
-
-XXX: Salgado, 2010-08-25, bug=624078: This entire section should be removed
-but if you do so publish-distro.py (called further down) will hang.
-
-Perform a staged (source-first) security upload, simulating a run of
-the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
-allowed a security upload, we need to use a released distroseries,
-eg ubuntu/warty.
-
-    >>> from lp.soyuz.model.section import (
-    ...     Section, SectionSelection)
-    >>> warty = ubuntu['warty']
-    >>> devel = Section.selectOneBy(name="devel")
-    >>> ss = SectionSelection(distroseries=warty, section=devel)
-
-    >>> simulate_upload(
-    ...     'baz_1.0-1', is_new=True, upload_policy="anything",
-    ...     series="warty-security", distro="ubuntu")
-
-Check there's a SourcePackageRelease with no build.
-
-    >>> from lp.buildmaster.enums import BuildStatus
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-    >>> spn = SourcePackageName.selectOneBy(name="baz")
-    >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-    >>> spr_id = spr.id
-    >>> builds = BinaryPackageBuild.selectBy(source_package_release_id=spr_id)
-    >>> len(list(builds))
-    0
-
-Manually create a build for this spr in i386.  This simulates the
-buildd-queuebuilder having run inbetween the source and binary uploads.
-
-    >>> warty_i386 = ubuntu['warty']['i386']
-    >>> main_archive = ubuntu.main_archive
-    >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
-    ...                         main_archive, status=BuildStatus.NEEDSBUILD)
-
-Check build created
-
-    >>> len(list(BinaryPackageBuild.selectBy(
-    ...     source_package_release_id=spr_id)))
-    1
-
-Upload the i386 binary:
-
-    >>> simulate_upload(
-    ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="anything",
-    ...     distro="ubuntu", series="warty-security")
-
-Should still just have one build, and it should now be FULLYBUILT.
-
-    >>> from lp.services.database.sqlbase import clear_current_connection_cache
-    >>> clear_current_connection_cache()
-
-    >>> builds = list(BinaryPackageBuild.selectBy(
-    ...     source_package_release_id=spr_id))
-    >>> len(builds)
-    1
-    >>> builds[0].status == BuildStatus.FULLYBUILT
-    True
-
-
 Regression test for bug 54039. Currently must be here, see bug 54158.
 
 In bug 54039, we were rewriting all Release files, at a time when, in
@@ -712,6 +645,8 @@ files that are published in the sample data.
     >>> fillLibrarianFile(68)
     >>> fillLibrarianFile(70)
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> run_publish_distro(careful=True)
     DEBUG   Enabled by DEFAULT section
     INFO    Creating lockfile: ...

@@ -8,18 +8,25 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
 from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
     )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -32,16 +39,13 @@ class LicensesModifiedEventTestCase(TestCaseWithFactory):
 
     def test_init(self):
         product = self.factory.makeProduct()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product)
-        self.assertEqual(product.owner, event.user.person)
         self.assertEqual(product, event.object)
         self.assertEqual(product, event.object_before_modification)
         self.assertEqual([], event.edited_fields)
 
     def test_init_with_user(self):
         product = self.factory.makeProduct()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product, user=product.owner)
         self.assertEqual(product.owner, event.user)
 
@@ -53,7 +57,6 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
     def make_product_event(self, licenses):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
-        login_person(product.owner)
         event = LicensesModifiedEvent(product, user=product.owner)
         return product, event
 
@@ -128,7 +131,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_known_license(self):
         # A known licence does not generate an email.
         product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(False, result)
         self.assertEqual(0, len(pop_notifications()))
@@ -136,7 +139,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_dont_know(self):
         # An Other/I don't know licence sends one email.
         product, user = self.make_product_user([License.DONT_KNOW])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -147,7 +150,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_open_source(self):
         # An Other/Open Source licence sends one email.
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -158,7 +161,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_send_other_proprietary(self):
         # An Other/Proprietary licence sends one email.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.send()
         self.assertIs(True, result)
         self.verify_whiteboard(product)
@@ -166,11 +169,36 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
 
+    def test_send_other_proprietary_team_admins(self):
+        # An Other/Proprietary licence sends one email to the team admins.
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        owner = self.factory.makePerson(email='owner@eg.dom')
+        team = self.factory.makeTeam(
+            owner=owner, membership_policy=TeamMembershipPolicy.RESTRICTED)
+        admin = self.factory.makePerson(email='admin@eg.dom')
+        with person_logged_in(owner):
+            team.addMember(admin, owner)
+            membership_set = getUtility(ITeamMembershipSet)
+            tm = membership_set.getByPersonAndTeam(admin, team)
+            tm.setStatus(TeamMembershipStatus.ADMIN, owner)
+        with person_logged_in(product.owner):
+            product.owner = team
+        pop_notifications()
+        notification = LicenseNotification(product)
+        result = notification.send()
+        self.assertIs(True, result)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual('admin@eg.dom,owner@eg.dom', notifications[0]['To'])
+
     def test_display_no_request(self):
         # If there is no request, there is no reason to show a message in
         # the browser.
         product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
+        # Using the proxied product leads to an exeception when
+        # notification.display() below is called because the permission
+        # checks product require an interaction.
+        notification = LicenseNotification(removeSecurityProxy(product))
         logout()
         result = notification.display()
         self.assertIs(False, result)
@@ -178,7 +206,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_display_no_message(self):
         # A notification is not added if there is no message to show.
         product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         self.assertEqual('', notification.getCommercialUseMessage())
         self.assertIs(False, result)
@@ -186,7 +214,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_display_has_message(self):
         # A notification is added if there is a message to show.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         message = notification.getCommercialUseMessage()
         self.assertIs(True, result)
@@ -201,7 +229,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         # A notification is added if there is a message to show.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         product.displayname = '<b>Look</b>'
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         result = notification.display()
         self.assertIs(True, result)
         request = get_current_browser_request()
@@ -218,33 +246,33 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
 
     def test_getTemplateName_other_dont_know(self):
         product, user = self.make_product_user([License.DONT_KNOW])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-dont-know.txt',
             notification.getTemplateName())
 
     def test_getTemplateName_propietary(self):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-other-proprietary.txt',
             notification.getTemplateName())
 
     def test_getTemplateName_other_open_source(self):
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual(
             'product-license-other-open-source.txt',
             notification.getTemplateName())
 
     def test_getCommercialUseMessage_without_commercial_subscription(self):
         product, user = self.make_product_user([License.MIT])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         self.assertEqual('', notification.getCommercialUseMessage())
 
     def test_getCommercialUseMessage_with_complimentary_cs(self):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's complimentary commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
@@ -254,7 +282,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product, user = self.make_product_user([License.MIT])
         self.factory.makeCommercialSubscription(product)
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
@@ -264,7 +292,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product, user = self.make_product_user([License.MIT])
         self.factory.makeCommercialSubscription(product, expired=True)
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
-        notification = LicenseNotification(product, user)
+        notification = LicenseNotification(product)
         message = (
             "Ball's commercial subscription expired on %s." %
             product.commercial_subscription.date_expires.date().isoformat())

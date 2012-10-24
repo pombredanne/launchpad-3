@@ -206,7 +206,8 @@ We cannot allow proprietary bugs to affect more than one pillar.
     >>> from lp.services.webapp import canonical_url
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import BugSharingPolicy, InformationType
+    >>> from lp.app.enums import InformationType
+    >>> from lp.registry.enums import BugSharingPolicy
 
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user
@@ -218,6 +219,7 @@ We cannot allow proprietary bugs to affect more than one pillar.
     >>> other_product = factory.makeProduct(
     ...     official_malone=True,
     ...     bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+    >>> other_product_name = other_product.name
     >>> params = CreateBugParams(
     ...     title="a test private bug",
     ...     comment="a description of the bug",
@@ -228,7 +230,7 @@ We cannot allow proprietary bugs to affect more than one pillar.
 
     >>> browser.open(canonical_url(private_bug, rootsite='bugs'))
     >>> browser.getLink(url='+choose-affected-product').click()
-    >>> browser.getControl(name='field.product').value = other_product.name
+    >>> browser.getControl(name='field.product').value = other_product_name
     >>> browser.getControl('Continue').click()
     >>> print browser.url
     http://bugs.launchpad.dev/proprietary-product/+bug/16/+choose-affected-product

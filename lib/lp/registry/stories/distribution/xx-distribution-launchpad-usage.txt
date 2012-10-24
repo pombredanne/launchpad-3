@@ -43,7 +43,7 @@ The distribution's registrant can access the page and change the usage.
     False
     >>> print registrant.getControl(
     ...     name='field.enabled_restricted_families').value
-    ['arm']
+    []
 
     >>> registrant.getControl(name='field.translations_usage').value = [
     ...     'UNKNOWN']

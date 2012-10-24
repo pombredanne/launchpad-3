@@ -17,6 +17,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.bugs.errors import InvalidSearchParameters
@@ -25,6 +26,7 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTaskSet,
     )
 from lp.bugs.interfaces.bugtasksearch import (
@@ -47,10 +49,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enums import (
-    InformationType,
-    SharingPermission,
-    )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1773,6 +1772,13 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             'BugTask.status IN (13, 14)',
             self.searchClause(BugTaskStatus.INCOMPLETE))
 
+    def test_BugTaskStatusSearch_INCOMPLETE_query(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (13, 14)',
+            self.searchClause(BugTaskStatusSearch.INCOMPLETE))
+
     def test_negative_query(self):
         # If a negative is requested then the WHERE clause is simply wrapped
         # in a "NOT".
@@ -1800,6 +1806,14 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
             'BugTask.status IN (10, 13, 14)',
             self.searchClause(
                 any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
+
+    def test_any_query_with_BugTaskStatusSearch_INCOMPLETE(self):
+        # BugTaskStatusSearch.INCOMPLETE is treated as
+        # BugTaskStatus.INCOMPLETE.
+        self.assertEqual(
+            'BugTask.status IN (10, 13, 14)',
+            self.searchClause(
+                any(BugTaskStatus.NEW, BugTaskStatusSearch.INCOMPLETE)))
 
     def test_all_query(self):
         # Since status is single-valued, asking for "all" statuses in a set
@@ -2361,6 +2375,29 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
             user=None, linked_blueprints=blueprint1.id)
         tasks = set(getUtility(IBugTaskSet).search(params))
         self.assertContentEqual(bug1.bugtasks, tasks)
+
+
+class TargetLessTestCase(TestCaseWithFactory):
+    """Test that do not call setTarget() in the BugTaskSearchParams."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_project_group_structural_subscription(self):
+        # Search results can be limited to bugs without a bug target to which
+        # a given person has a structural subscription.
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.factory.makeBug(target=product)
+        with person_logged_in(product.owner):
+            project_group = self.factory.makeProject(owner=product.owner)
+            product.project = project_group
+        with person_logged_in(subscriber):
+            project_group.addBugSubscription(subscriber, subscriber)
+        params = BugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        bugtask_set = getUtility(IBugTaskSet)
+        found_bugtasks = bugtask_set.search(params)
+        self.assertEqual(1, found_bugtasks.count())
 
 
 class BaseGetBugPrivacyFilterTermsTests:

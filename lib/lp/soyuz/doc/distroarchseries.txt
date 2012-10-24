@@ -67,7 +67,7 @@ See more information about getReleasePackages below.
 Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
-    >>> results = hoary_i386.searchBinaryPackages(text='pmount')
+    >>> results = hoary_i386.searchBinaryPackages(text=u'pmount')
     >>> results.count()
     1
     >>> pmount = results[0]
@@ -77,10 +77,10 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
 
     >>> warty = ubuntu.getSeries('warty')
     >>> warty_i386 = warty['i386']
-    >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
+    >>> results = warty_i386.searchBinaryPackages(text=u'linux-2.6.12')
     >>> results.count()
     1
-    >>> results = warty_i386.searchBinaryPackages(text='a')
+    >>> results = warty_i386.searchBinaryPackages(text=u'a')
     >>> for dasbp in results:
     ...     print "%s: %s" % (dasbp.__class__.__name__, dasbp.name)
     DistroArchSeriesBinaryPackageRelease: at

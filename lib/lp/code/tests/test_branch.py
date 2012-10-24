@@ -6,6 +6,7 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -14,7 +15,6 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.codehosting import SUPPORTED_SCHEMES
 from lp.code.tests.helpers import make_official_package_branch
-from lp.registry.enums import InformationType
 from lp.services.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import (

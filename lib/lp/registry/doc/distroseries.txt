@@ -39,12 +39,6 @@ To retrieve a specific release of a distribution, use IDistroSeriesSet.get:
     >>> print warty.fullseriesname
     Ubuntu Warty
 
-Or IDistroSeriesSet.findByName:
-
-    >>> for distroseries in distroseriesset.findByName("warty"):
-    ...     print distroseries.name
-    warty
-
 To get one specific release by name, use queryByName:
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -52,18 +46,15 @@ To get one specific release by name, use queryByName:
     >>> warty = distroseriesset.queryByName(ubuntu, "warty")
     >>> warty.name
     u'warty'
-
-If the release by that name doesn't exist, None will be returned:
-
-    >>> foobar = distroseriesset.queryByName(ubuntu, "foobar")
-    >>> print foobar
+    >>> print distroseriesset.queryByName(ubuntu, "foobar")
     None
 
-Or IDistroSeriesSet.findByVersion:
+Or IDistroSeriesSet.queryByVersion:
 
-    >>> for distroseries in distroseriesset.findByVersion("5.04"):
-    ...     print distroseries.name
+    >>> print distroseriesset.queryByVersion(ubuntu, "5.04").name
     hoary
+    >>> print distroseriesset.queryByVersion(ubuntu, "5.05")
+    None
 
 We verify that a distroseries does in fact fully provide IDistroSeries:
 
@@ -224,17 +215,17 @@ Package searching
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
 
-    >>> warty.searchPackages("pmount").count()
+    >>> warty.searchPackages(u"pmount").count()
     1
 
 This also works for small or weirdly named packages that don't work
 through fti, and even for substrings:
 
-    >>> warty.searchPackages("linux-2.6.12").count()
+    >>> warty.searchPackages(u"linux-2.6.12").count()
     1
-    >>> warty.searchPackages("at").count()
+    >>> warty.searchPackages(u"at").count()
     1
-    >>> pkgs = warty.searchPackages('a')
+    >>> pkgs = warty.searchPackages(u'a')
     >>> for dsbp in pkgs:
     ...     print "%s: %s" % (dsbp.__class__.__name__, dsbp.name)
     DistroSeriesBinaryPackage: foobar
@@ -859,14 +850,14 @@ informational.
 First, there should be one informational specs for krunch:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> krunch.specifications(filter=filter).count()
+    >>> krunch.specifications(None, filter=filter).count()
     1
 
 
 There are 2 completed specs for Krunch:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in kubuntu.specifications(filter=filter):
+    >>> for spec in kubuntu.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete
     thinclient-local-devices True
     usplash-on-hibernation True
@@ -875,7 +866,7 @@ There are 2 completed specs for Krunch:
 And there are 2 incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -884,7 +875,7 @@ And there are 2 incomplete specs:
 If we ask for all specs, we get them in the order of priority.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...    print spec.priority.title, spec.name
     Essential cluster-installation
     High revu
@@ -897,7 +888,7 @@ If we ask for all specs, we get them in the order of priority.
 With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
     >>> filter=[SpecificationFilter.ACCEPTED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     cluster-installation Accepted
     revu Accepted
@@ -905,12 +896,12 @@ With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
     usplash-on-hibernation Accepted
 
     >>> filter=[SpecificationFilter.PROPOSED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     kde-desktopfile-langpacks Proposed
 
     >>> filter=[SpecificationFilter.DECLINED]
-    >>> for spec in krunch.specifications(filter=filter):
+    >>> for spec in krunch.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     krunch-desktop-plan Declined
 
@@ -918,7 +909,7 @@ With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 And if we ask just for specs, we get BOTH the incomplete and the complete
 ones that have been accepted.
 
-    >>> for spec in krunch.specifications():
+    >>> for spec in krunch.specifications(None):
     ...     print spec.name, spec.is_complete, spec.goalstatus.title
     cluster-installation False Accepted
     revu False Accepted
@@ -927,7 +918,7 @@ ones that have been accepted.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in krunch.specifications(filter=['usb']):
+    >>> for spec in krunch.specifications(None, filter=['usb']):
     ...     print spec.name
     thinclient-local-devices
 
@@ -1048,7 +1039,7 @@ Getting build records for a distro series
 IDistroSeries inherits the IHasBuildRecords interfaces and therefore provides
 a getBuildRecords() method.
 
-    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox')
+    >>> builds = ubuntu['warty'].getBuildRecords(name=u'firefox')
     >>> for build in builds:
     ...     print build.title
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE

@@ -128,7 +128,7 @@ project group.
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
-    7 A test bug
+    7 A test bug Evolution
       Medium New
 
 === Searching a project ===
@@ -144,7 +144,7 @@ project group.
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      evolution Medium New
+      Evolution Medium New
 
 === Searching a distribution ===
 
@@ -159,7 +159,7 @@ project group.
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-       linux-source-2.6.15  Medium  New
+       linux-source-2.6.15 (Ubuntu)  Medium  New
 
 === Jumping to a bug ===
 

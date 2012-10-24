@@ -48,6 +48,7 @@ import subvertpy
 import subvertpy.client
 import subvertpy.ra
 
+from lp.app.enums import InformationType
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
@@ -61,7 +62,6 @@ from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
     GitServer,
-    MercurialServer,
     SubversionServer,
     )
 from lp.codehosting.codeimport.worker import (
@@ -75,7 +75,6 @@ from lp.codehosting.codeimport.worker import (
     ForeignTreeStore,
     get_default_bazaar_branch_store,
     GitImportWorker,
-    HgImportWorker,
     ImportDataStore,
     ImportWorker,
     )
@@ -87,7 +86,6 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
-from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -1044,7 +1042,7 @@ class PullingImportWorkerTests:
         # import should be rejected.
         args = {'rcstype': self.rcstype}
         reference_url, target_url = self.createBranchReference()
-        if self.rcstype in ('git', 'bzr-svn', 'hg'):
+        if self.rcstype in ('git', 'bzr-svn'):
             args['url'] = reference_url
         else:
             raise AssertionError("unexpected rcs_type %r" % self.rcstype)
@@ -1095,8 +1093,7 @@ class PullingImportWorkerTests:
         self.pushConfig(
             'codeimport',
             git_revisions_import_limit=import_limit,
-            svn_revisions_import_limit=import_limit,
-            hg_revisions_import_limit=import_limit)
+            svn_revisions_import_limit=import_limit)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(
@@ -1193,87 +1190,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             message="Message for other")
         self.makeForeignCommit(source_details, ref="refs/heads/master",
             message="Message for master")
-        source_details.url = urlutils.join_segment_parameters(
-                source_details.url, {"branch": "other"})
-        source_transport = get_transport_from_url(source_details.url)
-        self.assertEquals(
-            {"branch": "other"},
-            source_transport.get_segment_parameters())
-        worker = self.makeImportWorker(source_details,
-            opener_policy=AcceptAnythingPolicy())
-        self.assertTrue(self.foreign_commit_count > 1)
-        self.assertEqual(
-            CodeImportWorkerExitCode.SUCCESS, worker.run())
-        branch = worker.getBazaarBranch()
-        lastrev = branch.repository.get_revision(branch.last_revision())
-        self.assertEquals(lastrev.message, "Message for other")
-
-
-class TestMercurialImport(WorkerTest, TestActualImportMixin,
-                          PullingImportWorkerTests):
-
-    rcstype = 'hg'
-
-    def setUp(self):
-        super(TestMercurialImport, self).setUp()
-        self.setUpImport()
-
-    def tearDown(self):
-        """Clear bzr-hg's cache of sqlite connections.
-
-        This is rather obscure: different test runs tend to re-use the same
-        paths on disk, which confuses bzr-hg as it keeps a cache that maps
-        paths to database connections, which happily returns the connection
-        that corresponds to a path that no longer exists.
-        """
-        from bzrlib.plugins.hg.idmap import mapdbs
-        mapdbs().clear()
-        WorkerTest.tearDown(self)
-
-    def makeImportWorker(self, source_details, opener_policy):
-        """Make a new `ImportWorker`."""
-        return HgImportWorker(
-            source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger(),
-            opener_policy=opener_policy)
-
-    def makeForeignCommit(self, source_details, message=None, branch=None):
-        """Change the foreign tree, generating exactly one commit."""
-        from mercurial.ui import ui
-        from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), local_path_from_url(source_details.url))
-        extra = {}
-        if branch is not None:
-            extra = {"branch": branch}
-        if message is None:
-            message = self.factory.getUniqueString()
-        repo.commit(
-            text=message, user="Jane Random Hacker", force=1, extra=extra)
-        self.foreign_commit_count += 1
-
-    def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
-        """Make a Mercurial `CodeImportSourceDetails` pointing at a real repo.
-        """
-        repository_path = self.makeTemporaryDirectory()
-        hg_server = MercurialServer(repository_path)
-        hg_server.start_server()
-        self.addCleanup(hg_server.stop_server)
-
-        hg_server.makeRepo(files)
-        self.foreign_commit_count = 1
-
-        return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=hg_server.get_url(),
-            stacked_on_url=stacked_on_url)
-
-    def test_non_default(self):
-        # non-default branches can be specified in the import URL.
-        source_details = self.makeSourceDetails(
-            'trunk', [('README', 'Original contents')])
-        self.makeForeignCommit(source_details, branch="other",
-            message="Message for other")
-        self.makeForeignCommit(source_details, branch="default",
-            message="Message for default")
         source_details.url = urlutils.join_segment_parameters(
                 source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
@@ -1410,7 +1326,6 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertGoodUrl("http://user:password@svn.example/branches/trunk")
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
-        self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
         self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
 
 
@@ -1498,15 +1413,6 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             code_import).asArguments()
         self.assertEquals([
             str(code_import.branch.id), 'bzr', 'http://example.com/foo'],
-            arguments)
-
-    def test_hg_arguments(self):
-        code_import = self.factory.makeCodeImport(
-            hg_repo_url="http://example.com/foo")
-        arguments = CodeImportSourceDetails.fromCodeImport(
-            code_import).asArguments()
-        self.assertEquals([
-            str(code_import.branch.id), 'hg', 'http://example.com/foo'],
             arguments)
 
     def test_git_arguments(self):

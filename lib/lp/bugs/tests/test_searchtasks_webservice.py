@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 
-from lp.registry.enums import InformationType
+
+from lp.app.enums import InformationType
+from lp.bugs.interfaces.bugtask import BugTaskStatusSearch
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -52,6 +54,7 @@ class TestProductSearchTasks(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
+        self.product_name = self.product.name
         self.bug = self.factory.makeBug(
             target=self.product,
             information_type=InformationType.PRIVATESECURITY)
@@ -60,7 +63,7 @@ class TestProductSearchTasks(TestCaseWithFactory):
 
     def search(self, api_version, **kwargs):
         return self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
+            '/%s' % self.product_name, 'searchTasks',
             api_version=api_version, **kwargs).jsonBody()
 
     def test_linked_blueprints_in_devel(self):
@@ -100,12 +103,25 @@ class TestProductSearchTasks(TestCaseWithFactory):
     def test_search_with_wrong_orderby(self):
         # Calling searchTasks() with a wrong order_by is a Bad Request.
         response = self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
+            '/%s' % self.product_name, 'searchTasks',
             api_version='devel', order_by='date_created')
         self.assertEqual(400, response.status)
         self.assertRaisesWithContent(
             ValueError, "Unrecognized order_by: u'date_created'",
             response.jsonBody)
+
+    def test_search_incomplete_status_results(self):
+        # The Incomplete status matches Incomplete with response and
+        # Incomplete without response bug tasks.
+        with person_logged_in(self.owner):
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+        response = self.search("devel", status="Incomplete")
+        self.assertEqual(response['total_size'], 2)
 
 
 class TestGetBugData(TestCaseWithFactory):

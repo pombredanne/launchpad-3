@@ -93,7 +93,8 @@ class BugNomination(SQLBase):
                     targets.append(distroseries)
         else:
             targets.append(self.productseries)
-        bugtasks = getUtility(IBugTaskSet).createManyTasks(self.bug, approver, targets)
+        bugtasks = getUtility(IBugTaskSet).createManyTasks(
+            self.bug, approver, targets)
         for bug_task in bugtasks:
             self.bug.addChange(BugTaskAdded(UTC_NOW, approver, bug_task))
 

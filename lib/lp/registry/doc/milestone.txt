@@ -289,24 +289,25 @@ associated with the project milestone of the same name. No product of
 the Gnome project has yet any specifications.
 
     >>> for product in gnome.products:
-    ...     print product.name, list(product.all_specifications)
+    ...     print product.name, list(product._all_specifications)
     evolution []
     gnome-terminal []
     applets []
     netapplet []
     gnomebaker []
 
-    >>> print list(gnome.getMilestone('1.1').specifications)
+    >>> print list(gnome.getMilestone('1.1').getSpecifications(None))
     []
 
 When a specification for a product is created and assigned to a product
 milestone, it is "inheritied" by the project milestone.
 
     >>> spec = test_helper.createSpecification('1.1', 'applets')
-    >>> [spec.name for spec in applets.all_specifications]
+    >>> [spec.name for spec in applets._all_specifications]
     [u'applets-specification']
 
-    >>> [spec.name for spec in gnome.getMilestone('1.1').specifications]
+    >>> specs = gnome.getMilestone('1.1').getSpecifications(None)
+    >>> [spec.name for spec in specs]
     [u'applets-specification']
 
 

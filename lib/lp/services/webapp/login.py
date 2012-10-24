@@ -24,6 +24,10 @@ from openid.fetchers import (
     setDefaultFetcher,
     Urllib2Fetcher,
     )
+from paste.httpexceptions import (
+    HTTPBadRequest,
+    HTTPException,
+    )
 import transaction
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
@@ -48,12 +52,12 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.services.config import config
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import AccountSuspendedError
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp import canonical_url
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     CookieAuthLoggedInEvent,
@@ -333,12 +337,14 @@ class OpenIDCallbackView(OpenIDLogin):
         # asked to.  Once we start using other OPs we won't be able to
         # make this assumption here as they might not include what we
         # want in the response.
-        assert self.sreg_response is not None, (
-            "OP didn't include an sreg extension in the response.")
+        if self.sreg_response is None:
+            raise HTTPBadRequest(
+                "OP didn't include an sreg extension in the response.")
         email_address = self.sreg_response.get('email')
         full_name = self.sreg_response.get('fullname')
-        assert email_address is not None and full_name is not None, (
-            "No email address or full name found in sreg response")
+        if email_address is None or full_name is None:
+            raise HTTPBadRequest(
+                "No email address or full name found in sreg response.")
         return email_address, full_name
 
     def processPositiveAssertion(self):
@@ -389,7 +395,11 @@ class OpenIDCallbackView(OpenIDLogin):
 
     def render(self):
         if self.openid_response.status == SUCCESS:
-            return self.processPositiveAssertion()
+            try:
+                return self.processPositiveAssertion()
+            except HTTPException as error:
+                return OpenIDLoginErrorView(
+                    self.context, self.request, login_error=error.message)()
 
         if self.account is not None:
             # The authentication failed (or was canceled), but the user is
@@ -432,10 +442,14 @@ class OpenIDLoginErrorView(LaunchpadView):
     page_title = 'Error logging in'
     template = ViewPageTemplateFile("templates/login-error.pt")
 
-    def __init__(self, context, request, openid_response):
+    def __init__(self, context, request, openid_response=None,
+                 login_error=None):
         super(OpenIDLoginErrorView, self).__init__(context, request)
         assert self.account is None, (
             "Don't try to render this page when the user is logged in.")
+        if login_error:
+            self.login_error = login_error
+            return
         if openid_response.status == CANCEL:
             self.login_error = "User cancelled"
         elif openid_response.status == FAILURE:

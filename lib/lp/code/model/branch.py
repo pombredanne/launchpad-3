@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212,W0141,F0401
-
 __metaclass__ = type
 __all__ = [
     'Branch',
@@ -53,10 +51,16 @@ from zope.security.proxy import (
     )
 
 from lp import _
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.errors import (
     SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -132,12 +136,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.enums import (
-    InformationType,
-    PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -187,7 +186,7 @@ from lp.services.webapp.authorization import check_permission
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranch, IBranchNavigationMenu, IPrivacy)
+    implements(IBranch, IBranchNavigationMenu, IPrivacy, IInformationType)
     _table = 'Branch'
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
@@ -253,7 +252,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             # Otherwise the permitted types are defined by the namespace.
             policy = IBranchNamespacePolicy(self.namespace)
-            types = set(policy.getAllowedInformationTypes())
+            types = set(policy.getAllowedInformationTypes(who))
         return types
 
     def transitionToInformationType(self, information_type, who,
@@ -370,6 +369,11 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchTargetError(
                     'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
+        if (self.information_type not in
+            namespace.getAllowedInformationTypes(user)):
+            raise BranchTargetError(
+                '%s branches are not allowed for target %s.' % (
+                    self.information_type.title, target.displayname))
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()
 
@@ -896,7 +900,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
-        ignored, branches = service.getVisibleArtifacts(
+        ignored, branches, ignored = service.getVisibleArtifacts(
             person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(

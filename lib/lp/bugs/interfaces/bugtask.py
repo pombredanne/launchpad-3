@@ -23,7 +23,6 @@ __all__ = [
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
     'IllegalTarget',
-    'INominationsReviewTableBatchNavigator',
     'IRemoveQuestionFromBugTaskForm',
     'normalize_bugtask_status',
     'RESOLVED_BUGTASK_STATUSES',
@@ -97,7 +96,6 @@ from lp.services.fields import (
     StrippedTextLine,
     Summary,
     )
-from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -419,7 +417,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         title=_('Milestone'),
         required=False,
         readonly=True,
-        vocabulary='Milestone',
+        vocabulary='BugTaskMilestone',
         schema=Interface))  # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 
@@ -1075,10 +1073,6 @@ class IAddBugTaskWithProductCreationForm(ILinkPackaging):
             "followed by letters, dots, hyphens or plusses. e.g. firefox, "
             "linux, gnome-terminal."))
     summary = Summary(title=_('Project summary'), required=True)
-
-
-class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
-    """Marker interface to render custom template for the bug nominations."""
 
 
 class ICreateQuestionFromBugTaskForm(Interface):

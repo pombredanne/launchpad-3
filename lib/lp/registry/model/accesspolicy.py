@@ -34,11 +34,11 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import (
+from lp.app.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
-    SharingPermission,
     )
+from lp.registry.enums import SharingPermission
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -264,13 +264,6 @@ class AccessPolicy(StormBase):
             Or(*(cls.person == team for team in teams)))
 
     @classmethod
-    def findByPillarAndGrantee(cls, pillars):
-        """See `IAccessPolicySource`."""
-        return IStore(cls).find(
-            cls,
-            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
-
-    @classmethod
     def delete(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
         cls.find(pillars_and_types).remove()
@@ -484,7 +477,7 @@ class AccessPolicyGrantFlat(StormBase):
             return (
                 person[0],
                 permissions_cache[person[0]],
-                shared_artifact_info_types[person[0]])
+                sorted(shared_artifact_info_types[person[0]]))
 
         def load_permissions(people):
             # We now have the grantees and policies we want in the result so

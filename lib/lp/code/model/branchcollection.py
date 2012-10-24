@@ -31,6 +31,10 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -59,10 +63,6 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.revision import Revision
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -77,15 +77,15 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import quote
-from lp.services.propertycache import get_property_cache
-from lp.services.searchbuilder import any
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
+from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
 from lp.services.webapp.vocabulary import CountableIterator
 
 

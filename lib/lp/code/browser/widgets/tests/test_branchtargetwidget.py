@@ -20,9 +20,7 @@ from lp.code.model.branchtarget import (
     PersonBranchTarget,
     ProductBranchTarget,
     )
-from lp.registry.vocabularies import (
-    ProductVocabulary,
-    )
+from lp.registry.vocabularies import ProductVocabulary
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory

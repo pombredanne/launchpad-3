@@ -21,9 +21,11 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
-    InformationType,
+    BranchSharingPolicy,
+    BugSharingPolicy,
     ProductJobType,
     )
 from lp.registry.interfaces.person import TeamMembershipPolicy
@@ -570,7 +572,6 @@ class CommericialExpirationMixin(CommercialHelpers):
             owner=product.owner, product=product,
             information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
-            product.setPrivateBugs(True, product.owner)
             product.development_focus.branch = private_branch
         self.expire_commercial_subscription(product)
         job = self.JOB_CLASS.create(product, reviewer)
@@ -710,7 +711,6 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             owner=product.owner, product=product,
             information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
-            product.setPrivateBugs(True, product.owner)
             public_series = product.development_focus
             public_series.branch = public_branch
             private_series = product.newSeries(
@@ -721,8 +721,11 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
         clear_property_cache(product)
-        self.assertIs(True, product.active)
-        self.assertIs(False, product.private_bugs)
+        self.assertTrue(product.active)
+        self.assertEqual(
+            BranchSharingPolicy.FORBIDDEN, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.FORBIDDEN, product.bug_sharing_policy)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
         self.assertIs(None, product.commercial_subscription)

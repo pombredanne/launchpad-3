@@ -19,7 +19,7 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,

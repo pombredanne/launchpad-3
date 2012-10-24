@@ -14,7 +14,7 @@ Since the web app is not run in the main thread (unlike the test suite)
 we rely on that to find out whether or not to reset stores.
 
     >>> import threading
-    >>> from lp.services.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.testing.pages import UnstickyCookieHTTPCaller
     >>> logout()

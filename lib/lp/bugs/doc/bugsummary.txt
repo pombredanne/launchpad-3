@@ -442,7 +442,7 @@ Create some bugs.
       distribution task. Subscribed to by team_c.
     - bug_z is public.
 
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> distro_p = factory.makeDistribution(name='di-p')
     >>> series_p = factory.makeDistroSeries(
     ...     distribution=distro_p, name='ds-p')

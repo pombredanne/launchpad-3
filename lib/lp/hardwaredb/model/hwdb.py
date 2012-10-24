@@ -110,16 +110,16 @@ from lp.services.database.constants import (
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 

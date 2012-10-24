@@ -28,9 +28,9 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
-    Join,
     LeftJoin,
-    Or,
+    Select,
+    Union,
     )
 from storm.locals import Store
 from storm.zope import IResultSet
@@ -63,6 +63,8 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.propertycache import get_property_cache
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.sorting import expand_numbers
 
 
@@ -146,9 +148,38 @@ class MilestoneData:
     def title(self):
         raise NotImplementedError
 
-    @property
-    def specifications(self):
-        raise NotImplementedError
+    def getSpecifications(self, user):
+        """See `IMilestoneData`"""
+        from lp.registry.model.person import Person
+        store = Store.of(self.target)
+        origin = [
+            Specification,
+            LeftJoin(Person, Specification.assigneeID == Person.id),
+            ]
+        milestones = self._milestone_ids_expr(user)
+
+        results = store.using(*origin).find(
+            (Specification, Person),
+            Specification.id.is_in(
+                Union(
+                    Select(
+                        Specification.id, tables=[Specification],
+                        where=(Specification.milestoneID.is_in(milestones))),
+                    Select(
+                        SpecificationWorkItem.specification_id,
+                        tables=[SpecificationWorkItem],
+                        where=And(
+                            SpecificationWorkItem.milestone_id.is_in(
+                                milestones),
+                            SpecificationWorkItem.deleted == False)),
+                    all=True)))
+        results.config(distinct=True)
+        ordered_results = results.order_by(Desc(Specification.priority),
+                                           Specification.definition_status,
+                                           Specification.implementation_status,
+                                           Specification.title)
+        mapper = lambda row: row[0]
+        return DecoratedResultSet(ordered_results, mapper)
 
     def bugtasks(self, user):
         """The list of non-conjoined bugtasks targeted to this milestone."""
@@ -189,31 +220,8 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    @property
-    def specifications(self):
-        from lp.registry.model.person import Person
-        store = Store.of(self)
-        origin = [
-            Specification,
-            LeftJoin(
-                SpecificationWorkItem,
-                SpecificationWorkItem.specification_id == Specification.id),
-            LeftJoin(Person, Specification.assigneeID == Person.id),
-            ]
-
-        results = store.using(*origin).find(
-            (Specification, Person),
-            Or(Specification.milestoneID == self.id,
-               SpecificationWorkItem.milestone_id == self.id),
-            Or(SpecificationWorkItem.deleted == None,
-               SpecificationWorkItem.deleted == False))
-        results.config(distinct=True)
-        ordered_results = results.order_by(Desc(Specification.priority),
-                                           Specification.definition_status,
-                                           Specification.implementation_status,
-                                           Specification.title)
-        mapper = lambda row: row[0]
-        return DecoratedResultSet(ordered_results, mapper)
+    def _milestone_ids_expr(self, user):
+        return (self.id,)
 
     @property
     def target(self):
@@ -270,6 +278,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        del get_property_cache(self.productseries).releases
         return release
 
     def closeBugsAndBlueprints(self, user):
@@ -285,13 +294,14 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
         subscriptions = IResultSet(self.getSubscriptions())
+        user = getUtility(ILaunchBag).user
         assert subscriptions.is_empty(), (
             "You cannot delete a milestone which has structural "
             "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
-        assert self.specifications.count() == 0, (
+        assert self.getSpecifications(user).count() == 0, (
             "You cannot delete a milestone which has specifications targeted "
             "to it.")
         assert self.product_release is None, (
@@ -341,6 +351,17 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         # Prevent circular references.
         from lp.registry.model.milestonetag import MilestoneTag
         return list(self.getTagsData().values(MilestoneTag.tag))
+
+    def userCanView(self, user):
+        """See `IMilestone`."""
+        # A database constraint ensures that either self.product
+        # or self.distribution is not None.
+        if self.product is None:
+            # Distributions are always public, and so are their
+            # milestones.
+            return True
+        # Delegate the permission check
+        return self.product.userCanView(user)
 
 
 class MilestoneSet:
@@ -401,7 +422,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
 
     implements(IProjectGroupMilestone)
 
-    def __init__(self, target, name, dateexpected, active):
+    def __init__(self, target, name, dateexpected, active, product):
         self.code_name = None
         # The id is necessary for generating a unique memcache key
         # in a page template loop. The ProjectMilestone.id is passed
@@ -410,7 +431,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
         self.name = name
         self.target = target
         self.code_name = None
-        self.product = None
+        self.product = product
         self.distribution = None
         self.productseries = None
         self.distroseries = None
@@ -420,37 +441,19 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
         self.series_target = None
         self.summary = None
 
-    @property
-    def specifications(self):
-        """See `IMilestoneData`."""
-        from lp.registry.model.person import Person
-        from lp.registry.model.product import Product
-        store = Store.of(self.target)
-        origin = [
-            Specification,
-            LeftJoin(
-                SpecificationWorkItem,
-                SpecificationWorkItem.specification_id == Specification.id),
-            Join(Milestone,
-                 Or(Milestone.id == Specification.milestoneID,
-                    Milestone.id == SpecificationWorkItem.milestone_id)),
-            Join(Product, Product.id == Milestone.productID),
-            LeftJoin(Person, Specification.assigneeID == Person.id),
-            ]
-
-        results = store.using(*origin).find(
-            (Specification, Person),
-            Product.projectID == self.target.id,
-            Milestone.name == self.name,
-            Or(SpecificationWorkItem.deleted == None,
-               SpecificationWorkItem.deleted == False))
-        results.config(distinct=True)
-        ordered_results = results.order_by(Desc(Specification.priority),
-                                           Specification.definition_status,
-                                           Specification.implementation_status,
-                                           Specification.title)
-        mapper = lambda row: row[0]
-        return DecoratedResultSet(ordered_results, mapper)
+    def _milestone_ids_expr(self, user):
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+            )
+        return Select(
+            Milestone.id,
+            tables=[Milestone, Product],
+            where=And(
+                Milestone.name == self.name,
+                Milestone.productID == Product.id,
+                Product.project == self.target,
+                ProductSet.getProductPrivacyFilter(user)))
 
     @property
     def displayname(self):

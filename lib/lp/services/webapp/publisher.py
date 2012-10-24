@@ -65,6 +65,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.versioninfo import revno
 from lp.layers import (
@@ -90,7 +91,6 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
-from lp.registry.interfaces.informationtype import IInformationType
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
@@ -309,6 +309,14 @@ class LaunchpadView(UserAttributeCache):
         if information_typed is None:
             return None
         return information_typed.information_type.title
+
+    @property
+    def information_type_description(self):
+        """A view has the information_type_description of its context."""
+        information_typed = IInformationType(self.context, None)
+        if information_typed is None:
+            return None
+        return information_typed.information_type.description
 
     def __init__(self, context, request):
         self.context = context

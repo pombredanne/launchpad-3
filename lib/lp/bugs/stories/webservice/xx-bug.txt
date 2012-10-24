@@ -452,7 +452,9 @@ have tasks, so we first add a publication.
     >>> print webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/debian/+source/evolution/+bug/1
     ...
 
 We can also PATCH the target attribute to accomplish the same thing.
@@ -483,7 +485,9 @@ We can change an upstream task to target a different project.
     >>> print webservice.named_post(
     ...     product_bugtask['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/bzr'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/bzr/+bug/14
     ...
 
 If the milestone of a task is on a target other than the new
@@ -506,7 +510,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     firefox_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/jokosher'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/jokosher/+bug/1
     ...
     <BLANKLINE>
     >>> jokosher_bugtask = webservice.get(
@@ -519,7 +525,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     jokosher_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/firefox'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/+bug/1
     ...
 
 We can change a distribution task to a task with a package from the same
@@ -537,7 +545,10 @@ distribution.
     >>> print webservice.named_post(
     ...     distro_bugtask_path, 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
-    HTTP/1.1 200 Ok ...
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/19
+    ...
 
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
@@ -1452,13 +1463,14 @@ It can also be used to find bugs modified since a certain date.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> target = factory.makeProduct()
+    >>> target_name = target.name
     >>> bug = factory.makeBug(target=target)
     >>> bug = removeSecurityProxy(bug)
     >>> date = bug.date_last_updated - timedelta(days=6)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target.name, 'searchTasks',
+    ...     '/%s' % target_name, 'searchTasks',
     ...     modified_since=u'%s' % date ).jsonBody())
     start: 0
     total_size: 1
@@ -1470,12 +1482,13 @@ It can also be used to find bug tasks created since a certain date.
     >>> from lp.bugs.interfaces.bugtarget import IBugTarget
     >>> login(ADMIN_EMAIL)
     >>> target = IBugTarget(factory.makeProduct())
+    >>> target_name = target.name
     >>> task = factory.makeBugTask(target=target)
     >>> date = task.datecreated - timedelta(days=8)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target.name, 'searchTasks',
+    ...     '/%s' % target_name, 'searchTasks',
     ...     created_since=u'%s' % date).jsonBody())
     start: 0
     total_size: 1
@@ -1486,7 +1499,7 @@ Or for finding bug tasks created before a certain date.
 
     >>> before_date = task.datecreated + timedelta(days=8)
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target.name, 'searchTasks',
+    ...     '/%s' % target_name, 'searchTasks',
     ...     created_before=u'%s' % before_date).jsonBody())
     start: 0
     total_size: 1

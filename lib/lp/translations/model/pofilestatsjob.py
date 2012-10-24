@@ -25,15 +25,15 @@ from zope.interface import (
     )
 
 from lp.services.config import config
-from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.stormbase import StormBase
+from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile

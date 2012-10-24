@@ -66,10 +66,12 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.app.validators.name import bug_name_validator
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -81,7 +83,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
@@ -477,7 +478,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(level=BugNotificationLevel.LIFECYCLE):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -485,6 +486,14 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
+        """
+
+    def clearBugNotificationRecipientsCache():
+        """Clear the bug notification recipient BugNotificationLevel cache.
+
+        Call this when a change to a bug or bugtask would change the
+        notification recipients. Changing a a bugtask's milestone or
+        target is such a case.
         """
 
     def canBeAQuestion():
@@ -702,7 +711,7 @@ class IBugEdit(Interface):
         If a BugActivity instance is provided as an `activity`, it is linked
         to the notification."""
 
-    def addChange(change, recipients=None):
+    def addChange(change, recipients=None, update_heat=True):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
@@ -710,6 +719,7 @@ class IBugEdit(Interface):
         :param recipients: A set of `IBugNotificationRecipient`s to whom
             to send notifications about this change. If None is passed
             the default list of recipients for the bug will be used.
+        :param update_heat: Whether to update the bug heat.
         """
 
     @operation_parameters(
@@ -978,9 +988,6 @@ class IBugEdit(Interface):
 
         Return None if no bugtask was edited.
         """
-
-    def updateHeat():
-        """Update the heat for the bug."""
 
 
 class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):

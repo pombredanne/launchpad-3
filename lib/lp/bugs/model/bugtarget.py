@@ -1,8 +1,6 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Components related to IBugTarget."""
 
 __metaclass__ = type
@@ -33,11 +31,7 @@ from lp.bugs.interfaces.bugtasksearch import (
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
 
 
 class HasBugsBase:
@@ -58,11 +52,11 @@ class HasBugsBase:
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
-                    status_upstream=None, milestone_assignment=None,
-                    milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None,
-                    hardware_bus=None, hardware_vendor_id=None,
-                    hardware_product_id=None, hardware_driver_name=None,
+                    status_upstream=None, milestone=None, component=None,
+                    nominated_for=None, sourcepackagename=None,
+                    has_no_package=None, hardware_bus=None,
+                    hardware_vendor_id=None, hardware_product_id=None,
+                    hardware_driver_name=None,
                     hardware_driver_package_name=None,
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
@@ -191,8 +185,8 @@ class OfficialBugTagTargetMixin:
         if self._getTag(tag) is None:
             new_tag = OfficialBugTag()
             new_tag.tag = tag
-            new_tag.target = IMasterObject(self)
-            IMasterStore(OfficialBugTag).add(new_tag)
+            new_tag.target = self
+            IStore(OfficialBugTag).add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""

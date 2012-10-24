@@ -18,6 +18,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -38,7 +39,6 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.lpstorm import IStore

@@ -166,16 +166,17 @@ subject, though, which is often the case when someone replies via email.
 Let's add a few changes and see how it looks like:
 
     >>> from lp.bugs.adapters.bugchange import (
-    ...     BugTitleChange, BugVisibilityChange)
+    ...     BugTitleChange, BugInformationTypeChange)
+    >>> from lp.app.enums import InformationType
 
     >>> bug_one.addChange(
     ...     BugTitleChange(
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.PUBLIC, InformationType.USERDATA))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -196,7 +197,7 @@ Let's add a few changes and see how it looks like:
     - Old summary
     + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private
+    ** Information type changed from Public to Private
     <BLANKLINE>
     --
     ...
@@ -216,9 +217,9 @@ the constructed email:
     ...         ten_minutes_ago, sample_person, "title",
     ...         "New summary", "Another summary"))
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.USERDATA, InformationType.PUBLIC))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -283,9 +284,10 @@ for the last 5 minutes:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> for minutes_ago in reversed(range(10)):
     ...     bug_one.addChange(
-    ...         BugVisibilityChange(
+    ...         BugInformationTypeChange(
     ...             now - timedelta(minutes=minutes_ago), sample_person,
-    ...             "private", False, True))
+    ...             "information_type", InformationType.PUBLIC,
+    ...             InformationType.USERDATA))
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -336,7 +338,6 @@ Duplicates
 We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
@@ -471,13 +472,13 @@ few notifications to show that it works.
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "title",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.PUBLIC, InformationType.USERDATA))
     >>> bug_two.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "title",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.USERDATA, InformationType.PUBLIC))
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
@@ -559,7 +560,7 @@ makes it write out the emails it sends.
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
-Note that the message omitted the undone visibility change.
+Note that the message omitted the undone information type change.
 
 The cronscript has to be sure to mark all notifications, omitted and
 otherwise, as sent.  It also marks the omitted notifications with a status,
@@ -591,8 +592,8 @@ been set properly.
     summary Sent
     comment Sent
     summary Sent
-    visibility Omitted
-    visibility Omitted
+    information type Omitted
+    information type Omitted
 
 
 The X-Launchpad-Bug header

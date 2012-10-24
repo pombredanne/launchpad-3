@@ -109,6 +109,10 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -121,12 +125,12 @@ from lp.app.validators.name import (
     valid_name,
     )
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     SpecificationSort,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     )
@@ -152,7 +156,6 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    PRIVATE_INFORMATION_TYPES,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
@@ -202,7 +205,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
@@ -249,15 +255,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import (
     cursor,
     quote,
-    quote_like,
     SQLBase,
     sqlvalues,
     )
@@ -310,7 +312,6 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
@@ -561,8 +562,7 @@ class Person(
 
     def _set_account_status(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status = value
+        self.account.status = value
 
     # Deprecated - this value has moved to the Account table.
     # We provide this shim for backwards compatibility.
@@ -575,8 +575,7 @@ class Person(
 
     def _set_account_status_comment(self, value):
         assert self.accountID is not None, 'No account for this Person'
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status_comment = value
+        self.account.status_comment = value
 
     # Deprecated - this value has moved to the Account table.
     # We provide this shim for backwards compatibility.
@@ -822,145 +821,65 @@ class Person(
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
+        from lp.blueprints.model.specificationsubscription import (
+            SpecificationSubscription,
+            )
+        # Make a new copy of the filter, so that we do not mutate what we
+        # were passed as a filter.
+        if filter is None:
+            filter = set()
+        else:
+            filter = set(filter)
 
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # if no filter was passed (None or []) then we must decide the
-            # default filtering, and for a person we want related incomplete
-            # specs
-            filter = [SpecificationFilter.INCOMPLETE]
+        # Now look at the filter and fill in the unsaid bits.
 
-        # now look at the filter and fill in the unsaid bits
+        # Defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE.
+        if SpecificationFilter.COMPLETE not in filter:
+            filter.add(SpecificationFilter.INCOMPLETE)
 
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
+        # Defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person.
 
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a person
+        # Defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY.
 
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        # if no roles are given then we want everything
-        linked = False
         roles = set([
             SpecificationFilter.CREATOR,
             SpecificationFilter.ASSIGNEE,
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
-        for role in roles:
-            if role in filter:
-                linked = True
-        if not linked:
-            for role in roles:
-                filter.append(role)
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
-        elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
-
-        # figure out what set of specifications we are interested in. for
-        # products, we need to be able to filter on the basis of:
-        #
-        #  - role (owner, drafter, approver, subscriber, assignee etc)
-        #  - completeness.
-        #  - informational.
-        #
-
-        # in this case the "base" is quite complicated because it is
-        # determined by the roles so lets do that first
-
-        base = '(1=0'  # we want to start with a FALSE and OR them
+        # If no roles are given, then we want everything.
+        if filter.intersection(roles) == set():
+            filter.update(roles)
+        role_clauses = []
         if SpecificationFilter.CREATOR in filter:
-            base += ' OR Specification.owner = %(my_id)d'
+            role_clauses.append(Specification.owner == self)
         if SpecificationFilter.ASSIGNEE in filter:
-            base += ' OR Specification.assignee = %(my_id)d'
+            role_clauses.append(Specification.assignee == self)
         if SpecificationFilter.DRAFTER in filter:
-            base += ' OR Specification.drafter = %(my_id)d'
+            role_clauses.append(Specification.drafter == self)
         if SpecificationFilter.APPROVER in filter:
-            base += ' OR Specification.approver = %(my_id)d'
+            role_clauses.append(Specification.approver == self)
         if SpecificationFilter.SUBSCRIBER in filter:
-            base += """ OR Specification.id in
-                (SELECT specification FROM SpecificationSubscription
-                 WHERE person = %(my_id)d)"""
-        base += ') '
-
-        # filter out specs on inactive products
-        base += """AND (Specification.product IS NULL OR
-                        Specification.product NOT IN
-                         (SELECT Product.id FROM Product
-                          WHERE Product.active IS FALSE))
-                """
-
-        base = base % {'my_id': self.id}
-
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-                quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (
-                ' AND Specification.definition_status NOT IN ( %s, ''%s ) ' %
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        results = Specification.select(query, orderBy=order,
-            limit=quantity)
-        if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            role_clauses.append(
+                Specification.id.is_in(
+                    Select(SpecificationSubscription.specificationID,
+                        [SpecificationSubscription.person == self]
+                    )))
+        clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        clauses.extend(get_specification_filters(filter))
+        results = Store.of(self).find(Specification, *clauses)
+        # The default sort is priority descending, so only explictly sort for
+        # DATE.
+        if sort == SpecificationSort.DATE:
+            results = results.order_by(Desc(Specification.datecreated))
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
@@ -1117,19 +1036,64 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getAffiliatedPillars(self):
+    def _genAffiliatedProductSql(self, user=None):
+        """Helper to generate the product sql for getAffiliatePillars"""
+        base_query = """
+            SELECT name, 3 as kind, displayname
+            FROM product p
+            WHERE
+                p.active = True
+                AND (
+                    p.driver = %(person)s
+                    OR p.owner = %(person)s
+                    OR p.bug_supervisor = %(person)s
+                )
+        """ % sqlvalues(person=self)
+
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return base_query
+
+        # This is the raw sql version of model/product getProductPrivacyFilter
+        granted_products = """
+            SELECT p.id
+            FROM product p,
+                 accesspolicygrantflat apflat,
+                 teamparticipation part,
+                 accesspolicy ap
+             WHERE
+                apflat.grantee = part.team
+                AND part.person = %(user)s
+                AND apflat.policy = ap.id
+                AND ap.product = p.id
+                AND ap.type = p.information_type
+        """ % sqlvalues(user=user)
+
+        # We have to generate the sqlvalues first so that they're properly
+        # setup and escaped. Then we combine the above query which is already
+        # processed.
+        query_values = sqlvalues(information_type=InformationType.PUBLIC)
+        query_values.update(granted_sql=granted_products)
+
+        query = base_query + """
+                AND (
+                    p.information_type = %(information_type)s
+                    OR p.information_type is NULL
+                    OR p.id IN (%(granted_sql)s)
+                )
+        """ % query_values
+        return query
+
+    def getAffiliatedPillars(self, user):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
-        origin = SQL("""
-            PillarName
-            JOIN (
-                SELECT name, 3 as kind, displayname
-                FROM product
-                WHERE
-                    active = True AND
-                    (driver = %(person)s
-                    OR owner = %(person)s
-                    OR bug_supervisor = %(person)s)
+        base = """PillarName
+                  JOIN (
+                    %s
+            """ % self._genAffiliatedProductSql(user=user)
+
+        origin = base + """
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1146,8 +1110,9 @@ class Person(
                     OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
-            """ % sqlvalues(person=self))
-        results = IStore(self).using(origin).find(find_spec)
+            """ % sqlvalues(person=self)
+
+        results = IStore(self).using(SQL(origin)).find(find_spec)
         results = results.order_by('kind', 'displayname')
 
         def get_pillar_name(result):
@@ -1161,29 +1126,23 @@ class Person(
         # Import here to work around a circular import problem.
         from lp.registry.model.product import Product
 
-        clauses = ["""
-            SELECT DISTINCT Product.id
-            FROM Product, TeamParticipation
-            WHERE TeamParticipation.person = %(person)s
-            AND owner = TeamParticipation.team
-            AND Product.active IS TRUE
-            """ % sqlvalues(person=self)]
+        clauses = [
+            Product.active == True,
+            Product._ownerID == TeamParticipation.teamID,
+            TeamParticipation.person == self,
+            ]
 
         # We only want to use the extra query if match_name is not None and it
         # is not the empty string ('' or u'').
         if match_name:
-            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
-            quoted_query = quote(match_name)
             clauses.append(
-                """(Product.name LIKE %s OR
-                    Product.displayname LIKE %s OR
-                    fti @@ ftq(%s))""" % (like_query,
-                                          like_query,
-                                          quoted_query))
-        query = " AND ".join(clauses)
-        results = Product.select("""id IN (%s)""" % query,
-                                 orderBy=['displayname'])
-        return results
+                Or(
+                    Product.name.contains_string(match_name),
+                    Product.displayname.contains_string(match_name),
+                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
+        return IStore(Product).find(
+            Product, *clauses
+            ).config(distinct=True).order_by(Product.displayname)
 
     def isAnyPillarOwner(self):
         """See IPerson."""
@@ -1488,7 +1447,7 @@ class Person(
         return list(Store.of(self).find(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
 
-    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+    def getAssignedSpecificationWorkItemsDueBefore(self, date, user):
         """See `IPerson`."""
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
@@ -1505,7 +1464,8 @@ class Person(
                           Specification.milestoneID) == Milestone.id),
             ]
         today = datetime.today().date()
-        query = AND(
+        query = And(
+            get_specification_privacy_filter(user),
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
@@ -2187,14 +2147,46 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def canDeactivateAccount(self):
+        """See `IPerson`."""
+        can_deactivate, errors = self.canDeactivateAccountWithErrors()
+        return can_deactivate
+
+    def canDeactivateAccountWithErrors(self):
+        """See `IPerson`."""
+        # Users that own non-public products cannot be deactivated until the
+        # products are reassigned.
+        errors = []
+        product_set = getUtility(IProductSet)
+        non_public_products = product_set.get_users_private_products(self)
+        if non_public_products.count() != 0:
+            errors.append(('This account cannot be deactivated because it owns '
+                        'the following non-public products: ') +
+                        ','.join([p.name for p in non_public_products]))
+
+        if self.account_status != AccountStatus.ACTIVE:
+            errors.append('This account is already deactivated.')
+
+        return (not errors), errors
+
     # XXX: salgado, 2009-04-16: This should be called just deactivate(),
     # because it not only deactivates this person's account but also the
     # person.
-    def deactivateAccount(self, comment):
+    def deactivateAccount(self, comment, can_deactivate=None):
         """See `IPersonSpecialRestricted`."""
         if not self.is_valid_person:
             raise AssertionError(
                 "You can only deactivate an account of a valid person.")
+
+        if can_deactivate is None:
+            # The person can only be deactivated if they do not own any
+            # non-public products.
+            can_deactivate = self.canDeactivateAccount()
+
+        if not can_deactivate:
+            message = ("You cannot deactivate an account that owns a "
+                       "non-public product.")
+            raise AssertionError(message)
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2204,7 +2196,6 @@ class Person(
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
-            email = IMasterObject(email)
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
@@ -2225,7 +2216,7 @@ class Person(
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getAffiliatedPillars():
+        for pillar_name in self.getAffiliatedPillars(self):
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
@@ -2234,8 +2225,15 @@ class Person(
                 pillar.owner = registry_experts
                 changed = True
             if pillar.driver is not None and pillar.driver.id == self.id:
-                pillar.driver = registry_experts
+                pillar.driver = None
                 changed = True
+
+            # Products need to change the bug supervisor as well.
+            if IProduct.providedBy(pillar):
+                if (pillar.bug_supervisor is not None and
+                    pillar.bug_supervisor.id == self.id):
+                    pillar.bug_supervisor = None
+                    changed = True
 
             if not changed:
                 # Since we removed the person from all teams, something is
@@ -2259,7 +2257,7 @@ class Person(
         # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
+        self.preferredemail.status = EmailAddressStatus.NEW
         del get_property_cache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
@@ -2574,8 +2572,7 @@ class Person(
 
     def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
-        account = IMasterObject(self.account)
-        account.reactivate(comment)
+        self.account.reactivate(comment)
         self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
@@ -2587,7 +2584,6 @@ class Person(
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
-        email = IMasterObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError(
@@ -2602,7 +2598,7 @@ class Person(
         # recursively, however, and the email address may have just been
         # created. So we have to explicitly pull it from the master store
         # until we rewrite this 'icky mess.
-        preferred_email = IMasterStore(EmailAddress).find(
+        preferred_email = IStore(EmailAddress).find(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == EmailAddressStatus.PREFERRED).one()
@@ -2635,11 +2631,9 @@ class Person(
             and self.mailing_list.status != MailingListStatus.PURGED):
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
-            if mailing_list_email is not None:
-                mailing_list_email = IMasterObject(mailing_list_email)
         else:
             mailing_list_email = None
-        all_addresses = IMasterStore(self).find(
+        all_addresses = IStore(EmailAddress).find(
             EmailAddress, EmailAddress.personID == self.id)
         for address in all_addresses:
             # Delete all email addresses that are not the preferred email
@@ -2651,12 +2645,11 @@ class Person(
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
-        email_address = IMasterStore(EmailAddress).find(
+        email_address = IStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
-            email_address.syncUpdate()
         del get_property_cache(self).preferredemail
 
     def setPreferredEmail(self, email):
@@ -2681,7 +2674,7 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-        existing_preferred_email = IMasterStore(EmailAddress).find(
+        existing_preferred_email = IStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
         if existing_preferred_email is not None:
@@ -2691,8 +2684,7 @@ class Person(
             original_recipients = None
 
         email = removeSecurityProxy(email)
-        IMasterObject(email).status = EmailAddressStatus.PREFERRED
-        IMasterObject(email).syncUpdate()
+        email.status = EmailAddressStatus.PREFERRED
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email

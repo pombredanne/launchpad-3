@@ -52,6 +52,7 @@ from lp.app.browser.stringformatter import (
     escape,
     FormattersAPI,
     )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -64,7 +65,6 @@ from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

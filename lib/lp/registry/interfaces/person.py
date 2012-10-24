@@ -1132,7 +1132,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                           the icons which represent that category.
         """
 
-    def getAffiliatedPillars():
+    def getAffiliatedPillars(user):
         """Return the pillars that this person directly has a role with.
 
         Returns distributions, project groups, and projects that this person
@@ -1390,10 +1390,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: a boolean.
         """
 
-    def getAssignedSpecificationWorkItemsDueBefore(date):
+    def getAssignedSpecificationWorkItemsDueBefore(date, user):
         """Return SpecificationWorkItems assigned to this person (or members
         of this team) and whose milestone is due between today and the given
         date (inclusive).
+
+        user specifies the user who is viewing the list; items they cannot see
+        are filtered out.  None indicates the anonymous user who can only see
+        public items.
         """
 
     def getAssignedBugTasksDueBefore(date, user):
@@ -1725,7 +1729,20 @@ class IPersonEditRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def deactivateAccount(comment):
+    def canDeactivateAccount():
+        """Verify we safely deactivate this user account.
+
+        :return: True if the person can be deactivated, False otherwise.
+        """
+
+    def canDeactivateAccountWithErrors():
+        """See canDeactivateAccount with the addition of error messages for
+        why the account cannot be deactivated.
+
+        :return tuple: boolean, list of error messages.
+        """
+
+    def deactivateAccount(comment, can_deactivate=None):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
@@ -1736,6 +1753,9 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
+        :param can_deactivate: Override the check if we can deactivate by
+            supplying a known value. If None, then the method will run the
+            checks.
         """
 
     def reactivate(comment, preferred_email):

@@ -22,6 +22,7 @@ import os
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.folder import ExportedFolder
 from lp.app.browser.launchpadform import (
@@ -33,6 +34,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     canonical_url,
     DataDownloadView,
@@ -157,22 +159,25 @@ class RegistryDeleteViewMixin:
         """The context's URL."""
         return canonical_url(self.context)
 
-    def _getBugtasks(self, target):
+    def _getBugtasks(self, target, ignore_privacy=False):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
             params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=self.user)
+            params = BugTaskSearchParams(
+                milestone=target, user=self.user,
+                ignore_privacy=ignore_privacy)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
     def _getSpecifications(self, target):
         """Return the list `ISpecification`s associated to the target."""
         if IProductSeries.providedBy(target):
-            return list(target.all_specifications)
+            return list(target._all_specifications)
         else:
-            return list(target.specifications)
+            user = getUtility(ILaunchBag).user
+            return list(target.getSpecifications(user))
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
@@ -232,11 +237,15 @@ class RegistryDeleteViewMixin:
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
-        for bugtask in self._getBugtasks(milestone):
-            if bugtask.conjoined_master is not None:
-                Store.of(bugtask).remove(bugtask.conjoined_master)
+        # We need to remove the milestone from every bug, even those the
+        # current user can't see/change, otherwise we can't delete the
+        # milestone, since it's still referenced.
+        for bugtask in self._getBugtasks(milestone, ignore_privacy=True):
+            nb = removeSecurityProxy(bugtask)
+            if nb.conjoined_master is not None:
+                Store.of(bugtask).remove(nb.conjoined_master)
             else:
-                bugtask.milestone = None
+                nb.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)

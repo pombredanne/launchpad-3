@@ -315,12 +315,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
 
-    def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSeries
-
-        Pending means that buildstate is NEEDSBUILD.
-        """
-
     def getBuildsForBuilder(builder_id, status=None, name=None,
                             arch_tag=None):
         """Return build records touched by a builder.
@@ -358,14 +352,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
-        """
-
-    def retryDepWaiting(distroarchseries):
-        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
-
-        This method will update all the dependency lines of all MANUALDEPWAIT
-        records in the given architecture and those with all dependencies
-        satisfied at this point will be automatically retried and re-scored.
         """
 
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
@@ -414,16 +400,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         Retrieve the build queue and related builder rows associated with the
         builds in question where they exist.
-        """
-
-    def calculateCandidates(archseries):
-        """Return the BuildQueue records for the given archseries's Builds.
-
-        Returns a selectRelease of BuildQueue items for sorted by descending
-        'lastscore' for Builds within the given archseries.
-
-        'archseries' argument should be a list of DistroArchSeries and it is
-        asserted to not be None/empty.
         """
 
     def preloadBuildsData(builds):

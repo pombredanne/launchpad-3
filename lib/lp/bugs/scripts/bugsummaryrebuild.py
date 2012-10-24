@@ -17,6 +17,10 @@ from storm.expr import (
 from storm.properties import Bool
 import transaction
 
+from lp.app.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import (
@@ -25,10 +29,6 @@ from lp.bugs.model.bugtask import (
     BugTask,
     )
 from lp.bugs.model.bugtaskflat import BugTaskFlat
-from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import ISeriesMixin

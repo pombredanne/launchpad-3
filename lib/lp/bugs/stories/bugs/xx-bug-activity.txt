@@ -98,44 +98,6 @@ that have been added.
     + A new title for this bug
     --------
 
-Alterations to a bug's privacy will show up as 'visibility' changes.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl("Private", index=1).selected = True
-    >>> admin_browser.getControl("Change").click()
-
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(admin_browser.contents)
-    Foo Bar
-    ... ago
-    summary:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    visibility:
-    public => private
-    --------
-
-Changes to a bug's security_related field will be displayed as
-'security vulnerability' changes, with values of 'yes' or 'no'. Note
-that changes are grouped together if they occur at similar times, but
-are still shown in the order the changes were made.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl("Private Security").selected = True
-    >>> admin_browser.getControl("Change").click()
-
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(admin_browser.contents)
-    Foo Bar (name16)
-    ... ago
-    summary:
-    ...
-    security vulnerability:
-    no => yes
-    --------
-
 Changes to the bug's description will simply be displayed as 'description:
 updated', since such changes can be quite long.
 
@@ -310,31 +272,26 @@ If a bug task is deleted the pillar no longer affected will be shown.
     ubuntu
     --------
 
-Changes to information_type are shown when the feature flag is set.
+Changes to information_type are shown.
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.information_type_notifications.enabled': 'on'}
-    >>> with FeatureFixture(feature_flag):
-    ...     admin_browser.open(
-    ...         "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
-    ...     admin_browser.getControl("Private", index=1).selected = True
-    ...     admin_browser.getControl('Change').click()
-    ...     admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
-    ...     print_comments(admin_browser.contents)
+    >>> admin_browser.open(
+    ...     "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
+    >>> admin_browser.getControl("Private", index=1).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
+    >>> print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:
     Public => Private
     --------
 
-    >>> with FeatureFixture(feature_flag):
-    ...     admin_browser.open(
-    ...         "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
-    ...     admin_browser.getControl("Private", index=1).selected = True
-    ...     admin_browser.getControl('Change').click()
-    ...     admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
-    ...     print_comments(admin_browser.contents)
+    >>> admin_browser.open(
+    ...     "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
+    >>> admin_browser.getControl("Private", index=1).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
+    >>> print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:

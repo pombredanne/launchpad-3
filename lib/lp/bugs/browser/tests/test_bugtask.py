@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from contextlib import contextmanager
 from datetime import (
     datetime,
     timedelta,
@@ -32,6 +31,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
@@ -39,12 +39,11 @@ from lp.bugs.browser.bugtask import (
     BugListingBatchNavigator,
     BugTaskEditView,
     BugTaskListingItem,
-    BugTasksAndNominationsView,
+    BugTasksNominationsView,
+    BugTasksTableView,
     )
-from lp.bugs.feed.bug import (
-    BugTargetBugsFeed,
-    PersonBugsFeed,
-    )
+from lp.bugs.enums import BugNotificationLevel
+from lp.bugs.feed.bug import PersonBugsFeed
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
@@ -58,10 +57,7 @@ from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -78,11 +74,9 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     celebrity_logged_in,
-    feature_flags,
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -105,14 +99,13 @@ from lp.testing.views import create_initialized_view
 
 def getFeedViewCache(target, feed_cls):
     """Return JSON cache for a feed's delegate view."""
-    with dynamic_listings():
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
-        setFirstLayer(request, FeedsLayer)
-        feed = feed_cls(target, request)
-        delegate_view = feed._createView()
-        delegate_view.initialize()
-        return IJSONRequestCache(delegate_view.request)
+    request = LaunchpadTestRequest(
+        SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+    setFirstLayer(request, FeedsLayer)
+    feed = feed_cls(target, request)
+    delegate_view = feed._createView()
+    delegate_view.initialize()
+    return IJSONRequestCache(delegate_view.request)
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -141,14 +134,14 @@ class TestBugTaskView(TestCaseWithFactory):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
-        # This may seem large: it is; there is easily another 30% fat in
+        # This may seem large: it is; there is easily another 25% fat in
         # there.
-        # If this test is run in isolation, the query count is 94.
+        # If this test is run in isolation, the query count is 80.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(95)))
+        self.assertThat(recorder, HasQueryCount(LessThan(82)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -164,7 +157,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                97, self.factory.makePerson())
+                85, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -247,6 +240,52 @@ class TestBugTaskView(TestCaseWithFactory):
         [activity] = view.interesting_activity
         self.assertEqual("description", activity.whatchanged)
 
+    def test_rendered_query_counts_constant_with_activities(self):
+        # More queries are not used for extra bug activities.
+        task = self.factory.makeBugTask()
+
+        def add_activity(what, who):
+            getUtility(IBugActivitySet).new(
+                task.bug, datetime.now(UTC), who, whatchanged=what)
+
+        # Render the view with one activity.
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                83, self.factory.makePerson())
+            person = self.factory.makePerson()
+            add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
+        # Render the view with many more activities by different people.
+        with celebrity_logged_in('admin'):
+            for _ in range(20):
+                person = self.factory.makePerson()
+                add_activity("description", person)
+
+        self.assertThat(task, browses_under_limit)
+
+    def test_rendered_query_counts_constant_with_milestones(self):
+        # More queries are not used for extra milestones.
+        products = []
+        bug = self.factory.makeBug()
+
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                88, self.factory.makePerson())
+
+        self.assertThat(bug, browses_under_limit)
+
+        # Render the view with many milestones.
+        with celebrity_logged_in('admin'):
+            for _ in range(10):
+                product = self.factory.makeProduct()
+                products.append(product)
+                self.factory.makeBugTask(bug=bug, target=product)
+                self.factory.makeMilestone(product)
+
+        self.assertThat(bug, browses_under_limit)
+
     def test_error_for_changing_target_with_invalid_status(self):
         # If a user moves a bug task with a restricted status (say,
         # Triaged) to a target where they do not have permission to set
@@ -277,6 +316,30 @@ class TestBugTaskView(TestCaseWithFactory):
             self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
 
+    def test_changing_milestone_and_assignee_with_lifecycle(self):
+        # Changing the milestone and assignee of a bugtask when the milestone
+        # has a LIFECYCLE structsub is fine. Also see bug 1036882.
+        subscriber = self.factory.makePerson()
+        product = self.factory.makeProduct(official_malone=True)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(subscriber):
+            structsub = milestone.addBugSubscription(subscriber, subscriber)
+            structsub.bug_filters[0].bug_notification_level = (
+                BugNotificationLevel.LIFECYCLE)
+        bug = self.factory.makeBug(target=product)
+        with person_logged_in(product.owner):
+            form_data = {
+                '%s.milestone' % product.name: milestone.id,
+                '%s.assignee.option' % product.name:
+                    '%s.assignee.assign_to_me' % product.name,
+                '%s.assignee' % product.name: product.owner.name,
+                '%s.actions.save' % product.name: 'Save Changes',
+                }
+            create_initialized_view(
+                bug.default_bugtask, name='+editstatus', form=form_data)
+            self.assertEqual(product.owner, bug.default_bugtask.assignee)
+            self.assertEqual(milestone, bug.default_bugtask.milestone)
+
     def test_bugtag_urls_are_encoded(self):
         # The link to bug tags are encoded to protect against special chars.
         product = self.factory.makeProduct(name='foobar')
@@ -294,8 +357,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_information_type(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner,
-            information_type=InformationType.USERDATA)
+            owner=owner, information_type=InformationType.USERDATA)
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")
@@ -321,20 +383,20 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertIsNone(tag)
 
 
-class TestBugTasksAndNominationsView(TestCaseWithFactory):
+class TestBugTasksNominationsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTasksAndNominationsView, self).setUp()
+        super(TestBugTasksNominationsView, self).setUp()
         login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def refresh(self):
         # The view caches, to see different scenarios, a refresh is needed.
-        self.view = BugTasksAndNominationsView(
+        self.view = BugTasksNominationsView(
             self.bug, LaunchpadTestRequest())
 
     def test_current_user_affected_status(self):
@@ -360,24 +422,6 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
-
-    def test_not_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks) - 1):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failIf(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failIf(row_view.many_bugtasks)
-
-    def test_many_bugtasks(self):
-        for count in range(10 - len(self.bug.bugtasks)):
-            self.factory.makeBugTask(bug=self.bug)
-        self.view.initialize()
-        self.failUnless(self.view.many_bugtasks)
-        row_view = self.view._getTableRowView(
-            self.bug.default_bugtask, False, False)
-        self.failUnless(row_view.many_bugtasks)
 
     def test_other_users_affected_count(self):
         # The number of other users affected does not change when the
@@ -432,17 +476,13 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'bugs.affected_count_includes_dupes.disabled': ''}))
         self.makeDuplicate()
-        self.assertEqual(
-            3, self.view.total_users_affected_count)
+        self.assertEqual(3, self.view.total_users_affected_count)
         self.assertEqual(
             "This bug affects 3 people. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 3 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 3 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_duplicate(self):
         self.useFixture(FeatureFixture(
@@ -455,11 +495,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 3 people. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 4 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 4 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_master(self):
         self.useFixture(FeatureFixture(
@@ -472,11 +509,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects you and 3 other people",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 4 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 4 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_counts_affected_by_duplicate_not_by_master(self):
         self.useFixture(FeatureFixture(
@@ -493,11 +527,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # either 3 or 4 people.  However at the moment the "No" answer on the
         # master is more authoritative than the "Yes" on the dupe.
         self.assertEqual(
-            "This bug affects 3 people",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            self.view.other_users_affected_count,
-            3)
+            "This bug affects 3 people", self.view.anon_affected_statement)
+        self.assertEqual(self.view.other_users_affected_count, 3)
 
     def test_total_users_affected_count_without_dupes(self):
         self.useFixture(FeatureFixture(
@@ -505,25 +536,20 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.makeDuplicate()
         self.refresh()
         # Does not count the two users of bug2, so just 1.
-        self.assertEqual(
-            1, self.view.total_users_affected_count)
+        self.assertEqual(1, self.view.total_users_affected_count)
         self.assertEqual(
             "This bug affects 1 person. Does this bug affect you?",
             self.view.affected_statement)
         self.assertEqual(
-            "This bug affects 1 person",
-            self.view.anon_affected_statement)
-        self.assertEqual(
-            1,
-            self.view.other_users_affected_count)
+            "This bug affects 1 person", self.view.anon_affected_statement)
+        self.assertEqual(1, self.view.other_users_affected_count)
 
     def test_affected_statement_no_one_affected(self):
         self.bug.markUserAffected(self.bug.owner, False)
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "Does this bug affect you?",
-            self.view.affected_statement)
+            "Does this bug affect you?", self.view.affected_statement)
 
     def test_affected_statement_only_you(self):
         self.view.context.markUserAffected(self.view.user, True)
@@ -532,8 +558,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug affects you",
-            self.view.affected_statement)
+            "This bug affects you", self.view.affected_statement)
 
     def test_affected_statement_only_not_you(self):
         self.view.context.markUserAffected(self.view.user, False)
@@ -542,8 +567,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug doesn't affect you",
-            self.view.affected_statement)
+            "This bug doesn't affect you", self.view.affected_statement)
 
     def test_affected_statement_1_person_not_you(self):
         self.assertIs(None, self.bug.isUserAffected(self.view.user))
@@ -565,8 +589,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
     def test_affected_statement_1_person_and_not_you(self):
         self.view.context.markUserAffected(self.view.user, False)
         self.failIf(self.bug.isUserAffected(self.view.user))
-        self.failUnlessEqual(
-            1, self.view.other_users_affected_count)
+        self.failUnlessEqual(1, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 1 person, but not you",
             self.view.affected_statement)
@@ -575,8 +598,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.assertIs(None, self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 2 people. Does this bug affect you?",
             self.view.affected_statement)
@@ -586,8 +608,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnless(self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects you and 2 other people",
             self.view.affected_statement)
@@ -597,8 +618,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failIf(self.bug.isUserAffected(self.view.user))
         other_user = self.factory.makePerson()
         self.view.context.markUserAffected(other_user, True)
-        self.failUnlessEqual(
-            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects 2 people, but not you",
             self.view.affected_statement)
@@ -611,15 +631,48 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
     def test_anon_affected_statement_1_user_affected(self):
         self.failUnlessEqual(1, self.bug.users_affected_count)
         self.failUnlessEqual(
-            "This bug affects 1 person",
-            self.view.anon_affected_statement)
+            "This bug affects 1 person", self.view.anon_affected_statement)
 
     def test_anon_affected_statement_2_users_affected(self):
         self.view.context.markUserAffected(self.view.user, True)
         self.failUnlessEqual(2, self.bug.users_affected_count)
         self.failUnlessEqual(
-            "This bug affects 2 people",
-            self.view.anon_affected_statement)
+            "This bug affects 2 people", self.view.anon_affected_statement)
+
+
+class TestBugTasksTableView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTasksTableView, self).setUp()
+        login(ADMIN_EMAIL)
+        self.bug = self.factory.makeBug()
+        self.view = BugTasksTableView(
+            self.bug, LaunchpadTestRequest())
+
+    def refresh(self):
+        # The view caches, to see different scenarios, a refresh is needed.
+        self.view = BugTasksNominationsView(
+            self.bug, LaunchpadTestRequest())
+
+    def test_not_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks) - 1):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failIf(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failIf(row_view.many_bugtasks)
+
+    def test_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks)):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failUnless(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failUnless(row_view.many_bugtasks)
 
     def test_getTargetLinkTitle_product(self):
         # The target link title is always none for products.
@@ -690,8 +743,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
-        self.assertTrue(
-            target in self.view.target_releases.keys())
+        self.assertTrue(target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -714,8 +766,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
-        self.assertTrue(
-            target in self.view.target_releases.keys())
+        self.assertTrue(target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -741,7 +792,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -765,7 +816,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         request = LaunchpadTestRequest()
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
 
         task_and_nomination_views = (
@@ -803,8 +854,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_foo = self.factory.makeProduct(name="foo")
         foo_bug = self.factory.makeBug(target=product_foo)
         assignee = self.factory.makeTeam(
-            name="assignee",
-            visibility=PersonVisibility.PRIVATE)
+            name="assignee", visibility=PersonVisibility.PRIVATE)
         foo_bug.default_bugtask.transitionToAssignee(assignee)
 
         # Render the view.
@@ -812,7 +862,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         any_person = self.factory.makePerson()
         login_person(any_person, request)
         foo_bugtasks_and_nominations_view = getMultiAdapter(
-            (foo_bug, request), name="+bugtasks-and-nominations-portal")
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
         foo_bugtasks_and_nominations_view.initialize()
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
@@ -1130,7 +1180,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
             target=distro, owner=owner,
             information_type=InformationType.PRIVATESECURITY)
         # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
-        # sharing policies yet, so it isn't possible legitimately create
+        # sharing policies yet, so it isn't possible to legitimately create
         # a Proprietary distro bug.
         removeSecurityProxy(bug).information_type = (
             InformationType.PROPRIETARY)
@@ -1152,16 +1202,13 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskEditViewStatusField, self).setUp()
-        product_owner = self.factory.makePerson(name='product-owner')
         bug_supervisor = self.factory.makePerson(name='bug-supervisor')
-        product = self.factory.makeProduct(
-            owner=product_owner, bug_supervisor=bug_supervisor)
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         self.bug = self.factory.makeBug(target=product)
 
     def getWidgetOptionTitles(self, widget):
         """Return the titles of options of the given choice widget."""
-        return [
-            item.value.title for item in widget.field.vocabulary]
+        return [item.value.title for item in widget.field.vocabulary]
 
     def test_status_field_items_for_anonymous(self):
         # Anonymous users see only the current value.
@@ -1449,7 +1496,35 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class TestPersonBugs(TestCaseWithFactory):
+class BugTaskViewTestMixin():
+
+    def _assert_shouldShowStructuralSubscriberWidget(self, show=True):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(show, view.shouldShowStructuralSubscriberWidget())
+
+    def _assert_structural_subscriber_label(self, label):
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertEqual(label, view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+    def test_mustache_cache_is_none_for_advanced_form(self):
+        """No mustache model for the advanced search form."""
+        form = {
+            'advanced': 1,
+            }
+        view = create_initialized_view(
+            self.target, name=u'+bugs', rootsite='bugs', form=form)
+        cache = IJSONRequestCache(view.request)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+
+class TestPersonBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1459,24 +1534,14 @@ class TestPersonBugs(TestCaseWithFactory):
         self.target = self.factory.makePerson()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project, distribution, package, or series subscriber',
-            view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, PersonBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project, distribution, package, or series subscriber')
 
 
-class TestDistributionBugs(TestCaseWithFactory):
+class TestDistributionBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1485,24 +1550,15 @@ class TestDistributionBugs(TestCaseWithFactory):
         super(TestDistributionBugs, self).setUp()
         self.target = self.factory.makeDistribution()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
-
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package or series subscriber', view.structural_subscriber_label)
+        self._assert_structural_subscriber_label(
+            'Package or series subscriber')
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+    def test_shouldShowStructuralSubscriberWidget(self):
+        self._assert_shouldShowStructuralSubscriberWidget()
 
 
-class TestDistroSeriesBugs(TestCaseWithFactory):
+class TestDistroSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for distro series."""
 
     layer = DatabaseFunctionalLayer
@@ -1512,23 +1568,14 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistroSeries()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Package subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Package subscriber')
 
 
-class TestDistributionSourcePackageBugs(TestCaseWithFactory):
+class TestDistributionSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distribution source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1538,17 +1585,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeDistributionSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory,
+                                        BugTaskViewTestMixin):
     """Test the bugs overview page for distro series source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1558,17 +1599,10 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         self.target = self.factory.makeSourcePackage()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_shouldShowStructuralSubscriberWidget(show=False)
 
 
-class TestProductBugs(TestCaseWithFactory):
+class TestProductBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for projects."""
 
     layer = DatabaseFunctionalLayer
@@ -1578,23 +1612,13 @@ class TestProductBugs(TestCaseWithFactory):
         self.target = self.factory.makeProduct()
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label('Series subscriber')
 
 
-class TestProductSeriesBugs(TestCaseWithFactory):
+class TestProductSeriesBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project series."""
 
     layer = DatabaseFunctionalLayer
@@ -1603,18 +1627,8 @@ class TestProductSeriesBugs(TestCaseWithFactory):
         super(TestProductSeriesBugs, self).setUp()
         self.target = self.factory.makeProductSeries()
 
-    def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
-
-
-class TestProjectGroupBugs(TestCaseWithFactory):
+class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
     """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
@@ -1622,8 +1636,8 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
         self.owner = self.factory.makePerson(name='bob')
-        self.target = self.factory.makeProject(name='container',
-                                                     owner=self.owner)
+        self.target = self.factory.makeProject(
+            name='container', owner=self.owner)
 
     def makeSubordinateProduct(self, tracks_bugs_in_lp):
         """Create a new product and add it to the project group."""
@@ -1713,20 +1727,11 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         self.assertIs(None, help_link)
 
     def test_shouldShowStructuralSubscriberWidget(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertTrue(view.shouldShowStructuralSubscriberWidget())
+        self._assert_shouldShowStructuralSubscriberWidget()
 
     def test_structural_subscriber_label(self):
-        view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs')
-        self.assertEqual(
-            'Project or series subscriber', view.structural_subscriber_label)
-
-    def test_mustache_cache_is_none_for_feed(self):
-        """The mustache model should not be added to JSON cache for feeds."""
-        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
-        self.assertIsNone(cache.objects.get('mustache_model'))
+        self._assert_structural_subscriber_label(
+            'Project or series subscriber')
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -1844,8 +1849,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
 
     def _assertThatUnbatchedAndBatchedActivityMatch(self, unbatched_activity,
                                                     batched_activity):
-        zipped_activity = zip(
-            unbatched_activity, batched_activity)
+        zipped_activity = zip(unbatched_activity, batched_activity)
         for index, items in enumerate(zipped_activity):
             unbatched_item, batched_item = items
             self.assertEqual(
@@ -1877,8 +1881,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
         self.assertEqual(
-            config.malone.comments_list_default_batch_size,
-            view.batch_size)
+            config.malone.comments_list_default_batch_size, view.batch_size)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'batch_size': 20})
         self.assertEqual(20, view.batch_size)
@@ -1972,14 +1975,6 @@ def make_bug_task_listing_item(
         target_context=target_context)
 
 
-@contextmanager
-def dynamic_listings():
-    """Context manager to enable new bug listings."""
-    with feature_flags():
-        set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
-        yield
-
-
 class TestBugTaskSearchListingView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -2029,8 +2024,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
+        url = canonical_url(product, view_name='+bugs')
         bug = self.factory.makeBug(target=product)
         buggy_product = self.factory.makeProduct()
+        buggy_url = canonical_url(buggy_product, view_name='+bugs')
         for _ in range(10):
             self.factory.makeBug(target=buggy_product)
         recorder = QueryCollector()
@@ -2038,19 +2035,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(bug)
         # count with single task
-        url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
         # count with many tasks
-        buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
-
-    def test_mustache_model_missing_if_no_flag(self):
-        """The IJSONRequestCache should contain mustache_model."""
-        view = self.makeView()
-        cache = IJSONRequestCache(view.request)
-        self.assertIs(None, cache.objects.get('mustache_model'))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.
@@ -2060,12 +2049,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         owner, item = make_bug_task_listing_item(self.factory)
         self.useContext(person_logged_in(owner))
-        with dynamic_listings():
-            view = self.makeView(item.bugtask)
-            cache = IJSONRequestCache(view.request)
-            items = cache.objects['mustache_model']['items']
-            self.assertEqual(1, len(items))
-            self.assertEqual(item.model, items[0])
+        view = self.makeView(item.bugtask)
+        cache = IJSONRequestCache(view.request)
+        items = cache.objects['mustache_model']['items']
+        self.assertEqual(1, len(items))
+        self.assertEqual(item.model, items[0])
 
     def test_no_next_prev_for_single_batch(self):
         """The IJSONRequestCache should contain data about ajacent batches.
@@ -2075,8 +2063,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         owner, item = make_bug_task_listing_item(self.factory)
         self.useContext(person_logged_in(owner))
-        with dynamic_listings():
-            view = self.makeView(item.bugtask)
+        view = self.makeView(item.bugtask)
         cache = IJSONRequestCache(view.request)
         self.assertIs(None, cache.objects.get('next'))
         self.assertIs(None, cache.objects.get('prev'))
@@ -2089,8 +2076,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         task = self.factory.makeBugTask()
         self.factory.makeBugTask(target=task.target)
-        with dynamic_listings():
-            view = self.makeView(task, size=1)
+        view = self.makeView(task, size=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 1}, cache.objects.get('next'))
 
@@ -2102,14 +2088,12 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         """
         task = self.factory.makeBugTask()
         task2 = self.factory.makeBugTask(target=task.target)
-        with dynamic_listings():
-            view = self.makeView(task2, size=1, memo=1)
+        view = self.makeView(task2, size=1, memo=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual({'memo': '1', 'start': 0}, cache.objects.get('prev'))
 
     def test_provides_view_name(self):
         """The IJSONRequestCache should provide the view's name."""
-        self.useContext(dynamic_listings())
         view = self.makeView()
         cache = IJSONRequestCache(view.request)
         self.assertEqual('+bugs', cache.objects['view_name'])
@@ -2123,16 +2107,14 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_default_order_by(self):
         """order_by defaults to '-importance in JSONRequestCache"""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task)
+        view = self.makeView(task)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('-importance', cache.objects['order_by'])
 
     def test_order_by_importance(self):
         """order_by follows query params in JSONRequestCache"""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, orderby='importance')
+        view = self.makeView(task, orderby='importance')
         cache = IJSONRequestCache(view.request)
         self.assertEqual('importance', cache.objects['order_by'])
 
@@ -2142,8 +2124,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         order_by, memo, start, forwards.  These default to sane values.
         """
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task)
+        view = self.makeView(task)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('-importance', cache.objects['order_by'])
         self.assertIs(None, cache.objects['memo'])
@@ -2157,8 +2138,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         order_by, memo, start, forwards.  These are calculated appropriately.
         """
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         self.assertEqual('1', cache.objects['memo'])
         self.assertEqual(0, cache.objects['start'])
@@ -2168,8 +2148,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_field_visibility(self):
         """Cache contains sane-looking field_visibility values."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_id'])
@@ -2177,8 +2156,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_cookie_name(self):
         """The cookie name should be in cache for js code access."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         cookie_name = cache.objects['cbl_cookie_name']
         self.assertEqual('anon-buglist-fields', cookie_name)
@@ -2193,9 +2171,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true'
             '&show_information_type=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertTrue(field_visibility['show_tag'])
@@ -2210,9 +2187,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_status=true'
             '&show_information_type=true&show_title=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertNotIn('show_title', field_visibility)
@@ -2227,9 +2203,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_assignee=true&show_heat=true&show_tag=true'
             '&show_importance=true&show_title=true'
             '&show_information_type=true')
-        with dynamic_listings():
-            view = self.makeView(
-                task, memo=1, forwards=False, size=1, cookie=cookie)
+        view = self.makeView(
+            task, memo=1, forwards=False, size=1, cookie=cookie)
         cache = IJSONRequestCache(view.request)
         field_visibility = cache.objects['field_visibility']
         self.assertIn('show_status', field_visibility)
@@ -2237,8 +2212,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_cache_field_visibility_defaults(self):
         """Cache contains sane-looking field_visibility_defaults values."""
         task = self.factory.makeBugTask()
-        with dynamic_listings():
-            view = self.makeView(task, memo=1, forwards=False, size=1)
+        view = self.makeView(task, memo=1, forwards=False, size=1)
         cache = IJSONRequestCache(view.request)
         field_visibility_defaults = cache.objects['field_visibility_defaults']
         self.assertTrue(field_visibility_defaults['show_id'])
@@ -2267,24 +2241,15 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         bug_number_re = re.compile(r'\#%d' % bug_task.bug.id)
         return soupmatchers.Tag('bugnumber', 'span', text=bug_number_re)
 
-    def test_mustache_rendering_missing_if_no_flag(self):
-        """If the flag is missing, then no mustache features appear."""
-        bug_task, browser = self.getBugtaskBrowser()
-        number_tag = self.getBugNumberTag(bug_task)
-        self.assertHTML(browser, number_tag, invert=True)
-        self.assertHTML(browser, self.client_listing, invert=True)
-
     def test_mustache_rendering(self):
         """If the flag is present, then all mustache features appear."""
-        with dynamic_listings():
-            bug_task, browser = self.getBugtaskBrowser()
+        bug_task, browser = self.getBugtaskBrowser()
         bug_number = self.getBugNumberTag(bug_task)
         self.assertHTML(browser, self.client_listing, bug_number)
 
     def test_mustache_rendering_obfuscation(self):
         """For anonymous users, email addresses are obfuscated."""
-        with dynamic_listings():
-            bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
+        bug_task, browser = self.getBugtaskBrowser(title='a@example.com',
                 no_login=True)
         self.assertNotIn('a@example.com', browser.contents)
 
@@ -2417,8 +2382,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The JSON cache of a search listing view provides a sequence
         # that describes all sort orders implemented by
         # BugTaskSet.search() and no sort orders that are not implemented.
-        with dynamic_listings():
-            view = self.makeView()
+        view = self.makeView()
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
@@ -2433,8 +2397,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The entry 'sort_keys' in the JSON cache of a search listing
         # view is a sequence of 3-tuples (name, title, order), where
         # order is one of the string 'asc' or 'desc'.
-        with dynamic_listings():
-            view = self.makeView()
+        view = self.makeView()
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         for key in json_sort_keys:
@@ -2448,8 +2411,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # The tag name is encoded properly in the JSON.
         product = self.factory.makeProduct(name='foobar')
         bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
-        with dynamic_listings():
-            view = self.makeView(bugtask=bug.default_bugtask)
+        view = self.makeView(bugtask=bug.default_bugtask)
         cache = IJSONRequestCache(view.request)
         tags = cache.objects['mustache_model']['items'][0]['tags']
         expected_url = (
@@ -2473,10 +2435,9 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
             target=product,
             status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
-        with dynamic_listings():
-            content = self.getMainContent(
-                bug.default_bugtask.target, "+expirable-bugs")
-            self.assertIn(title, str(content))
+        content = self.getMainContent(
+            bug.default_bugtask.target, "+expirable-bugs")
+        self.assertIn(title, str(content))
 
 
 class TestBugListingBatchNavigator(TestCaseWithFactory):

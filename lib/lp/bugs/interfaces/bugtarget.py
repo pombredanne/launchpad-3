@@ -1,17 +1,15 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces related to bugs."""
 
 __metaclass__ = type
-
 
 __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasExpirableBugs',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
@@ -54,6 +52,11 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
@@ -61,12 +64,7 @@ from lp.bugs.interfaces.bugtasksearch import (
     BugTagsSearchCombinator,
     IBugTaskSearch,
     )
-from lp.registry.enums import (
-    BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
-    InformationType,
-    NON_EMBARGOED_INFORMATION_TYPES,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.fields import Tag
 
 
@@ -93,8 +91,6 @@ search_tasks_params_common = {
     "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
-    "milestone_assignment": copy_field(
-        IBugTaskSearch['milestone_assignment']),
     "milestone": copy_field(IBugTaskSearch['milestone']),
     "component": copy_field(IBugTaskSearch['component']),
     "nominated_for": Reference(schema=Interface),
@@ -210,6 +206,7 @@ BUG_POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
+    BugSharingPolicy.FORBIDDEN: [],
     }
 
 BUG_POLICY_DEFAULT_TYPES = {
@@ -217,6 +214,7 @@ BUG_POLICY_DEFAULT_TYPES = {
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BugSharingPolicy.FORBIDDEN: None,
     }
 
 
@@ -249,11 +247,11 @@ class IHasBugs(Interface):
                     distribution=None, tags=None,
                     tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
-                    status_upstream=None, milestone_assignment=None,
-                    milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None,
-                    hardware_bus=None, hardware_vendor_id=None,
-                    hardware_product_id=None, hardware_driver_name=None,
+                    status_upstream=None, milestone=None, component=None,
+                    nominated_for=None, sourcepackagename=None,
+                    has_no_package=None, hardware_bus=None,
+                    hardware_vendor_id=None, hardware_product_id=None,
+                    hardware_driver_name=None,
                     hardware_driver_package_name=None,
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
@@ -289,6 +287,10 @@ class IHasBugs(Interface):
         The ordered bug tasks are used to choose the most relevant bug task
         for any particular context.
         """
+
+
+class IHasExpirableBugs(Interface):
+    """Marker interface for entities supporting querying expirable bugs"""
 
 
 class IBugTarget(IHasBugs):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from storm.store import Store
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -17,6 +18,11 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.security import IAuthorization
 from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
@@ -26,11 +32,13 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    Specification,
+    )
 from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.security import (
     AdminSpecification,
@@ -131,26 +139,6 @@ class SpecificationTests(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, getattr, specification, 'setTarget')
 
-    def check_permissions(self, expected_permissions, used_permissions,
-                             type_):
-        expected = set(expected_permissions.keys())
-        self.assertEqual(
-            expected, set(used_permissions.values()),
-            'Unexpected %s permissions' % type_)
-        for permission in expected_permissions:
-            attribute_names = set(
-                name for name, value in used_permissions.items()
-                if value == permission)
-            self.assertEqual(
-                expected_permissions[permission], attribute_names,
-                'Unexpected set of attributes with %s permission %s:\n'
-                'Defined but not expected: %s\n'
-                'Expected but not defined: %s'
-                % (
-                    type_, permission,
-                    attribute_names - expected_permissions[permission],
-                    expected_permissions[permission] - attribute_names))
-
     def test_get_permissions(self):
         expected_get_permissions = {
             CheckerPublic: set((
@@ -188,7 +176,7 @@ class SpecificationTests(TestCaseWithFactory):
             }
         specification = self.factory.makeSpecification()
         checker = getChecker(specification)
-        self.check_permissions(
+        self.checkPermissions(
             expected_get_permissions, checker.get_permissions, 'get')
 
     def test_set_permissions(self):
@@ -203,7 +191,7 @@ class SpecificationTests(TestCaseWithFactory):
             }
         specification = self.factory.makeSpecification()
         checker = getChecker(specification)
-        self.check_permissions(
+        self.checkPermissions(
             expected_get_permissions, checker.set_permissions, 'set')
 
     def test_security_adapters(self):
@@ -408,6 +396,49 @@ class SpecificationTests(TestCaseWithFactory):
             self.write_access_to_ISpecificationView(
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
+
+    def test_get_specification_privacy_filter(self):
+        # get_specification_privacy_filter() returns a Storm expression
+        # that can be used to filter specifications by their visibility-
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=(
+                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
+        public_spec = self.factory.makeSpecification(product=product)
+        proprietary_spec_1 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        proprietary_spec_2 = self.factory.makeSpecification(
+            product=product, information_type=InformationType.PROPRIETARY)
+        all_specs = [
+            public_spec, proprietary_spec_1, proprietary_spec_2]
+        store = Store.of(product)
+        specs_for_anon = store.find(
+            Specification, get_specification_privacy_filter(None),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_anon)
+        # Product owners havae grants on the product, the privacy
+        # filter returns thus all specifications for them.
+        specs_for_owner = store.find(
+            Specification, get_specification_privacy_filter(owner.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(all_specs, specs_for_owner)
+        # The filter returns only public specs for ordinary users.
+        user = self.factory.makePerson()
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual([public_spec], specs_for_other_user)
+        # If the user has a grant for a specification, the filter returns
+        # this specification too.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, specifications=[proprietary_spec_1])
+        specs_for_other_user = store.find(
+            Specification, get_specification_privacy_filter(user.id),
+            Specification.productID == product.id)
+        self.assertContentEqual(
+            [public_spec, proprietary_spec_1], specs_for_other_user)
 
 
 class TestSpecificationSet(TestCaseWithFactory):

@@ -10,6 +10,7 @@ from datetime import (
     )
 import doctest
 
+from pytz import UTC
 from testtools.matchers import (
     DocTestMatches,
     MatchesRegex,
@@ -33,14 +34,14 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from lp.services.database.sqlbase import sqlvalues
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import clear_property_cache
-from lp.services.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -56,7 +57,6 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
     CannotCopy,
-    CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
     IArchiveSet,
@@ -1038,35 +1038,6 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
 
-    def test_main_archive_can_use_restricted(self):
-        # Main archives for distributions can always use restricted
-        # architectures if they are not using virtual builders.
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = False
-        self.assertContentEqual([self.arm],
-            distro.main_archive.enabled_restricted_families)
-
-    def test_main_archive_can_not_be_restricted_not_virtualized(self):
-        # A main archive can not be restricted to certain architectures
-        # (unless it's set to build on virtualized builders).
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = False
-        # Restricting to all restricted architectures is fine
-        distro.main_archive.enabled_restricted_families = [self.arm]
-        self.assertRaises(
-            CannotRestrictArchitectures, setattr, distro.main_archive,
-            "enabled_restricted_families", [])
-
-    def test_main_virtualized_archive_can_be_restricted(self):
-        # A main archive can be restricted to certain architectures
-        # if it's set to build on virtualized builders.
-        distro = self.factory.makeDistribution()
-        distro.main_archive.require_virtualized = True
-
-        # Restricting to architectures is fine.
-        distro.main_archive.enabled_restricted_families = [self.arm]
-        distro.main_archive.enabled_restricted_families = []
-
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEqual(0,
@@ -2027,6 +1998,17 @@ class TestGetFileByName(TestCaseWithFactory):
         pub.sourcepackagerelease.addFile(new_dsc)
         self.assertEqual(new_dsc, self.archive.getFileByName(dsc.filename))
 
+    def test_oddly_named_files_are_found(self):
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pu = self.factory.makePackageUpload(
+            changes_filename='foo-bar-baz_amd64.changes')
+        pu.setDone()
+        pu.addSource(pub.sourcepackagerelease)
+        self.assertEqual(
+            pu.changesfile,
+            self.archive.getFileByName(pu.changesfile.filename))
+
 
 class TestGetPublishedSources(TestCaseWithFactory):
 
@@ -2060,20 +2042,20 @@ class TestGetPublishedSources(TestCaseWithFactory):
             found.append((title, pub_ds))
         self.assertEqual(expected, found)
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name='cd').count())
+            cprov_archive.getPublishedSources(name=u'cd').count())
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name='ice').count())
+            cprov_archive.getPublishedSources(name=u'ice').count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='iceweasel', exact_match=True).count())
+            name=u'iceweasel', exact_match=True).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', exact_match=True).count())
+            name=u'ice', exact_match=True).count())
         self.assertRaises(VersionRequiresName,
             cprov_archive.getPublishedSources,
             version='1.0')
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='ice', version='1.0').count())
+            name=u'ice', version='1.0').count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', version='666').count())
+            name=u'ice', version='666').count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
@@ -2093,12 +2075,10 @@ class TestGetPublishedSources(TestCaseWithFactory):
             distroseries=warty,
             pocket=PackagePublishingPocket.UPDATES).count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name='ice', distroseries=warty).count())
+            name=u'ice', distroseries=warty).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name='ice', distroseries=breezy_autotest).count())
-        self.assertEqual(0, cprov_archive.getPublishedSources(
-            created_since_date='2007-07-09 14:00:00').count())
-        mid_2007 = datetime(year=2007, month=7, day=9, hour=14)
+            name=u'ice', distroseries=breezy_autotest).count())
+        mid_2007 = datetime(year=2007, month=7, day=9, hour=14, tzinfo=UTC)
         self.assertEqual(0, cprov_archive.getPublishedSources(
             created_since_date=mid_2007).count())
         one_hour_step = timedelta(hours=1)
@@ -2622,6 +2602,22 @@ class TestCopyPackage(TestCaseWithFactory):
                 CannotCopy, expected_error, target_archive.copyPackages,
                 [source_name], target_archive, to_pocket.name,
                 target_archive.owner)
+
+    def test_copyPackages_to_pocket(self):
+        # copyPackages respects the to_pocket parameter.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        to_pocket = PackagePublishingPocket.PROPOSED
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.distribution.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackages(
+            [source_name], source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False, person=person)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(to_pocket, copy_job.target_pocket)
 
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):

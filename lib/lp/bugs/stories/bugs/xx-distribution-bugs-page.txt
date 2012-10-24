@@ -7,7 +7,7 @@ information the bugs in it. It also displays the list of bugs.
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs')
     >>> anon_browser.title
     'Bugs : Ubuntu'
-    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    >>> find_tags_by_class(anon_browser.contents, 'buglisting-row') is not None
     True
 
 The page has a link to see all open bugs.
@@ -15,7 +15,7 @@ The page has a link to see all open bugs.
     >>> anon_browser.getLink('Open bugs').click()
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs'
-    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    >>> find_tags_by_class(anon_browser.contents, 'buglisting-row') is not None
     True
 
 It also has a link to subscribe to bug mail.
@@ -60,12 +60,8 @@ The link takes you to the list of bugs with CVEs linked to them.
     >>> cve_bugs_link.click()
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-      mozilla-firefox
-      Medium New
-    2 Blackhole Trash folder
-      &mdash;
-      Medium New
+    1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
+    2 Blackhole Trash folder Ubuntu Medium New
 
 
 Expirable Bugs

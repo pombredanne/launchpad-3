@@ -27,12 +27,10 @@ from testtools.matchers import (
 from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enums import (
-    BugSharingPolicy,
-    InformationType,
-    )
+from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
@@ -357,12 +355,13 @@ class TestErrorHandling(TestCaseWithFactory):
     def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
+        product_url = api_url(product)
         self.factory.makeBugTask(bug=bug, target=product)
 
         launchpad = launchpadlib_for('test', bug.owner)
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
-            BadRequest, lp_bug.addTask, target=api_url(product))
+            BadRequest, lp_bug.addTask, target=product_url)
 
     def test_add_invalid_bugtask_to_proprietary_bug_gives_bad_request(self):
         # Test we get an error when we attempt to invalidly add a bug task to
@@ -373,6 +372,7 @@ class TestErrorHandling(TestCaseWithFactory):
             bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         product2 = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        product2_url = api_url(product2)
         bug = self.factory.makeBug(
             target=product1, owner=owner,
             information_type=InformationType.PROPRIETARY)
@@ -381,7 +381,7 @@ class TestErrorHandling(TestCaseWithFactory):
         launchpad = launchpadlib_for('test', owner)
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
-            BadRequest, lp_bug.addTask, target=api_url(product2))
+            BadRequest, lp_bug.addTask, target=product2_url)
 
     def test_add_attachment_with_bad_filename_raises_exception(self):
         # Test that addAttachment raises BadRequest when the filename given
@@ -400,48 +400,20 @@ class BugSetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug according
-        # to the project's bugs are private by default rule.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc')
-        self.assertEqual('Private', bug.information_type)
-
-    def test_explicit_private_private_bugs_true(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug because the
-        # user commands it.
-        project = self.factory.makeLegacyProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        with person_logged_in(project.owner):
-            project.setPrivateBugs(True, project.owner)
-        webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
-        bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc',
-            private=True)
-        self.assertEqual('Private', bug.information_type)
-
     def test_default_sharing_policy_proprietary(self):
         # Verify the path through user submission, to MaloneApplication to
         # BugSet, and back to the user creates a private bug according
         # to the project's bug sharing policy.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
+        target_url = api_url(project)
         with person_logged_in(project.owner):
             project.setBugSharingPolicy(
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(
-            target=api_url(project), title='title', description='desc')
+            target=target_url, title='title', description='desc')
         self.assertEqual('Proprietary', bug.information_type)
 
 
@@ -461,7 +433,7 @@ class TestBugDateLastUpdated(TestCaseWithFactory):
 
     def test_subscribe_does_not_update(self):
         # Calling subscribe over the API does not update date_last_updated.
-        (bug, owner, webservice)  = self.make_old_bug()
+        (bug, owner, webservice) = self.make_old_bug()
         subscriber = self.factory.makePerson()
         date_last_updated = bug.date_last_updated
         api_sub = api_url(subscriber)

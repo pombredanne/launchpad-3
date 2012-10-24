@@ -13,6 +13,7 @@ import transaction
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -30,7 +31,6 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -92,6 +92,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
+        bmp.commit_message = 'commit message'
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
         update_trigger_modified_fields(bmp.source_branch)
@@ -112,6 +113,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         expected = dedent("""\
         Baz Qux has proposed merging %(source)s into %(target)s.
 
+        Commit message:
+        %(commit_message)s
+
         Requested reviews:
           %(reviewer)s
 
@@ -123,6 +127,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """) % {
             'source': bmp.source_branch.bzr_identity,
             'target': bmp.target_branch.bzr_identity,
+            'commit_message': bmp.commit_message,
             'reviewer': reviewer.unique_displayname,
             'bmp': canonical_url(bmp),
             'reason': reason.getReason()}
@@ -142,6 +147,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
+
+    def test_forCreation_without_commit_message(self):
+        """If there is no commit message, email should say 'None Specified.'"""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bmp.commit_message = None
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertNotIn('Commit message:', ctrl.body)
 
     def test_forCreation_with_bugs(self):
         """If there are related bugs, include 'Related bugs'."""

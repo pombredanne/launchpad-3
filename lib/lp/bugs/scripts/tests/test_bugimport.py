@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import os
 import re
+import xml.etree.cElementTree as ET
 
 import pytz
 from testtools.content import text_content
@@ -28,7 +29,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts import bugimport
-from lp.bugs.scripts.bugimport import ET
 from lp.bugs.scripts.checkwatches import (
     CheckwatchesMaster,
     core,
@@ -655,19 +655,6 @@ class ImportBugTestCase(TestCase):
         self.assertNotEqual(bug101, None)
         self.assertEqual(bug101.private, False)
         self.assertEqual(bug101.security_related, True)
-
-    def test_public_bug_product_private_bugs(self):
-        # Test that if we import a public bug into a product with 
-        # private_bugs, the bug is private.
-        product = getUtility(IProductSet).getByName('netapplet')
-        removeSecurityProxy(product).private_bugs = True
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        bugnode = ET.fromstring(public_security_bug)
-        bug101 = importer.importBug(bugnode)
-        self.assertIsNot(None, bug101)
-        self.assertTrue(bug101.private)
-        self.assertTrue(bug101.security_related)
 
 
 class BugImportCacheTestCase(TestCase):

@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -76,7 +77,6 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

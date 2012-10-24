@@ -44,9 +44,6 @@ because our cheat objects don't match the app-encoded business logic.
 
 import _pythonpath
 
-
-_pythonpath
-
 from inspect import getmro
 import os
 

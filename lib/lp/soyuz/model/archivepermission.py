@@ -41,6 +41,11 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -48,11 +53,6 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
     )
 from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import (

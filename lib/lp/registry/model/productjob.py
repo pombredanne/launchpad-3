@@ -38,7 +38,11 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import ProductJobType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    ProductJobType,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -468,7 +472,9 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         if self._is_proprietary:
             self.product.active = False
         else:
-            removeSecurityProxy(self.product).private_bugs = False
+            naked_product = removeSecurityProxy(self.product)
+            naked_product.setBranchSharingPolicy(BranchSharingPolicy.FORBIDDEN)
+            naked_product.setBugSharingPolicy(BugSharingPolicy.FORBIDDEN)
             for series in self.product.series:
                 if series.branch is not None and series.branch.private:
                     removeSecurityProxy(series).branch = None

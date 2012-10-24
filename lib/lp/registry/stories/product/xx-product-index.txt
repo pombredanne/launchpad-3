@@ -307,23 +307,3 @@ If a product is packaged in Ubuntu the links are shown.
     All packages
     Packages in Distributions
     “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
-
-A product that has linked packages now displays suggestions and asks
-the user to select the package.
-
-    >>> login(ANONYMOUS)
-    >>> product = factory.makeProduct(name='pmount')
-    >>> logout()
-    >>> user_browser.open('http://launchpad.dev/pmount')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
-    All packages...
-    Packages in Distributions...
-    Ubuntu Hoary packages:
-    pmount...
-
-    >>> user_browser.getControl(
-    ...     name='field.distributionsourcepackage').value = ['pmount']
-    >>> user_browser.getControl('Set Ubuntu Package Information').click()
-    >>> print_feedback_messages(user_browser.contents)
-    This project was linked to the source package "pmount in Ubuntu"

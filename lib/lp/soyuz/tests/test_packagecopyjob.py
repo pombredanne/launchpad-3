@@ -362,7 +362,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_copy_with_packageupload(self):
         # When a PCJ with a PackageUpload gets processed, the resulting
         # publication is linked to the PackageUpload.
-        spn = self.factory.getUniqueString()
+        spn = self.factory.getUniqueUnicode()
         pcj = self.createCopyJob(spn, 'universe', 'web', '1.0-1', True)
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [pcj.id]).one()
@@ -469,7 +469,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job.run()
 
         published_sources = job.target_archive.getPublishedSources(
-            name="libc", version="2.8-1")
+            name=u"libc", version="2.8-1")
         self.assertIsNot(None, published_sources.any())
 
         # The copy should have sent an email too. (see
@@ -477,6 +477,33 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # notification tests)
         emails = pop_notifications()
         self.assertEqual(len(emails), 1)
+
+    def test_iterReady_orders_by_copy_policy(self):
+        # iterReady prioritises mass-sync copies below anything else.
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        self.makeJob()
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        ready_jobs = list(getUtility(IPlainPackageCopyJobSource).iterReady())
+        self.assertEqual([
+            PackageCopyPolicy.INSECURE,
+            PackageCopyPolicy.MASS_SYNC,
+            PackageCopyPolicy.MASS_SYNC,
+            ], [job.copy_policy for job in ready_jobs])
+
+    def test_iterReady_preempt(self):
+        # Ordinary ("insecure") copy jobs that arrive in the middle of a
+        # long mass-sync run take precedence immediately.
+        for i in range(2):
+            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        iterator = getUtility(IPlainPackageCopyJobSource).iterReady()
+        self.assertEqual(
+            PackageCopyPolicy.MASS_SYNC, next(iterator).copy_policy)
+        self.makeJob()
+        self.assertEqual(
+            PackageCopyPolicy.INSECURE, next(iterator).copy_policy)
+        self.assertEqual(
+            PackageCopyPolicy.MASS_SYNC, next(iterator).copy_policy)
+        self.assertRaises(StopIteration, next, iterator)
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
@@ -527,7 +554,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(0, exit_code)
         copied_source_package = archive2.getPublishedSources(
-            name="libc", version="2.8-1", exact_match=True).first()
+            name=u"libc", version="2.8-1", exact_match=True).first()
         self.assertIsNot(copied_source_package, None)
 
     def test___repr__(self):
@@ -691,7 +718,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.runJob(job)
 
         new_publication = target_archive.getPublishedSources(
-            name='libc', version='2.8-1').one()
+            name=u'libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
 
@@ -730,7 +757,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.COMPLETED, job.status)
 
         new_publication = target_archive.getPublishedSources(
-            name='libc', version='2.8-1').one()
+            name=u'libc', version='2.8-1').one()
         self.assertEqual('main', new_publication.component.name)
         self.assertEqual('web', new_publication.section.name)
 
@@ -781,7 +808,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The copied source should have the manual overrides, not the
         # original values.
         new_publication = target_archive.getPublishedSources(
-            name='copyme', version='2.8-1').one()
+            name=u'copyme', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('editors', new_publication.section.name)
 
@@ -802,7 +829,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # There is no package of the same name already in the target
         # archive.
-        existing_sources = target_archive.getPublishedSources(name='copyme')
+        existing_sources = target_archive.getPublishedSources(name=u'copyme')
         self.assertEqual(None, existing_sources.any())
 
         # Now, run the copy job.
@@ -924,7 +951,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             spph, archive, archive, requester=archive.owner)
         self.runJob(job)
         self.assertEqual(JobStatus.COMPLETED, job.status)
-        published_sources = archive.getPublishedSources(name="copyme")
+        published_sources = archive.getPublishedSources(name=u"copyme")
         self.assertIsNotNone(published_sources.any())
 
     def test_copying_to_main_archive_unapproved(self):
@@ -1112,7 +1139,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(PackageUploadStatus.DONE, pu.status)
 
         # Make sure packages were actually copied.
-        existing_sources = target_archive.getPublishedSources(name='copyme')
+        existing_sources = target_archive.getPublishedSources(name=u'copyme')
         self.assertIsNot(None, existing_sources.any())
 
         # It would be nice to test emails in a separate test but it would
@@ -1258,7 +1285,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Make sure packages were actually copied.
         copied_sources = target_archive.getPublishedSources(
-            name="copyme", version="2.8-1")
+            name=u"copyme", version="2.8-1")
         self.assertNotEqual(0, copied_sources.count())
         copied_binaries = target_archive.getAllPublishedBinaries(name="copyme")
         self.assertNotEqual(0, copied_binaries.count())
@@ -1494,6 +1521,44 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job should have set the PU status to REJECTED.
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
+    def test_diffs_are_not_created_when_only_copying_binaries(self):
+        # The job will not fail because a packagediff from a source that wasn't
+        # copied could not be created.
+        archive = self.distroseries.distribution.main_archive
+        source = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distroseries, sourcepackagename="copyme",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE, archive=archive,
+            component='multiverse')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.UPDATES, archive=archive,
+            distroseries=self.distroseries,
+            sourcepackagerelease=source.sourcepackagerelease)
+        das = self.factory.makeDistroArchSeries(distroseries=self.distroseries)
+        self.factory.makeBinaryPackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED, distroarchseries=das,
+            pocket=PackagePublishingPocket.UPDATES, archive=archive,
+            source_package_release=spph.sourcepackagerelease)
+        requester = self.factory.makePerson()
+        with person_logged_in(archive.owner):
+            archive.newComponentUploader(requester, 'multiverse')
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="copyme", package_version="2.8-1",
+            source_archive=archive, target_archive=archive,
+            target_distroseries=self.distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=True, requester=requester)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertContentEqual(
+            [], archive.getPublishedSources(
+                status=PackagePublishingStatus.PENDING))
+        self.assertEqual(
+            1, archive.getPublishedOnDiskBinaries(
+                status=PackagePublishingStatus.PENDING).count())
+
 
 class TestViaCelery(TestCaseWithFactory):
     """PackageCopyJob runs under Celery."""
@@ -1516,7 +1581,7 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
 
         published_sources = job.target_archive.getPublishedSources(
-            name="libc", version="2.8-1")
+            name=u"libc", version="2.8-1")
         self.assertIsNot(None, published_sources.any())
 
         # The copy should have sent an email too. (see

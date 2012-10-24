@@ -5,9 +5,10 @@ __metaclass__ = type
 __all__ = []
 
 from textwrap import dedent
-import transaction
 
+import transaction
 from zope.component import getUtility
+from testtools.matchers import Equals
 
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
@@ -34,6 +35,7 @@ from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login_celebrity,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -41,6 +43,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 
 
 class PersonMailingListTestCase(TestCaseWithFactory):
@@ -745,6 +748,20 @@ class MailingListHeldMessageTestCase(MailingListMessageTestCase):
         self.assertEqual(1, held_messages.count())
         self.assertEqual(held_message.message_id, held_messages[0].message_id)
 
+    def test_getReviewableMessages_queries(self):
+        # The Message and user that posted it are retrieved with the query
+        # that get the MessageApproval.
+        test_objects = self.makeMailingListAndHeldMessage()
+        team, member, sender, held_message = test_objects
+        held_messages = team.mailing_list.getReviewableMessages()
+        with StormStatementRecorder() as recorder:
+            held_message = held_messages[0]
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        with StormStatementRecorder() as recorder:
+            held_message.message
+            held_message.posted_by
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
 
 class MessageApprovalTestCase(MailingListMessageTestCase):
     """Test the MessageApproval data behaviour."""
@@ -875,17 +892,6 @@ class HeldMessageDetailsTestCase(MailingListMessageTestCase):
         self.assertEqual(held_message.message.subject, details.subject)
         self.assertEqual(held_message.message.datecreated, details.date)
         self.assertEqual(held_message.message.owner, details.author)
-
-    def test_email_message(self):
-        held_message = self.makeMailingListAndHeldMessage()[-1]
-        details = IHeldMessageDetails(held_message)
-        self.assertEqual('A question', details.email_message['subject'])
-
-    def test_sender(self):
-        test_objects = self.makeMailingListAndHeldMessage()
-        team, member, sender, held_message = test_objects
-        details = IHeldMessageDetails(held_message)
-        self.assertEqual(sender.preferredemail.email, details.sender)
 
     def test_body(self):
         held_message = self.makeMailingListAndHeldMessage()[-1]

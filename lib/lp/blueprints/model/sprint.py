@@ -15,7 +15,11 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import Store
+from storm.locals import (
+    Desc,
+    Or,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -27,7 +31,6 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.blueprints.enums import (
     SpecificationFilter,
-    SpecificationImplementationStatus,
     SpecificationSort,
     SprintSpecificationStatus,
     )
@@ -35,7 +38,11 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
-from lp.blueprints.model.specification import HasSpecificationsMixin
+from lp.blueprints.model.specification import (
+    get_specification_filters,
+    get_specification_privacy_filter,
+    HasSpecificationsMixin,
+    )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.registry.interfaces.person import (
@@ -50,6 +57,7 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
@@ -104,16 +112,18 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # Only really used in tests.
         return [a.attendee for a in self.attendances]
 
-    def spec_filter_clause(self, filter=None):
+    def spec_filter_clause(self, user, filter=None):
         """Figure out the appropriate query for specifications on a sprint.
 
         We separate out the query generation from the normal
         specifications() method because we want to reuse this query in the
         specificationLinks() method.
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
+        # import here to avoid circular deps
+        from lp.blueprints.model.specification import Specification
+        query = [SprintSpecification.sprintID == self.id,
+                 SprintSpecification.specificationID == Specification.id]
+        query.append(get_specification_privacy_filter(user))
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -126,120 +136,61 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         #  - acceptance for sprint agenda.
         #  - informational.
         #
-        base = """SprintSpecification.sprint = %s AND
-                  SprintSpecification.specification = Specification.id AND
-                  (Specification.product IS NULL OR
-                   Specification.product NOT IN
-                    (SELECT Product.id FROM Product
-                     WHERE Product.active IS FALSE))
-                  """ % quote(self)
-        query = base
 
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # import here to avoid circular deps
-        from lp.blueprints.model.specification import Specification
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
+        sprint_status = []
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.ACCEPTED))
-        elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.PROPOSED))
-        elif SpecificationFilter.DECLINED in filter:
-            query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.DECLINED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
+            sprint_status.append(SprintSpecificationStatus.ACCEPTED)
+        if SpecificationFilter.PROPOSED in filter:
+            sprint_status.append(SprintSpecificationStatus.PROPOSED)
+        if SpecificationFilter.DECLINED in filter:
+            sprint_status.append(SprintSpecificationStatus.DECLINED)
+        statuses = [SprintSpecification.status == status for status in
+                    sprint_status]
+        if len(statuses) > 0:
+            query.append(Or(*statuses))
         # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
+        query.extend(get_specification_filters(filter))
         return query
 
-    @property
-    def has_any_specifications(self):
+    def all_specifications(self, user):
+        return self.specifications(user, filter=[SpecificationFilter.ALL])
+
+    def specifications(self, user, sort=None, quantity=None, filter=None,
+                       prejoin_people=False):
         """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
-        """See IHasSpecifications."""
-
-        query = self.spec_filter_clause(filter=filter)
-        if filter == None:
-            filter = []
-
+        # prejoin_people  is provided only for interface compatibility and
+        # prejoin_people=True is not implemented.
+        assert not prejoin_people
+        if filter is None:
+            filter = set([SpecificationFilter.ACCEPTED])
+        query = self.spec_filter_clause(user, filter=filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
-        elif sort == SpecificationSort.DATE:
+        results = Store.of(self).find(Specification, *query)
+        if sort == SpecificationSort.DATE:
+            order = (Desc(SprintSpecification.date_created), Specification.id)
             # we need to establish if the listing will show specs that have
             # been decided only, or will include proposed specs.
-            show_proposed = set([
-                SpecificationFilter.ALL,
-                SpecificationFilter.PROPOSED,
-                ])
-            if len(show_proposed.intersection(set(filter))) > 0:
-                # we are showing proposed specs so use the date proposed
-                # because not all specs will have a date decided.
-                order = ['-SprintSpecification.date_created',
-                         'Specification.id']
-            else:
+            if (SpecificationFilter.ALL not in filter and
+                SpecificationFilter.PROPOSED not in filter):
                 # this will show only decided specs so use the date the spec
                 # was accepted or declined for the sprint
-                order = ['-SprintSpecification.date_decided',
-                         '-SprintSpecification.date_created',
-                         'Specification.id']
-
-        results = Specification.select(query, orderBy=order, limit=quantity,
-            clauseTables=['SprintSpecification'])
-        if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+                order = (Desc(SprintSpecification.date_decided),) + order
+            results = results.order_by(*order)
+        else:
+            assert sort is None or sort == SpecificationSort.PRIORITY
+            # fall back to default, which is priority, descending.
+        if quantity is not None:
+            results = results[:quantity]
         return results
 
-    def specificationLinks(self, sort=None, quantity=None, filter=None):
+    def specificationLinks(self, filter=None):
         """See `ISprint`."""
-
-        query = self.spec_filter_clause(filter=filter)
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
-        elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-
-        results = SprintSpecification.select(query,
-            clauseTables=['Specification'], orderBy=order, limit=quantity)
-        return results.prejoin(['specification'])
+        query = self.spec_filter_clause(None, filter=filter)
+        result = Store.of(self).find(SprintSpecification, *query)
+        return result
 
     def getSpecificationLink(self, speclink_id):
         """See `ISprint`.
@@ -264,7 +215,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(
+        return self.specifications(decider,
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     def declineSpecificationLinks(self, idlist, decider):
@@ -278,7 +229,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # queue
         flush_database_updates()
 
-        return self.specifications(
+        return self.specifications(decider,
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
@@ -391,21 +342,27 @@ class HasSprintsMixin:
                    quote(SprintSpecificationStatus.ACCEPTED))
         return query, ['Specification', 'SprintSpecification']
 
-    @property
-    def sprints(self):
-        """See IHasSprints."""
+    def getSprints(self):
         query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts', distinct=True)
 
-    @property
-    def coming_sprints(self):
+    @cachedproperty
+    def sprints(self):
         """See IHasSprints."""
+        return list(self.getSprints())
+
+    def getComingSprings(self):
         query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
         query += " AND Sprint.time_ends > 'NOW'"
         return Sprint.select(
             query, clauseTables=tables, orderBy='time_starts',
             distinct=True, limit=5)
+
+    @cachedproperty
+    def coming_sprints(self):
+        """See IHasSprints."""
+        return list(self.getComingSprings())
 
     @property
     def past_sprints(self):

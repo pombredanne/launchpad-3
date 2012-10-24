@@ -124,8 +124,8 @@ Link 1. Open bugs (2)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> print_bugtasks(browser.contents)
-    10 another test bug Medium      Triaged
-    16 take one         Undecided   Triaged
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium Triaged
+    16 take one linux-source-2.6.15 (Ubuntu) Undecided Triaged
 
 Link 2. Triaged bugs (2)
 
@@ -133,17 +133,17 @@ Link 2. Triaged bugs (2)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> print_bugtasks(browser.contents)
-    10 another test bug Medium      Triaged
-    16 take one         Undecided   Triaged
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium Triaged
+    16 take one linux-source-2.6.15 (Ubuntu) Undecided Triaged
 
 Link 3: Open bugs that aren't triaged  (0)
 
     >>> browser.open(triaged_delta)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
-    >>> table = find_tag_by_id(browser.contents, 'buglisting')
-    >>> print table
-    None
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'bugs-table-listing'))
+    No results for search
 
 Link 4: Triaged bugs that are upstream issues (2)
 
@@ -151,17 +151,17 @@ Link 4: Triaged bugs that are upstream issues (2)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> print_bugtasks(browser.contents)
-    10 another test bug Medium      Triaged
-    16 take one         Undecided   Triaged
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium Triaged
+    16 take one linux-source-2.6.15 (Ubuntu) Undecided Triaged
 
 Link 5: Triaged bugs that haven't been marked upstream (0)
 
     >>> browser.open(upstream_delta_url)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
-    >>> table = find_tag_by_id(browser.contents, 'buglisting')
-    >>> print table
-    None
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'bugs-table-listing'))
+    No results for search
 
 Link 6: Triaged bugs marked upstream lacking a watch (1)
 
@@ -169,7 +169,7 @@ Link 6: Triaged bugs marked upstream lacking a watch (1)
     >>> browser.title
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> print_bugtasks(browser.contents)
-    10 another test bug Medium      Triaged
+    10 another test bug linux-source-2.6.15 (Ubuntu) Medium Triaged
 
 
 Links to fix registration data

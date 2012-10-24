@@ -9,6 +9,7 @@ __all__ = [
     'BugNominatableDistroSeriesVocabulary',
     'BugNominatableProductSeriesVocabulary',
     'BugNominatableSeriesVocabulary',
+    'BugTaskMilestoneVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
     'BugWatchVocabulary',
@@ -31,6 +32,7 @@ from storm.expr import (
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 from zope.schema.interfaces import (
     IVocabulary,
     IVocabularyTokenized,
@@ -42,14 +44,24 @@ from zope.schema.vocabulary import (
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
@@ -316,3 +328,106 @@ class BugNominatableDistroSeriesVocabulary(
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""
         return self.distribution.getSeries(name)
+
+
+def milestone_matches_bugtask(milestone, bugtask):
+    """ Return True if the milestone can be set against this bugtask."""
+    bug_target = bugtask.target
+    naked_milestone = removeSecurityProxy(milestone)
+
+    if IProduct.providedBy(bug_target):
+        return bugtask.product.id == naked_milestone.productID
+    elif IProductSeries.providedBy(bug_target):
+        return bugtask.productseries.product.id == naked_milestone.productID
+    elif (IDistribution.providedBy(bug_target) or
+          IDistributionSourcePackage.providedBy(bug_target)):
+        return bugtask.distribution.id == naked_milestone.distributionID
+    elif (IDistroSeries.providedBy(bug_target) or
+          ISourcePackage.providedBy(bug_target)):
+        return bugtask.distroseries.id == naked_milestone.distroseriesID
+    return False
+
+
+class BugTaskMilestoneVocabulary:
+    """Milestones for a set of bugtasks.
+
+    This vocabulary supports the optional preloading and caching of milestones
+    in order to avoid repeated database queries.
+    """
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    def __init__(self, default_bugtask=None, milestones=None):
+        assert default_bugtask is None or IBugTask.providedBy(default_bugtask)
+        self.default_bugtask = default_bugtask
+        self._milestones = None
+        if milestones is not None:
+            self._milestones = dict(
+                (str(milestone.id), milestone) for milestone in milestones)
+
+    def _load_milestones(self, bugtask):
+        # If the milestones have not already been cached, load them for the
+        # specified bugtask.
+        if self._milestones is None:
+            bugtask_set = getUtility(IBugTaskSet)
+            milestones = list(
+                bugtask_set.getBugTaskTargetMilestones([bugtask]))
+            self._milestones = dict(
+                (str(milestone.id), milestone) for milestone in milestones)
+        return self._milestones
+
+    @property
+    def milestones(self):
+        return self._load_milestones(self.default_bugtask)
+
+    def visible_milestones(self, bugtask=None):
+        return self._get_milestones(bugtask)
+
+    def _get_milestones(self, bugtask=None):
+        """All milestones for the specified bugtask."""
+        bugtask = bugtask or self.default_bugtask
+        if bugtask is None:
+            return []
+
+        self._load_milestones(bugtask)
+        milestones = [milestone
+                for milestone in self._milestones.values()
+                if milestone_matches_bugtask(milestone, bugtask)]
+
+        if (bugtask.milestone is not None and
+            bugtask.milestone not in milestones):
+            # Even if we inactivate a milestone, a bugtask might still be
+            # linked to it. Include such milestones in the vocabulary to
+            # ensure that the +editstatus page doesn't break.
+            milestones.append(bugtask.milestone)
+        return milestones
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            return self.toTerm(self.milestones[str(token)])
+        except:
+            raise LookupError(token)
+
+    def __len__(self):
+        """See `IVocabulary`."""
+        return len(self._get_milestones())
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        return iter(
+            [self.toTerm(milestone) for milestone in self._get_milestones()])
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.id, obj.displayname)
+
+    def __contains__(self, obj):
+        """See `IVocabulary`."""
+        return obj in self._get_milestones()

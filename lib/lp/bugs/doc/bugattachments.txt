@@ -613,7 +613,7 @@ Adding bug attachments to private bugs
 If an attachment is added to a private bug, the "restricted" flag of
 its Librarian file is set.
 
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.app.enums import InformationType
     >>> private_bug_owner = factory.makePerson()
     >>> ignored = login_person(private_bug_owner)
     >>> private_bug = factory.makeBug(
