@@ -1675,7 +1675,8 @@ class Archive(SQLBase):
         if from_pocket:
             from_pocket = self._text_to_pocket(from_pocket)
         if from_series:
-            from_series = self._text_to_series(from_series)
+            from_series = self._text_to_series(
+                from_series, distribution=from_archive.distribution)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
         source = self._validateAndFindSource(
