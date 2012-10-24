@@ -7,6 +7,7 @@ import urllib
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import ServiceUsage
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -195,6 +196,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         # and make one which has not been worked on (will be excluded)
         self._makePOFiles(1, previously_worked_on=False)
+
+        # and make one which has a product no longer using translations (will
+        # be excluded)
+        [pofile] = self._makePOFiles(1, previously_worked_on=True)
+        naked_product = removeSecurityProxy(pofile.potemplate.product)
+        naked_product.translations_usage = ServiceUsage.NOT_APPLICABLE
 
         pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
 
