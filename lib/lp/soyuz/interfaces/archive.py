@@ -42,6 +42,7 @@ __all__ = [
     'NoTokensForTeams',
     'PocketNotFound',
     'PriorityNotFound',
+    'RedirectedPocket',
     'SectionNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -204,6 +205,19 @@ class CannotUploadToPocket(Exception):
         Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
+
+
+@error_status(httplib.FORBIDDEN)
+class RedirectedPocket(Exception):
+    """Returned for a pocket that would normally be redirected to another.
+
+    This is used in contexts (e.g. copies) where actually doing the
+    redirection would be Too Much Magic."""
+
+    def __init__(self, distroseries, pocket, preferred):
+        Exception.__init__(self,
+            "Not permitted to upload directly to %s; try %s instead." %
+            (distroseries.getSuite(pocket), distroseries.getSuite(preferred)))
 
 
 class CannotUploadToPPA(CannotUploadToArchive):

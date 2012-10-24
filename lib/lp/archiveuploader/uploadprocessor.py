@@ -385,6 +385,9 @@ class UploadHandler:
                     str(e)))
             return UploadStatusEnum.REJECTED
 
+        if policy.redirect_warning is not None:
+            upload.warn(policy.redirect_warning)
+
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
         if (first_path.isdigit() and

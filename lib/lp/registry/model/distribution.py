@@ -257,6 +257,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
     package_derivatives_email = StringCol(notNull=False, default=None)
+    redirect_release_uploads = BoolCol(notNull=True, default=False)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')

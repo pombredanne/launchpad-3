@@ -138,6 +138,9 @@ class NascentUpload:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
 
+        if policy.redirect_warning is not None:
+            self.warn(policy.redirect_warning)
+
         # Make sure the changes file name is well-formed.
         self.run_and_reject_on_error(self.changes.checkFileName)
 

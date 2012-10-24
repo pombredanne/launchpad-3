@@ -76,6 +76,7 @@ class AbstractUploadPolicy:
     name = 'abstract'
     options = None
     accepted_type = None  # Must be defined in subclasses.
+    redirect_warning = None
 
     def __init__(self):
         """Prepare a policy..."""
@@ -200,6 +201,19 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
     name = 'insecure'
     accepted_type = ArchiveUploadType.SOURCE_ONLY
+
+    def setDistroSeriesAndPocket(self, dr_name):
+        """Set the distroseries and pocket from the provided name.
+
+        The insecure policy redirects uploads to a different pocket if
+        Distribution.redirect_release_uploads is set.
+        """
+        super(InsecureUploadPolicy, self).setDistroSeriesAndPocket(dr_name)
+        if (self.distro.redirect_release_uploads and
+            self.pocket == PackagePublishingPocket.RELEASE):
+            self.pocket = PackagePublishingPocket.PROPOSED
+            self.redirect_warning = "Redirecting %s to %s-proposed." % (
+                self.distroseries, self.distroseries)
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""

@@ -361,6 +361,11 @@ class IDistributionPublic(
         description=_("True if this distribution has sources published."),
         readonly=True, required=False)
 
+    redirect_release_uploads = exported(Bool(
+        title=_("Redirect release pocket uploads"),
+        description=_("Redirect release pocket uploads to proposed pocket"),
+        readonly=False, required=True))
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 

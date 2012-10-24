@@ -1963,6 +1963,26 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual("optional", ddeb.priority_name)
         self.assertEqual(deb.priority_name, ddeb.priority_name)
 
+    def test_redirect_release_uploads(self):
+        # Setting the Distribution.redirect_release_uploads flag causes
+        # release pocket uploads to be redirected to proposed.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy="insecure")
+        self.switchToAdmin()
+        self.ubuntu.redirect_release_uploads = True
+        self.switchToUploader()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        _, _, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0).get_payload(decode=True)
+        self.assertIn(
+            "Redirecting ubuntu breezy to ubuntu breezy-proposed.", body)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
+
 
 class TestUploadHandler(TestUploadProcessorBase):
 

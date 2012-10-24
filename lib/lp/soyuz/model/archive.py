@@ -148,6 +148,7 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     NoTokensForTeams,
     PocketNotFound,
+    RedirectedPocket,
     validate_external_dependencies,
     VersionRequiresName,
     )
@@ -1266,7 +1267,7 @@ class Archive(SQLBase):
         # Allow anything else.
         return True
 
-    def checkUploadToPocket(self, distroseries, pocket):
+    def checkUploadToPocket(self, distroseries, pocket, check_redirect=False):
         """See `IArchive`."""
         if self.is_partner:
             if pocket not in (
@@ -1282,6 +1283,11 @@ class Archive(SQLBase):
             # existing builds after a series is released.
             return
         else:
+            if (check_redirect and
+                pocket == PackagePublishingPocket.RELEASE and
+                self.distribution.redirect_release_uploads):
+                return RedirectedPocket(
+                    distroseries, pocket, PackagePublishingPocket.PROPOSED)
             # Uploads to the partner archive are allowed in any distroseries
             # state.
             # XXX julian 2005-05-29 bug=117557:
@@ -1789,14 +1795,11 @@ class Archive(SQLBase):
         from lp.soyuz.scripts.packagecopier import do_copy
 
         pocket = self._text_to_pocket(to_pocket)
-        # Fail immediately if the destination pocket is not Release and
-        # this archive is a PPA.
-        if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
-            raise CannotCopy(
-                "Destination pocket must be 'release' for a PPA.")
-
-        # Now convert the to_series string to a real distroseries.
         series = self._text_to_series(to_series)
+        reason = self.checkUploadToPocket(series, pocket, check_redirect=True)
+        if reason:
+            # Wrap any forbidden-pocket error in CannotCopy.
+            raise CannotCopy(unicode(reason))
 
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by

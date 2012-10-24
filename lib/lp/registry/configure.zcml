@@ -1622,6 +1622,7 @@
                 official_malone
                 owner
                 package_derivatives_email
+                redirect_release_uploads
                 summary
                 title"/>
         <require

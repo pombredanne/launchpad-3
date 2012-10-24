@@ -345,6 +345,11 @@ Check the email recipient for displayname containing special chars,
     <BLANKLINE>
     =3D=3D
     <BLANKLINE>
+     OK: bar_1.0.orig.tar.gz
+     OK: bar_1.0-4.diff.gz
+     OK: bar_1.0-4.dsc
+         -> Component: universe Section: devel
+    <BLANKLINE>
     Announcing to breezy-changes@ubuntu.com
     <BLANKLINE>
     Thank you for your contribution to Ubuntu Test.
