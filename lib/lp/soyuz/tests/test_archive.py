@@ -2155,11 +2155,13 @@ class TestCopyPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _setup_copy_data(self, source_private=False, target_purpose=None,
+    def _setup_copy_data(self, source_distribution=None, source_private=False,
+                         target_purpose=None,
                          target_status=SeriesStatus.DEVELOPMENT):
         if target_purpose is None:
             target_purpose = ArchivePurpose.PPA
-        source_archive = self.factory.makeArchive(private=source_private)
+        source_archive = self.factory.makeArchive(
+            distribution=source_distribution, private=source_private)
         target_archive = self.factory.makeArchive(purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
@@ -2378,7 +2380,8 @@ class TestCopyPackage(TestCaseWithFactory):
         # The from_series and from_pocket parameters cause copyPackage to
         # select a matching source publication.
         (source, source_archive, source_name, target_archive, to_pocket,
-         to_series, version) = self._setup_copy_data()
+         to_series, version) = self._setup_copy_data(
+            source_distribution=self.factory.makeDistribution())
         other_series = self.factory.makeDistroSeries(
             distribution=source_archive.distribution,
             status=SeriesStatus.DEVELOPMENT)
