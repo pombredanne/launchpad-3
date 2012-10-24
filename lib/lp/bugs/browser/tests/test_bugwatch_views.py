@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
     login,
     login_person,
@@ -32,15 +33,27 @@ class TestBugWatchEditView(TestCaseWithFactory):
         self.bug_watch = self.factory.makeBugWatch(
             bug=self.bug_task.bug)
 
+    def test_can_delete_watch(self):
+        # An unlinked bugwatch can be deleted.
+        form = {'field.actions.delete': 'Delete Bug Watch'}
+        getUtility(ILaunchBag).add(self.bug_task.bug)
+        view = create_initialized_view(self.bug_watch, '+edit', form=form)
+        self.assertContentEqual([], view.errors)
+
+    def test_can_not_delete_unlinked_watch_with_unsynched_comments(self):
+        # If a bugwatch is unlinked, but has imported comments that are
+        # awaiting synch, it can not be deleted.
+        self.factory.makeBugComment(
+            bug=self.bug_task.bug.id, bug_watch=self.bug_watch)
+        view = create_initialized_view(self.bug_watch, '+edit')
+        self.assertFalse(view.bugWatchIsUnlinked(None))
+
     def test_cannot_delete_watch_if_linked_to_task(self):
         # It isn't possible to delete a bug watch that's linked to a bug
         # task.
         self.bug_task.bugwatch = self.bug_watch
         view = create_initialized_view(self.bug_watch, '+edit')
-        self.assertFalse(
-            view.bugWatchIsUnlinked(None),
-            "bugWatchIsUnlinked() returned True though there is a task "
-            "linked to the watch.")
+        self.assertFalse(view.bugWatchIsUnlinked(None))
 
     def test_cannot_delete_watch_if_linked_to_comment(self):
         # It isn't possible to delete a bug watch that's linked to a bug
@@ -54,7 +67,4 @@ class TestBugWatchEditView(TestCaseWithFactory):
         self.bug_watch.addComment('comment-id', message)
         login_person(self.person)
         view = create_initialized_view(self.bug_watch, '+edit')
-        self.assertFalse(
-            view.bugWatchIsUnlinked(None),
-            "bugWatchIsUnlinked() returned True though there is a comment "
-            "linked to the watch.")
+        self.assertFalse(view.bugWatchIsUnlinked(None))
