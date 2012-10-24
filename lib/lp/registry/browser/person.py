@@ -113,7 +113,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -138,6 +137,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
@@ -602,34 +602,32 @@ class CommonMenuLinks:
         return Link(target, text, icon='add')
 
     def related_software_summary(self):
-        target = '+related-software'
-        text = 'Related software'
+        target = '+related-packages'
+        text = 'Related packages'
         return Link(target, text, icon='info')
 
     def maintained(self):
         target = '+maintained-packages'
         text = 'Maintained packages'
-        enabled = bool(self.person.getLatestMaintainedPackages())
+        enabled = self.person.hasMaintainedPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        enabled = bool(
-            self.person.getLatestUploadedButNotMaintainedPackages())
+        enabled = self.person.hasUploadedButNotMaintainedPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
         target = '+ppa-packages'
         text = 'Related PPA packages'
-        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        enabled = self.person.hasUploadedPPAPackages()
         return Link(target, text, enabled=enabled, icon='info')
 
     def synchronised(self):
         target = '+synchronised-packages'
         text = 'Synchronised packages'
-        enabled = bool(
-            self.person.getLatestSynchronisedPublishings())
+        enabled = self.person.hasSynchronisedPublishings()
         return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
@@ -711,8 +709,8 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         ]
 
     def related_software_summary(self):
-        target = '+related-software'
-        text = 'Related software'
+        target = '+related-packages'
+        text = 'Related packages'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -3429,11 +3427,8 @@ class BaseWithStats:
     failed_builds = None
     needs_building = None
 
-    def __init__(self, object, open_bugs, open_questions,
-                 failed_builds, needs_building):
+    def __init__(self, object, failed_builds, needs_building):
         self.context = object
-        self.open_bugs = open_bugs
-        self.open_questions = open_questions
         self.failed_builds = failed_builds
         self.needs_building = needs_building
 
@@ -3453,7 +3448,7 @@ class SourcePackagePublishingHistoryWithStats(BaseWithStats):
 
 
 class PersonRelatedSoftwareView(LaunchpadView):
-    """View for +related-software."""
+    """View for +related-packages."""
     implements(IPersonRelatedSoftwareMenu)
     _max_results_key = 'summary_list_size'
 
@@ -3463,15 +3458,15 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Related software'
+        return 'Related packages'
 
     @cachedproperty
     def related_projects(self):
         """Return a list of project dicts owned or driven by this person.
 
         The number of projects returned is limited by max_results_to_display.
-        A project dict has the following keys: title, url, bug_count,
-        spec_count, and question_count.
+        A project dict has the following keys: title, url, is_owner,
+        is_driver, is_bugsupervisor.
         """
         projects = []
         user = getUtility(ILaunchBag).user
@@ -3487,14 +3482,13 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project = {}
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
-            if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(
-                    pillar.id, 0)
-            else:
-                project['bug_count'] = pillar.searchTasks(
-                    BugTaskSet().open_bugtask_search).count()
-            project['spec_count'] = pillar.specifications(user).count()
-            project['question_count'] = pillar.searchQuestions().count()
+            person = self.context
+            project['is_owner'] = person.inTeam(pillar.owner)
+            project['is_driver'] = person.inTeam(pillar.driver)
+            project['is_bug_supervisor'] = False
+            if IHasBugSupervisor.providedBy(pillar):
+                project['is_bug_supervisor'] = (
+                    person.inTeam(pillar.bug_supervisor))
             projects.append(project)
         return projects
 
@@ -3675,28 +3669,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
-        distro_packages = [
-            package_release.distrosourcepackage
-            for package_release in package_releases]
-        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, distro_packages)
-        open_bugs = {}
-        for bug_count in package_bug_counts:
-            distro_package = bug_count['package']
-            open_bugs[distro_package] = bug_count['open']
-
-        question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getOpenQuestionCountByPackages(
-            distro_packages)
-
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             package_releases)
 
         return [
             SourcePackageReleaseWithStats(
-                package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage],
-                builds_by_package[package],
+                package, builds_by_package[package],
                 needs_build_by_package[package])
             for package in package_releases]
 
@@ -3705,30 +3683,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         filtered_spphs = [
             spph for spph in publishings if
             check_permission('launchpad.View', spph)]
-        distro_packages = [
-            spph.meta_sourcepackage.distribution_sourcepackage
-            for spph in filtered_spphs]
-        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, distro_packages)
-        open_bugs = {}
-        for bug_count in package_bug_counts:
-            distro_package = bug_count['package']
-            open_bugs[distro_package] = bug_count['open']
-
-        question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getOpenQuestionCountByPackages(
-            distro_packages)
-
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             [spph.sourcepackagerelease for spph in filtered_spphs])
 
         return [
             SourcePackagePublishingHistoryWithStats(
-                spph,
-                open_bugs[spph.meta_sourcepackage.distribution_sourcepackage],
-                package_question_counts[
-                    spph.meta_sourcepackage.distribution_sourcepackage],
-                builds_by_package[spph.sourcepackagerelease],
+                spph, builds_by_package[spph.sourcepackagerelease],
                 needs_build_by_package[spph.sourcepackagerelease])
             for spph in filtered_spphs]
 
