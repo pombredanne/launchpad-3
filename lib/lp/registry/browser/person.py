@@ -600,7 +600,7 @@ class CommonMenuLinks:
         return Link(target, text, icon='add')
 
     def related_software_summary(self):
-        target = '+related-software'
+        target = '+related-packages'
         text = 'Related packages'
         return Link(target, text, icon='info')
 
@@ -706,7 +706,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         ]
 
     def related_software_summary(self):
-        target = '+related-software'
+        target = '+related-packages'
         text = 'Related packages'
         return Link(target, text, icon='info')
 
@@ -3433,7 +3433,7 @@ class SourcePackagePublishingHistoryWithStats(BaseWithStats):
 
 
 class PersonRelatedSoftwareView(LaunchpadView):
-    """View for +related-software."""
+    """View for +related-packages."""
     implements(IPersonRelatedSoftwareMenu)
     _max_results_key = 'summary_list_size'
 

@@ -917,20 +917,6 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
 
-    def test_verify_bugs_and_answers_links(self):
-        # Verify the links for bugs and answers point to locations that
-        # exist.
-        html = self.view()
-        expected_base = '/%s/+source/%s' % (
-            self.spph.distroseries.distribution.name,
-            self.spph.source_package_name)
-        bugs_link = find_tags_by_class(html, 'sprite bug action-icon', True)
-        self.assertEqual('%s/+bugs' % expected_base, bugs_link.get('href'))
-        questions_link = find_tags_by_class(
-            html, 'sprite question action-icon', True)
-        self.assertEqual(
-            '%s/+questions' % expected_base, questions_link.get('href'))
-
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
@@ -980,24 +966,6 @@ class TestPersonSynchronisedPackagesView(TestCaseWithFactory):
         self.assertEqual(
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
-
-    def test_verify_bugs_and_answers_links(self):
-        # Verify the links for bugs and answers point to locations that
-        # exist.
-        html = self.view()
-        expected_base = '/%s/+source/%s' % (
-            self.copied_spph.distroseries.distribution.name,
-            self.copied_spph.source_package_name)
-        bug_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Bugs link', 'a',
-                attrs={'href': expected_base + '/+bugs'}))
-        question_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Questions link', 'a',
-                attrs={'href': expected_base + '/+questions'}))
-        self.assertThat(html, bug_matcher)
-        self.assertThat(html, question_matcher)
 
 
 class TestPersonRelatedProjectsView(TestCaseWithFactory):
@@ -1049,19 +1017,19 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
 
     def test_related_software_with_failed_build(self):
         # The link to the failed build is displayed.
-        self.view = create_view(self.user, name='+related-software')
+        self.view = create_view(self.user, name='+related-packages')
         html = self.view()
-        self.assertTrue(
+        self.assertIn(
             '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+                self.build.id), html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
-        self.assertTrue(
+        self.assertIn(
             '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+                self.build.id), html)
 
 
 class TestPersonRelatedPackagesSynchronisedPackages(TestCaseWithFactory):
@@ -1093,7 +1061,7 @@ class TestPersonRelatedPackagesSynchronisedPackages(TestCaseWithFactory):
     def test_related_software_no_link_synchronised_packages(self):
         # No link to the synchronised packages page if no synchronised
         # packages.
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
         self.assertThat(view(), Not(synced_package_link_matcher))
 
@@ -1101,13 +1069,13 @@ class TestPersonRelatedPackagesSynchronisedPackages(TestCaseWithFactory):
         # If this person has synced packages, the link to the synchronised
         # packages page is present.
         self.createCopiedSource(self.user, self.spph)
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
         self.assertThat(view(), synced_package_link_matcher)
 
     def test_related_software_displays_synchronised_packages(self):
         copied_spph = self.createCopiedSource(self.user, self.spph)
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_packages_title = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Synchronised packages title', 'h2',
