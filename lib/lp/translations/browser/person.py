@@ -33,6 +33,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
@@ -231,7 +232,10 @@ class PersonTranslationView(LaunchpadView):
             if potemplate is None:
                 return True
             product = potemplate.product
-            return product is None or product.active
+            product_is_active = (
+                product.active and
+                product.translations_usage == ServiceUsage.LAUNCHPAD)
+            return product is None or product_is_active
 
         active_entries = (entry for entry in all_entries if is_active(entry))
         return [ActivityDescriptor(self.context, entry)
