@@ -132,6 +132,7 @@ class TestIncoming(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage(email_address=bad)
         self.assertThat(authenticateEmail(mail), Is(None))
 
+
 class TestExtractAddresses(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer

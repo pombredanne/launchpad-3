@@ -264,7 +264,6 @@ def authenticateEmail(mail, signature_timestamp_checker=None):
             # The email isn't valid, so don't authenticate
             principal = None
 
-
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
         return None
