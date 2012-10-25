@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatch views."""
@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
@@ -35,10 +37,12 @@ class TestBugWatchEditView(TestCaseWithFactory):
 
     def test_can_delete_watch(self):
         # An unlinked bugwatch can be deleted.
+        bwid = self.bug_watch.id
         form = {'field.actions.delete': 'Delete Bug Watch'}
         getUtility(ILaunchBag).add(self.bug_task.bug)
         view = create_initialized_view(self.bug_watch, '+edit', form=form)
         self.assertContentEqual([], view.errors)
+        self.assertRaises(NotFoundError, getUtility(IBugWatchSet).get, bwid)
 
     def test_can_not_delete_unlinked_watch_with_unsynched_comments(self):
         # If a bugwatch is unlinked, but has imported comments that are
