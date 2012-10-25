@@ -95,7 +95,6 @@ from lp.services.database.stormexpr import (
     get_where_for_reference,
     Unnest,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -445,7 +444,7 @@ def _build_query(params):
     if params.has_cve:
         extra_clauses.append(
             BugTaskFlat.bug_id.is_in(
-                Select(BugCve.bugID, tables=[BugCve], distinct=True)))
+                Select(BugCve.bugID, tables=[BugCve])))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -628,15 +627,12 @@ def _build_query(params):
         extra_clauses.append(BugTaskFlat.bug_owner == params.bug_reporter)
 
     if params.bug_commenter:
-        use_distinct = bool(getFeatureFlag(
-            'bug_comment_search.use_distinct.enabled'))
         extra_clauses.append(
             BugTaskFlat.bug_id.is_in(Select(
                 BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
-                    BugMessage.owner == params.bug_commenter),
-                distinct=use_distinct)))
+                    BugMessage.owner == params.bug_commenter))))
 
     if params.affects_me:
         params.affected_user = params.user
@@ -1031,7 +1027,7 @@ def _build_hardware_related_clause(params):
     clauses.append(_userCanAccessSubmissionStormClause(params.user))
 
     return BugTaskFlat.bug_id.is_in(
-        Select(Bug.id, tables=tables, where=And(*clauses), distinct=True))
+        Select(Bug.id, tables=tables, where=And(*clauses)))
 
 
 def _build_blueprint_related_clause(params):

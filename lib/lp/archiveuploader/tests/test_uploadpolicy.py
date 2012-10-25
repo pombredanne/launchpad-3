@@ -16,6 +16,7 @@ from lp.archiveuploader.uploadpolicy import (
     InsecureUploadPolicy,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
@@ -192,6 +193,34 @@ class TestUploadPolicy(TestCaseWithFactory):
         self.assertRaises(
             NotFoundError, policy.setDistroSeriesAndPocket,
             'nonexistent_security')
+
+    def test_redirect_release_uploads_primary(self):
+        # With the insecure policy, the
+        # Distribution.redirect_release_uploads flag causes uploads to the
+        # RELEASE pocket to be automatically redirected to PROPOSED.
+        ubuntu = getUtility(IDistributionSet)["ubuntu"]
+        with celebrity_logged_in("admin"):
+            ubuntu.redirect_release_uploads = True
+        flush_database_updates()
+        insecure_policy = findPolicyByName("insecure")
+        insecure_policy.setOptions(FakeOptions(distroseries="hoary"))
+        self.assertEqual("hoary", insecure_policy.distroseries.name)
+        self.assertEqual(
+            PackagePublishingPocket.PROPOSED, insecure_policy.pocket)
+
+    def test_redirect_release_uploads_ppa(self):
+        # The Distribution.redirect_release_uploads flag does not affect PPA
+        # uploads.
+        ubuntu = getUtility(IDistributionSet)["ubuntu"]
+        with celebrity_logged_in("admin"):
+            ubuntu.redirect_release_uploads = True
+        flush_database_updates()
+        insecure_policy = findPolicyByName("insecure")
+        insecure_policy.archive = self.factory.makeArchive()
+        insecure_policy.setOptions(FakeOptions(distroseries="hoary"))
+        self.assertEqual("hoary", insecure_policy.distroseries.name)
+        self.assertEqual(
+            PackagePublishingPocket.RELEASE, insecure_policy.pocket)
 
     def setHoaryStatus(self, status):
         ubuntu = getUtility(IDistributionSet)["ubuntu"]

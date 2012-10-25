@@ -611,10 +611,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         :raise CannotCopy: If the copy fails for a reason that the user
             can deal with.
         """
-        if self.target_archive.is_ppa:
-            if self.target_pocket != PackagePublishingPocket.RELEASE:
-                raise CannotCopy(
-                    "Destination pocket must be 'release' for a PPA.")
+        reason = self.target_archive.checkUploadToPocket(
+            self.target_distroseries, self.target_pocket,
+            person=self.requester)
+        if reason:
+            # Wrap any forbidden-pocket error in CannotCopy.
+            raise CannotCopy(unicode(reason))
 
         source_package = self.findSourcePublication()
 

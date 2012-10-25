@@ -74,7 +74,6 @@ Import public keyring into current LPDB.
 Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
-    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.registry.model.distribution import Distribution
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> from lp.soyuz.scripts.initialize_distroseries import (
@@ -101,7 +100,9 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import (
+    ...     fillLibrarianFile,
+    ...     )
     >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -344,6 +345,11 @@ Check the email recipient for displayname containing special chars,
     http://launchpad.dev/ubuntutest/breezy/+source/bar/1.0-4
     <BLANKLINE>
     =3D=3D
+    <BLANKLINE>
+     OK: bar_1.0.orig.tar.gz
+     OK: bar_1.0-4.diff.gz
+     OK: bar_1.0-4.dsc
+         -> Component: universe Section: devel
     <BLANKLINE>
     Announcing to breezy-changes@ubuntu.com
     <BLANKLINE>

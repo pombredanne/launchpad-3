@@ -2175,7 +2175,7 @@ or a CannotCopy exception is thrown.
     ...     "package3", "1.2", cprov.archive, "updates", person=mark)
     Traceback (most recent call last):
     ...
-    CannotCopy: Destination pocket must be 'release' for a PPA.
+    CannotCopy: PPA uploads must be for the RELEASE pocket.
 
 syncSource() will always use only the latest publication of the
 specific source, ignoring the previous ones. Multiple publications can

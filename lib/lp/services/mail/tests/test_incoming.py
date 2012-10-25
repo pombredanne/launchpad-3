@@ -126,6 +126,12 @@ class TestIncoming(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage(email_address=unknown)
         self.assertThat(authenticateEmail(mail), Is(None))
 
+    def test_badly_formed_email(self):
+        # A badly formed email address returns no principal.
+        bad = '\xed@example.com'
+        mail = self.factory.makeSignedMessage(email_address=bad)
+        self.assertThat(authenticateEmail(mail), Is(None))
+
 
 class TestExtractAddresses(TestCaseWithFactory):
 
