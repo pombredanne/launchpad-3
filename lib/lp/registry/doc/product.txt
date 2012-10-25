@@ -186,29 +186,6 @@ IProductSet will also tell us which products can be translated:
     alsa-utils
     evolution
 
-A similar list of "featured translatables" picks a random set of these,
-so we can present a short list of arbitrary projects that a user can
-help translate.
-
-XXX JeroenVermeulen 2008-07-31 bug-253583: We're not using this method
-at the moment.  Remove it or start using it?
-
-    >>> for product in productset.featuredTranslatables():
-    ...     print product.name
-    alsa-utils
-    evolution
-
-In featuredTranslatables() we can also set how many products we want to
-show at maximum.  We can pick just one random translatable product, for
-example.
-
-    >>> features = [
-    ...     product.name for product in productset.featuredTranslatables(1)]
-    >>> len(features)
-    1
-    >>> features[0] in ('alsa-utils', 'evolution')
-    True
-
 Only active products are listed as translatables.
 
     # Unlink the source packages so the project can be deactivated.
@@ -216,10 +193,6 @@ Only active products are listed as translatables.
     >>> unlink_source_packages(evo)
     >>> evo.active = False
     >>> for product in productset.getTranslatables():
-    ...    print product.name
-    alsa-utils
-
-    >>> for product in productset.featuredTranslatables():
     ...    print product.name
     alsa-utils
 

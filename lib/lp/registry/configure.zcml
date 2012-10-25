@@ -1451,7 +1451,6 @@
                 search
                 latest
                 getTranslatables
-                featuredTranslatables
                 count_all
                 count_translatables
                 count_buggy
