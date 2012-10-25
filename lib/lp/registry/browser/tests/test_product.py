@@ -488,15 +488,13 @@ class TestProductEditView(BrowserTestCase):
         product = self.factory.makeProduct()
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
             login_person(product.owner)
-            view = create_initialized_view(product, '+edit')
-            info_field = view.form_fields.get('information_type').field
-            info_types = info_field.vocabulary.items.items
-
-            import pdb; pdb.set_trace()
-            self.assertIn(InformationType.PUBLIC, info_types)
-            self.assertIn(InformationType.EMBARGOED, info_types)
-            self.assertIn(InformationType.PROPRIETARY, info_types)
-            self.assertNotIn(InformationType.PUBLICSECURITY, info_types)
+            view = create_initialized_view(
+                product,
+                '+edit',
+                principal=product.owner)
+            info_types = [t.name for t in view.widgets['information_type'].vocabulary]
+            expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+            self.assertEqual(expected, info_types)
 
     def test_change_information_type_proprietary(self):
         product = self.factory.makeProduct(name='fnord')
