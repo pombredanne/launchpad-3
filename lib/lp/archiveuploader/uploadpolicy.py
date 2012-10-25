@@ -32,6 +32,7 @@ from zope.interface import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import ArchivePurpose
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -209,7 +210,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         Distribution.redirect_release_uploads is set.
         """
         super(InsecureUploadPolicy, self).setDistroSeriesAndPocket(dr_name)
-        if (self.distro.redirect_release_uploads and
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            self.distro.redirect_release_uploads and
             self.pocket == PackagePublishingPocket.RELEASE):
             self.pocket = PackagePublishingPocket.PROPOSED
             self.redirect_warning = "Redirecting %s to %s-proposed." % (
