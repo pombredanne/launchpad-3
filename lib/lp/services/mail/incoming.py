@@ -258,7 +258,11 @@ def authenticateEmail(mail, signature_timestamp_checker=None):
     principal, dkim_trusted_address = _getPrincipalByDkim(mail)
     if dkim_trusted_address is None:
         from_addr = parseaddr(mail['From'])[1]
-        principal = authutil.getPrincipalByLogin(from_addr)
+        try:
+            principal = authutil.getPrincipalByLogin(from_addr)
+        except TypeError:
+            # The email isn't valid, so don't authenticate
+            principal = None
 
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
