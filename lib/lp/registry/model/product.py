@@ -90,6 +90,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
     SpecificationFilter,
@@ -1521,24 +1522,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         if user.id in self._known_viewers:
             return True
-        # We need the plain Storm Person object for the SQL query below
-        # but an IPersonRoles object for the team membership checks.
-        if IPersonRoles.providedBy(user):
-            plain_user = user.person
-        else:
-            plain_user = user
+        if not IPersonRoles.providedBy(user):
             user = IPersonRoles(user)
         if user.in_commercial_admin or user.in_admin:
             self._known_viewers.add(user.id)
             return True
-        policy = getUtility(IAccessPolicySource).find(
-            [(self, self.information_type)]).one()
-        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
-            [(policy, plain_user)])
-        if grants_for_user.is_empty():
-            return False
-        self._known_viewers.add(user.id)
-        return True
+        if getUtility(IService, 'sharing').checkPillarAccess(
+            [self], self.information_type, user):
+            self._known_viewers.add(user.id)
+            return True
+        return False
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,
