@@ -240,7 +240,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -1554,7 +1553,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         new_target = data.get('target')
         if new_target and new_target != self.context.target:
             try:
-                self.context.validateTransitionToTarget(new_target)
+                # The validity of the source package has already been checked
+                # by the bug target widget.
+                self.context.validateTransitionToTarget(
+                    new_target, check_source_package=False)
             except IllegalTarget as e:
                 self.setFieldError(error_field, e[0])
 
@@ -1635,9 +1637,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # guaranteed to pass all the values. For example: bugtasks linked to a
         # bug watch don't allow editing the form, and the value is missing
         # from the form.
+        # The new target has already been validated so don't do it again.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target, self.user)
+            bugtask.transitionToTarget(new_target, self.user, validate=False)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.

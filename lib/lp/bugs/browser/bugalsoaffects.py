@@ -285,13 +285,10 @@ class BugTaskCreationStep(AlsoAffectsStep):
         else:
             task_target = data['distribution']
             if data.get('sourcepackagename') is not None:
-                spn_or_dsp = data['sourcepackagename']
-                if IDistributionSourcePackage.providedBy(spn_or_dsp):
-                    task_target = spn_or_dsp
-                else:
-                    task_target = task_target.getSourcePackage(spn_or_dsp)
+                task_target = data['sourcepackagename']
+        # The new target has already been validated so don't do it again.
         self.task_added = self.context.bug.addTask(
-            getUtility(ILaunchBag).user, task_target)
+            getUtility(ILaunchBag).user, task_target, validate_target=False)
         task_added = self.task_added
 
         if extracted_bug is not None:
@@ -450,6 +447,8 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 if sourcepackagename:
                     target = target.getSourcePackage(sourcepackagename)
                 validate_new_target(self.context.bug, target)
+                if sourcepackagename:
+                    data['sourcepackagename'] = target
             except IllegalTarget as e:
                 if sourcepackagename:
                     self.setFieldError('sourcepackagename', e[0])
