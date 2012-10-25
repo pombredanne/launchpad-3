@@ -2780,55 +2780,33 @@ class Person(
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
+    def hasMaintainedPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery()
+
+    def hasUploadedButNotMaintainedPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery(uploader_only=True)
+
+    def hasUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery(uploader_only=True, ppa_only=True)
+
     def getLatestMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery()
-
-    def getLatestSynchronisedPublishings(self):
-        """See `IPerson`."""
-        query = """
-            SourcePackagePublishingHistory.id IN (
-                SELECT DISTINCT ON (spph.distroseries,
-                                    spr.sourcepackagename)
-                    spph.id
-                FROM
-                    SourcePackagePublishingHistory as spph, archive,
-                    SourcePackagePublishingHistory as ancestor_spph,
-                    SourcePackageRelease as spr
-                WHERE
-                    spph.sourcepackagerelease = spr.id AND
-                    spph.creator = %(creator)s AND
-                    spph.ancestor = ancestor_spph.id AND
-                    spph.archive = archive.id AND
-                    ancestor_spph.archive != spph.archive AND
-                    archive.purpose = %(archive_purpose)s
-                ORDER BY spph.distroseries,
-                    spr.sourcepackagename,
-                    spph.datecreated DESC,
-                    spph.id DESC
-            )
-            """ % dict(
-                   creator=quote(self.id),
-                   archive_purpose=quote(ArchivePurpose.PRIMARY),
-                   )
-
-        return SourcePackagePublishingHistory.select(
-            query,
-            orderBy=['-SourcePackagePublishingHistory.datecreated',
-                     '-SourcePackagePublishingHistory.id'],
-            prejoins=['sourcepackagerelease', 'archive'])
+        return self._latestReleasesQuery()
 
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery(uploader_only=True)
+        return self._latestReleasesQuery(uploader_only=True)
 
     def getLatestUploadedPPAPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery(
-            uploader_only=True, ppa_only=True)
+        return self._latestReleasesQuery(uploader_only=True, ppa_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
+    def _releasesQueryFilter(self, uploader_only=False, ppa_only=False):
+        """Return the filter used to find sourcepackagereleases (SPRs)
+        related to this person.
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
@@ -2844,55 +2822,137 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+        clauses = [SourcePackageRelease.upload_archive == Archive.id]
 
         if uploader_only:
-            clauses.append(
-                'sourcepackagerelease.creator = %s' % quote(self.id))
+            clauses.append(SourcePackageRelease.creator == self)
 
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            clauses.append(
-                'sourcepackagerelease.maintainer != %s' % quote(self.id))
+            clauses.append(SourcePackageRelease.maintainer != self)
         else:
-            clauses.append(
-                'sourcepackagerelease.maintainer = %s' % quote(self.id))
+            clauses.append(SourcePackageRelease.maintainer == self)
 
         if ppa_only:
-            clauses.append(
-                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
+            clauses.append(Archive.purpose == ArchivePurpose.PPA)
         else:
-            clauses.append(
-                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
+            clauses.append(Archive.purpose != ArchivePurpose.PPA)
 
-        query_clauses = " AND ".join(clauses)
-        query = """
-            SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (upload_distroseries,
-                                    sourcepackagerelease.sourcepackagename,
-                                    upload_archive)
-                    sourcepackagerelease.id
-                FROM sourcepackagerelease, archive,
-                    sourcepackagepublishinghistory as spph
-                WHERE
-                    spph.sourcepackagerelease = sourcepackagerelease.id AND
-                    spph.archive = archive.id AND
-                    %(more_query_clauses)s
-                ORDER BY upload_distroseries,
-                    sourcepackagerelease.sourcepackagename,
-                    upload_archive, dateuploaded DESC
-              )
-              """ % dict(more_query_clauses=query_clauses)
+        return clauses
 
-        rset = SourcePackageRelease.select(
-            query,
-            orderBy=['-SourcePackageRelease.dateuploaded',
-                     'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+    def _hasReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Are there sourcepackagereleases (SPRs) related to this person.
+        See `_releasesQueryFilter` for details on the criteria used.
+        """
+        clauses = self._releasesQueryFilter(uploader_only, ppa_only)
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        tables = (
+            SourcePackageRelease,
+            Join(
+                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
+            Join(Archive, Archive.id == spph.archiveID))
+        rs = Store.of(self).using(*tables).find(
+            SourcePackageRelease.id, clauses)
+        return not rs.is_empty()
 
-        return rset
+    def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases (SPRs) related to this person.
+        See `_releasesQueryFilter` for details on the criteria used."""
+        clauses = self._releasesQueryFilter(uploader_only, ppa_only)
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        rs = Store.of(self).find(
+            SourcePackageRelease,
+            SourcePackageRelease.id.is_in(
+                Select(
+                    SourcePackageRelease.id,
+                    tables=[
+                        SourcePackageRelease,
+                        Join(
+                            spph,
+                            spph.sourcepackagereleaseID ==
+                            SourcePackageRelease.id),
+                        Join(Archive, Archive.id == spph.archiveID)],
+                    where=And(*clauses),
+                    order_by=[SourcePackageRelease.upload_distroseriesID,
+                              SourcePackageRelease.sourcepackagenameID,
+                              SourcePackageRelease.upload_archiveID,
+                              Desc(SourcePackageRelease.dateuploaded)],
+                    distinct=(
+                        SourcePackageRelease.upload_distroseriesID,
+                        SourcePackageRelease.sourcepackagenameID,
+                        SourcePackageRelease.upload_archiveID)))
+        ).order_by(
+            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+
+        def load_related_objects(rows):
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                set(map(attrgetter("maintainerID"), rows))))
+            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
+            bulk.load_related(Archive, rows, ['upload_archiveID'])
+
+        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
+
+    def hasSynchronisedPublishings(self):
+        """See `IPerson`."""
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        ancestor_spph = ClassAlias(
+            SourcePackagePublishingHistory, "ancestor_spph")
+        tables = (
+            SourcePackageRelease,
+            Join(
+                spph,
+                spph.sourcepackagereleaseID ==
+                SourcePackageRelease.id),
+            Join(Archive, Archive.id == spph.archiveID),
+            Join(ancestor_spph, ancestor_spph.id == spph.ancestorID))
+        rs = Store.of(self).using(*tables).find(
+            spph.id,
+            spph.creatorID == self.id,
+            ancestor_spph.archiveID != spph.archiveID,
+            Archive.purpose == ArchivePurpose.PRIMARY)
+        return not rs.is_empty()
+
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        ancestor_spph = ClassAlias(
+            SourcePackagePublishingHistory, "ancestor_spph")
+        rs = Store.of(self).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(
+                Select(
+                    spph.id,
+                    tables=[
+                        SourcePackageRelease,
+                        Join(
+                            spph, spph.sourcepackagereleaseID ==
+                            SourcePackageRelease.id),
+                        Join(Archive, Archive.id == spph.archiveID),
+                        Join(
+                            ancestor_spph,
+                            ancestor_spph.id == spph.ancestorID)],
+                    where=And(
+                        spph.creatorID == self.id,
+                        ancestor_spph.archiveID != spph.archiveID,
+                        Archive.purpose == ArchivePurpose.PRIMARY),
+                    order_by=[spph.distroseriesID,
+                              SourcePackageRelease.sourcepackagenameID,
+                              Desc(spph.datecreated), Desc(spph.id)],
+                    distinct=(
+                        spph.distroseriesID,
+                        SourcePackageRelease.sourcepackagenameID)
+                    ))).order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
+
+        def load_related_objects(rows):
+            bulk.load_related(
+                SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+            bulk.load_related(Archive, rows, ['archiveID'])
+
+        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
     def createRecipe(self, name, description, recipe_text, distroseries,
                      registrant, daily_build_archive=None, build_daily=False):
