@@ -490,7 +490,7 @@ class TestProductEditView(BrowserTestCase):
             login_person(product.owner)
             view = create_initialized_view(product, '+edit')
             info_field = view.form_fields.get('information_type').field
-            info_types = info_field.source.items.items
+            info_types = info_field.vocabulary.items.items
 
             import pdb; pdb.set_trace()
             self.assertIn(InformationType.PUBLIC, info_types)
