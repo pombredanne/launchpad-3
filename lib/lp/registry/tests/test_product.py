@@ -738,9 +738,6 @@ class TestProduct(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        with celebrity_logged_in('registry_experts'):
-            for attribute_name in names:
-                getattr(product, attribute_name)
         # Commercial admins have access to all products.
         with celebrity_logged_in('commercial_admin'):
             for attribute_name in names:

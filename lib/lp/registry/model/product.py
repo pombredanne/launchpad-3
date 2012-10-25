@@ -1528,8 +1528,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             plain_user = user
             user = IPersonRoles(user)
-        if (user.in_commercial_admin or user.in_admin or
-            user.in_registry_experts):
+        if user.in_commercial_admin or user.in_admin:
             self._known_viewers.add(user.id)
             return True
         policy = getUtility(IAccessPolicySource).find(
