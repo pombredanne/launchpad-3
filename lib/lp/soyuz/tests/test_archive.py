@@ -66,6 +66,7 @@ from lp.soyuz.interfaces.archive import (
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
+    RedirectedPocket,
     VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -712,6 +713,29 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertIsNone(
             archive.checkUploadToPocket(
                 distroseries, PackagePublishingPocket.RELEASE))
+
+    def test_checkUploadToPocket_handles_redirects(self):
+        # Uploading to the release pocket is disallowed if
+        # Distribution.redirect_release_uploads is set.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        with person_logged_in(archive.distribution.owner):
+            archive.distribution.redirect_release_uploads = True
+        person = self.factory.makePerson()
+        self.assertIsInstance(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE, person=person),
+            RedirectedPocket)
+        # The proposed pocket is unaffected.
+        self.assertIsNone(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.PROPOSED, person=person))
+        # Queue admins bypass this check.
+        with person_logged_in(archive.distribution.owner):
+            archive.newQueueAdmin(person, "main")
+        self.assertIsNone(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE, person=person))
 
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(

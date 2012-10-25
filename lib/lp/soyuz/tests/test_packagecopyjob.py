@@ -416,8 +416,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
-            "Destination pocket must be 'release' for a PPA.",
-            job.error_message)
+            "PPA uploads must be for the RELEASE pocket.", job.error_message)
 
     def assertOopsRecorded(self, job):
         self.assertEqual(JobStatus.FAILED, job.status)
@@ -450,6 +449,35 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Abort the transaction to simulate the job runner script exiting.
         transaction.abort()
         self.assertOopsRecorded(job)
+
+    def test_target_primary_redirects(self):
+        # For primary archives with redirect_release_uploads set, ordinary
+        # uploaders may not copy directly into the release pocket.
+        job = create_proper_job(self.factory)
+        job.target_archive.distribution.redirect_release_uploads = True
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+        transaction.commit()
+        self.runJob(job)
+        self.assertEqual(1, naked_job.reportFailure.call_count)
+
+    def test_target_primary_queue_admin_bypasses_redirect(self):
+        # For primary archives with redirect_release_uploads set, queue
+        # admins may copy directly into the release pocket anyway.
+        job = create_proper_job(self.factory)
+        job.target_archive.distribution.redirect_release_uploads = True
+        with person_logged_in(job.target_archive.owner):
+            job.target_archive.newPocketQueueAdmin(
+                job.requester, PackagePublishingPocket.RELEASE)
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+        transaction.commit()
+        self.runJob(job)
+        self.assertEqual(0, naked_job.reportFailure.call_count)
 
     def test_run(self):
         # A proper test run synchronizes packages.

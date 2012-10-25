@@ -32,6 +32,7 @@ from zope.interface import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import ArchivePurpose
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -76,6 +77,7 @@ class AbstractUploadPolicy:
     name = 'abstract'
     options = None
     accepted_type = None  # Must be defined in subclasses.
+    redirect_warning = None
 
     def __init__(self):
         """Prepare a policy..."""
@@ -200,6 +202,20 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
     name = 'insecure'
     accepted_type = ArchiveUploadType.SOURCE_ONLY
+
+    def setDistroSeriesAndPocket(self, dr_name):
+        """Set the distroseries and pocket from the provided name.
+
+        The insecure policy redirects uploads to a different pocket if
+        Distribution.redirect_release_uploads is set.
+        """
+        super(InsecureUploadPolicy, self).setDistroSeriesAndPocket(dr_name)
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            self.distro.redirect_release_uploads and
+            self.pocket == PackagePublishingPocket.RELEASE):
+            self.pocket = PackagePublishingPocket.PROPOSED
+            self.redirect_warning = "Redirecting %s to %s-proposed." % (
+                self.distroseries, self.distroseries)
 
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
