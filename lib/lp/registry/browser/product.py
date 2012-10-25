@@ -2166,6 +2166,7 @@ class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
+    related_features = (PRIVATE_PROJECTS_FLAG,)
     total_steps = 2
 
     @property

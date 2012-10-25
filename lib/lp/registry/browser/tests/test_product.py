@@ -28,6 +28,7 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.registry.browser.product import (
+    PRIVATE_PROJECTS_FLAG,
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
@@ -39,7 +40,9 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    )
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -177,6 +180,7 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertContentEqual(
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
+        self.assertIn(PRIVATE_PROJECTS_FLAG, cache.objects['related_features'])
 
     def test_staging_message_is_not_demo(self):
         view = create_initialized_view(self.product_set, '+new')
