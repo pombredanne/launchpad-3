@@ -1283,7 +1283,8 @@ class Archive(SQLBase):
             # existing builds after a series is released.
             return
         else:
-            if (person is not None and
+            if (self.purpose == ArchivePurpose.PRIMARY and
+                person is not None and
                 not self.canAdministerQueue(
                     person, pocket=pocket, distroseries=distroseries) and
                 pocket == PackagePublishingPocket.RELEASE and
