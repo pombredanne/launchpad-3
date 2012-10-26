@@ -8,6 +8,12 @@ __metaclass__ = type
 import cgi
 import urllib
 
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import Not
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -24,6 +30,7 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
@@ -150,6 +157,24 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         url = get_register_upstream_url(source_package)
         self.assertInQueryString(
             url, 'field.homepageurl', 'http://eg.dom/bonkers')
+
+
+class TestSourcePackageView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_register_upstream_forbids_proprietary(self):
+        # Cannot specify information_type if registering for sourcepackage.
+        self.useFixture(FeatureFixture({'disclosure.private_projects.enabled':
+            'on'}))
+        sourcepackage = self.factory.makeSourcePackage()
+        browser = self.getViewBrowser(sourcepackage)
+        browser.getControl("Register the upstream project").click()
+        browser.getControl("Link to Upstream Project").click()
+        browser.getControl("Summary").value = "summary"
+        browser.getControl("Continue").click()
+        t = Tag('info_type', 'input', attrs={'name': 'field.information_type'})
+        self.assertThat(browser.contents, Not(HTMLContains(t)))
 
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
