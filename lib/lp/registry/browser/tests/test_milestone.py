@@ -8,7 +8,6 @@ __metaclass__ = type
 import soupmatchers
 from testtools.matchers import LessThan
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
