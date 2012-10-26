@@ -71,9 +71,10 @@ class TranslationsOverview:
                      distribution=distribution.id
               WHERE category=3 AND
                     (product IS NOT NULL OR distribution IS NOT NULL) AND
-                    ((product.translations_usage = %s AND
-                      product.information_type = %s) OR
-                     distribution.translations_usage = %s)
+                    (product.translations_usage = %s AND
+                     (product.information_type = %s OR
+                      product.information_type IS NULL) OR
+                    distribution.translations_usage = %s)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
               HAVING SUM(karmavalue) > 0
