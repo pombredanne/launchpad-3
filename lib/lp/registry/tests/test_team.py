@@ -395,6 +395,32 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
         self.assertEqual(
             None, self.field.validate(TeamMembershipPolicy.OPEN))
 
+    def test_closed_team_with_series_branch_cannot_become_open(self):
+        # The team cannot become open if it has a branch linked to
+        # a product series.
+        self.setUpTeams()
+        series = self.factory.makeProductSeries()
+        branch = self.factory.makeProductBranch(
+            product=series.product, owner=self.team)
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+        self.assertFalse(
+            self.field.constraint(TeamMembershipPolicy.OPEN))
+        self.assertRaises(
+            TeamMembershipPolicyError, self.field.validate,
+            TeamMembershipPolicy.OPEN)
+
+    def test_closed_team_without_a_series_branch_can_become_open(self):
+        # The team can become open if does not have a branch linked to
+        # a product series.
+        self.setUpTeams()
+        series = self.factory.makeProductSeries()
+        self.factory.makeProductBranch(product=series.product, owner=self.team)
+        self.assertTrue(
+            self.field.constraint(TeamMembershipPolicy.OPEN))
+        self.assertEqual(
+            None, self.field.validate(TeamMembershipPolicy.OPEN))
+
     def test_closed_team_with_private_bugs_cannot_become_open(self):
         # The team cannot become open if it is subscribed to private bugs.
         self.setUpTeams()
