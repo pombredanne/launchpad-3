@@ -925,8 +925,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         if return_job:
             return job
-        pcj = removeSecurityProxy(job).context
-        return pcj
+        return removeSecurityProxy(job).context
 
     def test_copying_to_main_archive_debian_override_contrib(self):
         # The job uses the overrides to map debian components to
@@ -1443,9 +1442,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         metadata_component = getUtility(
@@ -1502,9 +1499,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         self.assertEqual(override, pcj.getSourceOverride())

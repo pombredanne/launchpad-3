@@ -177,9 +177,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     def notifyOops(self, oops):
         """Report this oops."""
         ctrl = self.getOopsMailController(oops['id'])
-        if ctrl is None:
-            return
-        ctrl.send()
+        if ctrl is not None:
+            ctrl.send()
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -188,9 +187,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     def notifyUserError(self, e):
         """See `IRunnableJob`."""
         ctrl = self.getUserErrorMailController(e)
-        if ctrl is None:
-            return
-        ctrl.send()
+        if ctrl is not None:
+            ctrl.send()
 
     def makeOopsReport(self, oops_config, info):
         """Generate an OOPS report using the given OOPS configuration."""
