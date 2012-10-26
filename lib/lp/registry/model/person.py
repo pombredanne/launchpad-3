@@ -2168,8 +2168,8 @@ class Person(
         product_set = getUtility(IProductSet)
         non_public_products = product_set.get_users_private_products(self)
         if non_public_products.count() != 0:
-            errors.append(('This account cannot be deactivated because it owns '
-                        'the following non-public products: ') +
+            errors.append(('This account cannot be deactivated because it owns'
+                        ' the following non-public products: ') +
                         ','.join([p.name for p in non_public_products]))
 
         if self.account_status != AccountStatus.ACTIVE:
