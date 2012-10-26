@@ -2220,7 +2220,7 @@ class Person(
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
 
-        assigned_specs = Person.specifications(
+        assigned_specs = self.specifications(
             self,
             filter=[SpecificationFilter.ASSIGNEE])
         for spec in assigned_specs:

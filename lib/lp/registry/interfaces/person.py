@@ -848,8 +848,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
-    assigned_specs = Attribute(
-        "Specifications assigned to this person, sorted newest first.")
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
