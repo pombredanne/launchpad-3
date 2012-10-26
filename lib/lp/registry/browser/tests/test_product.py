@@ -487,6 +487,19 @@ class TestProductEditView(BrowserTestCase):
             'field.license_info': license_info,
         }
 
+    def test_limited_information_types_allowed(self):
+        """Products can only be PUBLIC_PROPRIETARY_INFORMATION_TYPES"""
+        product = self.factory.makeProduct()
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(product.owner)
+            view = create_initialized_view(
+                product,
+                '+edit',
+                principal=product.owner)
+            info_types = [t.name for t in view.widgets['information_type'].vocabulary]
+            expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+            self.assertEqual(expected, info_types)
+
     def test_change_information_type_proprietary(self):
         product = self.factory.makeProduct(name='fnord')
         with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
