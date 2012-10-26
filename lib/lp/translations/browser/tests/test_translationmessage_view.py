@@ -32,6 +32,7 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     revert_unselected_translations,
+    convert_translationmessage_to_submission,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
@@ -477,3 +478,33 @@ class TestHelpers(TestCaseWithFactory):
             {1: u''},
             revert_unselected_translations(
                 new_translations, current_message, []))
+
+class TestBadSubmission(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getSubmission(self, good=True):
+        original_translations = {0: self.getUniqueString()}
+        pofile = self.factory.makePOFile()
+        current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        message = self.factory.makeSuggestion(pofile=pofile)
+        if good:
+            message.setPOFile(pofile)
+        submission = convert_translationmessage_to_submission(
+            message=message,
+            current_message=current,
+            plural_form=0,
+            pofile=pofile,
+            legal_warning_needed=False)
+        return submission
+
+    def test_submission_traversable_guard(self):
+        # If a submission doesn't have a sequence greater than 1, it's not
+        # traversable.
+        bad_sub = self.getSubmission(good=False)
+        self.assertEqual(0, bad_sub.translationmessage.sequence)
+        self.assertFalse(bad_sub.is_traversable)
+
+        good_sub = self.getSubmission()
+        self.assertNotEqual(0, good_sub.translationmessage.sequence)
+        self.assertTrue(good_sub.is_traversable)

@@ -138,6 +138,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
@@ -753,6 +754,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
@@ -1722,6 +1736,15 @@ class ProductSet:
                   Product.id.is_in(Select(Product.id, granted_products)))
 
     @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
+
+    @classmethod
     def get_all_active(cls, user, eager_load=True):
         clause = cls.getProductPrivacyFilter(user)
         result = IStore(Product).find(Product, Product.active,
@@ -2001,27 +2024,6 @@ class ProductSet:
         # We only want Product - the other tables are just to populate
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
-
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

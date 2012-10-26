@@ -28,6 +28,7 @@ __all__ = [
     'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
+    'VoucherAlreadyRedeemed',
     ]
 
 import httplib
@@ -207,3 +208,7 @@ class CannotChangeInformationType(Exception):
 
 class CannotPackageProprietaryProduct(Exception):
     """Raised when a non-PUBLIC product's series is linked to a package."""
+
+
+class VoucherAlreadyRedeemed(Exception):
+    """Raised when a voucher is redeemed more than once."""

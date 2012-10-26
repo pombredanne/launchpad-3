@@ -66,6 +66,7 @@ from lp.soyuz.interfaces.archive import (
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
+    RedirectedPocket,
     VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -712,6 +713,29 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertIsNone(
             archive.checkUploadToPocket(
                 distroseries, PackagePublishingPocket.RELEASE))
+
+    def test_checkUploadToPocket_handles_redirects(self):
+        # Uploading to the release pocket is disallowed if
+        # Distribution.redirect_release_uploads is set.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        with person_logged_in(archive.distribution.owner):
+            archive.distribution.redirect_release_uploads = True
+        person = self.factory.makePerson()
+        self.assertIsInstance(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE, person=person),
+            RedirectedPocket)
+        # The proposed pocket is unaffected.
+        self.assertIsNone(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.PROPOSED, person=person))
+        # Queue admins bypass this check.
+        with person_logged_in(archive.distribution.owner):
+            archive.newQueueAdmin(person, "main")
+        self.assertIsNone(
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE, person=person))
 
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(
@@ -2155,11 +2179,13 @@ class TestCopyPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _setup_copy_data(self, source_private=False, target_purpose=None,
+    def _setup_copy_data(self, source_distribution=None, source_private=False,
+                         target_purpose=None,
                          target_status=SeriesStatus.DEVELOPMENT):
         if target_purpose is None:
             target_purpose = ArchivePurpose.PPA
-        source_archive = self.factory.makeArchive(private=source_private)
+        source_archive = self.factory.makeArchive(
+            distribution=source_distribution, private=source_private)
         target_archive = self.factory.makeArchive(purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
@@ -2373,6 +2399,33 @@ class TestCopyPackage(TestCaseWithFactory):
                 CannotCopy, expected_error, target_archive.copyPackage,
                 source_name, version, target_archive, to_pocket.name,
                 target_archive.owner)
+
+    def test_copyPackage_with_source_series_and_pocket(self):
+        # The from_series and from_pocket parameters cause copyPackage to
+        # select a matching source publication.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            source_distribution=self.factory.makeDistribution())
+        other_series = self.factory.makeDistroSeries(
+            distribution=source_archive.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        with person_logged_in(source_archive.owner):
+            source.copyTo(
+                other_series, PackagePublishingPocket.UPDATES, source_archive)
+            source.requestDeletion(source_archive.owner)
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket.name,
+                include_binaries=False, person=target_archive.owner,
+                from_series=source.distroseries.name,
+                from_pocket=source.pocket.name)
+
+        # There should be one copy job, with the source distroseries and
+        # pocket set.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(source.distroseries, copy_job.source_distroseries)
+        self.assertEqual(source.pocket, copy_job.source_pocket)
 
     def test_copyPackages_with_single_package(self):
         (source, source_archive, source_name, target_archive, to_pocket,

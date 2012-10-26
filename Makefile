@@ -132,9 +132,6 @@ lint-verbose: ${PY}
 logs:
 	mkdir logs
 
-xxxreport: $(PY)
-	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
-
 codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config

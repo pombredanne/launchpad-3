@@ -942,6 +942,13 @@ class IProductSet(Interface):
     all_active = Attribute(
         "All the active products, sorted newest first.")
 
+    def get_users_private_products(user):
+        """Get users non-public products.
+
+        :param user: Which user are we searching products for.
+        :return: An iterable of IProduct
+        """
+
     def get_all_active(eager_load=True):
         """Get all active products.
 
@@ -1079,19 +1086,6 @@ class IProductSet(Interface):
         Skips products that are not configured to be translated in
         Launchpad, as well as non-active ones.
         """
-
-    def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a random sample of translatable products.
-
-        Similar to `getTranslatables`, except the number of results is
-        limited and they are randomly chosen.
-
-        :param maximum_products: Maximum number of products to be
-            returned.
-        :return: An iterator over active, translatable products.
-        """
-        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
-        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in
