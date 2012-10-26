@@ -855,7 +855,8 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """List specifications in progress assigned to this person.
 
         In progress means their implementation is started but not yet
-        completed.  They are sorted newest first.
+        completed.  They are sorted newest first.  No more than 5
+        specifications are returned.
 
         :param user: The use to use for determining visibility.
         """

@@ -806,6 +806,7 @@ class Person(
             assignee=self, orderBy=['-datecreated']))
 
     def findVisibleAssignedInProgressSpecs(self, user):
+        """See `IPerson`."""
         return self.specifications(user, in_progress=True, quantity=5,
                                    sort=Desc(Specification.date_started))
 
