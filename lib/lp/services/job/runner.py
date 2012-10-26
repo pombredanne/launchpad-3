@@ -294,6 +294,9 @@ class BaseJobRunner(LazrJobRunner):
     def runJob(self, job, fallback):
         super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
 
+    def userErrorTypes(self, job):
+        return removeSecurityProxy(job).user_error_types
+
     def retryErrorTypes(self, job):
         return removeSecurityProxy(job).retry_error_types
 
