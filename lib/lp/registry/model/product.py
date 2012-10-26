@@ -203,6 +203,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -2008,39 +2009,21 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        user = getUtility(ILaunchBag).user
+        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID).config(
+            Person.id == Product._ownerID,
+            privacy_clause).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
-
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

@@ -133,6 +133,7 @@ from lp.blueprints.model.specification import (
     get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
+    spec_started_clause,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -810,13 +811,18 @@ class Person(
             """ % replacements
         return Specification.select(query, orderBy=['-date_started'], limit=5)
 
+    def findVisibleAssignedInProgressSpecs(self, user):
+        """See `IPerson`."""
+        return self.specifications(user, in_progress=True, quantity=5,
+                                   sort=Desc(Specification.date_started))
+
     @property
     def unique_displayname(self):
         """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       prejoin_people=True, in_progress=False):
         """See `IHasSpecifications`."""
         from lp.blueprints.model.specificationsubscription import (
             SpecificationSubscription,
@@ -829,11 +835,6 @@ class Person(
             filter = set(filter)
 
         # Now look at the filter and fill in the unsaid bits.
-
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
-        if SpecificationFilter.COMPLETE not in filter:
-            filter.add(SpecificationFilter.INCOMPLETE)
 
         # Defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a person.
@@ -866,12 +867,24 @@ class Person(
                         [SpecificationSubscription.person == self]
                     )))
         clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        # Defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE.
+        if SpecificationFilter.COMPLETE not in filter:
+            if (in_progress and SpecificationFilter.INCOMPLETE not in filter
+                and SpecificationFilter.ALL not in filter):
+                clauses.append(spec_started_clause)
+            filter.add(SpecificationFilter.INCOMPLETE)
+
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
-            results = results.order_by(Desc(Specification.datecreated))
+            sort = Desc(Specification.datecreated)
+        elif getattr(sort, 'enum', None) is SpecificationSort:
+            sort = None
+        if sort is not None:
+            results = results.order_by(sort)
         if quantity is not None:
             results = results[:quantity]
         return results

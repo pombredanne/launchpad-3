@@ -848,9 +848,21 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
+
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
+
+    def findVisibleAssignedInProgressSpecs(user):
+        """List specifications in progress assigned to this person.
+
+        In progress means their implementation is started but not yet
+        completed.  They are sorted newest first.  No more than 5
+        specifications are returned.
+
+        :param user: The use to use for determining visibility.
+        """
+
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,

@@ -1133,6 +1133,7 @@ COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bu
 COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Distribution.registrant IS 'The person in launchpad who registered this distribution.';
 COMMENT ON COLUMN Distribution.package_derivatives_email IS 'The optional email address template to use when sending emails about package updates in a distributrion. The string {package_name} in the template will be replaced with the actual package name being updated.';
+COMMENT ON COLUMN Distribution.redirect_release_uploads IS 'Whether uploads to the release pocket of this distribution should be redirected to the proposed pocket instead.';
 
 -- DistroSeries
 
