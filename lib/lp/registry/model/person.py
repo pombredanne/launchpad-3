@@ -799,18 +799,6 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-    @property
-    def assigned_specs_in_progress(self):
-        replacements = sqlvalues(assignee=self)
-        replacements['started_clause'] = Specification.started_clause
-        replacements['completed_clause'] = Specification.completeness_clause
-        query = """
-            (assignee = %(assignee)s)
-            AND (%(started_clause)s)
-            AND NOT (%(completed_clause)s)
-            """ % replacements
-        return Specification.select(query, orderBy=['-date_started'], limit=5)
-
     def findVisibleAssignedInProgressSpecs(self, user):
         """See `IPerson`."""
         return self.specifications(user, in_progress=True, quantity=5,
