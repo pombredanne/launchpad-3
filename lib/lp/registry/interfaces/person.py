@@ -849,7 +849,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
 
-   def findVisibleAssignedInProgressSpecs(user):
+    def findVisibleAssignedInProgressSpecs(user):
         """List specifications in progress assigned to this person.
 
         In progress means their implementation is started but not yet
