@@ -1425,7 +1425,7 @@ class PublishingSet:
             bpn_archtag = {}
             for bpph in binaries:
                 bpn_archtag[(
-                    bpph.binarypackagerelease.binarypackagename,
+                    bpph.binarypackagerelease,
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
