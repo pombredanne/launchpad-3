@@ -798,12 +798,6 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-    # specification-related joins
-    @property
-    def assigned_specs(self):
-        return shortlist(Specification.selectBy(
-            assignee=self, orderBy=['-datecreated']))
-
     @property
     def assigned_specs_in_progress(self):
         replacements = sqlvalues(assignee=self)
@@ -2225,8 +2219,13 @@ class Person(
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
-        for spec in self.assigned_specs:
+
+        assigned_specs = Person.specifications(
+            self,
+            filter=[SpecificationFilter.ASSIGNEE])
+        for spec in assigned_specs:
             spec.assignee = None
+
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
