@@ -799,12 +799,6 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-    # specification-related joins
-    @property
-    def assigned_specs(self):
-        return shortlist(Specification.selectBy(
-            assignee=self, orderBy=['-datecreated']))
-
     def findVisibleAssignedInProgressSpecs(self, user):
         """See `IPerson`."""
         return self.specifications(user, in_progress=True, quantity=5,
@@ -2175,8 +2169,8 @@ class Person(
         product_set = getUtility(IProductSet)
         non_public_products = product_set.get_users_private_products(self)
         if non_public_products.count() != 0:
-            errors.append(('This account cannot be deactivated because it owns '
-                        'the following non-public products: ') +
+            errors.append(('This account cannot be deactivated because it owns'
+                        ' the following non-public products: ') +
                         ','.join([p.name for p in non_public_products]))
 
         if self.account_status != AccountStatus.ACTIVE:
@@ -2226,8 +2220,12 @@ class Person(
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
-        for spec in self.assigned_specs:
+
+        assigned_specs = Store.of(self).find(
+            Specification, assignee=self)
+        for spec in assigned_specs:
             spec.assignee = None
+
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
