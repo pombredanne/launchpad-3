@@ -14,6 +14,7 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -100,6 +101,22 @@ class TestMilestoneViews(BrowserTestCase):
         self.assertThat(
             browser.contents, soupmatchers.HTMLContains(
             privacy_portlet_proprietary))
+
+    def test_private_specifications(self):
+        # Only specifications visible to the browser user are listed.
+        owner = self.factory.makePerson()
+        enum = SpecificationSharingPolicy
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=enum.PROPRIETARY)
+        milestone = self.factory.makeMilestone(product=product)
+        specification = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY,
+            milestone=milestone)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(milestone, '+index', user=owner)
+        self.assertIn(specification.name, browser.contents)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(milestone, '+index')
 
 
 class TestAddMilestoneViews(TestCaseWithFactory):
