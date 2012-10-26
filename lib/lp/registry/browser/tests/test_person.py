@@ -21,7 +21,9 @@ from zope.publisher.interfaces import NotFound
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.errors import NotFoundError
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
@@ -115,7 +117,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
 
 
-class TestPersonIndexView(TestCaseWithFactory):
+class TestPersonIndexView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -202,6 +204,21 @@ class TestPersonIndexView(TestCaseWithFactory):
         person = self.factory.makePerson(description=person_description)
         view = create_initialized_view(person, '+index')
         self.assertThat(view.page_description, Equals(person_description))
+
+    def test_assigned_blueprints(self):
+        person = self.factory.makePerson()
+
+        def make_started_spec(information_type):
+            enum = SpecificationImplementationStatus
+            return self.factory.makeSpecification(
+                implementation_status=enum.STARTED, assignee=person,
+                information_type=information_type)
+        public_spec = make_started_spec(InformationType.PUBLIC)
+        private_spec = make_started_spec(InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(person)
+        self.assertIn(public_spec.name, browser.contents)
+        self.assertNotIn(private_spec.name, browser.contents)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

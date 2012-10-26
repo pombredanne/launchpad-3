@@ -1191,7 +1191,7 @@ These 2 specifications are assigned to Carlos:
 But from these two, only one has started.
 
     >>> [(spec.name, spec.is_started)
-    ...  for spec in carlos.assigned_specs_in_progress]
+    ...  for spec in carlos.findVisibleAssignedInProgressSpecs(None)]
     [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
