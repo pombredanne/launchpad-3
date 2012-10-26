@@ -681,9 +681,12 @@ def _build_query(params):
             extra_clauses.append(clause)
             decorators.append(decorator)
         if params.product is not None:
+            if Product not in clauseTables:
+                clauseTables.append(Product)
+                extra_clauses.append(
+                    BugTaskFlat.product_id == Product.id)
             extra_clauses.append(
                 ProductSet.getProductPrivacyFilter(params.user))
-            clauseTables.append(Product)
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:

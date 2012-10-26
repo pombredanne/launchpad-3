@@ -118,7 +118,8 @@ class TestMaloneView(BrowserTestCase):
             '+bugs?field.searchtext=%s&search=Search+Bug+Reports'
             '&field.scope=all&field.scope.target=' % quote(search_terms))
         with person_logged_in(owner):
-            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+            product.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
             bug = self.factory.makeBug(
                 target=product, information_type=InformationType.PUBLIC,
                 title=title)
