@@ -683,6 +683,7 @@ def _build_query(params):
         if params.product is not None:
             extra_clauses.append(
                 ProductSet.getProductPrivacyFilter(params.user))
+            clauseTables.append(Product)
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
