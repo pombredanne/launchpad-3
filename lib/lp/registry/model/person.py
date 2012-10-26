@@ -2220,9 +2220,8 @@ class Person(
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
 
-        assigned_specs = self.specifications(
-            self,
-            filter=[SpecificationFilter.ASSIGNEE])
+        assigned_specs = Store.of(self).find(
+            Specification, assignee=self)
         for spec in assigned_specs:
             spec.assignee = None
 
