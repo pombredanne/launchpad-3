@@ -879,6 +879,7 @@
                     remotestatus
                     title
                     url
+                    getBugMessages
                     getImportedBugMessages"/>
             <require
                 permission="launchpad.AnyPerson"

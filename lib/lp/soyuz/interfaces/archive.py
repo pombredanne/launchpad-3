@@ -42,6 +42,7 @@ __all__ = [
     'NoTokensForTeams',
     'PocketNotFound',
     'PriorityNotFound',
+    'RedirectedPocket',
     'SectionNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -204,6 +205,19 @@ class CannotUploadToPocket(Exception):
         Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
+
+
+@error_status(httplib.FORBIDDEN)
+class RedirectedPocket(Exception):
+    """Returned for a pocket that would normally be redirected to another.
+
+    This is used in contexts (e.g. copies) where actually doing the
+    redirection would be Too Much Magic."""
+
+    def __init__(self, distroseries, pocket, preferred):
+        Exception.__init__(self,
+            "Not permitted to upload directly to %s; try %s instead." %
+            (distroseries.getSuite(pocket), distroseries.getSuite(preferred)))
 
 
 class CannotUploadToPPA(CannotUploadToArchive):
@@ -598,11 +612,13 @@ class IArchiveView(IHasBuildRecords):
         Return True if the upload is allowed and False if denied.
         """
 
-    def checkUploadToPocket(distroseries, pocket):
+    def checkUploadToPocket(distroseries, pocket, person=None):
         """Check if an upload to a particular archive and pocket is possible.
 
         :param distroseries: A `IDistroSeries`
         :param pocket: A `PackagePublishingPocket`
+        :param person: Check for redirected pockets if this person is not a
+            queue admin.
         :return: Reason why uploading is not possible or None
         """
 
@@ -1318,8 +1334,9 @@ class IArchiveView(IHasBuildRecords):
         version=TextLine(title=_("Version")),
         from_archive=Reference(schema=Interface),
         # Really IArchive, see below
-        to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
+        to_pocket=TextLine(title=_("Target pocket name")),
+        to_series=TextLine(
+            title=_("Target distroseries name"), required=False),
         include_binaries=Bool(
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
@@ -1335,12 +1352,16 @@ class IArchiveView(IHasBuildRecords):
             description=_("Automatically approve this copy (queue admins "
                           "only)."),
             required=False),
+        from_pocket=TextLine(title=_("Source pocket name"), required=False),
+        from_series=TextLine(
+            title=_("Source distroseries name"), required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False, auto_approve=False):
+                    sponsored=None, unembargo=False, auto_approve=False,
+                    from_pocket=None, from_series=None):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1367,6 +1388,10 @@ class IArchiveView(IHasBuildRecords):
         :param auto_approve: if True and the `IPerson` requesting the sync
             has queue admin permissions on the target, accept the copy
             immediately rather than setting it to unapproved.
+        :param from_pocket: the source pocket (as a string). If omitted,
+            copy from any pocket with a matching version.
+        :param from_series: the source distroseries (as a string). If
+            omitted, copy from any series with a matching version.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

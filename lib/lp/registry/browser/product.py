@@ -111,6 +111,7 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -1392,7 +1393,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget(
+        'information_type',
+        LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
 
     @property
     def next_url(self):
@@ -1917,7 +1922,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget(
+        'information_type',
+        LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
 
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
@@ -2166,6 +2175,7 @@ class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
+    related_features = (PRIVATE_PROJECTS_FLAG,)
     total_steps = 2
 
     @property

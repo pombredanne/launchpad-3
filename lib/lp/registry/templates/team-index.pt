@@ -55,9 +55,16 @@
       tal:define="link context/menu:overview/related_software_summary"
       tal:condition="link/enabled">
       <a class="sprite info" tal:attributes="href link/fmt:url">
-        Related software and packages
+        Related packages
       </a>
     </li>
+      <li
+        tal:define="link context/menu:overview/projects"
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related projects
+        </a>
+      </li>
     <li
       tal:define="link context/menu:overview/upcomingwork"
       tal:condition="link/enabled">

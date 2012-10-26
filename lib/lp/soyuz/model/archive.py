@@ -148,6 +148,7 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     NoTokensForTeams,
     PocketNotFound,
+    RedirectedPocket,
     validate_external_dependencies,
     VersionRequiresName,
     )
@@ -1266,7 +1267,7 @@ class Archive(SQLBase):
         # Allow anything else.
         return True
 
-    def checkUploadToPocket(self, distroseries, pocket):
+    def checkUploadToPocket(self, distroseries, pocket, person=None):
         """See `IArchive`."""
         if self.is_partner:
             if pocket not in (
@@ -1282,6 +1283,14 @@ class Archive(SQLBase):
             # existing builds after a series is released.
             return
         else:
+            if (self.purpose == ArchivePurpose.PRIMARY and
+                person is not None and
+                not self.canAdministerQueue(
+                    person, pocket=pocket, distroseries=distroseries) and
+                pocket == PackagePublishingPocket.RELEASE and
+                self.distribution.redirect_release_uploads):
+                return RedirectedPocket(
+                    distroseries, pocket, PackagePublishingPocket.PROPOSED)
             # Uploads to the partner archive are allowed in any distroseries
             # state.
             # XXX julian 2005-05-29 bug=117557:
@@ -1639,13 +1648,15 @@ class Archive(SQLBase):
             sources, to_pocket, to_series, include_binaries,
             person=person)
 
-    def _validateAndFindSource(self, from_archive, source_name, version):
+    def _validateAndFindSource(self, from_archive, source_name, version,
+                               from_series=None, from_pocket=None):
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True).first()
+            name=source_name, version=version, exact_match=True,
+            distroseries=from_series, pocket=from_pocket).first()
         if source is None:
             raise CannotCopy(
                 "%s is not published in %s." %
@@ -1664,15 +1675,22 @@ class Archive(SQLBase):
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False, auto_approve=False):
+                    sponsored=None, unembargo=False, auto_approve=False,
+                    from_pocket=None, from_series=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
+        if from_pocket:
+            from_pocket = self._text_to_pocket(from_pocket)
+        if from_series:
+            from_series = self._text_to_series(
+                from_series, distribution=from_archive.distribution)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
         source = self._validateAndFindSource(
-            from_archive, source_name, version)
+            from_archive, source_name, version, from_series=from_series,
+            from_pocket=from_pocket)
         if series is None:
             series = source.distroseries
         check_copy_permissions(person, self, series, pocket, [source])
@@ -1685,7 +1703,8 @@ class Archive(SQLBase):
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
             sponsored=sponsored, unembargo=unembargo,
-            auto_approve=auto_approve)
+            auto_approve=auto_approve, source_distroseries=from_series,
+            source_pocket=from_pocket)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
@@ -1789,14 +1808,11 @@ class Archive(SQLBase):
         from lp.soyuz.scripts.packagecopier import do_copy
 
         pocket = self._text_to_pocket(to_pocket)
-        # Fail immediately if the destination pocket is not Release and
-        # this archive is a PPA.
-        if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
-            raise CannotCopy(
-                "Destination pocket must be 'release' for a PPA.")
-
-        # Now convert the to_series string to a real distroseries.
         series = self._text_to_series(to_series)
+        reason = self.checkUploadToPocket(series, pocket, person=person)
+        if reason:
+            # Wrap any forbidden-pocket error in CannotCopy.
+            raise CannotCopy(unicode(reason))
 
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by

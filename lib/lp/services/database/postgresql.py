@@ -17,7 +17,7 @@ from lp.services.database.sqlbase import (
     )
 
 
-def listReferences(cur, table, column, _state=None):
+def listReferences(cur, table, column, indirect=True, _state=None):
     """Return a list of all foreign key references to the given table column
 
     `table` and `column` are both case sensitive strings (so they should
@@ -27,9 +27,10 @@ def listReferences(cur, table, column, _state=None):
 
     returns `[(from_table, from_column, to_table, to_column, update, delete)]`
 
-    `from` entries refer to the `to` entries. This method is recursive -
-    not only does it return all references to the given table column, but
-    also all references to those references etc. (indirect references).
+    `from` entries refer to the `to` entries. If indirect is True, the this
+    method is recursive - not only does it return all references to the given
+    table column, but also all references to those references etc.
+    ie (indirect references).
 
     `update` is the update clause (eg. on update cascade)
     `delete` is the delete clause (eg. on delete cascade)
@@ -92,8 +93,9 @@ def listReferences(cur, table, column, _state=None):
         # Avoid loops:
         if t not in _state:
             _state.append(t)
-            # Recurse, Locating references to the reference we just found.
-            listReferences(cur, t[0], t[1], _state)
+            if indirect:
+                # Recurse, Locating references to the reference we just found.
+                listReferences(cur, t[0], t[1], indirect, _state)
     # Don't sort. This way, we return the columns in order of distance
     # from the original (table, column), making it easier to change keys
     return _state

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistribution."""
@@ -360,6 +360,11 @@ class IDistributionPublic(
         title=_("Has Published Sources"),
         description=_("True if this distribution has sources published."),
         readonly=True, required=False)
+
+    redirect_release_uploads = exported(Bool(
+        title=_("Redirect release pocket uploads"),
+        description=_("Redirect release pocket uploads to proposed pocket"),
+        readonly=False, required=True))
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
