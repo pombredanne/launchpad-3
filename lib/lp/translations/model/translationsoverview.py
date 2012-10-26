@@ -52,6 +52,10 @@ class TranslationsOverview:
     def getMostTranslatedPillars(self, limit=50):
         """See `ITranslationsOverview`."""
 
+        # XXX Abel Deuring 2012-10-26 bug=1071751
+         # The expression product.information_type IS NULL can be
+         # removed once we have the DB constraint
+         # "Product.information_type IS NULL".
         query = """
         SELECT LOWER(COALESCE(product_name, distro_name)) AS name,
                product_id,
