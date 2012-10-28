@@ -515,7 +515,7 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
-                return self.convertTokensToValues([input])[0]
+                source = self.convertTokensToValues([input])[0]
             except InvalidValue:
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"

@@ -364,7 +364,7 @@ def validate_target(bug, target, retarget_existing=True,
                     % bug.default_bugtask.target.pillar.bugtargetdisplayname)
 
 
-def validate_new_target(bug, target):
+def validate_new_target(bug, target, check_source_package=True):
     """Validate a bugtask target to be added.
 
     Make sure that the isn't already a distribution task without a
@@ -398,7 +398,9 @@ def validate_new_target(bug, target):
                 "specified. You should fill in a package name for "
                 "the existing bug." % target.distribution.displayname)
 
-    validate_target(bug, target, retarget_existing=False)
+    validate_target(
+        bug, target, retarget_existing=False,
+        check_source_package=check_source_package)
 
 
 class BugTask(SQLBase):

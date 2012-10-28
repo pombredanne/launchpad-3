@@ -446,7 +446,10 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 target = distribution
                 if sourcepackagename:
                     target = target.getSourcePackage(sourcepackagename)
-                validate_new_target(self.context.bug, target)
+                # The validity of the source package has already been checked
+                # by the bug target widget.
+                validate_new_target(
+                    self.context.bug, target, check_source_package=False)
                 if sourcepackagename:
                     data['sourcepackagename'] = target
             except IllegalTarget as e:
