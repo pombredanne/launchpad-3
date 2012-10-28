@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from zope.component import (
-    getUtility,
-    getMultiAdapter,
-    )
+from zope.component import getUtility
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -17,14 +14,16 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
     person_logged_in,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import find_tag_by_id
+from lp.testing.pages import (
+    find_tag_by_id,
+    setupBrowserForUser,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -115,8 +114,9 @@ class TestMaloneView(BrowserTestCase):
             owner=owner, information_type=information_type)
         title = 'huhdwudwyhbdwhbdwhbwdwhb'
         query_string = (
-                'field.searchtext=%s&search=Search+Bug+Reports'
+                '?field.searchtext=%s&search=Search+Bug+Reports'
                 '&field.scope=all&field.scope.target=' % title)
+        url = '%s%s' % (canonical_url(self.application), query_string)
         with person_logged_in(owner):
             product.setBugSharingPolicy(
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
@@ -126,12 +126,12 @@ class TestMaloneView(BrowserTestCase):
             self.assertEqual(bug.information_type, InformationType.PUBLIC)
             self.assertEqual(bug.title, title)
         with person_logged_in(anon_user):
-            request = LaunchpadTestRequest(QUERY_STRING=query_string)
-            view = getMultiAdapter((self.application, request), name='+bugs')
-            view.initialize()
-            batch_nav = view.search()
-            # Make sure we only have one batch here.
-            self.assertFalse(batch_nav.batch.has_next_batch)
+            browser = setupBrowserForUser(user=anon_user)
+            browser.open(url)
+            # It doesn't matter what we assert here.  The test is really
+            # just to confirm the browser.open call above didn't raise
+            # an Unauthorized error.
+            self.assertIn('Search all bug reports', browser.contents)
 
     def _assert_getBugData(self, related_bug=None):
         # The getBugData method works as expected.
