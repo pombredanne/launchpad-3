@@ -116,9 +116,9 @@ class TestMaloneView(BrowserTestCase):
         query_string = (
                 '?field.searchtext=%s&search=Search+Bug+Reports'
                 '&field.scope=all&field.scope.target=' % title)
-        url = '%s%s' % (
-            canonical_url(self.application, view_name='+bugs', rootsite='bugs'),
-            query_string)
+        base_url = canonical_url(
+            self.application, view_name='+bugs', rootsite='bugs')
+        url = '%s%s' % (base_url, query_string)
         with person_logged_in(owner):
             product.setBugSharingPolicy(
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
