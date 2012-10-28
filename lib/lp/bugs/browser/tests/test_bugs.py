@@ -116,7 +116,9 @@ class TestMaloneView(BrowserTestCase):
         query_string = (
                 '?field.searchtext=%s&search=Search+Bug+Reports'
                 '&field.scope=all&field.scope.target=' % title)
-        url = '%s%s' % (canonical_url(self.application), query_string)
+        url = '%s%s' % (
+            canonical_url(self.application, view_name='+bugs', rootsite='bugs'),
+            query_string)
         with person_logged_in(owner):
             product.setBugSharingPolicy(
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
@@ -131,7 +133,7 @@ class TestMaloneView(BrowserTestCase):
             # It doesn't matter what we assert here.  The test is really
             # just to confirm the browser.open call above didn't raise
             # an Unauthorized error.
-            self.assertIn('Search all bug reports', browser.contents)
+            self.assertIn('No results for search', browser.contents)
 
     def _assert_getBugData(self, related_bug=None):
         # The getBugData method works as expected.
