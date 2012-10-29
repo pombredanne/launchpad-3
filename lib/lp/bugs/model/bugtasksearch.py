@@ -680,7 +680,13 @@ def _build_query(params):
         if clause:
             extra_clauses.append(clause)
             decorators.append(decorator)
-        if params.product is not None:
+        cross_context_search = (
+            params.product is None
+            and params.project is None
+            and params.distribution is None
+            and params.productseries is None
+            and params.distroseries is None)
+        if params.product is not None or cross_context_search:
             if Product not in clauseTables:
                 clauseTables.append(Product)
                 extra_clauses.append(
