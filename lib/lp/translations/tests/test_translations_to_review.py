@@ -10,7 +10,7 @@ from datetime import (
     timedelta,
     )
 
-from pytz import timezone
+from pytz import UTC
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,9 +21,6 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
-
-
-UTC = timezone('UTC')
 
 
 class ReviewTestMixin:
@@ -97,12 +94,6 @@ class ReviewTestMixin:
         """Shorthand for `self.person.getReviewableTranslationFiles`."""
         person = ITranslationsPerson(self.person)
         return list(person.getReviewableTranslationFiles(
-            *args, **kwargs))
-
-    def _suggestReviewables(self, *args, **kwargs):
-        """Shorthand for `self.person.suggestReviewableTranslationFiles`."""
-        person = ITranslationsPerson(self.person)
-        return list(person.suggestReviewableTranslationFiles(
             *args, **kwargs))
 
 
@@ -190,69 +181,3 @@ class TestReviewableDistroTranslationFiles(TestCaseWithFactory,
     def setUp(self):
         super(TestReviewableDistroTranslationFiles, self).setUp()
         ReviewTestMixin.setUpMixin(self, for_product=False)
-
-
-class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
-                                            ReviewTestMixin):
-    """Test `Person.suggestReviewableTranslationFiles`."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSuggestReviewableTranslationFiles, self).setUp()
-        ReviewTestMixin.setUpMixin(self)
-
-    def _makeOtherPOFile(self, language_code='nl', same_group=True,
-                         with_unreviewed=True):
-        """Set up a `POFile` for an unrelated `POTemplate`."""
-        other_pofile = self.factory.makePOFile(language_code=language_code)
-        other_pofile = removeSecurityProxy(other_pofile)
-
-        product = other_pofile.potemplate.productseries.product
-        product.translations_usage = ServiceUsage.LAUNCHPAD
-
-        if with_unreviewed:
-            other_pofile.unreviewed_count = 1
-
-        if same_group:
-            product.translationgroup = self.translationgroup
-
-        return other_pofile
-
-    def test_suggestReviewableTranslationFiles_suggests_files(self):
-        # suggestReviewableTranslationFiles suggests translations to
-        # review.
-        other_pofile = self._makeOtherPOFile()
-        self.assertEqual([other_pofile], self._suggestReviewables())
-
-    def test_suggestReviewableTranslationFiles_is_complementary(self):
-        # suggestReviewableTranslationFiles does not suggest files that
-        # the person is already working on.
-        self.assertFalse(self.pofile in self._suggestReviewables())
-
-    def test_suggestReviewableTranslationFiles_ignores_old_involvement(self):
-        # After a person's involvement with a translation grows old
-        # enough, it becomes eligible for suggestion again.
-        poftset = POFileTranslatorSet()
-        involvement = poftset.getForPersonPOFile(self.person, self.pofile)
-        removeSecurityProxy(involvement).date_last_touched -= timedelta(366)
-        suggestions = self._suggestReviewables(
-            no_older_than=involvement.date_last_touched + timedelta(1))
-
-        self.assertEqual([self.pofile], suggestions)
-
-    def test_suggestReviewableTranslationFiles_no_translation_group(self):
-        # Only translations that fall under the same translation group
-        # are suggested.
-        other_pofile = self._makeOtherPOFile(same_group=False)
-        self.assertFalse(other_pofile in self._suggestReviewables())
-
-    def test_suggestReviewableTranslationFiles_ignores_other_languages(self):
-        # suggestReviewableTranslationFiles does not suggest files in
-        # languages that the person is not active in.
-        other_pofile = self._makeOtherPOFile(language_code='ban')
-        self.assertFalse(other_pofile in self._suggestReviewables())
-
-    def test_suggestReviewableTranslationFiles_checks_unreviewed(self):
-        # Translations without unreviewed suggestions are ignored.
-        other_pofile = self._makeOtherPOFile(with_unreviewed=False)
-        self.assertFalse(other_pofile in self._suggestReviewables())
