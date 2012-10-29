@@ -451,6 +451,8 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 validate_new_target(
                     self.context.bug, target, check_source_package=False)
                 if sourcepackagename:
+                    # Force dsp.sourcepackagename to be loaded now not later.
+                    spn = target.sourcepackagename
                     data['sourcepackagename'] = target
             except IllegalTarget as e:
                 if sourcepackagename:
