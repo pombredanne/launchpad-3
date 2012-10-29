@@ -19,7 +19,6 @@ from lp.services.worlddata.model.language import LanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.model.pofiletranslator import POFileTranslatorSet
 from lp.translations.model.translator import TranslatorSet
 
 
