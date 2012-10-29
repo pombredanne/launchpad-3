@@ -29,7 +29,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -92,11 +91,7 @@ from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import (
-    load,
-    load_related,
-    )
-from lp.services.features import getFeatureFlag
+from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
@@ -166,21 +161,8 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
-from lp.soyuz.scripts.packagecopier import (
-    check_copy_permissions,
-    do_copy,
-    )
-
-# Feature flag: up to how many package sync requests (inclusive) are to be
-# processed synchronously within the web request?
-# Set to -1 to disable synchronous syncs.
-FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS = (
-    'soyuz.derived_series.max_synchronous_syncs')
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -1256,63 +1238,6 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
-def preload_binary_package_names(copies):
-    """Preload `BinaryPackageName`s to speed up display-name construction."""
-    bpn_ids = [
-        copy.binarypackagerelease.binarypackagenameID for copy in copies
-        if isinstance(copy, BinaryPackagePublishingHistory)]
-    load(BinaryPackageName, bpn_ids)
-
-
-def compose_synchronous_copy_feedback(copies, dest_archive, dest_url=None,
-                                      dest_display_name=None):
-    """Compose human-readable feedback after a synchronous copy."""
-    if dest_url is None:
-        dest_url = escape(
-            canonical_url(dest_archive) + '/+packages', quote=True)
-
-    if dest_display_name is None:
-        dest_display_name = escape(dest_archive.displayname)
-
-    if len(copies) == 0:
-        return structured(
-            '<p>All packages already copied to <a href="%s">%s</a>.</p>'
-            % (dest_url, dest_display_name))
-    else:
-        messages = []
-        messages.append(
-            '<p>Packages copied to <a href="%s">%s</a>:</p>'
-            % (dest_url, dest_display_name))
-        messages.append('<ul>')
-        messages.append("\n".join([
-            '<li>%s</li>' % escape(copy) for copy in copies]))
-        messages.append('</ul>')
-        return structured("\n".join(messages))
-
-
-def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
-                       include_binaries, dest_url=None,
-                       dest_display_name=None, person=None,
-                       check_permissions=True):
-    """Copy packages right now.
-
-    :return: A `structured` with human-readable feedback about the
-        operation.
-    :raises CannotCopy: If `check_permissions` is True and the copy is
-        not permitted.
-    """
-    copies = do_copy(
-        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
-        allow_delayed_copies=True, person=person,
-        check_permissions=check_permissions)
-
-    preload_binary_package_names(copies)
-
-    return compose_synchronous_copy_feedback(
-        [copy.displayname for copy in copies], dest_archive, dest_url,
-        dest_display_name)
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
@@ -1385,28 +1310,14 @@ def render_cannotcopy_as_html(cannotcopy_exception):
 class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
 
-    def canCopySynchronously(self, source_pubs):
-        """Can we afford to copy `source_pubs` synchronously?"""
-        # Fixed estimate: up to 100 packages can be copied in acceptable
-        # time.  Anything more than that and we go async.
-        limit = getFeatureFlag(FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS)
-        try:
-            limit = int(limit)
-        except:
-            limit = 100
-
-        return len(source_pubs) <= limit
-
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True, force_async=False,
-                sponsored_person=None):
+                check_permissions=True, sponsored_person=None):
         """Copy packages and add appropriate feedback to the browser page.
 
-        This may either copy synchronously, if there are few enough
-        requests to process right now; or asynchronously in which case
-        it will schedule jobs that will be processed by a script.
+        This will copy asynchronously, scheduling jobs that will be
+        processed by a script.
 
         :param sources_field_name: The name of the form field to set errors
             on when the copy fails
@@ -1425,30 +1336,18 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
-        :param force_async: Force the copy to create package copy jobs and
-            perform the copy asynchronously.
         :param sponsored_person: An IPerson representing the person being
-            sponsored (for asynchronous copies only).
+            sponsored.
 
         :return: True if the copying worked, False otherwise.
         """
-        assert force_async or not sponsored_person, (
-            "sponsored must be None for sync copies")
         try:
-            if (force_async == False and
-                    self.canCopySynchronously(source_pubs)):
-                notification = copy_synchronously(
-                    source_pubs, dest_archive, dest_series, dest_pocket,
-                    include_binaries, dest_url=dest_url,
-                    dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions)
-            else:
-                notification = copy_asynchronously(
-                    source_pubs, dest_archive, dest_series, dest_pocket,
-                    include_binaries, dest_url=dest_url,
-                    dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions,
-                    sponsored=sponsored_person)
+            notification = copy_asynchronously(
+                source_pubs, dest_archive, dest_series, dest_pocket,
+                include_binaries, dest_url=dest_url,
+                dest_display_name=dest_display_name, person=person,
+                check_permissions=check_permissions,
+                sponsored=sponsored_person)
         except CannotCopy as error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))
