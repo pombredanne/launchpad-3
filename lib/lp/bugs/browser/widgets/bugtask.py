@@ -487,7 +487,10 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     It accepts both binary and source package names.
     """
 
-    cached_values = {}
+    def __init__(self, field, vocabulary, request):
+        super(BugTaskSourcePackageNameWidget, self).__init__(
+            field, vocabulary, request)
+        self.cached_values = {}
 
     def getDistribution(self):
         """Get the distribution used for package validation.
@@ -520,8 +523,6 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
-        # Force dsp lazy properties to be loaded now not later.
-        name = source.name
         self.cached_values[input] = source
         return source
 
