@@ -520,6 +520,8 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
+        # Force dsp lazy properties to be loaded now not later.
+        name = source.name
         self.cached_values[input] = source
         return source
 
