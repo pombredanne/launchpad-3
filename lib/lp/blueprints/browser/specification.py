@@ -61,7 +61,6 @@ from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
@@ -75,10 +74,7 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Choice,
-    )
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    SimpleVocabulary,
+    TextLine,
     )
 
 from lp import _
@@ -1039,58 +1035,54 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class SupersededByWidget(DropdownWidget):
-    """Custom select widget for specification superseding.
-
-    This is just a standard DropdownWidget with the (no value) text
-    rendered as something meaningful to the user, as per Bug #4116.
-
-    TODO: This should be replaced with something more scalable as there
-    is no upper limit to the number of specifications.
-    -- StuartBishop 20060704
-    """
-    _messageNoValue = _("(Not Superseded)")
-
-
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
     label = _('Mark blueprint superseded')
-    custom_widget('superseded_by', SupersededByWidget)
 
     @property
     def initial_values(self):
-        return {
-            'superseded_by': self.context.superseded_by,
-            }
+        return {'superseded_by': self.context.superseded_by}
 
     def setUpFields(self):
         """Override the setup to define own fields."""
-        if self.context.target is None:
-            raise AssertionError("No target found for this spec.")
-        specs = sorted(self.context.target.specifications(self.user),
-                       key=attrgetter('name'))
-        terms = [SimpleTerm(spec, spec.name, spec.title)
-                 for spec in specs if spec != self.context]
-
         self.form_fields = form.Fields(
-            Choice(
+            TextLine(
                 __name__='superseded_by',
                 title=_("Superseded by"),
-                vocabulary=SimpleVocabulary(terms),
                 required=False,
                 description=_(
                     "The blueprint which supersedes this one. Note "
-                    "that selecting a blueprint here and pressing "
+                    "that entering a blueprint here and pressing "
                     "Continue will change the blueprint status "
                     "to Superseded.")),
             render_context=self.render_context)
+
+    def _fetchSpecification(self, name):
+        pillar = None
+        if '/' in name:
+            pillar, name = name.split('/')
+        if pillar is None:
+            pillar = self.context.target
+        return getUtility(ISpecificationSet).getByName(pillar, name)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`.`"""
+        super(SpecificationSupersedingView, self).validate(data)
+        if data['superseded_by']:
+            if not self._fetchSpecification(data['superseded_by']):
+                self.setFieldError(
+                    'superseded_by',
+                    "No blueprint named '%s'." % data['superseded_by'])
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
         # Store some shorter names to avoid line-wrapping.
         SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
         NEW = SpecificationDefinitionStatus.NEW
+        if data['superseded_by'] is not None:
+            data['superseded_by'] = self._fetchSpecification(
+                data['superseded_by'])
         self.context.superseded_by = data['superseded_by']
         # XXX: salgado, 2010-11-24, bug=680880: This logic should be in model
         # code.
