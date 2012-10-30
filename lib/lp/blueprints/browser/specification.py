@@ -1059,11 +1059,9 @@ class SpecificationSupersedingView(LaunchpadFormView):
             render_context=self.render_context)
 
     def _fetchSpecification(self, name):
-        pillar = None
+        pillar = self.context.target
         if '/' in name:
             pillar, name = name.split('/')
-        if pillar is None:
-            pillar = self.context.target
         return getUtility(ISpecificationSet).getByName(pillar, name)
 
     def validate(self, data):
