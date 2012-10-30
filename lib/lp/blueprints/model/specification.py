@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -108,6 +106,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import fti_search
+from lp.services.database.lpstorm import IStore
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -1001,10 +1000,7 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).find(
-            Specification,
-            *clauses
-            )
+        results = Store.of(self).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1021,8 +1017,8 @@ class HasSpecificationsMixin:
 
     def specificationCount(self, user):
         """See IHasSpecifications."""
-        return self.specifications(user,
-                                   filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(
+            user, filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1160,10 +1156,16 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getByURL(self, url):
         """See ISpecificationSet."""
-        specification = Specification.selectOneBy(specurl=url)
-        if specification is None:
-            return None
-        return specification
+        return Specification.selectOneBy(specurl=url)
+
+    def getByName(self, pillar, name):
+        """See ISpecificationSet."""
+        clauses = [Specification.name == name]
+        if IDistribution.providedBy(pillar):
+            clauses.append(Specification.distributionID == pillar.id)
+        elif IProduct.providedBy(pillar):
+            clauses.append(Specification.productID == pillar.id)
+        return IStore(Specification).find(Specification, *clauses).one()
 
     @property
     def coming_sprints(self):
