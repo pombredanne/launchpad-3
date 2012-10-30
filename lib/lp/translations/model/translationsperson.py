@@ -160,22 +160,6 @@ class TranslationsPerson:
                     '(SELECT * FROM translatable_distroseries)'))).config(
             distinct=True).order_by(POFile.date_changed)
 
-    def suggestReviewableTranslationFiles(self, no_older_than=None):
-        """See `ITranslationsPerson`."""
-        tables = self._composePOFileReviewerJoins()
-
-        # Pick files that this person has no recent POFileTranslator entry
-        # for.
-        translator_join, translator_condition = (
-            self._composePOFileTranslatorJoin(False, no_older_than))
-        tables.append(translator_join)
-
-        conditions = And(POFile.unreviewed_count > 0, translator_condition)
-
-        source = Store.of(self.person).using(*tables)
-        query = source.find(POFile, conditions)
-        return query.config(distinct=True).order_by(POFile.id)
-
     def _queryTranslatableFiles(self, worked_on, no_older_than=None,
                                 languages=None):
         """Get `POFile`s this person could help translate.
