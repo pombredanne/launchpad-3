@@ -430,7 +430,7 @@ class NascentUpload:
 
     @property
     def is_ppa(self):
-        """Whether or not the current upload is target for a PPA."""
+        """Whether or not the current upload is target for a PPA."find_and_apply_overrides""
         # XXX julian 2007-05-29 bug=117557: When self.policy.distroseries
         # is None, this will causes a rejection for the wrong reasons
         # (a code exception instead of a bad distro).
@@ -723,7 +723,7 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def processUnknownFile(self, uploaded_file):
+    def processUnknownFile(self, uploaded_file, override=None):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
         Here we use the override policy defined in UnknownOverridePolicy.
@@ -749,7 +749,10 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
-        # Apply the component override and default to universe.
+        if override:
+            uploaded_file.component_name = override.component.name
+            uploaded_file.section_name = override.section.name
+            return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
         uploaded_file.component_name = component_name_override
@@ -819,7 +822,16 @@ class NascentUpload:
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
-                    self.processUnknownFile(uploaded_file)
+                    # Check the current source publication's component.
+                    # If there is a corresponding source publication, we will
+                    # use the component from that, otherwise default mappings
+                    # are used.
+                    spph = None
+                    try:
+                        spph = uploaded_file.findCurrentSourcePublication()
+                    except UploadError:
+                        pass
+                    self.processUnknownFile(uploaded_file, spph)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people

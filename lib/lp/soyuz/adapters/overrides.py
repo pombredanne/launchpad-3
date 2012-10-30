@@ -20,7 +20,6 @@ __all__ = [
 from storm.expr import (
     And,
     Desc,
-    Join,
     Or,
     )
 from zope.component import getUtility
@@ -36,9 +35,7 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
@@ -46,7 +43,6 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.section import Section
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class IOverride(Interface):
@@ -71,8 +67,6 @@ class IBinaryOverride(IOverride):
 
     binary_package_name = Attribute(
         "The IBinaryPackageName that's being overridden")
-    source_package_release = Attribute(
-        "The ISourcePackageRelease for the publication")
     distro_arch_series = Attribute(
         "The IDistroArchSeries for the publication")
     priority = Attribute(
@@ -115,11 +109,10 @@ class BinaryOverride(Override):
     """See `IBinaryOverride`."""
     implements(IBinaryOverride)
 
-    def __init__(self, binary_package_name, source_package_release,
-                 distro_arch_series, component, section, priority):
+    def __init__(self, binary_package_name, distro_arch_series, component,
+                 section, priority):
         super(BinaryOverride, self).__init__(component, section)
         self.binary_package_name = binary_package_name
-        self.source_package_release = source_package_release
         self.distro_arch_series = distro_arch_series
         self.priority = priority
 
@@ -133,11 +126,9 @@ class BinaryOverride(Override):
 
     def __repr__(self):
         return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r source_package_release=%r "
-            "distro_arch_series=%r priority=%r>" %
+            "binary_package_name=%r distro_arch_series=%r priority=%r>" %
             (id(self), self.component, self.section, self.binary_package_name,
-             self.source_package_release, self.distro_arch_series,
-             self.priority))
+             self.distro_arch_series, self.priority))
 
 
 class IOverridePolicy(Interface):
@@ -247,17 +238,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for bpn, das in expanded if das is not None]
         if len(candidates) == 0:
             return []
-        tables = [
-            BinaryPackagePublishingHistory,
-            Join(BinaryPackageRelease,
-                BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagerelease),
-            Join(BinaryPackageBuild,
-                BinaryPackageBuild.id == BinaryPackageRelease.build)]
         already_published = DecoratedResultSet(
-            store.using(tables).find(
+            store.find(
                 (BinaryPackagePublishingHistory.binarypackagenameID,
-                 BinaryPackageBuild.source_package_release_id,
                  BinaryPackagePublishingHistory.distroarchseriesID,
                  BinaryPackagePublishingHistory.componentID,
                  BinaryPackagePublishingHistory.sectionID,
@@ -275,13 +258,12 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     )
                 ),
             id_resolver(
-                (BinaryPackageName, SourcePackageRelease, DistroArchSeries,
-                 Component, Section, None)),
+                (BinaryPackageName, DistroArchSeries, Component, Section,
+                None)),
             pre_iter_hook=eager_load)
         return [
-            BinaryOverride(name, spr, das, component, section, priority)
-            for name, spr, das, component, section, priority
-            in already_published]
+            BinaryOverride(name, das, component, section, priority)
+            for name, das, component, section, priority in already_published]
 
 
 class UnknownOverridePolicy(BaseOverridePolicy):
@@ -309,13 +291,12 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     DEFAULT_OVERRIDE_COMPONENT = 'universe'
 
     @classmethod
-    def getComponentOverride(cls, component=None, default_override=None,
-                             return_component=False):
+    def getComponentOverride(cls, component=None, return_component=False):
         # component can be a Component object or a component name.
         if isinstance(component, Component):
             component = component.name
         override_component_name = cls.DEBIAN_COMPONENT_OVERRIDE_MAP.get(
-            component, default_override)
+            component, cls.DEFAULT_OVERRIDE_COMPONENT)
         if return_component:
             return getUtility(IComponentSet)[override_component_name]
         else:
@@ -326,9 +307,7 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         default_component = (
             archive.default_component or
             UnknownOverridePolicy.getComponentOverride(
-                source_component,
-                default_override=self.DEFAULT_OVERRIDE_COMPONENT,
-                return_component=True))
+                source_component, return_component=True))
         return [
             SourceOverride(source, default_component, None)
             for source in sources]
@@ -337,23 +316,10 @@ class UnknownOverridePolicy(BaseOverridePolicy):
                                  binaries):
         default_component = archive.default_component or getUtility(
             IComponentSet)['universe']
-        overrides = []
-        for binary, das in calculate_target_das(distroseries, binaries):
-            source_package_component = (
-                UnknownOverridePolicy.getComponentOverride(
-                    default_override=binary.source_package_release.component,
-                    return_component=True))
-            # TODO - check if source_package_component is valid in distroseries
-            valid_component = True #????? how to do this ?????
-            if not valid_component:
-                source_package_component = None
-            component = source_package_component or default_component
-            overrides.append(
-                BinaryOverride(
-                    binary.binarypackagename,
-                    binary.build.source_package_release, das,
-                    component, None, None))
-        return overrides
+        return [
+            BinaryOverride(binary, das, default_component, None, None)
+            for binary, das in calculate_target_das(distroseries, binaries)]
+
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
                            UnknownOverridePolicy):
@@ -384,7 +350,7 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
             self, archive, distroseries, pocket, binaries)
         existing = set(
             (
-                override.binary_package_release,
+                override.binary_package_name,
                 override.distro_arch_series.architecturetag,
             )
             for override in overrides)
@@ -402,11 +368,11 @@ def calculate_target_das(distroseries, binaries):
         for arch in distroseries.enabled_architectures)
 
     with_das = []
-    for bpr, archtag in binaries:
+    for bpn, archtag in binaries:
         if archtag is not None:
-            with_das.append((bpr, arch_map.get(archtag)))
+            with_das.append((bpn, arch_map.get(archtag)))
         else:
-            with_das.append((bpr, distroseries.nominatedarchindep))
+            with_das.append((bpn, distroseries.nominatedarchindep))
     return with_das
 
 
