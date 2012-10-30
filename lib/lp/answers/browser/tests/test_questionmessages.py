@@ -29,9 +29,10 @@ class TestQuestionMessageVisibility(
     def makeHiddenMessage(self):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
+        self.commenter = self.factory.makePerson()
         with person_logged_in(administrator):
             question = self.factory.makeQuestion()
-            comment = question.addComment(administrator, self.comment_text)
+            comment = question.addComment(self.commenter, self.comment_text)
             removeSecurityProxy(comment).message.visible = False
         return question
 
@@ -42,6 +43,12 @@ class TestQuestionMessageVisibility(
             user=user,
             no_login=no_login)
         return view
+
+    def test_commenter_can_see_comments(self):
+        # The author of the comment can see the hidden comment.
+        context = self.makeHiddenMessage()
+        view = self.getView(context=context, user=self.commenter)
+        self.assertIn(self.comment_text, view.contents)
 
 
 class TestHideQuestionMessageControls(
