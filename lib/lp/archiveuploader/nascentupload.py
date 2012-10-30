@@ -726,7 +726,8 @@ class NascentUpload:
     def processUnknownFile(self, uploaded_file, override=None):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
-        Here we use the override policy defined in UnknownOverridePolicy.
+        Here we use the override, if specified, or simply default to the policy
+        defined in UnknownOverridePolicy.
 
         In the case of a PPA, files are not touched.  They are always
         overridden to 'main' at publishing time, though.
@@ -749,6 +750,7 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
+        # Use the specified override, or delegate to UnknownOverridePolicy.
         if override:
             uploaded_file.component_name = override.component.name
             uploaded_file.section_name = override.section.name
