@@ -923,7 +923,9 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
             role = PersonRoles(self.user)
             strip_invisible = not (role.in_admin or role.in_registry_experts)
         if strip_invisible:
-            messages = [message for message in messages if message.visible]
+            messages = [
+                message for message in messages
+                if message.visible or message.owner == self.user]
         return messages
 
     def canAddComment(self, action):
@@ -1143,7 +1145,7 @@ class QuestionMessageDisplayView(LaunchpadView):
 
     @cachedproperty
     def canSeeSpamControls(self):
-        return check_permission('launchpad.Moderate', self.context.question)
+        return check_permission('launchpad.Moderate', self.context)
 
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]
