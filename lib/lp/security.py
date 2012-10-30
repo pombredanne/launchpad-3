@@ -1983,15 +1983,6 @@ class ViewBuildFarmJobOld(DelegatedAuthorization):
         return objects
 
 
-class SetQuestionCommentVisibility(AuthorizationBase):
-    permission = 'launchpad.Moderate'
-    usedfor = IQuestion
-
-    def checkAuthenticated(self, user):
-        """Admins and registry admins can set bug comment visibility."""
-        return (user.in_admin or user.in_registry_experts)
-
-
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
