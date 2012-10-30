@@ -74,7 +74,8 @@ class TranslationsPerson:
 
     def getTranslationHistory(self, no_older_than=None):
         """See `ITranslationsPerson`."""
-        conditions = (POFileTranslator.person == self.person)
+        conditions = And(
+            POFileTranslator.person == self.person)
         if no_older_than is not None:
             conditions = And(
                 conditions,
