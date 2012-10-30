@@ -1042,7 +1042,10 @@ class SpecificationSupersedingView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {'superseded_by': self.context.superseded_by}
+        name = None
+        if self.context.superseded_by:
+            name = self.context.superseded_by.name
+        return {'superseded_by': name}
 
     def setUpFields(self):
         """Override the setup to define own fields."""
@@ -1058,17 +1061,12 @@ class SpecificationSupersedingView(LaunchpadFormView):
                     "to Superseded.")),
             render_context=self.render_context)
 
-    def _fetchSpecification(self, name):
-        pillar = self.context.target
-        if '/' in name:
-            pillar, name = name.split('/')
-        return getUtility(ISpecificationSet).getByName(pillar, name)
-
     def validate(self, data):
         """See `LaunchpadFormView`.`"""
         super(SpecificationSupersedingView, self).validate(data)
         if data['superseded_by']:
-            spec = self._fetchSpecification(data['superseded_by'])
+            spec = getUtility(ISpecificationSet).getByName(
+                self.context.target, data['superseded_by'])
             if spec:
                 data['superseded_by'] = spec
             else:
