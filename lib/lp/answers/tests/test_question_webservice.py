@@ -9,7 +9,6 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 import transaction
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.errors import (
@@ -21,7 +20,6 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
@@ -144,13 +142,11 @@ class TestSetCommentVisibility(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSetCommentVisibility, self).setUp()
-        self.person_set = getUtility(IPersonSet)
-        admins = self.person_set.getByName('admins')
-        self.admin = admins.teamowner
-        with person_logged_in(self.admin):
+        self.commenter = self.factory.makePerson()
+        with person_logged_in(self.commenter):
             self.question = self.factory.makeQuestion()
             self.message = self.question.addComment(
-                self.admin, 'Some comment')
+                self.commenter, 'Some comment')
         transaction.commit()
 
     def _get_question_for_user(self, user=None):
@@ -169,8 +165,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set question comment
         # visibility.
-        nopriv = self.person_set.getByName('no-priv')
-        question = self._get_question_for_user(nopriv)
+        random_user = self.factory.makePerson()
+        question = self._get_question_for_user(random_user)
         self.assertRaises(
             HTTPError,
             self._set_visibility,
@@ -185,13 +181,18 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             self._set_visibility,
             question)
 
+    def test_comment_owner_can_set_visible(self):
+        # Members of registry experts can set question comment
+        # visibility.
+        question = self._get_question_for_user(self.commenter)
+        self._set_visibility(question)
+        self.assertFalse(self.message.visible)
+
     def test_registry_admin_can_set_visible(self):
         # Members of registry experts can set question comment
         # visibility.
-        registry = self.person_set.getByName('registry')
-        person = self.factory.makePerson()
-        with person_logged_in(registry.teamowner):
-            registry.addMember(person, registry.teamowner)
+        with celebrity_logged_in('registry_experts') as registry:
+            person = registry
         question = self._get_question_for_user(person)
         self._set_visibility(question)
         self.assertFalse(self.message.visible)
@@ -199,10 +200,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def test_admin_can_set_visible(self):
         # Admins can set question comment
         # visibility.
-        admins = self.person_set.getByName('admins')
-        person = self.factory.makePerson()
-        with person_logged_in(admins.teamowner):
-            admins.addMember(person, admins.teamowner)
+        with celebrity_logged_in('admin') as admin:
+            person = admin
         question = self._get_question_for_user(person)
         self._set_visibility(question)
         self.assertFalse(self.message.visible)

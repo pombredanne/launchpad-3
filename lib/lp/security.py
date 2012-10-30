@@ -1983,15 +1983,6 @@ class ViewBuildFarmJobOld(DelegatedAuthorization):
         return objects
 
 
-class SetQuestionCommentVisibility(AuthorizationBase):
-    permission = 'launchpad.Moderate'
-    usedfor = IQuestion
-
-    def checkAuthenticated(self, user):
-        """Admins and registry admins can set bug comment visibility."""
-        return (user.in_admin or user.in_registry_experts)
-
-
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
@@ -2041,6 +2032,17 @@ class ViewQuestion(AnonymousAuthorization):
 
 class ViewQuestionMessage(AnonymousAuthorization):
     usedfor = IQuestionMessage
+
+
+class ModerateQuestionMessage(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IQuestionMessage
+
+    def checkAuthenticated(self, user):
+        """Admins, Registry, Maintainers, and comment owners can moderate."""
+        return (user.in_admin or user.in_registry_experts
+                or user.inTeam(self.obj.owner)
+                or user.inTeam(self.obj.question.target.owner))
 
 
 class AppendFAQTarget(EditByOwnersOrAdmins):
