@@ -2043,6 +2043,17 @@ class ViewQuestionMessage(AnonymousAuthorization):
     usedfor = IQuestionMessage
 
 
+class ModerateQuestionMessage(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IQuestionMessage
+
+    def checkAuthenticated(self, user):
+        """Admins, Registry, Maintainers, and comment owners can moderate."""
+        return (user.in_admin or user.in_registry_experts
+                or user.inTeam(self.obj.owner)
+                or user.inTeam(self.obj.question.target.owner))
+
+
 class AppendFAQTarget(EditByOwnersOrAdmins):
     permission = 'launchpad.Append'
     usedfor = IFAQTarget

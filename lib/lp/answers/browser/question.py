@@ -1143,7 +1143,7 @@ class QuestionMessageDisplayView(LaunchpadView):
 
     @cachedproperty
     def canSeeSpamControls(self):
-        return check_permission('launchpad.Moderate', self.context.question)
+        return check_permission('launchpad.Moderate', self.context)
 
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]

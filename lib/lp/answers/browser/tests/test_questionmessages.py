@@ -18,6 +18,7 @@ from lp.testing import (
     person_logged_in,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 
 
 class TestQuestionMessageVisibility(
@@ -53,10 +54,11 @@ class TestHideQuestionMessageControls(
     def getContext(self, comment_owner=None):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
+        user = comment_owner or administrator
         question = self.factory.makeQuestion()
         body = self.factory.getUniqueString()
-        with person_logged_in(administrator):
-            question.addComment(administrator, body)
+        with person_logged_in(user):
+            question.addComment(user, body)
         return question
 
     def getView(self, context, user=None, no_login=False):
@@ -66,3 +68,11 @@ class TestHideQuestionMessageControls(
             user=user,
             no_login=no_login)
         return view
+
+    def test_comment_owner_sees_hide_control(self):
+        # The comment owner sees the hide control.
+        user = self.factory.makePerson()
+        context = self.getContext(comment_owner=user)
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
