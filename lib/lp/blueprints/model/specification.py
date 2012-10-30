@@ -1165,10 +1165,7 @@ class SpecificationSet(HasSpecificationsMixin):
             clauses.append(Specification.distributionID == pillar.id)
         elif IProduct.providedBy(pillar):
             clauses.append(Specification.productID == pillar.id)
-        result = IStore(Specification).find(Specification, *clauses)
-        if result is None:
-            return result
-        return result.one()
+        return IStore(Specification).find(Specification, *clauses).one()
 
     @property
     def coming_sprints(self):

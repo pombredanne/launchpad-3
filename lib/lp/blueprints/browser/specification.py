@@ -1068,7 +1068,10 @@ class SpecificationSupersedingView(LaunchpadFormView):
         """See `LaunchpadFormView`.`"""
         super(SpecificationSupersedingView, self).validate(data)
         if data['superseded_by']:
-            if not self._fetchSpecification(data['superseded_by']):
+            spec = self._fetchSpecification(data['superseded_by'])
+            if spec:
+                data['superseded_by'] = spec
+            else:
                 self.setFieldError(
                     'superseded_by',
                     "No blueprint named '%s'." % data['superseded_by'])
@@ -1078,9 +1081,6 @@ class SpecificationSupersedingView(LaunchpadFormView):
         # Store some shorter names to avoid line-wrapping.
         SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
         NEW = SpecificationDefinitionStatus.NEW
-        if data['superseded_by'] is not None:
-            data['superseded_by'] = self._fetchSpecification(
-                data['superseded_by'])
         self.context.superseded_by = data['superseded_by']
         # XXX: salgado, 2010-11-24, bug=680880: This logic should be in model
         # code.
