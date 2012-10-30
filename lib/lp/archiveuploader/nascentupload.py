@@ -430,7 +430,7 @@ class NascentUpload:
 
     @property
     def is_ppa(self):
-        """Whether or not the current upload is target for a PPA."find_and_apply_overrides""
+        """Whether or not the current upload is target for a PPA."""
         # XXX julian 2007-05-29 bug=117557: When self.policy.distroseries
         # is None, this will causes a rejection for the wrong reasons
         # (a code exception instead of a bad distro).
