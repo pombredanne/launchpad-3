@@ -38,7 +38,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
+    Specification,
+    )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
@@ -172,7 +175,8 @@ class MilestoneData:
                             SpecificationWorkItem.milestone_id.is_in(
                                 milestones),
                             SpecificationWorkItem.deleted == False)),
-                    all=True)))
+                    all=True)),
+            get_specification_privacy_filter(user))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,

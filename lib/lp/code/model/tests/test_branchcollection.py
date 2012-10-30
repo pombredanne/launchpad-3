@@ -291,6 +291,65 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.inProject(project)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_isExclusive(self):
+        # 'isExclusive' is restricted to branches owned by exclusive
+        # teams and users.
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        team_branch = self.factory.makeAnyBranch(owner=team)
+        user_branch = self.factory.makeAnyBranch(owner=user)
+        self.factory.makeAnyBranch(owner=other_team)
+        collection = self.all_branches.isExclusive()
+        self.assertContentEqual(
+            [team_branch, user_branch], list(collection.getBranches()))
+
+    def test_inProduct_and_isExclusive(self):
+        # 'inProduct' and 'isExclusive' can combine to form a collection that
+        # is restricted to branches of a particular product owned exclusive
+        # teams and users.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
+        other_team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.OPEN)
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=team)
+        self.factory.makeAnyBranch(owner=team)
+        self.factory.makeProductBranch(product=product, owner=other_team)
+        collection = self.all_branches.inProduct(product).isExclusive()
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.isExclusive().inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_isSeries(self):
+        # 'isSeries' is restricted to branches linked to product series.
+        series = self.factory.makeProductSeries()
+        branch = self.factory.makeAnyBranch(product=series.product)
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+        self.factory.makeAnyBranch(product=series.product)
+        collection = self.all_branches.isSeries()
+        self.assertContentEqual([branch], list(collection.getBranches()))
+
+    def test_ownedBy_and_isSeries(self):
+        # 'ownedBy' and 'inSeries' can combine to form a collection that is
+        # restricted to branches linked to product series owned by a particular
+        # person.
+        person = self.factory.makePerson()
+        series = self.factory.makeProductSeries()
+        branch = self.factory.makeProductBranch(
+            product=series.product, owner=person)
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=series.product)
+        collection = self.all_branches.isSeries().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isSeries()
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_ownedBy_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular

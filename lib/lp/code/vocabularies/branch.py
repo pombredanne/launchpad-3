@@ -110,7 +110,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
             raise AssertionError('Unexpected context type')
 
     def _getCollection(self):
-        return getUtility(IAllBranches).inProduct(self.product)
+        return getUtility(IAllBranches).inProduct(self.product).isExclusive()
 
 
 class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):

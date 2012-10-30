@@ -318,21 +318,6 @@ class PersonTranslationView(LaunchpadView):
 
         return ReviewLinksAggregator().aggregate(pofiles)
 
-    def _suggestTargetsForReview(self, max_fetch):
-        """Find random translation targets for review.
-
-        :param max_fetch: Maximum number of `POFile`s to fetch while
-            looking for these.
-        :return: a list of at most `max_fetch` translation targets.
-            Multiple `POFile`s may be aggregated together into a single
-            target.
-        """
-        person = ITranslationsPerson(self.context)
-        pofiles = person.suggestReviewableTranslationFiles(
-            no_older_than=self.history_horizon)[:max_fetch]
-
-        return ReviewLinksAggregator().aggregate(pofiles)
-
     def _getTargetsForTranslation(self, max_fetch=None):
         """Get translation targets for this person to translate.
 
@@ -410,17 +395,8 @@ class PersonTranslationView(LaunchpadView):
         # Start out with the translations that the person has recently
         # worked on.
         recent = self._review_targets
-        overall = self._addToTargetsList(
+        return self._addToTargetsList(
             [], recent, max_known_targets, list_length)
-
-        # Fill out the list with other, randomly suggested translations
-        # that the person could also be reviewing.
-        fetch = 5 * (list_length - len(overall))
-        suggestions = self._suggestTargetsForReview(fetch)
-        overall = self._addToTargetsList(
-            overall, suggestions, list_length, list_length)
-
-        return overall
 
     @cachedproperty
     def num_projects_and_packages_to_review(self):

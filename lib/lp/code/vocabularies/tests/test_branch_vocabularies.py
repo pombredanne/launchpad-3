@@ -14,6 +14,7 @@ from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     ANONYMOUS,
@@ -160,6 +161,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
         person = factory.makePerson(name='spotty')
         factory.makeProductBranch(
             owner=person, product=test_product, name='hill')
+        self.product = test_product
 
     def test_mainBranches(self):
         """Look for widget's main branch.
@@ -202,6 +204,19 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
             LookupError,
             self.vocab.getTermByToken,
             'scotty')
+
+    def test_does_not_contain_inclusive_teams(self):
+        factory = LaunchpadObjectFactory()
+        open_team = factory.makeTeam(name='open-team',
+            membership_policy=TeamMembershipPolicy.OPEN)
+        delegated_team = factory.makeTeam(name='delegated-team',
+            membership_policy=TeamMembershipPolicy.DELEGATED)
+        for team in [open_team, delegated_team]:
+            factory.makeProductBranch(
+                owner=team, product=self.product, name='mountain')
+        results = self.vocab.searchForTerms('mountain')
+        branch_names = sorted([branch.token for branch in results])
+        self.assertEqual(['~scotty/widget/mountain'], branch_names)
 
 
 class TestRestrictedBranchVocabularyOnBranch(

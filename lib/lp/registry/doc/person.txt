@@ -1183,7 +1183,9 @@ Next, Carlos has two incomplete specs *related* to him:
 
 These 2 specifications are assigned to Carlos:
 
-    >>> for spec in carlos.assigned_specs:
+    >>> assigned_specs = carlos.specifications(
+    ...     carlos, filter=[SpecificationFilter.ASSIGNEE])
+    >>> for spec in assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
@@ -1191,7 +1193,7 @@ These 2 specifications are assigned to Carlos:
 But from these two, only one has started.
 
     >>> [(spec.name, spec.is_started)
-    ...  for spec in carlos.assigned_specs_in_progress]
+    ...  for spec in carlos.findVisibleAssignedInProgressSpecs(None)]
     [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he

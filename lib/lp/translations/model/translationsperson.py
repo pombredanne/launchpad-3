@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,6 +13,9 @@ from storm.expr import (
     Join,
     LeftJoin,
     Or,
+    Select,
+    SQL,
+    With,
     )
 from storm.info import ClassAlias
 from storm.store import Store
@@ -142,36 +145,21 @@ class TranslationsPerson:
             # A team as such does not work on translations.  Skip the
             # search for ones the team has worked on.
             return []
-
-        tables = self._composePOFileReviewerJoins()
-
-        # Consider only translations that this person is a reviewer for.
-        translator_join, translator_condition = (
-            self._composePOFileTranslatorJoin(True, no_older_than))
-        tables.append(translator_join)
-
-        conditions = And(
-            POFile.unreviewed_count > 0, translator_condition)
-
-        source = Store.of(self.person).using(*tables)
-        query = source.find(POFile, conditions)
-        return query.config(distinct=True).order_by(POFile.date_changed)
-
-    def suggestReviewableTranslationFiles(self, no_older_than=None):
-        """See `ITranslationsPerson`."""
-        tables = self._composePOFileReviewerJoins()
-
-        # Pick files that this person has no recent POFileTranslator entry
-        # for.
-        translator_join, translator_condition = (
-            self._composePOFileTranslatorJoin(False, no_older_than))
-        tables.append(translator_join)
-
-        conditions = And(POFile.unreviewed_count > 0, translator_condition)
-
-        source = Store.of(self.person).using(*tables)
-        query = source.find(POFile, conditions)
-        return query.config(distinct=True).order_by(POFile.id)
+        with_statement = self._composePOFileReviewerCTEs(no_older_than)
+        return Store.of(self.person).with_(with_statement).using(
+            POFile,
+            Join(POTemplate, And(
+                POTemplate.id == POFile.potemplateID,
+                POTemplate.iscurrent == True))).find(
+            POFile,
+            POFile.id.is_in(SQL('SELECT * FROM recent_pofiles')),
+            POFile.unreviewed_count > 0,
+            Or(
+                SQL('(POTemplate.productseries, POFile.language) IN '
+                    '(SELECT * FROM translatable_productseries)'),
+                SQL('(POTemplate.distroseries, POFile.language) IN '
+                    '(SELECT * FROM translatable_distroseries)'))).config(
+            distinct=True).order_by(POFile.date_changed)
 
     def _queryTranslatableFiles(self, worked_on, no_older_than=None,
                                 languages=None):
@@ -255,6 +243,75 @@ class TranslationsPerson:
         results = self._queryTranslatableFiles(
             False, no_older_than, languages=languages)
         return results.order_by(['random()'])
+
+    def _composePOFileReviewerCTEs(self, no_older_than):
+        """Compose Storm CTEs for common `POFile` queries.
+
+        Returns a list of Storm CTEs, much the same as
+        _composePOFileReviewerJoins."""
+        clause = [
+            POFileTranslator.personID == self.person.id,
+            POFile.language != getUtility(ILaunchpadCelebrities).english]
+        if no_older_than:
+            clause.append(POFileTranslator.date_last_touched >= no_older_than)
+        RecentPOFiles = With("recent_pofiles",
+            Select(
+                (POFile.id,),
+                tables=[
+                    POFileTranslator,
+                    Join(POFile, POFileTranslator.pofile == POFile.id)],
+                where=And(*clause)))
+        ReviewableGroups = With("reviewable_groups",
+            Select(
+                (TranslationGroup.id, Translator.languageID),
+                tables=[
+                    TranslationGroup,
+                    Join(
+                        Translator,
+                        Translator.translationgroupID == TranslationGroup.id),
+                    Join(
+                        TeamParticipation,
+                        And(
+                            TeamParticipation.teamID ==
+                                Translator.translatorID,
+                            TeamParticipation.personID == self.person.id))]))
+        TranslatableDistroSeries = With("translatable_distroseries",
+            Select(
+                (DistroSeries.id, SQL('reviewable_groups.language')),
+                tables=[
+                    DistroSeries,
+                    Join(
+                        Distribution, 
+                        And(
+                            Distribution.id == DistroSeries.distributionID,
+                            Distribution.translations_usage ==
+                                ServiceUsage.LAUNCHPAD,
+                            Distribution.translation_focusID ==
+                                DistroSeries.id)),
+                    Join(
+                        SQL('reviewable_groups'),
+                        SQL('reviewable_groups.id') ==
+                            Distribution.translationgroupID)]))
+        TranslatableProductSeries = With("translatable_productseries",
+            Select(
+                (ProductSeries.id, SQL('reviewable_groups.language')),
+                tables=[
+                    ProductSeries,
+                    Join(
+                        Product, And(
+                            Product.id == ProductSeries.productID,
+                            Product.translations_usage ==
+                                ServiceUsage.LAUNCHPAD,
+                            Product.active == True)),
+                    LeftJoin(
+                        ProjectGroup, ProjectGroup.id == Product.projectID),
+                    Join(
+                        SQL('reviewable_groups'),
+                        SQL('reviewable_groups.id') ==
+                            Product.translationgroupID)]))
+        return [
+            RecentPOFiles, ReviewableGroups, TranslatableDistroSeries,
+            TranslatableProductSeries]
 
     def _composePOFileReviewerJoins(self, expect_reviewer_status=True):
         """Compose certain Storm joins for common `POFile` queries.

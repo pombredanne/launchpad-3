@@ -168,20 +168,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
     def test_top_projects_and_packages_to_review(self):
         # top_projects_and_packages_to_review tries to name at least one
-        # translation target that the person has worked on, and at least
-        # one random suggestion that the person hasn't worked on.
+        # translation target that the person has worked on.
         self._makeReviewer()
         pofile_worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
-        pofile_not_worked_on = self._makePOFiles(
-            1, previously_worked_on=False)[0]
-
         targets = self.view.top_projects_and_packages_to_review
 
         pofile_suffix = '/+translate?show=new_suggestions'
-        expected_links = [
-            canonical_url(pofile_worked_on) + pofile_suffix,
-            canonical_url(pofile_not_worked_on) + pofile_suffix,
-            ]
+        expected_links = [canonical_url(pofile_worked_on) + pofile_suffix]
         self.assertEqual(
             set(expected_links), set(item['link'] for item in targets))
 
@@ -228,29 +221,16 @@ class TestPersonTranslationView(TestCaseWithFactory):
         self.assertEqual(9, len(targets))
         self.assertEqual(9, len(set(item['link'] for item in targets)))
 
-    def test_top_p_n_p_to_review_caps_suggestions(self):
-        # top_projects_and_packages will suggest at most 10 POFiles that
-        # the person has not worked on.
-        self._makeReviewer()
-        self._makePOFiles(11, previously_worked_on=False)
-
-        targets = self.view.top_projects_and_packages_to_review
-
-        self.assertEqual(10, len(targets))
-        self.assertEqual(10, len(set(item['link'] for item in targets)))
-
     def test_top_p_n_p_to_review_caps_total(self):
-        # top_projects_and_packages will show at most 10 POFiles
-        # overall.  The last one will be a suggestion.
+        # top_projects_and_packages will show at most 9 POFiles
+        # overall.
         self._makeReviewer()
         pofiles_worked_on = self._makePOFiles(11, previously_worked_on=True)
-        pofiles_not_worked_on = self._makePOFiles(
-            11, previously_worked_on=False)
 
         targets = self.view.top_projects_and_packages_to_review
 
-        self.assertEqual(10, len(targets))
-        self.assertEqual(10, len(set(item['link'] for item in targets)))
+        self.assertEqual(9, len(targets))
+        self.assertEqual(9, len(set(item['link'] for item in targets)))
 
     def test_person_is_translator_false(self):
         # By default, a user is not a translator.

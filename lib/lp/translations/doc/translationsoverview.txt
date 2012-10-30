@@ -177,6 +177,16 @@ we change the default maximum number of returned entries.
     Evolution: 20
     Ubuntu: 24
 
+Private projects are never included.
+
+    >>> from lp.app.enums import InformationType
+    >>> removeSecurityProxy(upstart).information_type = (
+    ...     InformationType.PROPRIETARY)
+    >>> display_pillars(overview.getMostTranslatedPillars())
+    alsa-utils: 22
+    Evolution: 20
+    Ubuntu: 24
+
 
 Zero karma
 ----------

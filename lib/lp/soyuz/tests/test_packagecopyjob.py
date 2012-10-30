@@ -400,7 +400,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     def test_target_ppa_message(self):
         # When copying to a PPA archive the error message is stored in the
-        # job's metadata and the job fails.
+        # job's metadata and the job fails, but no OOPS is recorded.
         distroseries = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
@@ -412,11 +412,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False, package_version='1.0',
             requester=self.factory.makePerson())
         transaction.commit()
-        self.runJob(job)
+        switch_dbuser(self.dbuser)
+        runner = JobRunner([job])
+        runner.runAll()
         self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
             "PPA uploads must be for the RELEASE pocket.", job.error_message)
+        self.assertEqual([], runner.oops_ids)
 
     def assertOopsRecorded(self, job):
         self.assertEqual(JobStatus.FAILED, job.status)
@@ -922,8 +925,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         if return_job:
             return job
-        pcj = removeSecurityProxy(job).context
-        return pcj
+        return removeSecurityProxy(job).context
 
     def test_copying_to_main_archive_debian_override_contrib(self):
         # The job uses the overrides to map debian components to
@@ -1440,9 +1442,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         metadata_component = getUtility(
@@ -1499,9 +1499,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         self.assertEqual(override, pcj.getSourceOverride())
