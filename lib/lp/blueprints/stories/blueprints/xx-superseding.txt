@@ -49,6 +49,8 @@ status to New. If we POST back to the form, with Superseded by empty,
 then it should automatically do this:
 
     >>> browser.getLink('Mark superseded').click()
+    >>> browser.getControl('Superseded by').value
+    'svg-support'
     >>> browser.getControl('Superseded by').value = ''
     >>> browser.getControl('Continue').click()
 
