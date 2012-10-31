@@ -607,7 +607,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # parent directories", which is just misleading.
             fault = trap_fault(
                 fail, faults.NotFound, faults.PermissionDenied,
-                faults.InvalidSourcePackageName)
+                faults.InvalidSourcePackageName, faults.InvalidProductName)
             faultString = fault.faultString
             if isinstance(faultString, unicode):
                 faultString = faultString.encode('utf-8')
