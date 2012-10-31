@@ -294,7 +294,7 @@ class CannotHaveLinkedBranch(LaunchpadFault):
             component_type=component_type)
 
 
-class InvalidProductIdentifier(LaunchpadFault):
+class InvalidProductName(LaunchpadFault):
     """Raised when we are passed an invalid name for a product.
 
     This is for when users try to specify a product using a silly name
