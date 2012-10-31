@@ -753,7 +753,6 @@ class NascentUpload:
         # Use the specified override, or delegate to UnknownOverridePolicy.
         if override:
             uploaded_file.component_name = override.component.name
-            uploaded_file.section_name = override.section.name
             return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
@@ -764,6 +763,9 @@ class NascentUpload:
 
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
+
+        XXX: wallyworld 2012-11-01 bug=1073755: This work should be done using
+        override polices defined in lp.soyuz.adapters.overrides.py
         """
         self.logger.debug("Finding and applying overrides.")
 
