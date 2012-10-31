@@ -117,6 +117,9 @@ class ISharingService(IService):
         :return: a (bugtasks, branches, specifications) tuple
         """
 
+    def userHasGrantsOnPillar(pillar, user):
+        """Return True if user has any grants on pillar else return False."""
+
     @export_read_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(

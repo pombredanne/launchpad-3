@@ -428,7 +428,22 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(
+class IProductLimitedView(Interface):
+    """Attributes that must be visible for person with artifact grants
+    on bugs, branches or specifications for the product,
+    """
+
+    name = exported(
+        ProductNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_(
+                "At least one lowercase letter or number, followed by "
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as shown above.")))
+
+
+class IProductView(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
@@ -487,15 +502,6 @@ class IProductLimitedView(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    name = exported(
-        ProductNameField(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_(
-                "At least one lowercase letter or number, followed by "
-                "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above.")))
 
     displayname = exported(
         TextLine(
@@ -874,9 +880,9 @@ class IProductLimitedView(
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    @mutator_for(IProductLimitedView['bug_sharing_policy'])
+    @mutator_for(IProductView['bug_sharing_policy'])
     @operation_parameters(bug_sharing_policy=copy_field(
-        IProductLimitedView['bug_sharing_policy']))
+        IProductView['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBugSharingPolicy(bug_sharing_policy):
@@ -885,10 +891,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['branch_sharing_policy'])
+    @mutator_for(IProductView['branch_sharing_policy'])
     @operation_parameters(
         branch_sharing_policy=copy_field(
-            IProductLimitedView['branch_sharing_policy']))
+            IProductView['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
@@ -897,10 +903,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['specification_sharing_policy'])
+    @mutator_for(IProductView['specification_sharing_policy'])
     @operation_parameters(
         specification_sharing_policy=copy_field(
-            IProductLimitedView['specification_sharing_policy']))
+            IProductView['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setSpecificationSharingPolicy(specification_sharing_policy):
@@ -912,7 +918,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
-    IProductModerateRestricted, IProductDriverRestricted,
+    IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
     IStructuralSubscriptionTarget, IInformationType, IPillar):
     """A Product.
