@@ -20,7 +20,7 @@ __all__ = [
     'InvalidBranchIdentifier',
     'InvalidBranchName',
     'InvalidBranchUniqueName',
-    'InvalidProductIdentifier',
+    'InvalidProductName',
     'InvalidBranchUrl',
     'InvalidSourcePackageName',
     'OopsOccurred',
