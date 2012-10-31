@@ -387,6 +387,9 @@ class PackageBuildDerived:
                         extra_info='Copy from slave was unsuccessful.')
                 target_dir = os.path.join(root, "failed")
 
+            if not os.path.exists(target_dir):
+                os.mkdir(target_dir)
+
             # Release the builder for another job.
             d = self._release_builder_and_remove_queue_item()
 
@@ -397,7 +400,7 @@ class PackageBuildDerived:
             # Move the directory used to grab the binaries into
             # the incoming directory so the upload processor never
             # sees half-finished uploads.
-            os.renames(grab_dir, os.path.join(target_dir, upload_leaf))
+            os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
             return d
 
