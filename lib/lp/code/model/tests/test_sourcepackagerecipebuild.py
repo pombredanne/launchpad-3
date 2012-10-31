@@ -650,12 +650,9 @@ class TestBuildNotifications(TrialTestCase):
         return self.assertDeferredNotifyCount(
             "OK", self.prepare_build(), 0)
 
-#XXX 2011-05-20 gmb bug=785679
-#    This test has been disabled since it broke intermittently in
-#    buildbot (but does not fail in isolation locally).
-##    def test_handleStatus_OK_successful_upload(self):
-##        return self.assertDeferredNotifyCount(
-##            "OK", self.prepare_build(True), 0)
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
