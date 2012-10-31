@@ -1191,6 +1191,10 @@ class POTemplateSubset:
                 distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
 
+    def isNameUnique(self, name):
+        """See `IPOTemplateSubset`."""
+        return self._getSuperSet().getPOTemplateByName(name) is None
+
     def new(self, name, translation_domain, path, owner, copy_pofiles=True):
         """See `IPOTemplateSubset`."""
         existing_template = self._getSuperSet().getPOTemplateByName(name)

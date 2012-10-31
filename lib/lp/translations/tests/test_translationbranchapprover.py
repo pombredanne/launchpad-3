@@ -151,6 +151,18 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self._createApprover(template_path).approve(entry)
         self.assertEqual(potemplate, entry.potemplate)
 
+    def test_ignore_existing_inactive_potemplate(self):
+        # When replacing an existing inactive template, the entry is not
+        # approved and no template is created for it.
+        translation_domain = self.factory.getUniqueString()
+        template_path = translation_domain + u'.pot'
+        potemplate = self._createTemplate(template_path, translation_domain)
+        potemplate.iscurrent = False
+        entry = self._upload_file(template_path)
+        self._createApprover(template_path).approve(entry)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
+        self.assertEqual(None, entry.potemplate)
+
     def test_replace_existing_any_path(self):
         # If just one template file is found in the tree and just one
         # POTemplate is in the database, the upload is always approved.
