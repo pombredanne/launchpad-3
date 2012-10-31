@@ -2796,17 +2796,18 @@ class Person(
         """See `IPerson`."""
         return self._hasReleasesQuery(uploader_only=True, ppa_only=True)
 
-    def getLatestMaintainedPackages(self):
+    def getLatestMaintainedPackages(self, max_results=None):
         """See `IPerson`."""
-        return self._latestReleasesQuery()
+        return self._latestReleasesQuery(max_results)
 
-    def getLatestUploadedButNotMaintainedPackages(self):
+    def getLatestUploadedButNotMaintainedPackages(self, max_results=None):
         """See `IPerson`."""
-        return self._latestReleasesQuery(uploader_only=True)
+        return self._latestReleasesQuery(max_results, uploader_only=True)
 
-    def getLatestUploadedPPAPackages(self):
+    def getLatestUploadedPPAPackages(self, max_results=None):
         """See `IPerson`."""
-        return self._latestReleasesQuery(uploader_only=True, ppa_only=True)
+        return self._latestReleasesQuery(
+            max_results, uploader_only=True, ppa_only=True)
 
     def _releasesQueryFilter(self, uploader_only=False, ppa_only=False):
         """Return the filter used to find sourcepackagereleases (SPRs)
@@ -2826,7 +2827,16 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = [SourcePackageRelease.upload_archive == Archive.id]
+
+        clauses = [
+            Exists(
+                Select(1,
+                    And(SourcePackagePublishingHistory.sourcepackagerelease ==
+                        SourcePackageRelease.id,
+                        SourcePackagePublishingHistory.archiveID ==
+                        SourcePackageRelease.upload_archiveID),
+                    SourcePackagePublishingHistory)),
+            SourcePackageRelease.upload_archive == Archive.id]
 
         if uploader_only:
             clauses.append(SourcePackageRelease.creator == self)
@@ -2851,50 +2861,60 @@ class Person(
         See `_releasesQueryFilter` for details on the criteria used.
         """
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
         tables = (
             SourcePackageRelease,
-            Join(
-                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
-            Join(Archive, Archive.id == spph.archiveID))
+            Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID))
         rs = Store.of(self).using(*tables).find(
             SourcePackageRelease.id, clauses)
         return not rs.is_empty()
 
-    def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
+    def _latestReleasesQuery(self, max_results=None, uploader_only=False,
+                             ppa_only=False):
         """Return the sourcepackagereleases (SPRs) related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        clauses.append(Archive.id == SourcePackageRelease.upload_archiveID)
         rs = Store.of(self).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(
-                Select(
-                    SourcePackageRelease.id,
-                    tables=[
-                        SourcePackageRelease,
-                        Join(
-                            spph,
-                            spph.sourcepackagereleaseID ==
-                            SourcePackageRelease.id),
-                        Join(Archive, Archive.id == spph.archiveID)],
-                    where=And(*clauses),
-                    order_by=[SourcePackageRelease.upload_distroseriesID,
-                              SourcePackageRelease.sourcepackagenameID,
-                              SourcePackageRelease.upload_archiveID,
-                              Desc(SourcePackageRelease.dateuploaded)],
-                    distinct=(
-                        SourcePackageRelease.upload_distroseriesID,
-                        SourcePackageRelease.sourcepackagenameID,
-                        SourcePackageRelease.upload_archiveID)))
-        ).order_by(
+            (SourcePackageRelease.upload_distroseriesID,
+             SourcePackageRelease.upload_archiveID,
+             SourcePackageRelease.sourcepackagenameID,
+             SourcePackageRelease.id),
+             *clauses).order_by(
             Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+
+        # Postgres cannot efficiently perform the required DISTINCT ON query
+        # which is needed to find only the latest uploads. So we first need to
+        # iterate over the entire result set and do the grouping ourselves,
+        # recording the required ids. We'll do it in batches of 75.
+        ids = []
+        unique_releases = set()
+        start = 0
+        batch = 75
+        done = False
+        while not done:
+            done = True
+            for (distroseries, archive, spn, id) in rs[start:start + batch]:
+                done = False
+                key = (distroseries, archive, spn)
+                if key in unique_releases:
+                    continue
+                unique_releases.add(key)
+                ids.append(id)
+                if max_results and len(ids) >= max_results:
+                    break
+            start += batch
+        if not ids:
+            return []
 
         def load_related_objects(rows):
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 set(map(attrgetter("maintainerID"), rows))))
             bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
             bulk.load_related(Archive, rows, ['upload_archiveID'])
+
+        rs = Store.of(self).find(
+            SourcePackageRelease, SourcePackageRelease.id.is_in(ids)).order_by(
+            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
