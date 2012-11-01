@@ -243,12 +243,12 @@ class TranslationBuildApprover(object):
                 # A generic name does not contain a translation domain.
                 potemplate = self._getOrCreateGenericTemplate(path)
             else:
-                if not self._potemplateset.isNameUnique(name):
-                    # The name probably matches an inactive template.
-                    return None
                 potemplate = self._potemplateset.getPOTemplateByName(name)
                 if potemplate is None:
                     # Still no template found, create a new one.
+                    if not self._potemplateset.isNameUnique(name):
+                        # The name probably matches an inactive template.
+                        return None
                     potemplate = self._potemplateset.new(
                         name, domain, path, self.owner)
         return potemplate

@@ -127,6 +127,24 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual('domain3', entries[2].potemplate.name)
         self.assertEqual('domain4', entries[3].potemplate.name)
 
+    def test_approve_inactive_existing(self):
+        # Inactive templates are approved, but they remain inactive.
+        filenames = [
+            'po-domain1/domain1.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        domain1_pot = self.factory.makePOTemplate(
+            productseries=series, name='domain1')
+        domain1_pot.iscurrent = False
+        self._becomeBuilddMaster()
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED],
+            [entry.status for entry in entries])
+        self.assertEqual(
+            [domain1_pot], [entry.potemplate for entry in entries])
+
     def test_approve_generic_name_one_new(self):
         # Generic names are OK, if there is only one.
         filenames = [
