@@ -12,6 +12,7 @@ from ConfigParser import SafeConfigParser
 from itertools import chain
 from optparse import OptionParser
 import os
+import re
 import sys
 
 from fti import quote_identifier
@@ -49,42 +50,25 @@ POSTGRES_ACL_MAP = {
     'T': 'TEMPORARY',
     }
 
+QUOTED_STRING_RE = '(?:([a-z_]+)|"([^"]*(?:""[^"]*)*)")?'
+ACLITEM_RE = re.compile('^%(qs)s=([\w*]*)/%(qs)s$' % {'qs': QUOTED_STRING_RE})
+
 
 def _split_postgres_aclitem(aclitem):
     """Split a PostgreSQL aclitem textual representation.
 
     Returns the (grantee, privs, grantor), unquoted and separated.
     """
-    components = {'grantee': '', 'privs': '', 'grantor': ''}
-    current_component = 'grantee'
-    inside_quoted = False
-    maybe_finished_quoted = False
-    for char in aclitem:
-        if inside_quoted:
-            if maybe_finished_quoted:
-                maybe_finished_quoted = False
-                if char == '"':
-                    components[current_component] += '"'
-                    continue
-                else:
-                    inside_quoted = False
-            elif char == '"':
-                maybe_finished_quoted = True
-                continue
-        # inside_quoted may have just been made False, so no else block
-        # for you.
-        if not inside_quoted:
-            if char == '"':
-                inside_quoted = True
-                continue
-            elif char == '=':
-                current_component = 'privs'
-                continue
-            elif char == '/':
-                current_component = 'grantor'
-                continue
-        components[current_component] += char
-    return components['grantee'], components['privs'], components['grantor']
+    grantee_1, grantee_2, privs, grantor_1, grantor_2 = (
+        ACLITEM_RE.match(aclitem).groups())
+    grantee = (grantee_1 or grantee_2 or '').replace('""', '"')
+    grantor = (grantor_1 or grantor_2 or '').replace('""', '"')
+    return grantee, privs, grantor
+
+
+# aclitem parsing is fairly slow and they're very frequently repeated,
+# so cache parsed values.
+parsed_acl_cache = {}
 
 
 def parse_postgres_acl(acl):
@@ -96,16 +80,21 @@ def parse_postgres_acl(acl):
     if acl is None:
         return parsed
     for entry in acl:
-        grantee, privs, grantor = _split_postgres_aclitem(entry)
-        if grantee == '':
-            grantee = 'public'
-        parsed_privs = []
-        for priv in privs:
-            if priv == '*':
-                parsed_privs[-1] = (parsed_privs[-1][0], True)
-                continue
-            parsed_privs.append((POSTGRES_ACL_MAP[priv], False))
-        parsed[grantee] = dict(parsed_privs)
+        if entry in parsed_acl_cache:
+            grantee, dict_privs = parsed_acl_cache[entry]
+        else:
+            grantee, privs, grantor = _split_postgres_aclitem(entry)
+            if grantee == '':
+                grantee = 'public'
+            parsed_privs = []
+            for priv in privs:
+                if priv == '*':
+                    parsed_privs[-1] = (parsed_privs[-1][0], True)
+                    continue
+                parsed_privs.append((POSTGRES_ACL_MAP[priv], False))
+            dict_privs = dict(parsed_privs)
+            parsed_acl_cache[entry] = (grantee, dict_privs)
+        parsed[grantee] = dict_privs
     return parsed
 
 
