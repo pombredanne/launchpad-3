@@ -157,7 +157,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         translation_domain = self.factory.getUniqueString()
         template_path = translation_domain + u'.pot'
         potemplate = self._createTemplate(template_path, translation_domain)
-        potemplate.iscurrent = False
+        potemplate.setActive(False)
         entry = self._upload_file(template_path)
         self._createApprover(template_path).approve(entry)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)

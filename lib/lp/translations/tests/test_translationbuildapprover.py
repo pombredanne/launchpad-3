@@ -134,8 +134,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             ]
         series = self.factory.makeProductSeries()
         domain1_pot = self.factory.makePOTemplate(
-            productseries=series, name='domain1')
-        domain1_pot.iscurrent = False
+            productseries=series, name='domain1', iscurrent=False)
         self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
