@@ -9,6 +9,7 @@ __all__ = [
     'Archive',
     'ArchiveSet',
     'get_archive_privacy_filter',
+    'get_enabled_archive_filter',
     'validate_ppa',
     ]
 
@@ -176,6 +177,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -2597,3 +2599,54 @@ def get_archive_privacy_filter(user):
                     TeamParticipation.teamID,
                     where=(TeamParticipation.person == user))))
     return privacy_filter
+
+
+def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
+                            include_public=False, include_subscribed=False):
+    """ Return a filter that can be used with a Storm query to filter Archives.
+
+    The archive must be enabled, plus satisfy the other specified conditions.
+    """
+    if user is None:
+        return And(
+            Archive.purpose == purpose, Archive._private == False,
+            Archive._enabled == True)
+
+    # Administrator are allowed to view private archives.
+    roles = IPersonRoles(user)
+    if roles.in_admin or roles.in_commercial_admin:
+        return True
+
+    main = getUtility(IComponentSet)['main']
+    user_teams = Select(
+                TeamParticipation.teamID,
+                where=TeamParticipation.person == user)
+
+    is_owner = Archive.ownerID.is_in(user_teams)
+
+    from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+
+    is_allowed = Select(
+        ArchivePermission.archiveID, where=And(
+            ArchivePermission.permission == ArchivePermissionType.UPLOAD,
+            ArchivePermission.component == main,
+            ArchivePermission.personID.is_in(user_teams)),
+        tables=ArchivePermission)
+
+    is_subscribed = Select(
+        ArchiveSubscriber.archive_id, where=And(
+            ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
+            ArchiveSubscriber.subscriber_id.is_in(user_teams)),
+        tables=ArchiveSubscriber)
+
+    access_terms = [is_allowed]
+    if include_subscribed:
+        access_terms.append(is_subscribed)
+
+    is_allowed_or_subscribed = Archive.id.is_in(Or(*access_terms))
+
+    enabled = [Archive.purpose == purpose, Archive._enabled == True]
+    filter_terms = [is_owner, is_allowed_or_subscribed]
+    if include_public:
+        filter_terms.append(Archive._private == False)
+    return And(enabled, Or(*filter_terms))
