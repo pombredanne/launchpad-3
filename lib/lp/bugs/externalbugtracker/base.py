@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -27,6 +27,7 @@ __all__ = [
 
 import urllib
 import urllib2
+from urlparse import urlparse
 
 from zope.interface import implements
 
@@ -47,10 +48,6 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 # To signify that all bug watches should be checked in a single run.
 BATCH_SIZE_UNLIMITED = 0
 
-
-#
-# Errors.
-#
 
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
@@ -96,10 +93,6 @@ class BugTrackerAuthenticationError(BugTrackerConnectError):
     """Launchpad couldn't authenticate with the remote bugtracker."""
 
 
-#
-# Warnings.
-#
-
 class BugWatchUpdateWarning(Exception):
     """An exception representing a warning.
 
@@ -141,10 +134,6 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
-#
-# Everything else.
-#
-
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
@@ -156,6 +145,7 @@ class ExternalBugTracker:
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.basehost = urlparse(baseurl).netloc
         self.sync_comments = (
             config.checkwatches.sync_comments and (
                 ISupportsCommentPushing.providedBy(self) or
@@ -238,6 +228,11 @@ class ExternalBugTracker:
         """
         return None
 
+    def _getHeaders(self):
+        # For some reason, bugs.kde.org doesn't allow the regular urllib
+        # user-agent string (Python-urllib/2.x) to access their bugzilla.
+        return {'User-agent': LP_USER_AGENT, 'Host': self.basehost}
+
     def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.
 
@@ -250,16 +245,13 @@ class ExternalBugTracker:
 
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
-        # For some reason, bugs.kde.org doesn't allow the regular urllib
-        # user-agent string (Python-urllib/2.x) to access their
-        # bugzilla, so we send our own instead.
-        request = urllib2.Request("%s/%s" % (self.baseurl, page),
-                                  headers={'User-agent': LP_USER_AGENT})
+        request = urllib2.Request(
+            "%s/%s" % (self.baseurl, page), headers=self._getHeaders())
         return self._fetchPage(request).read()
 
     def _post(self, url, data):
         """Post to a given URL."""
-        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
+        request = urllib2.Request(url, headers=self._getHeaders())
         return self._fetchPage(request, data=data)
 
     def _postPage(self, page, form, repost_on_redirect=False):
