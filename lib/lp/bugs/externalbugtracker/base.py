@@ -27,6 +27,7 @@ __all__ = [
 
 import urllib
 import urllib2
+from urlparse import urlparse
 
 from zope.interface import implements
 
@@ -144,6 +145,7 @@ class ExternalBugTracker:
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.basehost = urlparse(baseurl).netloc
         self.sync_comments = (
             config.checkwatches.sync_comments and (
                 ISupportsCommentPushing.providedBy(self) or
@@ -229,7 +231,7 @@ class ExternalBugTracker:
     def _getHeaders(self):
         # For some reason, bugs.kde.org doesn't allow the regular urllib
         # user-agent string (Python-urllib/2.x) to access their bugzilla.
-        return {'User-agent': LP_USER_AGENT, 'Host': self.baseurl}
+        return {'User-agent': LP_USER_AGENT, 'Host': self.basehost}
 
     def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.

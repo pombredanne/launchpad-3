@@ -167,12 +167,12 @@ class TestExternalBugTracker(TestCase):
 
     def test_post_sends_host(self):
         # When posting, a Host header is sent.
-        base_url = "http://example.com/"
+        base_host = 'example.com'
+        base_url = 'http://%s/' % base_host
         bugtracker = ExternalBugTracker(base_url)
         def assert_headers(request, data):
-            # The ending slash is not sent, so strip it.
             self.assertContentEqual(
-                [('User-agent', LP_USER_AGENT), ('Host', base_url[:-1])],
+                [('User-agent', LP_USER_AGENT), ('Host', base_host)],
                 request.header_items())
         with monkey_patch(urllib2, urlopen=assert_headers):
             bugtracker._post('some-url', {'post-data': 'here'})
