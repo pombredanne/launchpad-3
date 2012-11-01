@@ -2631,13 +2631,13 @@ def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
             ArchivePermission.permission == ArchivePermissionType.UPLOAD,
             ArchivePermission.component == main,
             ArchivePermission.personID.is_in(user_teams)),
-        tables=ArchivePermission)
+        tables=ArchivePermission, distinct=True)
 
     is_subscribed = Select(
         ArchiveSubscriber.archive_id, where=And(
             ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT,
             ArchiveSubscriber.subscriber_id.is_in(user_teams)),
-        tables=ArchiveSubscriber)
+        tables=ArchiveSubscriber, distinct=True)
 
     access_terms = [is_allowed]
     if include_subscribed:
