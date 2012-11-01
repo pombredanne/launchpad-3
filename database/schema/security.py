@@ -240,17 +240,6 @@ def main(options, master_con=None):
     return 0
 
 
-def list_identifiers(identifiers):
-    """List all of `identifiers` as SQL, quoted and separated by commas.
-
-    :param identifiers: A sequence of SQL identifiers.
-    :return: A comma-separated SQL string consisting of all identifiers
-        passed in.  Each will be quoted for use in SQL.
-    """
-    return ', '.join([
-        quote_identifier(identifier) for identifier in identifiers])
-
-
 class PermissionGatherer:
     """Gather permissions for bulk granting or revocation.
 
@@ -385,22 +374,21 @@ def alter_permissions(cur, which, revoke=False):
 
 def reset_permissions(con, config, options):
     schema = DbSchema(con)
-    all_users = list_identifiers(schema.roles)
 
     cur = CursorWrapper(con.cursor())
 
+    groups = set()
+
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
-        if group in schema.roles:
-            log.debug("Removing managed users from %s role" % group)
-            cur.execute("ALTER GROUP %s DROP USER %s" % (
-                    quote_identifier(group), all_users))
-        else:
+        groups.add(group)
+        if group not in schema.roles:
             log.debug("Creating %s role" % group)
             cur.execute("CREATE GROUP %s" % quote_identifier(group))
-            schema.groups.append(group)
+            schema.roles[group] = set()
 
     # Create all required groups and users.
+    log.debug("Configuring roles")
     for section_name in config.sections():
         if section_name.lower() == 'public':
             continue
@@ -416,12 +404,9 @@ def reset_permissions(con, config, options):
             desired_opts.add('LOGIN')
 
         for username in [section_name, '%s_ro' % section_name]:
+            if type_ == 'group':
+                groups.add(username)
             if username in schema.roles:
-                if type_ == 'group':
-                    if options.revoke:
-                        log.debug2("Revoking membership of %s role", username)
-                        cur.execute("REVOKE %s FROM %s" % (
-                            quote_identifier(username), all_users))
                 existing_opts = schema.roles[username]
                 if desired_opts != existing_opts:
                     # Note - we don't drop the user because it might own
@@ -439,7 +424,7 @@ def reset_permissions(con, config, options):
                 cur.execute(
                     "CREATE ROLE %s WITH %s"
                     % (quote_identifier(username), ' '.join(desired_opts)))
-                schema.groups.append(username)
+                schema.roles[username] = set()
 
         # Set default read-only mode for our roles.
         cur.execute(
@@ -473,6 +458,11 @@ def reset_permissions(con, config, options):
         cur.execute("ALTER GROUP %s ADD USER %s" % (
             quote_identifier(group),
             ', '.join(quote_identifier(user) for user in users)))
+        if options.revoke:
+            users_to_kill = set(schema.roles.iterkeys()) - users
+            cur.execute("ALTER GROUP %s DROP USER %s" % (
+                quote_identifier(group),
+                ', '.join(quote_identifier(user) for user in users_to_kill)))
 
     if options.revoke:
         log.debug('Resetting object owners')
