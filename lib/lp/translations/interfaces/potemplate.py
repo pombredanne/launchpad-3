@@ -599,8 +599,21 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
+    def isNameUnique(name):
+        """Is the IPOTemplate name unique to the series (and package).
+
+        The subset may only include active `IPOTemplate` objects
+        (iscurrent=True), but the full set that constrains creating new
+        templates includes inactive templates too. Use this method to
+        verify that an `IPOTemplate` can be created before calling new().
+        """
+
     def new(name, translation_domain, path, owner, copy_pofiles=True):
-        """Create a new template for the context of this Subset."""
+        """Create a new template for the context of this Subset.
+
+        The name must be unique to the full subset of active and inactive
+        templates in a series (and package). See `isNameUnique`.
+        """
 
     def getPOTemplateByName(name):
         """Return the `IPOTemplate` with the given name or None.
