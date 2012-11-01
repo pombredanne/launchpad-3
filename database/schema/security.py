@@ -9,7 +9,6 @@ import _pythonpath
 
 from collections import defaultdict
 from ConfigParser import SafeConfigParser
-from itertools import chain
 from optparse import OptionParser
 import os
 import re
@@ -128,9 +127,6 @@ class DbObject(object):
 
 
 class DbSchema(dict):
-    groups = None  # List of groups defined in the db
-    users = None  # List of users defined in the db
-
     def __init__(self, con):
         super(DbSchema, self).__init__()
         cur = con.cursor()
@@ -183,17 +179,10 @@ class DbSchema(dict):
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
                     schema, name, 'function', owner, parse_postgres_acl(acl),
                     arguments, language)
-        # Pull a list of groups
-        cur.execute("SELECT groname FROM pg_group")
-        self.groups = [r[0] for r in cur.fetchall()]
 
-        # Pull a list of users
-        cur.execute("SELECT usename FROM pg_user")
-        self.users = [r[0] for r in cur.fetchall()]
-
-    @property
-    def principals(self):
-        return chain(self.groups, self.users)
+        # Pull a list of roles
+        cur.execute("SELECT rolname FROM pg_roles")
+        self.roles = [r[0] for r in cur.fetchall()]
 
 
 class CursorWrapper(object):
@@ -381,13 +370,13 @@ def alter_permissions(cur, which, revoke=False):
 
 def reset_permissions(con, config, options):
     schema = DbSchema(con)
-    all_users = list_identifiers(schema.users)
+    all_users = list_identifiers(schema.roles)
 
     cur = CursorWrapper(con.cursor())
 
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
-        if group in schema.principals:
+        if group in schema.roles:
             log.debug("Removing managed users from %s role" % group)
             cur.execute("ALTER GROUP %s DROP USER %s" % (
                     quote_identifier(group), all_users))
@@ -415,7 +404,7 @@ def reset_permissions(con, config, options):
             role_options.append('NOLOGIN')
 
         for username in [section_name, '%s_ro' % section_name]:
-            if username in schema.principals:
+            if username in schema.roles:
                 if type_ == 'group':
                     if options.revoke:
                         log.debug2("Revoking membership of %s role", username)
