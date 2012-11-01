@@ -6,13 +6,13 @@ SET client_min_messages=ERROR;
 CREATE TABLE LatestPublishedReleases (
     publication integer PRIMARY KEY,
     date_uploaded timestamp without time zone,
-    creator integer NOT NULL,
-    maintainer integer NOT NULL,
+    creator integer NOT NULL REFERENCES person(id),
+    maintainer integer NOT NULL REFERENCES person(id),
     archive_purpose integer NOT NULL,
-    upload_archive integer NOT NULL,
-    upload_distroseries integer NOT NULL,
-    sourcepackagename integer NOT NULL,
-    sourcepackagerelease integer NOT NULL
+    upload_archive integer NOT NULL REFERENCES archive(id),
+    upload_distroseries integer NOT NULL REFERENCES distroseries(id),
+    sourcepackagename integer NOT NULL REFERENCES sourcepackagename(id),
+    sourcepackagerelease integer NOT NULL REFERENCES sourcepackagerelease(id)
 );
 
 
