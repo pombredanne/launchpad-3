@@ -130,6 +130,7 @@ class DbSchema(dict):
     def __init__(self, con):
         super(DbSchema, self).__init__()
         cur = con.cursor()
+        log.debug("Getting relation metadata")
         cur.execute('''
             SELECT
                 n.nspname as "Schema",
@@ -157,6 +158,7 @@ class DbSchema(dict):
             self[key] = DbObject(
                 schema, name, type_, owner, parse_postgres_acl(acl))
 
+        log.debug("Getting function metadata")
         cur.execute(r"""
             SELECT
                 n.nspname as "schema",
@@ -181,6 +183,7 @@ class DbSchema(dict):
                     arguments, language)
 
         # Pull a list of roles
+        log.debug("Getting role metadata")
         cur.execute("""
             SELECT
                 rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
@@ -445,6 +448,7 @@ def reset_permissions(con, config, options):
             % quote_identifier('%s_ro' % section_name))
 
     # Add users to groups
+    log.debug('Updating group memberships')
     for user in config.sections():
         if config.get(user, 'type') != 'user':
             continue
@@ -463,6 +467,7 @@ def reset_permissions(con, config, options):
             log.debug2("%s not in any roles", user)
 
     if options.revoke:
+        log.debug('Resetting object owners')
         # Change ownership of all objects to OWNER.
         # We skip this in --no-revoke mode as ownership changes may
         # block on a live system.
@@ -498,6 +503,7 @@ def reset_permissions(con, config, options):
     # functions) aren't readable.
     granted_objs = set()
 
+    log.debug('Collecting permissions')
     for username in config.sections():
         who = username
         if username == 'public':
@@ -578,6 +584,7 @@ def reset_permissions(con, config, options):
     unmanaged_roles = set()
     required_grants = []
     required_revokes = []
+    log.debug('Calculating permission delta')
     for obj in schema.values():
         # We only care about roles that are in either the desired or
         # existing ACL, and are also our managed roles. But skip admin,
