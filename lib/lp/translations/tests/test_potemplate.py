@@ -849,7 +849,7 @@ class TestPOTemplateSubset(TestCaseWithFactory):
 
     def test_isNameUnique(self):
         # The isNameUnique method ignored the iscurrent filter to provide
-        # an authoriative answer to whether a new template can be created
+        # an authoritative answer to whether a new template can be created
         # with the name.
         series = self.factory.makeProductSeries()
         self.factory.makePOTemplate(productseries=series, name='cat')

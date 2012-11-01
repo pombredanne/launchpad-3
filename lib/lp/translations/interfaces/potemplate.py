@@ -611,7 +611,7 @@ class IPOTemplateSubset(Interface):
     def new(name, translation_domain, path, owner, copy_pofiles=True):
         """Create a new template for the context of this Subset.
 
-        The name must be unique to the full subsubet of active and inactive
+        The name must be unique to the full subset of active and inactive
         templates in a series (and package). See `isNameUnique`.
         """
 
