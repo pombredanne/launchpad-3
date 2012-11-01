@@ -4,7 +4,7 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE LatestPublishedReleases (
-    publication integer PRIMARY KEY,
+    publication integer PRIMARY KEY REFERENCES sourcepackagepublishinghistory(id),
     date_uploaded timestamp without time zone,
     creator integer NOT NULL REFERENCES person(id),
     maintainer integer NOT NULL REFERENCES person(id),
