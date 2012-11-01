@@ -148,8 +148,9 @@ class DbSchema(dict):
                 LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind IN ('r','v','S','')
-                AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
-                AND pg_catalog.pg_table_is_visible(c.oid)
+                AND n.nspname NOT IN (
+                    'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
+                    'pgdbr', 'pgdbrdata', 'todrop')
                 AND c.relpersistence <> 't'
             ORDER BY 1,2
             ''')
@@ -174,8 +175,9 @@ class DbSchema(dict):
                 LEFT JOIN pg_catalog.pg_type r ON r.oid = p.prorettype
             WHERE
                 r.typname NOT IN ('trigger', 'language_handler')
-                AND pg_catalog.pg_function_is_visible(p.oid)
-                AND n.nspname <> 'pg_catalog'
+                AND n.nspname NOT IN (
+                    'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
+                    'pgdbr', 'pgdbrdata', 'todrop')
                 """)
         for schema, name, arguments, owner, acl, language in cur.fetchall():
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
