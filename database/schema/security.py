@@ -9,6 +9,7 @@ import _pythonpath
 
 from collections import defaultdict
 from ConfigParser import SafeConfigParser
+from operator import itemgetter
 from optparse import OptionParser
 import os
 import re
@@ -95,6 +96,18 @@ def parse_postgres_acl(acl):
             parsed_acl_cache[entry] = (grantee, dict_privs)
         parsed[grantee] = dict_privs
     return parsed
+
+
+def list_role_members(cur, role):
+    """Return a list of roles that are a member of the given role."""
+    cur.execute("""
+        SELECT member.rolname
+        FROM
+            pg_authid member
+            JOIN pg_auth_members ON pg_auth_members.member = member.oid
+            JOIN pg_authid grp ON pg_auth_members.roleid = grp.oid
+        WHERE grp.rolname = %s""", params=(role,))
+    return map(itemgetter(0), cur.fetchall())
 
 
 class DbObject(object):
@@ -453,16 +466,25 @@ def reset_permissions(con, config, options):
         else:
             log.debug2("%s not in any roles", user)
 
+    managed_roles = set(['read', 'admin'])
+    for section_name in config.sections():
+        managed_roles.add(section_name)
+        if section_name != 'public':
+            managed_roles.add(section_name + "_ro")
+
     log.debug('Updating group memberships')
     for group, users in memberships_to_add.iteritems():
-        cur.execute("ALTER GROUP %s ADD USER %s" % (
-            quote_identifier(group),
-            ', '.join(quote_identifier(user) for user in users)))
-        if options.revoke:
-            users_to_kill = set(schema.roles.iterkeys()) - users
-            cur.execute("ALTER GROUP %s DROP USER %s" % (
+        cur_users = managed_roles.intersection(list_role_members(cur, group))
+        to_grant = users - cur_users
+        if to_grant:
+            cur.execute("GRANT %s TO %s" % (
                 quote_identifier(group),
-                ', '.join(quote_identifier(user) for user in users_to_kill)))
+                ', '.join(quote_identifier(user) for user in to_grant)))
+        to_revoke = cur_users - users
+        if options.revoke and to_revoke:
+            cur.execute("REVOKE %s FROM %s" % (
+                quote_identifier(group),
+                ', '.join(quote_identifier(user) for user in to_revoke)))
 
     if options.revoke:
         log.debug('Resetting object owners')
@@ -479,12 +501,6 @@ def reset_permissions(con, config, options):
                         obj.fullname, quote_identifier(options.owner)))
     else:
         log.info("Not resetting ownership of database objects")
-
-    managed_roles = set(['read', 'admin'])
-    for section_name in config.sections():
-        managed_roles.add(section_name)
-        if section_name != 'public':
-            managed_roles.add(section_name + "_ro")
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
