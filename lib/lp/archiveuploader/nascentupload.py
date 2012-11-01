@@ -723,10 +723,11 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def processUnknownFile(self, uploaded_file):
+    def processUnknownFile(self, uploaded_file, override=None):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
-        Here we use the override policy defined in UnknownOverridePolicy.
+        Here we use the override, if specified, or simply default to the policy
+        defined in UnknownOverridePolicy.
 
         In the case of a PPA, files are not touched.  They are always
         overridden to 'main' at publishing time, though.
@@ -749,7 +750,10 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
-        # Apply the component override and default to universe.
+        # Use the specified override, or delegate to UnknownOverridePolicy.
+        if override:
+            uploaded_file.component_name = override.component.name
+            return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
         uploaded_file.component_name = component_name_override
@@ -759,6 +763,9 @@ class NascentUpload:
 
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
+
+        XXX: wallyworld 2012-11-01 bug=1073755: This work should be done using
+        override polices defined in lp.soyuz.adapters.overrides.py
         """
         self.logger.debug("Finding and applying overrides.")
 
@@ -819,7 +826,16 @@ class NascentUpload:
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
-                    self.processUnknownFile(uploaded_file)
+                    # Check the current source publication's component.
+                    # If there is a corresponding source publication, we will
+                    # use the component from that, otherwise default mappings
+                    # are used.
+                    spph = None
+                    try:
+                        spph = uploaded_file.findCurrentSourcePublication()
+                    except UploadError:
+                        pass
+                    self.processUnknownFile(uploaded_file, spph)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
