@@ -448,7 +448,8 @@ def reset_permissions(con, config, options):
             % quote_identifier('%s_ro' % section_name))
 
     # Add users to groups
-    log.debug('Updating group memberships')
+    log.debug('Collecting group memberships')
+    memberships_to_add = defaultdict(set)
     for user in config.sections():
         if config.get(user, 'type') != 'user':
             continue
@@ -461,10 +462,15 @@ def reset_permissions(con, config, options):
         if groups:
             log.debug2("Adding %s to %s roles", user, ', '.join(groups))
             for group in groups:
-                cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
-                    quote_identifier(group), quote_identifier(user)))
+                memberships_to_add[group].add(user)
         else:
             log.debug2("%s not in any roles", user)
+
+    log.debug('Updating group memberships')
+    for group, users in memberships_to_add.iteritems():
+        cur.execute("ALTER GROUP %s ADD USER %s" % (
+            quote_identifier(group),
+            ', '.join(quote_identifier(user) for user in users)))
 
     if options.revoke:
         log.debug('Resetting object owners')
