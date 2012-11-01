@@ -225,7 +225,8 @@ class TestPersonIndexView(BrowserTestCase):
         # blueprints
         person = self.factory.makePerson()
         spec = self.factory.makeSpecification(
-            implementation_status=SpecificationImplementationStatus.STARTED)
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            owner=person, drafter=person, approver=person)
         spec.subscribe(person)
         with person_logged_in(None):
             browser = self.getViewBrowser(person)
