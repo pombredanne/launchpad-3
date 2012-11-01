@@ -3056,6 +3056,8 @@ class Person(
 
     def getVisiblePPAs(self, user):
         """See `IPerson`."""
+
+        # Avoid circular imports.
         from lp.soyuz.model.archive import get_enabled_archive_filter
 
         filter = get_enabled_archive_filter(user, True, True)
