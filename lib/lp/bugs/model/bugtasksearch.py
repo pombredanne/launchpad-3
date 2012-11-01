@@ -690,7 +690,9 @@ def _build_query(params):
             if Product not in clauseTables:
                 clauseTables.append(Product)
                 extra_clauses.append(
-                    BugTaskFlat.product_id == Product.id)
+                    Or(
+                        BugTaskFlat.product_id == Product.id,
+                        BugTaskFlat.product_id == None))
             extra_clauses.append(
                 ProductSet.getProductPrivacyFilter(params.user))
 
