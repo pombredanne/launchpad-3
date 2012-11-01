@@ -446,7 +446,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         self.assertRaises(NoSuchProduct, self.traverser.traverse, 'bb')
 
     def test_invalid_product(self):
-        # `traverse` raises `InvalidProductIdentifier` when resolving an lp
+        # `traverse` raises `InvalidProductName` when resolving an lp
         # path for a completely invalid product development focus branch.
         self.assertRaises(
             InvalidProductName, self.traverser.traverse, 'b')
