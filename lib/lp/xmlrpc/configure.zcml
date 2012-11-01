@@ -150,7 +150,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="lp.xmlrpc.faults.InvalidProductIdentifier">
+  <class class="lp.xmlrpc.faults.InvalidProductName">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
