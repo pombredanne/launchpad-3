@@ -406,12 +406,9 @@ def reset_permissions(con, config, options):
         type_ = config.get(section_name, 'type')
         assert type_ in ['user', 'group'], 'Unknown type %s' % type_
 
-        role_options = [
-            'NOCREATEDB', 'NOCREATEROLE', 'NOCREATEUSER', 'INHERIT']
+        desired_opts = set(('INHERIT',))
         if type_ == 'user':
-            role_options.append('LOGIN')
-        else:
-            role_options.append('NOLOGIN')
+            desired_opts.add('LOGIN')
 
         for username in [section_name, '%s_ro' % section_name]:
             if username in schema.roles:
@@ -420,20 +417,23 @@ def reset_permissions(con, config, options):
                         log.debug2("Revoking membership of %s role", username)
                         cur.execute("REVOKE %s FROM %s" % (
                             quote_identifier(username), all_users))
-                else:
+                existing_opts = schema.roles[username]
+                if desired_opts != existing_opts:
                     # Note - we don't drop the user because it might own
                     # objects in other databases. We need to ensure they are
                     # not superusers though!
                     log.debug2("Resetting role options of %s role.", username)
+                    changes = ' '.join(
+                        list(desired_opts - existing_opts)
+                        + ['NO' + o for o in (existing_opts - desired_opts)])
                     cur.execute(
                         "ALTER ROLE %s WITH %s" % (
-                            quote_identifier(username),
-                            ' '.join(role_options)))
+                            quote_identifier(username), changes))
             else:
                 log.debug("Creating %s role.", username)
                 cur.execute(
                     "CREATE ROLE %s WITH %s"
-                    % (quote_identifier(username), ' '.join(role_options)))
+                    % (quote_identifier(username), ' '.join(desired_opts)))
                 schema.groups.append(username)
 
         # Set default read-only mode for our roles.
