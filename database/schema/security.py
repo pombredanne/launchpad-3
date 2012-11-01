@@ -9,7 +9,6 @@ import _pythonpath
 
 from collections import defaultdict
 from ConfigParser import SafeConfigParser
-from operator import itemgetter
 from optparse import OptionParser
 import os
 import re
