@@ -98,16 +98,20 @@ def parse_postgres_acl(acl):
     return parsed
 
 
-def list_role_members(cur, role):
-    """Return a list of roles that are a member of the given role."""
+def list_role_members(cur, roles):
+    """Return a dict of roles that are members of the given roles."""
     cur.execute("""
-        SELECT member.rolname
+        SELECT grp.rolname, member.rolname
         FROM
             pg_authid member
             JOIN pg_auth_members ON pg_auth_members.member = member.oid
             JOIN pg_authid grp ON pg_auth_members.roleid = grp.oid
-        WHERE grp.rolname = %s""", params=(role,))
-    return map(itemgetter(0), cur.fetchall())
+        WHERE grp.rolname IN (%s)""" % ', '.join(['%s'] * len(roles)),
+        params=roles)
+    members = defaultdict(set)
+    for group, member in cur.fetchall():
+        members[group].add(member)
+    return members
 
 
 class DbObject(object):
@@ -449,7 +453,7 @@ def reset_permissions(con, config, options):
 
     # Add users to groups
     log.debug('Collecting group memberships')
-    memberships_to_add = defaultdict(set)
+    memberships = defaultdict(set)
     for user in config.sections():
         if config.get(user, 'type') != 'user':
             continue
@@ -462,7 +466,7 @@ def reset_permissions(con, config, options):
         if groups:
             log.debug2("Adding %s to %s roles", user, ', '.join(groups))
             for group in groups:
-                memberships_to_add[group].add(user)
+                memberships[group].add(user)
         else:
             log.debug2("%s not in any roles", user)
 
@@ -473,8 +477,9 @@ def reset_permissions(con, config, options):
             managed_roles.add(section_name + "_ro")
 
     log.debug('Updating group memberships')
-    for group, users in memberships_to_add.iteritems():
-        cur_users = managed_roles.intersection(list_role_members(cur, group))
+    existing_memberships = list_role_members(cur, memberships.keys())
+    for group, users in memberships.iteritems():
+        cur_users = managed_roles.intersection(existing_memberships[group])
         to_grant = users - cur_users
         if to_grant:
             cur.execute("GRANT %s TO %s" % (
