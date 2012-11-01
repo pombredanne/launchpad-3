@@ -3,9 +3,10 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE LatestPublishedReleases (
-    publication integer PRIMARY KEY REFERENCES sourcepackagepublishinghistory(id),
-    date_uploaded timestamp without time zone,
+CREATE TABLE LatestPersonSourcePackageReleaseCache (
+    id serial PRIMARY KEY,
+    publication integer NOT NULL REFERENCES sourcepackagepublishinghistory(id),
+    date_uploaded timestamp without time zone NOT NULL,
     creator integer NOT NULL REFERENCES person(id),
     maintainer integer NOT NULL REFERENCES person(id),
     archive_purpose integer NOT NULL,
@@ -16,25 +17,27 @@ CREATE TABLE LatestPublishedReleases (
 );
 
 
-CREATE INDEX latestpublishedreleases__creator__idx
-    ON LatestPublishedReleases USING btree (creator);
+CREATE INDEX latestpersonsourcepackagereleasecache__creator__idx
+    ON LatestPersonSourcePackageReleaseCache USING btree (creator);
 
-CREATE INDEX latestpublishedreleases__maintainer__idx
-    ON LatestPublishedReleases USING btree (maintainer);
+CREATE INDEX latestpersonsourcepackagereleasecache__maintainer__idx
+    ON LatestPersonSourcePackageReleaseCache USING btree (maintainer);
 
-CREATE INDEX latestpublishedreleases__archive_purpose__idx
-    ON LatestPublishedReleases USING btree (archive_purpose);
+CREATE INDEX latestpersonsourcepackagereleasecache__archive_purpose__idx
+    ON LatestPersonSourcePackageReleaseCache USING btree (archive_purpose);
 
-ALTER TABLE LatestPublishedReleases ADD CONSTRAINT upload_archive__upload_distroseries__sourcepackagename__key
+ALTER TABLE LatestPersonSourcePackageReleaseCache ADD CONSTRAINT upload_archive__upload_distroseries__sourcepackagename__key
      UNIQUE (upload_archive, upload_distroseries, sourcepackagename);
 
-COMMENT ON TABLE LatestPublishedReleases IS 'LatestPublishedReleases: The most recent published source package releases for a given (distroseries, archive, sourcepackage).';
-COMMENT ON COLUMN LatestPublishedReleases.upload_archive IS 'The target archive for the release.';
-COMMENT ON COLUMN LatestPublishedReleases.sourcepackagename IS 'The SourcePackageName of the release.';
-COMMENT ON COLUMN LatestPublishedReleases.upload_distroseries IS 'The distroseries into which the sourcepackagerelease was published.';
-COMMENT ON COLUMN LatestPublishedReleases.sourcepackagerelease IS 'The sourcepackagerelease which was published.';
-COMMENT ON COLUMN LatestPublishedReleases.archive_purpose IS 'The purpose of the archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
-COMMENT ON COLUMN LatestPublishedReleases.date_uploaded IS 'The date/time on which the source was actually published into the archive.';
+COMMENT ON TABLE LatestPersonSourcePackageReleaseCache IS 'LatestPersonSourcePackageReleaseCache: The most recent published source package releases for a given (distroseries, archive, sourcepackage).';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.creator IS 'The creator of the source package release.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.maintainer IS 'The maintainer of the source package in the DSC.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.upload_archive IS 'The target archive for the release.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.sourcepackagename IS 'The SourcePackageName of the release.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.upload_distroseries IS 'The distroseries into which the sourcepackagerelease was published.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.sourcepackagerelease IS 'The sourcepackagerelease which was published.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.archive_purpose IS 'The purpose of the archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.date_uploaded IS 'The date/time on which the source was actually published into the archive.';
 
 
 CREATE TABLE GarboJobState (
