@@ -181,8 +181,18 @@ class DbSchema(dict):
                     arguments, language)
 
         # Pull a list of roles
-        cur.execute("SELECT rolname FROM pg_roles")
-        self.roles = [r[0] for r in cur.fetchall()]
+        cur.execute("""
+            SELECT
+                rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
+                rolcanlogin, rolreplication
+            FROM pg_roles
+            """)
+        options = (
+            'SUPERUSER', 'INHERIT', 'CREATEROLE', 'CREATEDB', 'LOGIN',
+            'REPLICATION')
+        self.roles = dict(
+            (r[0], set(opt for (opt, val) in zip(options, r[1:]) if val))
+            for r in cur.fetchall())
 
 
 class CursorWrapper(object):
