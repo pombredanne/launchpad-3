@@ -1154,7 +1154,7 @@ class TestTrac(Trac):
 
     def urlopen(self, url, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-
+        url = url.get_full_url()
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url)
 
@@ -1491,7 +1491,7 @@ class TestRoundup(Roundup):
 
     def urlopen(self, url, data=None):
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url)
+            print "CALLED urlopen(%r)" % (url.get_full_url())
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
