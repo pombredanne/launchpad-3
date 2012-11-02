@@ -138,8 +138,12 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -3466,8 +3470,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
         is_driver, is_bugsupervisor.
         """
         projects = []
+        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
         pillarnames = self._related_projects[:max_projects]
+        products = [pillarname.pillar for pillarname in pillarnames
+                    if IProduct.providedBy(pillarname.pillar)]
+        bugtask_set = getUtility(IBugTaskSet)
+        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
+            user, products)
         for pillarname in pillarnames:
             pillar = pillarname.pillar
             project = {}
@@ -3589,8 +3599,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         Results are filtered according to the permission of the requesting
         user to see private archives.
         """
-        packages = self.context.getLatestUploadedPPAPackages(
-            self.max_results_to_display)
+        packages = self.context.getLatestUploadedPPAPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
         self.ppa_packages_header_message = header_message
         return self.filterPPAPackageList(results)
@@ -3598,8 +3607,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
     @property
     def latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
-        packages = self.context.getLatestMaintainedPackages(
-            self.max_results_to_display)
+        packages = self.context.getLatestMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
         self.maintained_packages_header_message = header_message
         return results
@@ -3610,8 +3618,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         Don't include packages that are maintained by the user.
         """
-        packages = self.context.getLatestUploadedButNotMaintainedPackages(
-            self.max_results_to_display)
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
         self.uploaded_packages_header_message = header_message
         return results
@@ -3647,17 +3654,17 @@ class PersonRelatedSoftwareView(LaunchpadView):
         builds_by_package = {}
         needs_build_by_package = {}
         for package in package_releases:
-            builds_by_package[package] = []
-            needs_build_by_package[package] = False
+            builds_by_package[package.id] = []
+            needs_build_by_package[package.id] = False
         for build in all_builds:
             if build.status == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.source_package_release].append(build)
+                builds_by_package[build.source_package_release.id].append(build)
             needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.source_package_release] = needs_build
+            needs_build_by_package[build.source_package_release.id] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 
@@ -3668,8 +3675,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return [
             SourcePackageReleaseWithStats(
-                package, builds_by_package[package],
-                needs_build_by_package[package])
+                package, builds_by_package[package.id],
+                needs_build_by_package[package.id])
             for package in package_releases]
 
     def _addStatsToPublishings(self, publishings):
@@ -3682,8 +3689,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return [
             SourcePackagePublishingHistoryWithStats(
-                spph, builds_by_package[spph.sourcepackagerelease],
-                needs_build_by_package[spph.sourcepackagerelease])
+                spph, builds_by_package[spph.sourcepackagerelease.id],
+                needs_build_by_package[spph.sourcepackagerelease.id])
             for spph in filtered_spphs]
 
     def setUpBatch(self, packages):

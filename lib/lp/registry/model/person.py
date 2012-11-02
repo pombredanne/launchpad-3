@@ -327,6 +327,7 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -2796,22 +2797,21 @@ class Person(
         """See `IPerson`."""
         return self._hasReleasesQuery(uploader_only=True, ppa_only=True)
 
-    def getLatestMaintainedPackages(self, max_results=None):
+    def getLatestMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestReleasesQuery(max_results)
+        return self._latestReleasesQuery()
 
-    def getLatestUploadedButNotMaintainedPackages(self, max_results=None):
+    def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestReleasesQuery(max_results, uploader_only=True)
+        return self._latestReleasesQuery(uploader_only=True)
 
-    def getLatestUploadedPPAPackages(self, max_results=None):
+    def getLatestUploadedPPAPackages(self):
         """See `IPerson`."""
-        return self._latestReleasesQuery(
-            max_results, uploader_only=True, ppa_only=True)
+        return self._latestReleasesQuery(uploader_only=True, ppa_only=True)
 
     def _releasesQueryFilter(self, uploader_only=False, ppa_only=False):
-        """Return the filter used to find sourcepackagereleases (SPRs)
-        related to this person.
+        """Return the filter used to find latest published source package
+        releases (SPRs) related to this person.
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
@@ -2827,33 +2827,27 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-
-        clauses = [
-            Exists(
-                Select(1,
-                    And(SourcePackagePublishingHistory.sourcepackagerelease ==
-                        SourcePackageRelease.id,
-                        SourcePackagePublishingHistory.archiveID ==
-                        SourcePackageRelease.upload_archiveID),
-                    SourcePackagePublishingHistory)),
-            SourcePackageRelease.upload_archive == Archive.id]
-
+        clauses = []
         if uploader_only:
-            clauses.append(SourcePackageRelease.creator == self)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.creator == self)
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            clauses.append(SourcePackageRelease.maintainer != self)
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.maintainer != self)
         else:
-            clauses.append(SourcePackageRelease.maintainer == self)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.maintainer == self)
         if ppa_only:
-            clauses.append(Archive.purpose == ArchivePurpose.PPA)
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.archive_purpose ==
+                ArchivePurpose.PPA)
         else:
-            clauses.append(Archive.purpose != ArchivePurpose.PPA)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.archive_purpose !=
+                ArchivePurpose.PPA)
         return clauses
 
     def _hasReleasesQuery(self, uploader_only=False, ppa_only=False):
@@ -2861,60 +2855,26 @@ class Person(
         See `_releasesQueryFilter` for details on the criteria used.
         """
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        tables = (
-            SourcePackageRelease,
-            Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID))
-        rs = Store.of(self).using(*tables).find(
-            SourcePackageRelease.id, clauses)
+        rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
+            LatestPersonSourcepackageReleaseCache.publication_id, clauses)
         return not rs.is_empty()
 
-    def _latestReleasesQuery(self, max_results=None, uploader_only=False,
-                             ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
+    def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases records related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        clauses.append(Archive.id == SourcePackageRelease.upload_archiveID)
         rs = Store.of(self).find(
-            (SourcePackageRelease.upload_distroseriesID,
-             SourcePackageRelease.upload_archiveID,
-             SourcePackageRelease.sourcepackagenameID,
-             SourcePackageRelease.id),
-             *clauses).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
-
-        # Postgres cannot efficiently perform the required DISTINCT ON query
-        # which is needed to find only the latest uploads. So we first need to
-        # iterate over the entire result set and do the grouping ourselves,
-        # recording the required ids. We'll do it in batches of 75.
-        ids = []
-        unique_releases = set()
-        start = 0
-        batch = 75
-        done = False
-        while not done:
-            done = True
-            for (distroseries, archive, spn, id) in rs[start:start + batch]:
-                done = False
-                key = (distroseries, archive, spn)
-                if key in unique_releases:
-                    continue
-                unique_releases.add(key)
-                ids.append(id)
-                if max_results and len(ids) >= max_results:
-                    break
-            start += batch
-        if not ids:
-            return []
+            LatestPersonSourcepackageReleaseCache, *clauses).order_by(
+            Desc(LatestPersonSourcepackageReleaseCache.dateuploaded))
 
         def load_related_objects(rows):
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                set(map(attrgetter("maintainerID"), rows))))
-            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
-            bulk.load_related(Archive, rows, ['upload_archiveID'])
-
-        rs = Store.of(self).find(
-            SourcePackageRelease, SourcePackageRelease.id.is_in(ids)).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+                set(map(attrgetter("maintainer_id"), rows))))
+            bulk.load_related(
+                SourcePackageName, rows, ['sourcepackagename_id'])
+            bulk.load_related(
+                SourcePackageRelease, rows, ['sourcepackagerelease_id'])
+            bulk.load_related(Archive, rows, ['upload_archive_id'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 

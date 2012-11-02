@@ -17,6 +17,7 @@ from datetime import (
 import logging
 import multiprocessing
 import os
+import simplejson
 import threading
 import time
 
@@ -28,11 +29,16 @@ import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
+    Alias,
+    And,
+    Desc,
     In,
     Like,
     Select,
     Update,
+    Join,
     )
+from storm.info import ClassAlias
 from storm.locals import (
     Max,
     Min,
@@ -105,6 +111,10 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -420,6 +430,103 @@ class VoucherRedeemer(TunableLoop):
             ).set(
                 CommercialSubscription.sales_system_id ==
                 SQL(self.voucher_expr))
+        transaction.commit()
+
+
+class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
+    """Populate the LatestPersonSourcepackageReleaseCache table."""
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super_cl = super(PopulateLatestPersonSourcepackageReleaseCache, self)
+        super_cl.__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.next_id = 0
+        self.job_name = self.__class__.__name__
+        job_data = self.store.execute(
+            "SELECT json_data FROM GarboJobState WHERE name = '%s'"
+            % self.job_name).get_one()
+        if job_data:
+            json_data = simplejson.loads(job_data[0])
+            self.next_id = json_data['next_id']
+        else:
+            json_data = simplejson.dumps({'next_id': 0})
+            self.store.execute(
+                "INSERT INTO GarboJobState(name, json_data) "
+                "VALUES ('%s', '%s')" % (self.job_name, json_data))
+
+    def getPendingUpdates(self):
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        origin = [
+            SourcePackageRelease,
+            Join(
+                spph,
+                And(spph.sourcepackagereleaseID == SourcePackageRelease.id,
+                    spph.archiveID == SourcePackageRelease.upload_archiveID))]
+        spr_select = self.store.using(*origin).find(
+            (SourcePackageRelease.id, Alias(spph.id, 'spph_id')),
+            SourcePackageRelease.upload_archiveID == spph.archiveID,
+            SourcePackageRelease.id > self.next_id
+        ).order_by(
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.upload_archiveID,
+            Desc(SourcePackageRelease.dateuploaded),
+            SourcePackageRelease.id
+        ).config(distinct=(
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.upload_archiveID))._get_select()
+
+        spr = Alias(spr_select, 'spr')
+        origin = [
+            SourcePackageRelease,
+            Join(spr, SQL('spr.id') == SourcePackageRelease.id),
+            Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID)]
+        rs = self.store.using(*origin).find(
+            (SourcePackageRelease.id,
+            SourcePackageRelease.creatorID, SourcePackageRelease.maintainerID,
+            SourcePackageRelease.upload_archiveID,
+            Archive.purpose,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.dateuploaded, SQL('spph_id'))
+        ).order_by(SourcePackageRelease.id)
+        return rs
+
+    def isDone(self):
+        return self.getPendingUpdates().count() == 0
+
+    def update_cache(self, spr_id, creator_id, maintainer_id, archive_id,
+                     purpose, spn_id, distroseries_id, dateuploaded, spph_id):
+        lpr = LatestPersonSourcepackageReleaseCache()
+        lpr.publication = spph_id
+        lpr.upload_distroseries_id = distroseries_id
+        lpr.archive_purpose = purpose
+        lpr.creator_id = creator_id
+        lpr.maintainer_id = maintainer_id
+        lpr.sourcepackagename_id = spn_id
+        lpr.sourcepackagerelease = spr_id
+        lpr.upload_archive = archive_id
+        lpr.dateuploaded = dateuploaded
+        self.store.add(lpr)
+
+    def __call__(self, chunk_size):
+        max_id = 0
+        for (spr_id, creator_id, maintainer_id, archive_id, purpose,
+             distroseries_id, spn_id, dateuploaded, spph_id) in (
+            self.getPendingUpdates()[:chunk_size]):
+            self.update_cache(
+                spr_id, creator_id, maintainer_id, archive_id, purpose,
+                distroseries_id, spn_id, dateuploaded, spph_id)
+            max_id = spr_id
+
+        self.next_id = max_id
+        self.store.flush()
+        json_data = simplejson.dumps({'next_id': max_id})
+        self.store.execute(
+            "UPDATE GarboJobState SET json_data = '%s' WHERE name = '%s'"
+            % (json_data, self.job_name))
         transaction.commit()
 
 
@@ -1339,6 +1446,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
         VoucherRedeemer,
+        PopulateLatestPersonSourcepackageReleaseCache
         ]
     experimental_tunable_loops = []
 
