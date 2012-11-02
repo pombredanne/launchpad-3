@@ -238,6 +238,8 @@ class ExternalBugTracker:
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
+        if not isinstance(page, urllib2.Request):
+            page = urllib2.Request(page, headers=self._getHeaders())
         try:
             return self.urlopen(page, data)
         except (urllib2.HTTPError, urllib2.URLError) as val:
@@ -265,10 +267,8 @@ class ExternalBugTracker:
             instead.  Do this only if you are sure that repeated POST to
             this page is safe, as is usually the case with search forms.
         """
-        url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
-
-        response = self._post(url, data=post_data)
+        response = self._post("%s/%s" % (self.baseurl, page), data=post_data)
 
         if repost_on_redirect and response.url != url:
             response = self._post(response.url, data=post_data)
