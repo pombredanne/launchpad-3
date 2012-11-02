@@ -9,9 +9,9 @@ import _pythonpath
 
 from collections import defaultdict
 from ConfigParser import SafeConfigParser
-from itertools import chain
 from optparse import OptionParser
 import os
+import re
 import sys
 
 from fti import quote_identifier
@@ -49,42 +49,25 @@ POSTGRES_ACL_MAP = {
     'T': 'TEMPORARY',
     }
 
+QUOTED_STRING_RE = '(?:([a-z_]+)|"([^"]*(?:""[^"]*)*)")?'
+ACLITEM_RE = re.compile('^%(qs)s=([\w*]*)/%(qs)s$' % {'qs': QUOTED_STRING_RE})
+
 
 def _split_postgres_aclitem(aclitem):
     """Split a PostgreSQL aclitem textual representation.
 
     Returns the (grantee, privs, grantor), unquoted and separated.
     """
-    components = {'grantee': '', 'privs': '', 'grantor': ''}
-    current_component = 'grantee'
-    inside_quoted = False
-    maybe_finished_quoted = False
-    for char in aclitem:
-        if inside_quoted:
-            if maybe_finished_quoted:
-                maybe_finished_quoted = False
-                if char == '"':
-                    components[current_component] += '"'
-                    continue
-                else:
-                    inside_quoted = False
-            elif char == '"':
-                maybe_finished_quoted = True
-                continue
-        # inside_quoted may have just been made False, so no else block
-        # for you.
-        if not inside_quoted:
-            if char == '"':
-                inside_quoted = True
-                continue
-            elif char == '=':
-                current_component = 'privs'
-                continue
-            elif char == '/':
-                current_component = 'grantor'
-                continue
-        components[current_component] += char
-    return components['grantee'], components['privs'], components['grantor']
+    grantee_1, grantee_2, privs, grantor_1, grantor_2 = (
+        ACLITEM_RE.match(aclitem).groups())
+    grantee = (grantee_1 or grantee_2 or '').replace('""', '"')
+    grantor = (grantor_1 or grantor_2 or '').replace('""', '"')
+    return grantee, privs, grantor
+
+
+# aclitem parsing is fairly slow and they're very frequently repeated,
+# so cache parsed values.
+parsed_acl_cache = {}
 
 
 def parse_postgres_acl(acl):
@@ -96,17 +79,38 @@ def parse_postgres_acl(acl):
     if acl is None:
         return parsed
     for entry in acl:
-        grantee, privs, grantor = _split_postgres_aclitem(entry)
-        if grantee == '':
-            grantee = 'public'
-        parsed_privs = []
-        for priv in privs:
-            if priv == '*':
-                parsed_privs[-1] = (parsed_privs[-1][0], True)
-                continue
-            parsed_privs.append((POSTGRES_ACL_MAP[priv], False))
-        parsed[grantee] = dict(parsed_privs)
+        if entry in parsed_acl_cache:
+            grantee, dict_privs = parsed_acl_cache[entry]
+        else:
+            grantee, privs, grantor = _split_postgres_aclitem(entry)
+            if grantee == '':
+                grantee = 'public'
+            parsed_privs = []
+            for priv in privs:
+                if priv == '*':
+                    parsed_privs[-1] = (parsed_privs[-1][0], True)
+                    continue
+                parsed_privs.append((POSTGRES_ACL_MAP[priv], False))
+            dict_privs = dict(parsed_privs)
+            parsed_acl_cache[entry] = (grantee, dict_privs)
+        parsed[grantee] = dict_privs
     return parsed
+
+
+def list_role_members(cur, roles):
+    """Return a dict of roles that are members of the given roles."""
+    cur.execute("""
+        SELECT grp.rolname, member.rolname
+        FROM
+            pg_authid member
+            JOIN pg_auth_members ON pg_auth_members.member = member.oid
+            JOIN pg_authid grp ON pg_auth_members.roleid = grp.oid
+        WHERE grp.rolname IN (%s)""" % ', '.join(['%s'] * len(roles)),
+        params=roles)
+    members = defaultdict(set)
+    for group, member in cur.fetchall():
+        members[group].add(member)
+    return members
 
 
 class DbObject(object):
@@ -139,12 +143,10 @@ class DbObject(object):
 
 
 class DbSchema(dict):
-    groups = None  # List of groups defined in the db
-    users = None  # List of users defined in the db
-
     def __init__(self, con):
         super(DbSchema, self).__init__()
         cur = con.cursor()
+        log.debug("Getting relation metadata")
         cur.execute('''
             SELECT
                 n.nspname as "Schema",
@@ -162,8 +164,9 @@ class DbSchema(dict):
                 LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind IN ('r','v','S','')
-                AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
-                AND pg_catalog.pg_table_is_visible(c.oid)
+                AND n.nspname NOT IN (
+                    'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
+                    'pgdbr', 'pgdbrdata', 'todrop')
                 AND c.relpersistence <> 't'
             ORDER BY 1,2
             ''')
@@ -172,6 +175,7 @@ class DbSchema(dict):
             self[key] = DbObject(
                 schema, name, type_, owner, parse_postgres_acl(acl))
 
+        log.debug("Getting function metadata")
         cur.execute(r"""
             SELECT
                 n.nspname as "schema",
@@ -187,24 +191,29 @@ class DbSchema(dict):
                 LEFT JOIN pg_catalog.pg_type r ON r.oid = p.prorettype
             WHERE
                 r.typname NOT IN ('trigger', 'language_handler')
-                AND pg_catalog.pg_function_is_visible(p.oid)
-                AND n.nspname <> 'pg_catalog'
+                AND n.nspname NOT IN (
+                    'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
+                    'pgdbr', 'pgdbrdata', 'todrop')
                 """)
         for schema, name, arguments, owner, acl, language in cur.fetchall():
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
                     schema, name, 'function', owner, parse_postgres_acl(acl),
                     arguments, language)
-        # Pull a list of groups
-        cur.execute("SELECT groname FROM pg_group")
-        self.groups = [r[0] for r in cur.fetchall()]
 
-        # Pull a list of users
-        cur.execute("SELECT usename FROM pg_user")
-        self.users = [r[0] for r in cur.fetchall()]
-
-    @property
-    def principals(self):
-        return chain(self.groups, self.users)
+        # Pull a list of roles
+        log.debug("Getting role metadata")
+        cur.execute("""
+            SELECT
+                rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
+                rolcanlogin, rolreplication
+            FROM pg_roles
+            """)
+        options = (
+            'SUPERUSER', 'INHERIT', 'CREATEROLE', 'CREATEDB', 'LOGIN',
+            'REPLICATION')
+        self.roles = dict(
+            (r[0], set(opt for (opt, val) in zip(options, r[1:]) if val))
+            for r in cur.fetchall())
 
 
 class CursorWrapper(object):
@@ -245,17 +254,6 @@ def main(options, master_con=None):
     log.info("Resetting permissions.")
     reset_permissions(master_con, config, options)
     return 0
-
-
-def list_identifiers(identifiers):
-    """List all of `identifiers` as SQL, quoted and separated by commas.
-
-    :param identifiers: A sequence of SQL identifiers.
-    :return: A comma-separated SQL string consisting of all identifiers
-        passed in.  Each will be quoted for use in SQL.
-    """
-    return ', '.join([
-        quote_identifier(identifier) for identifier in identifiers])
 
 
 class PermissionGatherer:
@@ -392,22 +390,21 @@ def alter_permissions(cur, which, revoke=False):
 
 def reset_permissions(con, config, options):
     schema = DbSchema(con)
-    all_users = list_identifiers(schema.users)
 
     cur = CursorWrapper(con.cursor())
 
+    groups = set()
+
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
-        if group in schema.principals:
-            log.debug("Removing managed users from %s role" % group)
-            cur.execute("ALTER GROUP %s DROP USER %s" % (
-                    quote_identifier(group), all_users))
-        else:
+        groups.add(group)
+        if group not in schema.roles:
             log.debug("Creating %s role" % group)
             cur.execute("CREATE GROUP %s" % quote_identifier(group))
-            schema.groups.append(group)
+            schema.roles[group] = set()
 
     # Create all required groups and users.
+    log.debug("Configuring roles")
     for section_name in config.sections():
         if section_name.lower() == 'public':
             continue
@@ -418,35 +415,32 @@ def reset_permissions(con, config, options):
         type_ = config.get(section_name, 'type')
         assert type_ in ['user', 'group'], 'Unknown type %s' % type_
 
-        role_options = [
-            'NOCREATEDB', 'NOCREATEROLE', 'NOCREATEUSER', 'INHERIT']
+        desired_opts = set(('INHERIT',))
         if type_ == 'user':
-            role_options.append('LOGIN')
-        else:
-            role_options.append('NOLOGIN')
+            desired_opts.add('LOGIN')
 
         for username in [section_name, '%s_ro' % section_name]:
-            if username in schema.principals:
-                if type_ == 'group':
-                    if options.revoke:
-                        log.debug2("Revoking membership of %s role", username)
-                        cur.execute("REVOKE %s FROM %s" % (
-                            quote_identifier(username), all_users))
-                else:
+            if type_ == 'group':
+                groups.add(username)
+            if username in schema.roles:
+                existing_opts = schema.roles[username]
+                if desired_opts != existing_opts:
                     # Note - we don't drop the user because it might own
                     # objects in other databases. We need to ensure they are
                     # not superusers though!
                     log.debug2("Resetting role options of %s role.", username)
+                    changes = ' '.join(
+                        list(desired_opts - existing_opts)
+                        + ['NO' + o for o in (existing_opts - desired_opts)])
                     cur.execute(
                         "ALTER ROLE %s WITH %s" % (
-                            quote_identifier(username),
-                            ' '.join(role_options)))
+                            quote_identifier(username), changes))
             else:
                 log.debug("Creating %s role.", username)
                 cur.execute(
                     "CREATE ROLE %s WITH %s"
-                    % (quote_identifier(username), ' '.join(role_options)))
-                schema.groups.append(username)
+                    % (quote_identifier(username), ' '.join(desired_opts)))
+                schema.roles[username] = set()
 
         # Set default read-only mode for our roles.
         cur.execute(
@@ -457,6 +451,8 @@ def reset_permissions(con, config, options):
             % quote_identifier('%s_ro' % section_name))
 
     # Add users to groups
+    log.debug('Collecting group memberships')
+    memberships = defaultdict(set)
     for user in config.sections():
         if config.get(user, 'type') != 'user':
             continue
@@ -469,12 +465,33 @@ def reset_permissions(con, config, options):
         if groups:
             log.debug2("Adding %s to %s roles", user, ', '.join(groups))
             for group in groups:
-                cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
-                    quote_identifier(group), quote_identifier(user)))
+                memberships[group].add(user)
         else:
             log.debug2("%s not in any roles", user)
 
+    managed_roles = set(['read', 'admin'])
+    for section_name in config.sections():
+        managed_roles.add(section_name)
+        if section_name != 'public':
+            managed_roles.add(section_name + "_ro")
+
+    log.debug('Updating group memberships')
+    existing_memberships = list_role_members(cur, memberships.keys())
+    for group, users in memberships.iteritems():
+        cur_users = managed_roles.intersection(existing_memberships[group])
+        to_grant = users - cur_users
+        if to_grant:
+            cur.execute("GRANT %s TO %s" % (
+                quote_identifier(group),
+                ', '.join(quote_identifier(user) for user in to_grant)))
+        to_revoke = cur_users - users
+        if options.revoke and to_revoke:
+            cur.execute("REVOKE %s FROM %s" % (
+                quote_identifier(group),
+                ', '.join(quote_identifier(user) for user in to_revoke)))
+
     if options.revoke:
+        log.debug('Resetting object owners')
         # Change ownership of all objects to OWNER.
         # We skip this in --no-revoke mode as ownership changes may
         # block on a live system.
@@ -488,12 +505,6 @@ def reset_permissions(con, config, options):
                         obj.fullname, quote_identifier(options.owner)))
     else:
         log.info("Not resetting ownership of database objects")
-
-    managed_roles = set(['read', 'admin'])
-    for section_name in config.sections():
-        managed_roles.add(section_name)
-        if section_name != 'public':
-            managed_roles.add(section_name + "_ro")
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
@@ -510,6 +521,7 @@ def reset_permissions(con, config, options):
     # functions) aren't readable.
     granted_objs = set()
 
+    log.debug('Collecting permissions')
     for username in config.sections():
         who = username
         if username == 'public':
@@ -590,6 +602,7 @@ def reset_permissions(con, config, options):
     unmanaged_roles = set()
     required_grants = []
     required_revokes = []
+    log.debug('Calculating permission delta')
     for obj in schema.values():
         # We only care about roles that are in either the desired or
         # existing ACL, and are also our managed roles. But skip admin,
