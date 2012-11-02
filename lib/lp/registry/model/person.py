@@ -802,7 +802,8 @@ class Person(
     def findVisibleAssignedInProgressSpecs(self, user):
         """See `IPerson`."""
         return self.specifications(user, in_progress=True, quantity=5,
-                                   sort=Desc(Specification.date_started))
+                                   sort=Desc(Specification.date_started),
+                                   filter=[SpecificationFilter.ASSIGNEE])
 
     @property
     def unique_displayname(self):

@@ -75,7 +75,7 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
     setupBrowserForUser,
-    find_tags_by_class)
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -219,6 +219,18 @@ class TestPersonIndexView(BrowserTestCase):
             browser = self.getViewBrowser(person)
         self.assertIn(public_spec.name, browser.contents)
         self.assertNotIn(private_spec.name, browser.contents)
+
+    def test_only_assigned_blueprints(self):
+        # Only assigned blueprints are listed, not arbitrary related
+        # blueprints
+        person = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            owner=person, drafter=person, approver=person)
+        spec.subscribe(person)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(person)
+        self.assertNotIn(spec.name, browser.contents)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
