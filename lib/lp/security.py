@@ -2492,8 +2492,12 @@ class ViewArchive(AuthorizationBase):
         if not self.obj.private and self.obj.enabled:
             return True
 
+        # Administrator are allowed to view private archives.
+        if user.in_admin or user.in_commercial_admin:
+            return True
+
         filter = get_enabled_archive_filter(
-            user.person, include_public=True, include_subscribed=True)
+            user.person, include_subscribed=True)
         return not IStore(self.obj).find(
             Archive, And(Archive.id == self.obj.id, filter)).is_empty()
 

@@ -2601,16 +2601,20 @@ def get_archive_privacy_filter(user):
     return privacy_filter
 
 
-def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
+def get_enabled_archive_filter(user, purpose=None,
                             include_public=False, include_subscribed=False):
     """ Return a filter that can be used with a Storm query to filter Archives.
 
     The archive must be enabled, plus satisfy the other specified conditions.
     """
     if user is None:
-        return And(
-            Archive.purpose == purpose, Archive._private == False,
-            Archive._enabled == True)
+        if include_public:
+            terms = [Archive._private == False, Archive._enabled == True]
+            if purpose:
+                terms.append(Archive.purpose == purpose)
+            return And(*terms)
+        else:
+            return False
 
     # Administrator are allowed to view private archives.
     roles = IPersonRoles(user)
@@ -2639,11 +2643,20 @@ def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
             ArchiveSubscriber.subscriber_id.is_in(user_teams)),
         tables=ArchiveSubscriber, distinct=True)
 
-    filter_terms = [is_owner, Archive.id.is_in(is_allowed)]
+    filter_terms = [
+        is_owner,
+        And(
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.id.is_in(is_allowed))]
     if include_subscribed:
-        filter_terms.append(Archive.id.is_in(is_subscribed))
+        filter_terms.append(And(
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.id.is_in(is_subscribed)))
 
-    enabled = [Archive.purpose == purpose, Archive._enabled == True]
     if include_public:
-        filter_terms.append(Archive._private == False)
-    return And(enabled, Or(*filter_terms))
+        filter_terms.append(
+            And(Archive._enabled == True, Archive._private == False))
+    if purpose:
+        return And(Archive.purpose == purpose, Or(*filter_terms))
+    else:
+        return Or(*filter_terms)

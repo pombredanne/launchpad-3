@@ -3061,7 +3061,8 @@ class Person(
         from lp.soyuz.model.archive import get_enabled_archive_filter
 
         filter = get_enabled_archive_filter(
-            user, include_public=True, include_subscribed=True)
+            user, purpose=ArchivePurpose.PPA,
+            include_public=True, include_subscribed=True)
         return Store.of(self).find(
             Archive,
             Archive.owner == self,
