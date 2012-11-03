@@ -2607,11 +2607,14 @@ def get_enabled_archive_filter(user, purpose=None,
 
     The archive must be enabled, plus satisfy the other specified conditions.
     """
+    purpose_term = True
+    if purpose:
+        purpose_term = Archive.purpose == purpose
     if user is None:
         if include_public:
-            terms = [Archive._private == False, Archive._enabled == True]
-            if purpose:
-                terms.append(Archive.purpose == purpose)
+            terms = [
+                purpose_term, Archive._private == False,
+                Archive._enabled == True]
             return And(*terms)
         else:
             return False
@@ -2619,7 +2622,7 @@ def get_enabled_archive_filter(user, purpose=None,
     # Administrator are allowed to view private archives.
     roles = IPersonRoles(user)
     if roles.in_admin or roles.in_commercial_admin:
-        return Archive.purpose == purpose
+        return purpose_term
 
     main = getUtility(IComponentSet)['main']
     user_teams = Select(
@@ -2656,7 +2659,4 @@ def get_enabled_archive_filter(user, purpose=None,
     if include_public:
         filter_terms.append(
             And(Archive._enabled == True, Archive._private == False))
-    if purpose:
-        return And(Archive.purpose == purpose, Or(*filter_terms))
-    else:
-        return Or(*filter_terms)
+    return And(purpose_term, Or(*filter_terms))

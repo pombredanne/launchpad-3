@@ -1775,9 +1775,7 @@ class EditPlainPackageCopyJob(AuthorizationBase):
     def checkAuthenticated(self, user):
         archive = self.obj.target_archive
         if archive.is_ppa:
-            filter = get_enabled_archive_filter(user.person)
-            return not IStore(self.obj).find(
-                Archive, And(Archive.id == self.obj.id, filter)).is_empty()
+            return archive.checkArchivePermission(user.person)
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -2496,10 +2494,14 @@ class ViewArchive(AuthorizationBase):
         if user.in_admin or user.in_commercial_admin:
             return True
 
+        # Owners can view the PPA.
+        if user.inTeam(self.obj.owner):
+            return True
+
         filter = get_enabled_archive_filter(
             user.person, include_subscribed=True)
         return not IStore(self.obj).find(
-            Archive, And(Archive.id == self.obj.id, filter)).is_empty()
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
@@ -2527,7 +2529,7 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `get_enabled_archive_filter`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
     """
@@ -2541,10 +2543,8 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa:
-            filter = get_enabled_archive_filter(user.person)
-            return not IStore(self.obj).find(
-                Archive, And(Archive.id == self.obj.id, filter)).is_empty()
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
+            return True
 
         return False
 
