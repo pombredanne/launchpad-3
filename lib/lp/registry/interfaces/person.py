@@ -1051,6 +1051,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         It will create a new IArchiveAuthToken if one doesn't already exist.
         """
 
+    def getVisiblePPAs(user):
+        """Return the PPAs for which user has launchpad.View permission."""
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 

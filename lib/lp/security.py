@@ -14,6 +14,7 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
+    And,
     Select,
     Union,
     )
@@ -219,6 +220,10 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
@@ -2493,18 +2498,10 @@ class ViewArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        # Subscribers can view private PPAs.
-        if self.obj.is_ppa and self.obj.private:
-            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                user.person, self.obj).any()
-            if archive_subs:
-                return True
-
-        return False
+        filter = get_enabled_archive_filter(
+            user.person, include_subscribed=True)
+        return not IStore(self.obj).find(
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
