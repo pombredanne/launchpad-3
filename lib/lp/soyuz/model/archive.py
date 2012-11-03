@@ -2615,7 +2615,7 @@ def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
     # Administrator are allowed to view private archives.
     roles = IPersonRoles(user)
     if roles.in_admin or roles.in_commercial_admin:
-        return True
+        return Archive.purpose == purpose
 
     main = getUtility(IComponentSet)['main']
     user_teams = Select(
@@ -2639,14 +2639,11 @@ def get_enabled_archive_filter(user, purpose=ArchivePurpose.PPA,
             ArchiveSubscriber.subscriber_id.is_in(user_teams)),
         tables=ArchiveSubscriber, distinct=True)
 
-    access_terms = [is_allowed]
+    filter_terms = [is_owner, Archive.id.is_in(is_allowed)]
     if include_subscribed:
-        access_terms.append(is_subscribed)
-
-    is_allowed_or_subscribed = Archive.id.is_in(Or(*access_terms))
+        filter_terms.append(Archive.id.is_in(is_subscribed))
 
     enabled = [Archive.purpose == purpose, Archive._enabled == True]
-    filter_terms = [is_owner, is_allowed_or_subscribed]
     if include_public:
         filter_terms.append(Archive._private == False)
     return And(enabled, Or(*filter_terms))
