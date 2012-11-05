@@ -71,6 +71,7 @@ from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -619,7 +620,12 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             url = get_register_upstream_url(self.context)
             self.request.response.redirect(url)
             return
-        self.context.setPackaging(upstream.development_focus, self.user)
+        try:
+            self.context.setPackaging(upstream.development_focus, self.user)
+        except CannotPackageProprietaryProduct as e:
+            self.request.response.addErrorNotification(str(e))
+            self.next_url = self.request.getURL()
+            return
         self.request.response.addInfoNotification(
             'The project %s was linked to this source package.' %
             upstream.displayname)

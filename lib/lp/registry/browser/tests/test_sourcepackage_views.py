@@ -176,6 +176,47 @@ class TestSourcePackageView(BrowserTestCase):
         t = Tag('info_type', 'input', attrs={'name': 'field.information_type'})
         self.assertThat(browser.contents, Not(HTMLContains(t)))
 
+    def test_link_upstream_handles_initial_proprietary(self):
+        # Handle the case where the was proprietary before the page was
+        # displayed.
+        owner = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        product_name = sourcepackage.name
+        product_displayname = self.factory.getUniqueString()
+        product = self.factory.makeProduct(
+            name=product_name, owner=owner,
+            information_type=InformationType.PROPRIETARY,
+            displayname=product_displayname)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(sourcepackage, user=owner)
+            upstream = browser.getControl(name='field.upstream')
+            upstream.value = [product_name]
+            browser.getControl("Link to Upstream Project").click()
+        error = Tag(
+            'error', 'div', attrs={'class': 'error message'},
+            text='Only Public project series can be packaged, not'
+            ' Proprietary.')
+        self.assertThat(browser.contents, HTMLContains(error))
+        self.assertNotIn(
+            'The project %s was linked to this source package.' %
+            product_displayname, browser.contents)
+
+    def test_link_upstream_handles_proprietary(self):
+        # Handle the case where the product becomes proprietary after the page
+        # was displayed.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        product_name = product.name
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=product_name)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(sourcepackage, user=owner)
+            with person_logged_in(owner):
+                product.information_type = InformationType.PROPRIETARY
+            upstream = browser.getControl(name='field.upstream')
+            upstream.value = [product_name]
+            browser.getControl("Link to Upstream Project").click()
+
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
 
