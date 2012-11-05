@@ -480,13 +480,13 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         # type (creator or maintainer) so we know where to job got up to.
         self.next_id = 0
         self.current_person_filter_type = 'creator'
-        self.original_person_filter_type = self.current_person_filter_type
+        self.starting_person_filter_type = self.current_person_filter_type
         self.job_name = self.__class__.__name__
         job_data = load_garbo_job_state(self.job_name)
         if job_data:
             self.next_id = job_data['next_id']
             self.current_person_filter_type = job_data['person_filter_type']
-            self.original_person_filter_type = self.current_person_filter_type
+            self.starting_person_filter_type = self.current_person_filter_type
 
     def getPendingUpdates(self):
         # Load the latest published source package release data keyed on either
@@ -540,7 +540,7 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         current_count = self.getPendingUpdates().count()
         if current_count == 0:
             if (self.current_person_filter_type !=
-                self.original_person_filter_type):
+                self.starting_person_filter_type):
                 return True
             if  self.current_person_filter_type == 'creator':
                 self.current_person_filter_type = 'maintainer'
