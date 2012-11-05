@@ -166,7 +166,7 @@ class DbSchema(dict):
             WHERE c.relkind IN ('r','v','S','')
                 AND n.nspname NOT IN (
                     'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
-                    'pgdbr', 'pgdbrdata', 'todrop')
+                    'pgdbr', 'pgdbrdata', 'todrop', '_sl')
                 AND c.relpersistence <> 't'
             ORDER BY 1,2
             ''')
@@ -193,7 +193,7 @@ class DbSchema(dict):
                 r.typname NOT IN ('trigger', 'language_handler')
                 AND n.nspname NOT IN (
                     'pg_catalog', 'pg_toast', 'trgm', 'information_schema',
-                    'pgdbr', 'pgdbrdata', 'todrop')
+                    'pgdbr', 'pgdbrdata', 'todrop', '_sl')
                 """)
         for schema, name, arguments, owner, acl, language in cur.fetchall():
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
