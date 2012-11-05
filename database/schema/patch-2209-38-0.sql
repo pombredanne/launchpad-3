@@ -7,8 +7,8 @@ CREATE TABLE LatestPersonSourcePackageReleaseCache (
     id serial PRIMARY KEY,
     publication integer NOT NULL REFERENCES sourcepackagepublishinghistory(id),
     date_uploaded timestamp without time zone NOT NULL,
-    creator integer NOT NULL REFERENCES person(id),
-    maintainer integer NOT NULL REFERENCES person(id),
+    creator integer REFERENCES person(id),
+    maintainer integer REFERENCES person(id),
     archive_purpose integer NOT NULL,
     upload_archive integer NOT NULL REFERENCES archive(id),
     upload_distroseries integer NOT NULL REFERENCES distroseries(id),
@@ -18,16 +18,19 @@ CREATE TABLE LatestPersonSourcePackageReleaseCache (
 
 
 CREATE INDEX latestpersonsourcepackagereleasecache__creator__idx
-    ON LatestPersonSourcePackageReleaseCache USING btree (creator);
+    ON LatestPersonSourcePackageReleaseCache USING btree (creator) WHERE (creator IS NOT NULL);
 
 CREATE INDEX latestpersonsourcepackagereleasecache__maintainer__idx
-    ON LatestPersonSourcePackageReleaseCache USING btree (maintainer);
+    ON LatestPersonSourcePackageReleaseCache USING btree (maintainer) WHERE (maintainer IS NOT NULL);
 
 CREATE INDEX latestpersonsourcepackagereleasecache__archive_purpose__idx
     ON LatestPersonSourcePackageReleaseCache USING btree (archive_purpose);
 
-ALTER TABLE LatestPersonSourcePackageReleaseCache ADD CONSTRAINT upload_archive__upload_distroseries__sourcepackagename__key
-     UNIQUE (upload_archive, upload_distroseries, sourcepackagename);
+ALTER TABLE LatestPersonSourcePackageReleaseCache ADD CONSTRAINT creator__upload_archive__upload_distroseries__sourcepackagename__key
+     UNIQUE (creator, upload_archive, upload_distroseries, sourcepackagename);
+
+ALTER TABLE LatestPersonSourcePackageReleaseCache ADD CONSTRAINT maintainer__upload_archive__upload_distroseries__sourcepackagename__key
+     UNIQUE (maintainer, upload_archive, upload_distroseries, sourcepackagename);
 
 COMMENT ON TABLE LatestPersonSourcePackageReleaseCache IS 'LatestPersonSourcePackageReleaseCache: The most recent published source package releases for a given (distroseries, archive, sourcepackage).';
 COMMENT ON COLUMN LatestPersonSourcePackageReleaseCache.creator IS 'The creator of the source package release.';
