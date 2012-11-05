@@ -8,6 +8,8 @@ __all__ = [
     'DailyDatabaseGarbageCollector',
     'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
+    'load_garbo_job_state',
+    'save_garbo_job_state',
     ]
 
 from datetime import (
@@ -154,7 +156,7 @@ def save_garbo_job_state(job_name, job_data):
     if result.rowcount == 0:
         store.execute(
         "INSERT INTO GarboJobState(name, json_data) "
-        "VALUES (?, ?)", params=(job_name, unicode(json_data)))
+        "VALUES (?, ?)", params=(unicode(job_name), unicode(json_data)))
 
 
 class BulkPruner(TunableLoop):
@@ -476,17 +478,19 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
         self.next_id = 0
-        self.person_filter_type = 'creator'
+        self.current_person_filter_type = 'creator'
+        self.original_person_filter_type = self.current_person_filter_type
         self.job_name = self.__class__.__name__
         job_data = load_garbo_job_state(self.job_name)
         if job_data:
             self.next_id = job_data['next_id']
-            self.person_filter_type = job_data['person_filter_type']
+            self.current_person_filter_type = job_data['person_filter_type']
+            self.original_person_filter_type = self.current_person_filter_type
 
     def getPendingUpdates(self):
         # Load the latest published source package release data keyed on either
         # creator or maintainer as required.
-        if self.person_filter_type == 'creator':
+        if self.current_person_filter_type == 'creator':
             person_filter = SourcePackageRelease.creatorID
         else:
             person_filter = SourcePackageRelease.maintainerID
@@ -499,7 +503,6 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
                     spph.archiveID == SourcePackageRelease.upload_archiveID))]
         spr_select = self.store.using(*origin).find(
             (SourcePackageRelease.id, Alias(spph.id, 'spph_id')),
-            SourcePackageRelease.upload_archiveID == spph.archiveID,
             SourcePackageRelease.id > self.next_id
         ).order_by(
             person_filter,
@@ -530,22 +533,20 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         ).order_by(SourcePackageRelease.id)
         return rs
 
-    def cleanUp(self):
-        save_garbo_job_state(self.job_name, {
-            'next_id': self.next_id,
-            'person_filter_type': self.person_filter_type})
-
     def isDone(self):
         # If there is no more data to process for creators, switch over to
-        # processing data for maintainers.
+        # processing data for maintainers, or visa versa.
         current_count = self.getPendingUpdates().count()
-        if current_count == 0 and self.person_filter_type == 'creator':
-            self.next_id = 0
-            self.person_filter_type = 'maintainer'
-            current_count = self.getPendingUpdates().count()
         if current_count == 0:
+            if (self.current_person_filter_type !=
+                self.original_person_filter_type):
+                return True
+            if  self.current_person_filter_type == 'creator':
+                self.current_person_filter_type = 'maintainer'
+            else:
+                self.current_person_filter_type = 'creator'
             self.next_id = 0
-            self.person_filter_type = 'creator'
+            current_count = self.getPendingUpdates().count()
         return current_count == 0
 
     def update_cache(self, updates):
@@ -571,7 +572,7 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         for update in updates:
             (spr_id, person_id, archive_id, purpose,
              distroseries_id, spn_id, dateuploaded, spph_id) = update
-            if self.person_filter_type == 'creator':
+            if self.current_person_filter_type == 'creator':
                 creator_id = person_id
                 maintainer_id = None
             else:
@@ -608,6 +609,9 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
 
         self.next_id = max_id
         self.store.flush()
+        save_garbo_job_state(self.job_name, {
+            'next_id': max_id,
+            'person_filter_type': self.current_person_filter_type})
         transaction.commit()
 
 
@@ -1527,7 +1531,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
         VoucherRedeemer,
-        PopulateLatestPersonSourcepackageReleaseCache
+        PopulateLatestPersonSourcepackageReleaseCache,
         ]
     experimental_tunable_loops = []
 
