@@ -35,11 +35,12 @@ from storm.expr import (
     And,
     Desc,
     In,
+    Insert,
+    Join,
     Like,
     Select,
     Update,
-    Join,
-    Insert)
+    )
 from storm.info import ClassAlias
 from storm.locals import (
     Max,
