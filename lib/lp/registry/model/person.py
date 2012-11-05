@@ -803,7 +803,8 @@ class Person(
     def findVisibleAssignedInProgressSpecs(self, user):
         """See `IPerson`."""
         return self.specifications(user, in_progress=True, quantity=5,
-                                   sort=Desc(Specification.date_started))
+                                   sort=Desc(Specification.date_started),
+                                   filter=[SpecificationFilter.ASSIGNEE])
 
     @property
     def unique_displayname(self):
@@ -3033,6 +3034,20 @@ class Person(
         """See `IPerson`."""
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getVisiblePPAs(self, user):
+        """See `IPerson`."""
+
+        # Avoid circular imports.
+        from lp.soyuz.model.archive import get_enabled_archive_filter
+
+        filter = get_enabled_archive_filter(
+            user, purpose=ArchivePurpose.PPA,
+            include_public=True, include_subscribed=True)
+        return Store.of(self).find(
+            Archive,
+            Archive.owner == self,
+            filter).order_by(Archive.name)
 
     def getPPAByName(self, name):
         """See `IPerson`."""

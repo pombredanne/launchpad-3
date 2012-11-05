@@ -193,7 +193,6 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -1247,9 +1246,10 @@ class Bug(SQLBase, InformationTypeMixin):
             Store.of(result).flush()
             return result
 
-    def addTask(self, owner, target):
+    def addTask(self, owner, target, validate_target=True):
         """See `IBug`."""
-        return getUtility(IBugTaskSet).createTask(self, owner, target)
+        return getUtility(IBugTaskSet).createTask(
+            self, owner, target, validate_target)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""

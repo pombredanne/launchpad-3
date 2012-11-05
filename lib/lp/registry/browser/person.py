@@ -138,12 +138,8 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -1931,11 +1927,11 @@ class PersonView(LaunchpadView, FeedsMixin):
             return True
 
         # If the current user can view any PPA, show the section.
-        for ppa in self.context.ppas:
-            if check_permission('launchpad.View', ppa):
-                return True
+        return self.visible_ppas.count() > 0
 
-        return False
+    @cachedproperty
+    def visible_ppas(self):
+        return self.context.getVisiblePPAs(self.user)
 
     @property
     def time_zone_offset(self):
@@ -3470,14 +3466,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         is_driver, is_bugsupervisor.
         """
         projects = []
-        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
         pillarnames = self._related_projects[:max_projects]
-        products = [pillarname.pillar for pillarname in pillarnames
-                    if IProduct.providedBy(pillarname.pillar)]
-        bugtask_set = getUtility(IBugTaskSet)
-        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
-            user, products)
         for pillarname in pillarnames:
             pillar = pillarname.pillar
             project = {}

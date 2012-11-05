@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the externalbugtracker package."""
@@ -13,6 +13,7 @@ from zope.interface import implements
 from lp.bugs.externalbugtracker.base import (
     BugTrackerConnectError,
     ExternalBugTracker,
+    LP_USER_AGENT,
     )
 from lp.bugs.externalbugtracker.debbugs import DebBugs
 from lp.bugs.interfaces.externalbugtracker import (
@@ -86,18 +87,12 @@ class TestCheckwatchesConfig(TestCase):
         # When either sync_comments or sync_debbugs_comments is False
         # (or both), the Debian Bugs external bug tracker will claim
         # to not support any form of comment syncing.
-        self.pushConfig(
-            'checkwatches', sync_comments=True, sync_debbugs_comments=False)
-        tracker = DebBugs(self.base_url)
-        self.assertFalse(tracker.sync_comments)
-        self.pushConfig(
-            'checkwatches', sync_comments=False, sync_debbugs_comments=True)
-        tracker = DebBugs(self.base_url)
-        self.assertFalse(tracker.sync_comments)
-        self.pushConfig(
-            'checkwatches', sync_comments=False, sync_debbugs_comments=False)
-        tracker = DebBugs(self.base_url)
-        self.assertFalse(tracker.sync_comments)
+        for state in ((True, False), (False, True), (False, False)):
+            self.pushConfig(
+                'checkwatches', sync_comments=state[0],
+                sync_debbugs_comments=state[1])
+            tracker = DebBugs(self.base_url)
+            self.assertFalse(tracker.sync_comments)
 
     def _makeFakePostForm(self, base_url, page=None):
         """Create a fake `urllib2.urlopen` result."""
@@ -168,5 +163,16 @@ class TestExternalBugTracker(TestCase):
         with monkey_patch(urllib2, urlopen=raise404):
             self.assertRaises(
                 BugTrackerConnectError,
-                bugtracker._post,
-                'some-url', {'post-data': 'here'})
+                bugtracker._post, 'some-url', {'post-data': 'here'})
+
+    def test_post_sends_host(self):
+        # When posting, a Host header is sent.
+        base_host = 'example.com'
+        base_url = 'http://%s/' % base_host
+        bugtracker = ExternalBugTracker(base_url)
+        def assert_headers(request, data):
+            self.assertContentEqual(
+                [('User-agent', LP_USER_AGENT), ('Host', base_host)],
+                request.header_items())
+        with monkey_patch(urllib2, urlopen=assert_headers):
+            bugtracker._post('some-url', {'post-data': 'here'})
