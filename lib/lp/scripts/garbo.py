@@ -37,7 +37,7 @@ from storm.expr import (
     Select,
     Update,
     Join,
-    )
+    Insert)
 from storm.info import ClassAlias
 from storm.locals import (
     Max,
@@ -128,6 +128,33 @@ from lp.translations.scripts.scrub_pofiletranslator import (
 
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
+
+
+# Garbo jobs may choose to persist state between invocations, if it is likely
+# that not all data can be processed in a single run. These utility methods
+# provide convenient access to that state data.
+def load_garbo_job_state(job_name):
+    # Load the json state data for the given job name.
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    job_data = store.execute(
+        "SELECT json_data FROM GarboJobState WHERE name = ?",
+        params=(unicode(job_name),)).get_one()
+    if job_data:
+        return simplejson.loads(job_data[0])
+    return None
+
+
+def save_garbo_job_state(job_name, job_data):
+    # Save the json state data for the given job name.
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    json_data = simplejson.dumps(job_data, ensure_ascii=False)
+    result = store.execute(
+        "UPDATE GarboJobState SET json_data = ? WHERE name = ?",
+        params=(json_data, unicode(job_name)))
+    if result.rowcount == 0:
+        store.execute(
+        "INSERT INTO GarboJobState(name, json_data) "
+        "VALUES (?, ?)", params=(job_name, unicode(json_data)))
 
 
 class BulkPruner(TunableLoop):
@@ -434,28 +461,35 @@ class VoucherRedeemer(TunableLoop):
 
 
 class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
-    """Populate the LatestPersonSourcepackageReleaseCache table."""
-    maximum_chunk_size = 5000
+    """Populate the LatestPersonSourcepackageReleaseCache table.
+
+    The LatestPersonSourcepackageReleaseCache contains 2 sets of data, one set
+    for package maintainers and another for package creators. This job first
+    populates the creator data and then does the maintainer data.
+    """
+    maximum_chunk_size = 1000
 
     def __init__(self, log, abort_time=None):
         super_cl = super(PopulateLatestPersonSourcepackageReleaseCache, self)
         super_cl.__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        # Keep a record of the processed source package release id and data
+        # type (creator or maintainer) so we know where to job got up to.
         self.next_id = 0
+        self.person_filter_type = 'creator'
         self.job_name = self.__class__.__name__
-        job_data = self.store.execute(
-            "SELECT json_data FROM GarboJobState WHERE name = '%s'"
-            % self.job_name).get_one()
+        job_data = load_garbo_job_state(self.job_name)
         if job_data:
-            json_data = simplejson.loads(job_data[0])
-            self.next_id = json_data['next_id']
-        else:
-            json_data = simplejson.dumps({'next_id': 0})
-            self.store.execute(
-                "INSERT INTO GarboJobState(name, json_data) "
-                "VALUES ('%s', '%s')" % (self.job_name, json_data))
+            self.next_id = job_data['next_id']
+            self.person_filter_type = job_data['person_filter_type']
 
     def getPendingUpdates(self):
+        # Load the latest published source package release data keyed on either
+        # creator or maintainer as required.
+        if self.person_filter_type == 'creator':
+            person_filter = SourcePackageRelease.creatorID
+        else:
+            person_filter = SourcePackageRelease.maintainerID
         spph = ClassAlias(SourcePackagePublishingHistory, "spph")
         origin = [
             SourcePackageRelease,
@@ -468,12 +502,14 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
             SourcePackageRelease.upload_archiveID == spph.archiveID,
             SourcePackageRelease.id > self.next_id
         ).order_by(
+            person_filter,
             SourcePackageRelease.upload_distroseriesID,
             SourcePackageRelease.sourcepackagenameID,
             SourcePackageRelease.upload_archiveID,
             Desc(SourcePackageRelease.dateuploaded),
             SourcePackageRelease.id
         ).config(distinct=(
+            person_filter,
             SourcePackageRelease.upload_distroseriesID,
             SourcePackageRelease.sourcepackagenameID,
             SourcePackageRelease.upload_archiveID))._get_select()
@@ -485,48 +521,93 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
             Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID)]
         rs = self.store.using(*origin).find(
             (SourcePackageRelease.id,
-            SourcePackageRelease.creatorID, SourcePackageRelease.maintainerID,
+            person_filter,
             SourcePackageRelease.upload_archiveID,
             Archive.purpose,
-            SourcePackageRelease.sourcepackagenameID,
             SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
             SourcePackageRelease.dateuploaded, SQL('spph_id'))
         ).order_by(SourcePackageRelease.id)
         return rs
 
-    def isDone(self):
-        return self.getPendingUpdates().count() == 0
+    def cleanUp(self):
+        save_garbo_job_state(self.job_name, {
+            'next_id': self.next_id,
+            'person_filter_type': self.person_filter_type})
 
-    def update_cache(self, spr_id, creator_id, maintainer_id, archive_id,
-                     purpose, spn_id, distroseries_id, dateuploaded, spph_id):
-        lpr = LatestPersonSourcepackageReleaseCache()
-        lpr.publication = spph_id
-        lpr.upload_distroseries_id = distroseries_id
-        lpr.archive_purpose = purpose
-        lpr.creator_id = creator_id
-        lpr.maintainer_id = maintainer_id
-        lpr.sourcepackagename_id = spn_id
-        lpr.sourcepackagerelease = spr_id
-        lpr.upload_archive = archive_id
-        lpr.dateuploaded = dateuploaded
-        self.store.add(lpr)
+    def isDone(self):
+        # If there is no more data to process for creators, switch over to
+        # processing data for maintainers.
+        current_count = self.getPendingUpdates().count()
+        if current_count == 0 and self.person_filter_type == 'creator':
+            self.next_id = 0
+            self.person_filter_type = 'maintainer'
+            current_count = self.getPendingUpdates().count()
+        if current_count == 0:
+            self.next_id = 0
+            self.person_filter_type = 'creator'
+        return current_count == 0
+
+    def update_cache(self, updates):
+        # Update the LatestPersonSourcepackageReleaseCache table. Records for
+        # each creator/maintainer will either be new inserts or updates. We try
+        # to update first, and gather data for missing (new) records along the
+        # way. At the end, a bulk insert is done for any new data.
+        # Updates is a list of data records (tuples of values).
+        # Each record is keyed on:
+        # - (creator/maintainer), archive, distroseries, sourcepackagename
+        inserts = []
+        columns = (
+            LatestPersonSourcepackageReleaseCache.sourcepackagerelease_id,
+            LatestPersonSourcepackageReleaseCache.creator_id,
+            LatestPersonSourcepackageReleaseCache.maintainer_id,
+            LatestPersonSourcepackageReleaseCache.upload_archive_id,
+            LatestPersonSourcepackageReleaseCache.archive_purpose,
+            LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+            LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+            LatestPersonSourcepackageReleaseCache.dateuploaded,
+            LatestPersonSourcepackageReleaseCache.publication_id,
+        )
+        for update in updates:
+            (spr_id, person_id, archive_id, purpose,
+             distroseries_id, spn_id, dateuploaded, spph_id) = update
+            if self.person_filter_type == 'creator':
+                creator_id = person_id
+                maintainer_id = None
+            else:
+                creator_id = None
+                maintainer_id = person_id
+            values = (
+                spr_id, creator_id, maintainer_id, archive_id, purpose.value,
+                distroseries_id, spn_id, dateuploaded, spph_id)
+            data = dict(zip(columns, values))
+            result = self.store.execute(Update(
+                data, And(
+                LatestPersonSourcepackageReleaseCache.upload_archive_id ==
+                    archive_id,
+                LatestPersonSourcepackageReleaseCache.upload_distroseries_id ==
+                    distroseries_id,
+                LatestPersonSourcepackageReleaseCache.sourcepackagename_id ==
+                    spn_id,
+                LatestPersonSourcepackageReleaseCache.creator_id ==
+                    creator_id,
+                LatestPersonSourcepackageReleaseCache.maintainer_id ==
+                    maintainer_id)))
+            if result.rowcount == 0:
+                inserts.append(values)
+        if inserts:
+            self.store.execute(Insert(columns, values=inserts))
 
     def __call__(self, chunk_size):
-        max_id = 0
-        for (spr_id, creator_id, maintainer_id, archive_id, purpose,
-             distroseries_id, spn_id, dateuploaded, spph_id) in (
-            self.getPendingUpdates()[:chunk_size]):
-            self.update_cache(
-                spr_id, creator_id, maintainer_id, archive_id, purpose,
-                distroseries_id, spn_id, dateuploaded, spph_id)
-            max_id = spr_id
+        max_id = self.next_id
+        updates = []
+        for update in (self.getPendingUpdates()[:chunk_size]):
+            updates.append(update)
+            max_id = update[0]
+        self.update_cache(updates)
 
         self.next_id = max_id
         self.store.flush()
-        json_data = simplejson.dumps({'next_id': max_id})
-        self.store.execute(
-            "UPDATE GarboJobState SET json_data = '%s' WHERE name = '%s'"
-            % (json_data, self.job_name))
         transaction.commit()
 
 

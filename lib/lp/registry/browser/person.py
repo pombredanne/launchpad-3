@@ -3648,13 +3648,15 @@ class PersonRelatedSoftwareView(LaunchpadView):
             needs_build_by_package[package.id] = False
         for build in all_builds:
             if build.status == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.source_package_release.id].append(build)
+                builds_by_package[
+                    build.source_package_release.id].append(build)
             needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.source_package_release.id] = needs_build
+            needs_build_by_package[
+                build.source_package_release.id] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 

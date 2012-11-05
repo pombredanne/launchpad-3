@@ -15,10 +15,15 @@ class ILatestPersonSourcepackageReleaseCache(ISourcePackageRelease):
     """Published source package release information for a person.
 
     The records represented by this object are the latest published source
-    package releases for a given sourcepackage, distroseries, archive.
+    package releases for a given sourcepackage, distroseries, archive, keyed
+    on the package creator and maintainer. The table contains a set of data
+    records for package creators and a second set of data for package
+    maintainers. Queries can be filtered by creator or maintainer as required.
     """
 
-    id = Attribute("The id of the associated SourcePackageRelease.")
+    id = Attribute(
+        "The id of the associated LatestPersonSourcepackageReleaseCache"
+        "record.")
     sourcepackagerelease = Attribute(
         "The SourcePackageRelease which this object represents.")
     publication = Attribute(
