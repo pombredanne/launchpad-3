@@ -189,8 +189,7 @@ class TestSourcePackageView(BrowserTestCase):
             displayname=product_displayname)
         with person_logged_in(None):
             browser = self.getViewBrowser(sourcepackage, user=owner)
-            upstream = browser.getControl(name='field.upstream')
-            upstream.value = [product_name]
+            browser.getControl(product_displayname).click()
             browser.getControl("Link to Upstream Project").click()
         error = Tag(
             'error', 'div', attrs={'class': 'error message'},
@@ -207,15 +206,23 @@ class TestSourcePackageView(BrowserTestCase):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         product_name = product.name
+        product_displayname = product.displayname
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename=product_name)
         with person_logged_in(None):
             browser = self.getViewBrowser(sourcepackage, user=owner)
             with person_logged_in(owner):
                 product.information_type = InformationType.PROPRIETARY
-            upstream = browser.getControl(name='field.upstream')
-            upstream.value = [product_name]
+            browser.getControl(product_displayname).click()
             browser.getControl("Link to Upstream Project").click()
+        error = Tag(
+            'error', 'div', attrs={'class': 'error message'},
+            text='Only Public project series can be packaged, not'
+            ' Proprietary.')
+        self.assertThat(browser.contents, HTMLContains(error))
+        self.assertNotIn(
+            'The project %s was linked to this source package.' %
+            str(product_displayname), browser.contents)
 
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
