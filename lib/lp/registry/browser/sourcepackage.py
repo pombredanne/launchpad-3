@@ -67,11 +67,10 @@ from lp.app.browser.multistep import (
     StepView,
     )
 from lp.app.browser.tales import CustomizableFormatter
-from lp.app.enums import ServiceUsage
+from lp.app.enums import InformationType, ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
-from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -81,6 +80,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.product import Product
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -578,7 +578,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # Find registered products that are similarly named to the source
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
-        matches = product_vocab.searchForTerms(self.context.name)
+        matches = product_vocab.searchForTerms(self.context.name,
+            vocab_filter=[Product._information_type ==
+                          InformationType.PUBLIC])
         # Based upon the matching products, create a new vocabulary with
         # term descriptions that include a link to the product.
         self.product_suggestions = []
@@ -620,12 +622,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             url = get_register_upstream_url(self.context)
             self.request.response.redirect(url)
             return
-        try:
-            self.context.setPackaging(upstream.development_focus, self.user)
-        except CannotPackageProprietaryProduct as e:
-            self.request.response.addErrorNotification(str(e))
-            self.next_url = self.request.getURL()
-            return
+        self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(
             'The project %s was linked to this source package.' %
             upstream.displayname)

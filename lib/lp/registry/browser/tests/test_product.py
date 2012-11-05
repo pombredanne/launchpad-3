@@ -496,7 +496,8 @@ class TestProductEditView(BrowserTestCase):
                 product,
                 '+edit',
                 principal=product.owner)
-            info_types = [t.name for t in view.widgets['information_type'].vocabulary]
+            vocabulary = view.widgets['information_type'].vocabulary
+            info_types = [t.name for t in vocabulary]
             expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
             self.assertEqual(expected, info_types)
 

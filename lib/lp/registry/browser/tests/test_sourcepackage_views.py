@@ -177,32 +177,21 @@ class TestSourcePackageView(BrowserTestCase):
         self.assertThat(browser.contents, Not(HTMLContains(t)))
 
     def test_link_upstream_handles_initial_proprietary(self):
-        # Handle the case where the was proprietary before the page was
-        # displayed.
+        # Proprietary product is not listed as an option.
         owner = self.factory.makePerson()
         sourcepackage = self.factory.makeSourcePackage()
         product_name = sourcepackage.name
         product_displayname = self.factory.getUniqueString()
-        product = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=product_name, owner=owner,
             information_type=InformationType.PROPRIETARY,
             displayname=product_displayname)
-        with person_logged_in(None):
-            browser = self.getViewBrowser(sourcepackage, user=owner)
-            browser.getControl(product_displayname).click()
-            browser.getControl("Link to Upstream Project").click()
-        error = Tag(
-            'error', 'div', attrs={'class': 'error message'},
-            text='Only Public project series can be packaged, not'
-            ' Proprietary.')
-        self.assertThat(browser.contents, HTMLContains(error))
-        self.assertNotIn(
-            'The project %s was linked to this source package.' %
-            product_displayname, browser.contents)
+        browser = self.getViewBrowser(sourcepackage, user=owner)
+        with ExpectedException(LookupError):
+            browser.getControl(product_displayname)
 
     def test_link_upstream_handles_proprietary(self):
-        # Handle the case where the product becomes proprietary after the page
-        # was displayed.
+        # Proprietary products produce an 'invalid value' error.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         product_name = product.name
@@ -216,9 +205,8 @@ class TestSourcePackageView(BrowserTestCase):
             browser.getControl(product_displayname).click()
             browser.getControl("Link to Upstream Project").click()
         error = Tag(
-            'error', 'div', attrs={'class': 'error message'},
-            text='Only Public project series can be packaged, not'
-            ' Proprietary.')
+            'error', 'div', attrs={'class': 'message'},
+            text='Invalid value')
         self.assertThat(browser.contents, HTMLContains(error))
         self.assertNotIn(
             'The project %s was linked to this source package.' %
@@ -372,7 +360,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
         """Packaging cannot be created for PROPRIETARY products"""
         product_owner = self.factory.makePerson()
         product_name = 'proprietary-product'
-        product = self.factory.makeProduct(
+        self.factory.makeProduct(
             name=product_name, owner=product_owner,
             information_type=InformationType.PROPRIETARY)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
