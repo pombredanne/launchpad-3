@@ -565,9 +565,6 @@ class TestProductTraversal(TestCaseWithFactory, TraversalMixin):
         # products.
         with celebrity_logged_in('admin'):
             self.check_admin_access()
-        # Registry experts can access to all products.
-        with celebrity_logged_in('registry_experts'):
-            self.check_admin_access()
         # Commercial admins have access to all products.
         with celebrity_logged_in('commercial_admin'):
             self.check_admin_access()

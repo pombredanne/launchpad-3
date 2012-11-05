@@ -735,11 +735,18 @@ class TestProduct(TestCaseWithFactory):
         with person_logged_in(ordinary_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        # Admins can access proprietary products.
-        with celebrity_logged_in('admin'):
+        # Access can be granted to a team too.
+        other_user = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[other_user])
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, team, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(other_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        with celebrity_logged_in('registry_experts'):
+        # Admins can access proprietary products.
+        with celebrity_logged_in('admin'):
             for attribute_name in names:
                 getattr(product, attribute_name)
         # Commercial admins have access to all products.

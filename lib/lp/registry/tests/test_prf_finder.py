@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -57,6 +57,17 @@ class FindReleasesTestCase(unittest.TestCase):
                          ('product1', ['filter1', 'filter2']))
         self.assertEqual(prf.seen_products[1],
                          ('product2', ['filter3', 'filter4']))
+
+
+class FindReleasesDBTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_findReleases_permissions(self):
+        switch_dbuser(config.productreleasefinder.dbuser)
+        prf = ProductReleaseFinder(self.layer.txn, logging.getLogger())
+        # Test that this raises no exceptions.
+        prf.findReleases()
 
 
 class GetFiltersTestCase(TestCaseWithFactory):

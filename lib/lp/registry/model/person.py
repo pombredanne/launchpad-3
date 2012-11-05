@@ -133,6 +133,7 @@ from lp.blueprints.model.specification import (
     get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
+    spec_started_clause,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -798,23 +799,11 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-    # specification-related joins
-    @property
-    def assigned_specs(self):
-        return shortlist(Specification.selectBy(
-            assignee=self, orderBy=['-datecreated']))
-
-    @property
-    def assigned_specs_in_progress(self):
-        replacements = sqlvalues(assignee=self)
-        replacements['started_clause'] = Specification.started_clause
-        replacements['completed_clause'] = Specification.completeness_clause
-        query = """
-            (assignee = %(assignee)s)
-            AND (%(started_clause)s)
-            AND NOT (%(completed_clause)s)
-            """ % replacements
-        return Specification.select(query, orderBy=['-date_started'], limit=5)
+    def findVisibleAssignedInProgressSpecs(self, user):
+        """See `IPerson`."""
+        return self.specifications(user, in_progress=True, quantity=5,
+                                   sort=Desc(Specification.date_started),
+                                   filter=[SpecificationFilter.ASSIGNEE])
 
     @property
     def unique_displayname(self):
@@ -822,7 +811,7 @@ class Person(
         return "%s (%s)" % (self.displayname, self.name)
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       prejoin_people=True, in_progress=False):
         """See `IHasSpecifications`."""
         from lp.blueprints.model.specificationsubscription import (
             SpecificationSubscription,
@@ -835,11 +824,6 @@ class Person(
             filter = set(filter)
 
         # Now look at the filter and fill in the unsaid bits.
-
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
-        if SpecificationFilter.COMPLETE not in filter:
-            filter.add(SpecificationFilter.INCOMPLETE)
 
         # Defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a person.
@@ -872,12 +856,24 @@ class Person(
                         [SpecificationSubscription.person == self]
                     )))
         clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        # Defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE.
+        if SpecificationFilter.COMPLETE not in filter:
+            if (in_progress and SpecificationFilter.INCOMPLETE not in filter
+                and SpecificationFilter.ALL not in filter):
+                clauses.append(spec_started_clause)
+            filter.add(SpecificationFilter.INCOMPLETE)
+
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
-            results = results.order_by(Desc(Specification.datecreated))
+            sort = Desc(Specification.datecreated)
+        elif getattr(sort, 'enum', None) is SpecificationSort:
+            sort = None
+        if sort is not None:
+            results = results.order_by(sort)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1821,6 +1817,11 @@ class Person(
                     "The team membership policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
+        # Does the team own a productseries.branch?
+        if getUtility(IAllBranches).ownedBy(self).isSeries().count() != 0:
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it owns "
+                "or more branches linked to project series." % policy)
         # Does this team subscribe or is assigned to any private bugs.
         # Circular imports.
         from lp.bugs.model.bug import Bug
@@ -2174,8 +2175,8 @@ class Person(
         product_set = getUtility(IProductSet)
         non_public_products = product_set.get_users_private_products(self)
         if non_public_products.count() != 0:
-            errors.append(('This account cannot be deactivated because it owns '
-                        'the following non-public products: ') +
+            errors.append(('This account cannot be deactivated because it owns'
+                        ' the following non-public products: ') +
                         ','.join([p.name for p in non_public_products]))
 
         if self.account_status != AccountStatus.ACTIVE:
@@ -2225,8 +2226,12 @@ class Person(
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
-        for spec in self.assigned_specs:
+
+        assigned_specs = Store.of(self).find(
+            Specification, assignee=self)
+        for spec in assigned_specs:
             spec.assignee = None
+
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
@@ -3049,6 +3054,20 @@ class Person(
         """See `IPerson`."""
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getVisiblePPAs(self, user):
+        """See `IPerson`."""
+
+        # Avoid circular imports.
+        from lp.soyuz.model.archive import get_enabled_archive_filter
+
+        filter = get_enabled_archive_filter(
+            user, purpose=ArchivePurpose.PPA,
+            include_public=True, include_subscribed=True)
+        return Store.of(self).find(
+            Archive,
+            Archive.owner == self,
+            filter).order_by(Archive.name)
 
     def getPPAByName(self, name):
         """See `IPerson`."""

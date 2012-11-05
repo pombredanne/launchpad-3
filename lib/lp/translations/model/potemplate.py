@@ -1181,8 +1181,27 @@ class POTemplateSubset:
             # Do not continue, else it would trigger an existingpo assertion.
             return
 
+    def _getSuperSet(self):
+        """Return the set of all POTemplates for this series and package."""
+        if self.iscurrent is None:
+            return self
+        else:
+            return getUtility(IPOTemplateSet).getSubset(
+                productseries=self.productseries,
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename)
+
+    def isNameUnique(self, name):
+        """See `IPOTemplateSubset`."""
+        return self._getSuperSet().getPOTemplateByName(name) is None
+
     def new(self, name, translation_domain, path, owner, copy_pofiles=True):
         """See `IPOTemplateSubset`."""
+        existing_template = self._getSuperSet().getPOTemplateByName(name)
+        if existing_template is not None:
+            raise ValueError(
+                'POTempate %s already exists and is iscurrent=%s' %
+                (name, existing_template.iscurrent))
         header_params = {
             'origin': 'PACKAGE VERSION',
             'templatedate': datetime.datetime.now(),

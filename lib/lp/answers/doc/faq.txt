@@ -29,7 +29,7 @@ provided by objects that can host FAQs.
     >>> verifyObject(IFAQTarget, removeSecurityProxy(ubuntu))
     True
 
-Any user who has 'launchpad.Moderate' on the project can create a new
+Any user who has 'launchpad.Append' on the project can create a new
 FAQ. (That permission is granted to project's registrant and answer
 contacts.)
 

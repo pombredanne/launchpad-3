@@ -23,6 +23,7 @@ from lp.app.interfaces.services import IService
 from lp.registry.enums import (
     BugSharingPolicy,
     SharingPermission,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -503,6 +504,21 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
                                 milestone.getSpecifications(None))
         self.assertContentEqual([spec],
                                 milestone.getSpecifications(owner))
+
+    def test_getSpecifications_specification_privacy(self):
+        # Only specifications visible to the specified user are listed.
+        owner = self.factory.makePerson()
+        enum = SpecificationSharingPolicy
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=enum.PROPRIETARY)
+        milestone = self.factory.makeMilestone(product=product)
+        specification = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY,
+            milestone=milestone)
+        self.assertIn(
+            specification, list(milestone.getSpecifications(owner)))
+        self.assertNotIn(
+            specification, list(milestone.getSpecifications(None)))
 
     def test_bugtasks_milestone_privacy(self):
         # Ensure bugtasks respects milestone privacy.
