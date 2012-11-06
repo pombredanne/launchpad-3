@@ -389,10 +389,10 @@ class FileBugViewBase(LaunchpadFormView):
             elif not comment or widget_error is not None:
                 self.setFieldError(
                     'comment', "Provide details about the issue.")
-            # Check if an extra description, and if that is too long.
+            # Check if there is an extra description, and if it is too long.
             if self.extra_data.extra_description:
                 if len("%s\n\n%s" % (
-                    comment, self.extra_data.extra_description)) > 50001:
+                    comment, self.extra_data.extra_description)) > 50000:
                     self.setFieldError(
                         'comment', 'The description and the additional '
                         'information is too long. If you have lots of text '
