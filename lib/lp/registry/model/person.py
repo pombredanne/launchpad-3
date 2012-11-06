@@ -2268,7 +2268,9 @@ class Person(
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('AnswerContact', 'person')]
+            ('AnswerContact', 'person'),
+            ('LatestPersonSourcepackageReleaseCache', 'creator'),
+            ('LatestPersonSourcepackageReleaseCache', 'maintainer')]
         cur = cursor()
         for table, person_id_column in removals:
             cur.execute("DELETE FROM %s WHERE %s=%d"
@@ -2345,6 +2347,10 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team'),
+            # The following is denormalised reporting data only loaded if the
+            # user already has access to the team.
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ])
 
         # The following relationships are allowable for Private teams and
@@ -4353,6 +4359,8 @@ class PersonSet:
             # These are ON DELETE CASCADE and maintained by triggers.
             ('bugsummary', 'viewed_by'),
             ('bugsummaryjournal', 'viewed_by'),
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
