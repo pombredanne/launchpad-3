@@ -2831,16 +2831,27 @@ class Person(
         clauses = []
         if uploader_only:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.creator == self)
+                LatestPersonSourcepackageReleaseCache.creator_id == self.id)
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            clauses.append(
-                LatestPersonSourcepackageReleaseCache.maintainer != self)
+            lpspr = ClassAlias(LatestPersonSourcepackageReleaseCache, 'lpspr')
+            clauses.append(Not(Exists(Select(1,
+            where=And(
+                lpspr.sourcepackagename_id ==
+                    LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+                lpspr.upload_archive_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_archive_id,
+                lpspr.upload_distroseries_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+                lpspr.archive_purpose != ArchivePurpose.PPA,
+                lpspr.maintainer_id ==
+                    LatestPersonSourcepackageReleaseCache.creator_id),
+            tables=lpspr))))
         else:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.maintainer == self)
+                LatestPersonSourcepackageReleaseCache.maintainer_id == self.id)
         if ppa_only:
             clauses.append(
                 LatestPersonSourcepackageReleaseCache.archive_purpose ==
@@ -2869,8 +2880,9 @@ class Person(
             Desc(LatestPersonSourcepackageReleaseCache.dateuploaded))
 
         def load_related_objects(rows):
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                set(map(attrgetter("maintainer_id"), rows))))
+            if rows and rows[0].maintainer_id:
+                list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                    set(map(attrgetter("maintainer_id"), rows))))
             bulk.load_related(
                 SourcePackageName, rows, ['sourcepackagename_id'])
             bulk.load_related(

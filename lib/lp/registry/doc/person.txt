@@ -1004,7 +1004,7 @@ We will change modify the first SourcePackageRelease to reproduce the
 issue mentioned in bug 157303, where source with same creator and
 maintainer got omitted from the results:
 
-    >>> any_spr = mark_spreleases[0]
+    >>> any_spr = mark_spreleases[0].sourcepackagerelease
     >>> naked_spr = removeSecurityProxy(any_spr)
     >>> naked_spr.maintainer = mark
     >>> flush_database_updates()
