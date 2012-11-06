@@ -961,6 +961,21 @@ class TestProduct(TestCaseWithFactory):
                 self.assertTrue(check_permission('launchpad.View', product))
             self.assertFalse(check_permission('launchpad.View', product))
 
+    def test_information_type_prevents_pruning(self):
+        # Access policies for Product.information_type are not pruned.
+        owner = self.factory.makePerson()
+        for info_type in [
+            InformationType.PROPRIETARY, InformationType.EMBARGOED]:
+            product = self.factory.makeProduct(
+                information_type=info_type, owner=owner)
+            with person_logged_in(owner):
+                product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
+                product.setSpecificationSharingPolicy(
+                    SpecificationSharingPolicy.PUBLIC)
+                product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
+            self.assertIsNot(None, getUtility(IAccessPolicySource).find(
+                [(product, info_type)]).one())
+
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
 
@@ -1929,7 +1944,7 @@ class TestProductSet(TestCaseWithFactory):
     def test_users_private_products(self):
         # Ignore any public products the user may own.
         owner = self.factory.makePerson()
-        public = self.factory.makeProduct(
+        self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
             owner=owner)
         proprietary = self.factory.makeProduct(
@@ -2042,9 +2057,9 @@ class TestProductSet(TestCaseWithFactory):
         product = self.factory.makeProduct(
             owner=owner, translations_usage=ServiceUsage.LAUNCHPAD)
         series = self.factory.makeProductSeries(product)
-        po_template = self.factory.makePOTemplate(productseries=series)
+        self.factory.makePOTemplate(productseries=series)
         with person_logged_in(owner):
-            product.information_type=InformationType.PROPRIETARY
+            product.information_type = InformationType.PROPRIETARY
         # Anonymous users do not see private products.
         with person_logged_in(ANONYMOUS):
             translatables = getUtility(IProductSet).getTranslatables()

@@ -346,10 +346,6 @@ class IDistributionPublic(
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
 
-    upstream_report_excluded_packages = Attribute(
-        "A list of the source packages that should not be shown on the "
-        "upstream report for this Distribution.")
-
     has_published_binaries = Bool(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
@@ -604,25 +600,6 @@ class IDistributionPublic(
         partner), this method will return the archive for that component.
 
         If the component_name supplied is unknown, None is returned.
-        """
-
-    def getPackagesAndPublicUpstreamBugCounts(limit=50,
-                                              exclude_packages=None):
-        """Return list of tuples of packages, upstreams and public bug counts.
-
-        :param limit: The maximum number of rows to return.
-        :param exclude_packages: A list of source packages to exclude.
-            These should be specified as strings which correspond with
-            SourcePackageName.name.
-        :returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
-
-        This API is quite specialized; it returns a list of up to limit
-        tuples containing IProducts and three different bug counts:
-            - open bugs
-            - triaged bugs
-            - open bugs with an upstream task
-            - open bugs with upstream tasks that are either linked to
-              bug watches or to products that use_malone.
         """
 
     def getAllowedBugInformationTypes():

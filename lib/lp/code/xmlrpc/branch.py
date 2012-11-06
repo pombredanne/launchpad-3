@@ -304,7 +304,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidProductName as e:
-            raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
+            raise faults.InvalidProductName(urlutils.escape(e.name))
         except NoSuchProductSeries as e:
             raise faults.NoSuchProductSeries(
                 urlutils.escape(e.name), e.product)
