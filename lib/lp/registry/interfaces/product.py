@@ -430,7 +430,7 @@ class IProductPublic(Interface):
 
 class IProductLimitedView(Interface):
     """Attributes that must be visible for person with artifact grants
-    on bugs, branches or specifications for the product,
+    on bugs, branches or specifications for the product.
     """
 
     name = exported(
