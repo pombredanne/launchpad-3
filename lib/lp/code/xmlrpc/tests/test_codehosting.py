@@ -297,6 +297,16 @@ class CodehostingTest(TestCaseWithFactory):
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
         self.assertEqual(faults.NotFound(message), fault)
 
+    def test_createBranch_invalid_product(self):
+        # Creating a branch with an invalid product name fails.
+        owner = self.factory.makePerson()
+        name = self.factory.getUniqueString()
+        from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
+        branch_name = "/%s/fiz:buzz/%s" % (BRANCH_ALIAS_PREFIX, name)
+        fault = self.codehosting_api.createBranch(
+            owner.id, branch_name)
+        self.assertEqual(faults.InvalidProductName(escape('fiz:buzz')), fault)
+
     def test_createBranch_other_user(self):
         # Creating a branch under another user's directory fails.
         creator = self.factory.makePerson()

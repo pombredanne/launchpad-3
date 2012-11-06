@@ -847,6 +847,20 @@ class TestPOTemplateSubset(TestCaseWithFactory):
 
         self.assertEqual(templates, found_templates)
 
+    def test_isNameUnique(self):
+        # The isNameUnique method ignored the iscurrent filter to provide
+        # an authoritative answer to whether a new template can be created
+        # with the name.
+        series = self.factory.makeProductSeries()
+        self.factory.makePOTemplate(productseries=series, name='cat')
+        self.factory.makePOTemplate(
+            productseries=series, name='dog', iscurrent=False)
+        potset = getUtility(IPOTemplateSet)
+        subset = potset.getSubset(productseries=series, iscurrent=True)
+        self.assertFalse(subset.isNameUnique('cat'))
+        self.assertFalse(subset.isNameUnique('dog'))
+        self.assertTrue(subset.isNameUnique('fnord'))
+
     def test_getPOTemplatesByTranslationDomain_returns_result_set(self):
         subset = getUtility(IPOTemplateSet).getSubset(
             productseries=self.factory.makeProductSeries())
