@@ -4275,6 +4275,13 @@ ALTER TABLE flatpackagesetinclusion ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE garbojobstate DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE garbojobstate ENABLE TRIGGER ALL;
+
+
 ALTER TABLE hwvendorname DISABLE TRIGGER ALL;
 
 INSERT INTO hwvendorname (id, name) VALUES (1, 'MSI');
@@ -4754,6 +4761,42 @@ INSERT INTO languagepack (id, file, date_exported, date_last_used, distroseries,
 
 
 ALTER TABLE languagepack ENABLE TRIGGER ALL;
+
+
+ALTER TABLE latestpersonsourcepackagereleasecache DISABLE TRIGGER ALL;
+
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (1, 1, '2004-09-27 11:57:13', 1, NULL, 1, 1, 1, 1, 14);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (2, 5, '2005-03-10 16:30:00', 1, NULL, 1, 1, 3, 10, 16);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (3, 4, '2005-03-14 18:00:00', 1, NULL, 1, 1, 1, 10, 17);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (4, 9, '2005-06-24 20:59:31.439579', 1, NULL, 1, 1, 3, 14, 21);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (5, 10, '2005-02-03 08:50:00', 1, NULL, 1, 1, 1, 19, 23);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (6, 15, '2005-07-01 22:47:00', 1, NULL, 1, 1, 8, 19, 24);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (7, 12, '2005-08-01 14:10:00', 1, NULL, 1, 1, 3, 19, 25);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (8, 13, '2005-12-22 18:19:00', 1, NULL, 1, 1, 3, 20, 26);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (9, 16, '2006-02-10 11:19:00', 1, NULL, 1, 1, 3, 21, 27);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (10, 19, '2005-12-22 18:19:00', 1, NULL, 1, 1, 3, 22, 28);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (11, 22, '2006-12-01 13:19:01', 1, NULL, 1, 1, 10, 23, 32);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (12, 23, '2006-12-01 13:19:01', 1, NULL, 1, 1, 10, 24, 33);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (13, 31, '2006-04-11 11:19:01', 1, NULL, 2, 10, 1, 26, 35);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (14, 30, '2007-08-09 21:25:37.832976', 243606, NULL, 4, 12, 10, 27, 36);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (17, 1, '2004-09-27 11:57:13', NULL, 1, 1, 1, 1, 1, 14);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (18, 2, '2004-09-27 11:57:13', NULL, 1, 1, 1, 3, 9, 15);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (19, 5, '2005-03-10 16:30:00', NULL, 1, 1, 1, 3, 10, 16);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (20, 4, '2005-03-14 18:00:00', NULL, 1, 1, 1, 1, 10, 17);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (21, 9, '2005-06-24 20:59:31.439579', NULL, 1, 1, 1, 3, 14, 21);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (22, 10, '2005-02-03 08:50:00', NULL, 1, 1, 1, 1, 19, 23);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (23, 14, '2005-07-01 22:47:00', NULL, 1, 1, 1, 8, 19, 24);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (24, 20, '2005-08-01 14:10:00', NULL, 16, 1, 1, 3, 19, 25);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (25, 13, '2005-12-22 18:19:00', NULL, 16, 1, 1, 3, 20, 26);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (26, 16, '2006-02-10 11:19:00', NULL, 16, 1, 1, 3, 21, 27);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (27, 17, '2005-12-22 18:19:00', NULL, 16, 1, 1, 3, 22, 28);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (28, 22, '2006-12-01 13:19:01', NULL, 16, 1, 1, 10, 23, 32);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (29, 25, '2006-12-01 13:19:01', NULL, 16, 1, 1, 10, 24, 33);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (30, 31, '2006-04-11 11:19:01', NULL, 16, 2, 10, 1, 26, 35);
+INSERT INTO latestpersonsourcepackagereleasecache (id, publication, date_uploaded, creator, maintainer, archive_purpose, upload_archive, upload_distroseries, sourcepackagename, sourcepackagerelease) VALUES (31, 30, '2007-08-09 21:25:37.832976', NULL, 243606, 4, 12, 10, 27, 36);
+
+
+ALTER TABLE latestpersonsourcepackagereleasecache ENABLE TRIGGER ALL;
 
 
 ALTER TABLE launchpaddatabaserevision DISABLE TRIGGER ALL;

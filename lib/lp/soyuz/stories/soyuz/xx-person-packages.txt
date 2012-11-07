@@ -160,12 +160,36 @@ Let's make a helper function to print the PPA packages from the page:
     ...     for row in rows:
     ...         print extract_text(row)
 
+Make a function to update the cached latest person source package release
+records.
+
+    >>> from lp.scripts.garbo import PopulateLatestPersonSourcepackageReleaseCache
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> from lp.services.database.interfaces import (
+    ...     IStoreSelector,
+    ...     MAIN_STORE,
+    ...     MASTER_FLAVOR,
+    ...     )
+
+    >>> def update_cached_records(delete_all=False):
+    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    ...     if delete_all:
+    ...         store.execute(
+    ...             "delete from latestpersonsourcepackagereleasecache")
+    ...     flush_database_updates()
+    ...     switch_dbuser('garbo_frequently')
+    ...     job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+    ...     while not job.isDone():
+    ...         job(chunk_size=100)
+    ...     switch_dbuser('launchpad')
+
 
 Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
 
     >>> from zope.component import getUtility
-    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -193,7 +217,7 @@ so that they appear in his +packages page.
     ...     archive=nopriv_private_ppa)
     >>> source2.sourcepackagerelease.creator=cprov
 
-    >>> flush_database_updates()
+    >>> update_cached_records()
     >>> logout()
 
 "source1" is now published in cprov and mark's PPA.  "source2" is only
@@ -258,6 +282,10 @@ private one and the view the page again.
     >>> removeSecurityProxy(source1_mark).archive = (
     ...     mark_private_ppa)
     >>> logout()
+
+    Update the releases cache table.
+    >>> update_cached_records(True)
+
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(user_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
@@ -283,7 +311,10 @@ his private one:
     >>> source1.sourcepackagerelease.upload_archive = cprov_private_ppa
     >>> logout()
 
-It will now disppear from the listings because it's not published in any
+    Update the releases cache table.
+    >>> update_cached_records(True)
+
+It will now disappear from the listings because it's not published in any
 public archives.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
@@ -300,7 +331,7 @@ Now we'll publish it in the primary archive.
     >>> source1_ubuntu = source1.copyTo(
     ...     source1.distroseries, source1.pocket, primary)
     >>> source1_ubuntu.setPublished()
-    >>> flush_database_updates()
+    >>> update_cached_records()
     >>> logout()
 
 This makes the package appear in the listings again because the primary
@@ -316,12 +347,12 @@ archive is public.
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None
 
-Even after the package is superseded, the package remains visibile in
+Even after the package is superseded, the package remains visible in
 the listings.
 
     >>> login("foo.bar@canonical.com")
     >>> discard = source1_ubuntu.supersede()
-    >>> flush_database_updates()
+    >>> update_cached_records()
     >>> logout()
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-packages")
@@ -377,6 +408,7 @@ Then delete the 'source2' package.
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
+    >>> update_cached_records()
 
 Now re-list the PPA's packages, 'source2' was deleted but still
 appears.
@@ -404,7 +436,7 @@ Please note also that disabled archives are not viewable by anonymous users.
 
     >>> login("foo.bar@canonical.com")
     >>> cprov.archive.disable()
-    >>> flush_database_updates()
+    >>> update_cached_records()
     >>> logout()
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     Traceback (most recent call last):
