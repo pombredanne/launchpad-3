@@ -555,7 +555,7 @@ class TestProduct(TestCaseWithFactory):
             'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
             'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
-            'parent_subscription_target', 'title', )),
+            'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -603,7 +603,7 @@ class TestProduct(TestCaseWithFactory):
             'packagedInDistros', 'packagings',
             'past_sprints', 'personHasDriverRights', 'pillar',
             'primary_translatable', 'private_bugs',
-            'programminglang', 'project', 'qualifies_for_free_hosting',
+            'programminglang', 'qualifies_for_free_hosting',
             'recipes', 'redeemSubscriptionVoucher', 'registrant', 'releases',
             'remote_product', 'removeCustomLanguageCode',
             'screenshotsurl',

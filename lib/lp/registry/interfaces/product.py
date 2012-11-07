@@ -457,22 +457,6 @@ class IProductLimitedView(IHasLogo, ILaunchpadUsage):
                 "letters, numbers, dots, hyphens or pluses. "
                 "Keep this name short; it is used in URLs as shown above.")))
 
-    title = exported(
-        Title(
-            title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
-
-
-class IProductView(
-    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
-    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
-    """Public IProduct properties."""
-
     project = exported(
         ReferenceChoice(
             title=_('Part of'),
@@ -488,6 +472,22 @@ class IProductView(
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
+
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
+
+
+class IProductView(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
+    IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
+    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    """Public IProduct properties."""
 
     owner = exported(
         PersonChoice(
