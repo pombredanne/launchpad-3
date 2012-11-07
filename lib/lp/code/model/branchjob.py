@@ -44,6 +44,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
+from storm.exceptions import LostObjectError
 from storm.expr import (
     And,
     SQL,
@@ -239,6 +240,8 @@ class BranchJobDerived(BaseRunnableJob):
 
     def __init__(self, branch_job):
         self.context = branch_job
+        if branch_job.branch:
+            self.branch_unique_name = branch_job.branch.unique_name
 
     def __repr__(self):
         branch = self.branch
@@ -324,11 +327,15 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
         with server(get_ro_server(), no_replace=True):
-            lock = try_advisory_lock(
-                LockType.BRANCH_SCAN, self.branch.id, Store.of(self.branch))
-            with lock:
-                bzrsync = BzrSync(self.branch, log)
-                bzrsync.syncBranchAndClose()
+            try:
+                with try_advisory_lock(
+                    LockType.BRANCH_SCAN, self.branch.id,
+                    Store.of(self.branch)):
+                    bzrsync = BzrSync(self.branch, log)
+                    bzrsync.syncBranchAndClose()
+            except LostObjectError:
+                log.warning('Skipping branch %s because it has been deleted.'
+                    % self.branch_unique_name)
 
     @classmethod
     @contextlib.contextmanager

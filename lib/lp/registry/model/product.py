@@ -704,6 +704,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         )
         allowed_types = allowed_bug_types.union(allowed_branch_types)
         allowed_types = allowed_types.union(allowed_specification_types)
+        allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
         # APAs are unused and can be deleted.
