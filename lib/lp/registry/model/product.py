@@ -90,6 +90,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
     SpecificationFilter,
@@ -138,6 +139,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
@@ -202,6 +204,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -701,6 +704,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         )
         allowed_types = allowed_bug_types.union(allowed_branch_types)
         allowed_types = allowed_types.union(allowed_specification_types)
+        allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
         # APAs are unused and can be deleted.
@@ -752,6 +756,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
@@ -1507,25 +1524,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         if user.id in self._known_viewers:
             return True
-        # We need the plain Storm Person object for the SQL query below
-        # but an IPersonRoles object for the team membership checks.
-        if IPersonRoles.providedBy(user):
-            plain_user = user.person
-        else:
-            plain_user = user
+        if not IPersonRoles.providedBy(user):
             user = IPersonRoles(user)
-        if (user.in_commercial_admin or user.in_admin or
-            user.in_registry_experts):
+        if user.in_commercial_admin or user.in_admin:
             self._known_viewers.add(user.id)
             return True
-        policy = getUtility(IAccessPolicySource).find(
-            [(self, self.information_type)]).one()
-        grants_for_user = getUtility(IAccessPolicyGrantSource).find(
-            [(policy, plain_user)])
-        if grants_for_user.is_empty():
-            return False
-        self._known_viewers.add(user.id)
-        return True
+        if getUtility(IService, 'sharing').checkPillarAccess(
+            [self], self.information_type, user):
+            self._known_viewers.add(user.id)
+            return True
+        return False
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,
@@ -1725,6 +1733,15 @@ class ProductSet:
         return Or(Product._information_type == InformationType.PUBLIC,
                   Product._information_type == None,
                   Product.id.is_in(Select(Product.id, granted_products)))
+
+    @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
 
     @classmethod
     def get_all_active(cls, user, eager_load=True):
@@ -1991,39 +2008,21 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        user = getUtility(ILaunchBag).user
+        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID).config(
+            Person.id == Product._ownerID,
+            privacy_clause).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
-
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

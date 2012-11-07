@@ -110,17 +110,14 @@
     <require
       permission="launchpad.AnyPerson"
       attributes="requestInfo giveAnswer expireQuestion addComment
-                  addCommentWithoutNotify linkFAQ subscribe unsubscribe"
+                  addCommentWithoutNotify linkFAQ subscribe unsubscribe
+                  setCommentVisibility"
       set_attributes="title description datedue target language"
       />
     <require
       permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
-      />
-    <require
-      permission="launchpad.Moderate"
-      attributes="setCommentVisibility"
       />
     <require
       permission="launchpad.Admin"

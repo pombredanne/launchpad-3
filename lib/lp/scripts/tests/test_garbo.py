@@ -11,12 +11,14 @@ from datetime import (
     timedelta,
     )
 import logging
+import pytz
 from StringIO import StringIO
 import time
 
 from pytz import UTC
 from storm.expr import (
     In,
+    Like,
     Min,
     Not,
     SQL,
@@ -59,6 +61,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -67,8 +70,10 @@ from lp.scripts.garbo import (
     DuplicateSessionPruner,
     FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    load_garbo_job_state,
     LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
+    save_garbo_job_state,
     UnusedSessionPruner,
     )
 from lp.services.config import config
@@ -97,6 +102,8 @@ from lp.services.oauth.model import (
     OAuthNonce,
     )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
+from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
+from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
 from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
@@ -105,7 +112,10 @@ from lp.services.session.model import (
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
 from lp.testing import (
+    FakeAdapterMixin,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -370,7 +380,7 @@ class TestSessionPruner(TestCase):
         self.assertEqual(expected_sessions, found_sessions)
 
 
-class TestGarbo(TestCaseWithFactory):
+class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -417,6 +427,15 @@ class TestGarbo(TestCaseWithFactory):
         collector.logger = self.log
         collector.main()
         return collector
+
+    def test_persist_garbo_state(self):
+        # Test that loading and saving garbo job state works.
+        save_garbo_job_state('job', {'data': 1})
+        data = load_garbo_job_state('job')
+        self.assertEqual({'data': 1}, data)
+        save_garbo_job_state('job', {'data': 2})
+        data = load_garbo_job_state('job')
+        self.assertEqual({'data': 2}, data)
 
     def test_OAuthNoncePruner(self):
         now = datetime.now(UTC)
@@ -966,6 +985,36 @@ class TestGarbo(TestCaseWithFactory):
             "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
         self.assertThat(num_rows, Equals(0))
 
+    def test_VoucherRedeemer(self):
+        switch_dbuser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        voucher_proxy = TestSalesforceVoucherProxy()
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+
+        # Mark has some unredeemed vouchers so set one of them as pending.
+        mark = getUtility(IPersonSet).getByName('mark')
+        voucher = voucher_proxy.getUnredeemedVouchers(mark)[0]
+        product = self.factory.makeProduct(owner=mark)
+        redeemed_id = voucher.voucher_id
+        self.factory.makeCommercialSubscription(
+            product, False, 'pending-%s' % redeemed_id)
+        transaction.commit()
+
+        self.runFrequently()
+
+        # There should now be 0 pending vouchers in Launchpad.
+        num_rows = store.find(
+            CommercialSubscription,
+            Like(CommercialSubscription.sales_system_id, u'pending-%')
+            ).count()
+        self.assertThat(num_rows, Equals(0))
+        # Salesforce should also now have redeemed the voucher.
+        unredeemed_ids = [
+            voucher.voucher_id
+            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
+        self.assertNotIn(redeemed_id, unredeemed_ids)
+
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
         # participating in a POTemplate only as obsolete messages.
@@ -1076,6 +1125,104 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, store.find(Product,
             Product._information_type == None).count())
+
+    def test_PopulateLatestPersonSourcepackageReleaseCache(self):
+        switch_dbuser('testadmin')
+        # Make some same test data - we create published source package
+        # releases for 2 different creators and maintainers.
+        creators = []
+        for _ in range(2):
+            creators.append(self.factory.makePerson())
+        maintainers = []
+        for _ in range(2):
+            maintainers.append(self.factory.makePerson())
+
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries()
+        spr1 = self.factory.makeSourcePackageRelease(
+            creator=creators[0], maintainer=maintainers[0],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr1)
+        spr2 = self.factory.makeSourcePackageRelease(
+            creator=creators[0], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 2, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr2)
+        spr3 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[0],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 3, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr3)
+        spr4 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr4)
+
+        transaction.commit()
+        self.runFrequently()
+
+        store = IMasterStore(LatestPersonSourcepackageReleaseCache)
+        # Check that the garbo state table has data.
+        self.assertIsNotNone(
+            store.execute(
+                'SELECT * FROM GarboJobState WHERE name=?',
+                params=[u'PopulateLatestPersonSourcepackageReleaseCache']
+            ).get_one())
+
+        def _assert_release_by_creator(creator, spr):
+            release_records = store.find(
+                LatestPersonSourcepackageReleaseCache,
+                LatestPersonSourcepackageReleaseCache.creator_id == creator.id)
+            [record] = list(release_records)
+            self.assertEqual(spr.creator, record.creator)
+            self.assertIsNone(record.maintainer_id)
+            self.assertEqual(
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+
+        def _assert_release_by_maintainer(maintainer, spr):
+            release_records = store.find(
+                LatestPersonSourcepackageReleaseCache,
+                LatestPersonSourcepackageReleaseCache.maintainer_id ==
+                maintainer.id)
+            [record] = list(release_records)
+            self.assertEqual(spr.maintainer, record.maintainer)
+            self.assertIsNone(record.creator_id)
+            self.assertEqual(
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+
+        _assert_release_by_creator(creators[0], spr2)
+        _assert_release_by_creator(creators[1], spr4)
+        _assert_release_by_maintainer(maintainers[0], spr3)
+        _assert_release_by_maintainer(maintainers[1], spr4)
+
+        # Create a newer published source package release and ensure the
+        # release cache table is correctly updated.
+        switch_dbuser('testadmin')
+        spr5 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr5)
+
+        transaction.commit()
+        self.runFrequently()
+
+        _assert_release_by_creator(creators[0], spr2)
+        _assert_release_by_creator(creators[1], spr5)
+        _assert_release_by_maintainer(maintainers[0], spr3)
+        _assert_release_by_maintainer(maintainers[1], spr5)
 
 
 class TestGarboTasks(TestCaseWithFactory):

@@ -2124,11 +2124,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution=distribution,
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
-        if information_type is not None:
-            if proprietary:
-                naked_spec.target._ensurePolicies([information_type])
-            naked_spec.transitionToInformationType(
-                information_type, removeSecurityProxy(spec.target).owner)
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.
             naked_spec.definition_status = status
@@ -2144,6 +2139,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if implementation_status is not None:
             naked_spec.implementation_status = implementation_status
             naked_spec.updateLifecycleStatus(owner)
+        if information_type is not None:
+            if proprietary:
+                naked_spec.target._ensurePolicies([information_type])
+            naked_spec.transitionToInformationType(
+                information_type, removeSecurityProxy(spec.target).owner)
         return spec
 
     makeBlueprint = makeSpecification
@@ -4266,7 +4266,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             }
         return fileupload
 
-    def makeCommercialSubscription(self, product, expired=False):
+    def makeCommercialSubscription(self, product, expired=False,
+                                   voucher_id='new'):
         """Create a commercial subscription for the given product."""
         if CommercialSubscription.selectOneBy(product=product) is not None:
             raise AssertionError(
@@ -4281,7 +4282,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_expires=expiry,
             registrant=product.owner,
             purchaser=product.owner,
-            sales_system_id='new',
+            sales_system_id=voucher_id,
             whiteboard='')
 
     def grantCommercialSubscription(self, person, months=12):

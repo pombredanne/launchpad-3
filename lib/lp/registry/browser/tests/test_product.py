@@ -28,6 +28,7 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.registry.browser.product import (
+    PRIVATE_PROJECTS_FLAG,
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
@@ -39,7 +40,9 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    )
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -177,6 +180,7 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertContentEqual(
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
+        self.assertIn(PRIVATE_PROJECTS_FLAG, cache.objects['related_features'])
 
     def test_staging_message_is_not_demo(self):
         view = create_initialized_view(self.product_set, '+new')
@@ -244,7 +248,7 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
 
-    def test_owner_is_requried_without_disclaim_maitainer(self):
+    def test_owner_is_requried_without_disclaim_maintainer(self):
         # A valid owner name is required if disclaim_maintainer is
         # not selected.
         registrant = self.factory.makePerson()
@@ -482,6 +486,20 @@ class TestProductEditView(BrowserTestCase):
             'field.licenses': licenses,
             'field.license_info': license_info,
         }
+
+    def test_limited_information_types_allowed(self):
+        """Products can only be PUBLIC_PROPRIETARY_INFORMATION_TYPES"""
+        product = self.factory.makeProduct()
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(product.owner)
+            view = create_initialized_view(
+                product,
+                '+edit',
+                principal=product.owner)
+            vocabulary = view.widgets['information_type'].vocabulary
+            info_types = [t.name for t in vocabulary]
+            expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+            self.assertEqual(expected, info_types)
 
     def test_change_information_type_proprietary(self):
         product = self.factory.makeProduct(name='fnord')

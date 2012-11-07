@@ -296,7 +296,9 @@ a.unofficial-tag {
 .translationimportstatusNEEDS_INFORMATION a {
     color: maroon;
     }
-
+.dismissed, .dismissed a {
+    color: #666;
+    }
 
 
 .distromirrorstatusUP,

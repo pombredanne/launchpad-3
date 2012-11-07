@@ -21,7 +21,9 @@ from zope.publisher.interfaces import NotFound
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.errors import NotFoundError
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
@@ -35,9 +37,11 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
+from lp.scripts.garbo import PopulateLatestPersonSourcepackageReleaseCache
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
@@ -115,7 +119,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
 
 
-class TestPersonIndexView(TestCaseWithFactory):
+class TestPersonIndexView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -202,6 +206,33 @@ class TestPersonIndexView(TestCaseWithFactory):
         person = self.factory.makePerson(description=person_description)
         view = create_initialized_view(person, '+index')
         self.assertThat(view.page_description, Equals(person_description))
+
+    def test_assigned_blueprints(self):
+        person = self.factory.makePerson()
+
+        def make_started_spec(information_type):
+            enum = SpecificationImplementationStatus
+            return self.factory.makeSpecification(
+                implementation_status=enum.STARTED, assignee=person,
+                information_type=information_type)
+        public_spec = make_started_spec(InformationType.PUBLIC)
+        private_spec = make_started_spec(InformationType.PROPRIETARY)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(person)
+        self.assertIn(public_spec.name, browser.contents)
+        self.assertNotIn(private_spec.name, browser.contents)
+
+    def test_only_assigned_blueprints(self):
+        # Only assigned blueprints are listed, not arbitrary related
+        # blueprints
+        person = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED,
+            owner=person, drafter=person, approver=person)
+        spec.subscribe(person)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(person)
+        self.assertNotIn(spec.name, browser.contents)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -787,18 +818,18 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(True, self.view.has_participations)
 
 
-class TestPersonRelatedSoftwareView(TestCaseWithFactory):
+class TestPersonRelatedPackagesView(TestCaseWithFactory):
     """Test the related software view."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareView, self).setUp()
+        super(TestPersonRelatedPackagesView, self).setUp()
         self.user = self.factory.makePerson()
         self.factory.makeGPGKey(self.user)
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.warty = self.ubuntu.getSeries('warty')
-        self.view = create_initialized_view(self.user, '+related-software')
+        self.view = create_initialized_view(self.user, '+related-packages')
 
     def publishSources(self, archive, maintainer):
         publisher = SoyuzTestPublisher()
@@ -815,6 +846,12 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
                 creator=self.user,
                 distroseries=self.warty)
             spphs.append(spph)
+        # Update the releases cache table.
+        switch_dbuser('garbo_frequently')
+        job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+        while not job.isDone():
+            job(chunk_size=100)
+        switch_dbuser('launchpad')
         login(ANONYMOUS)
         return spphs
 
@@ -828,7 +865,7 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
-        self.assertEqual('Related software', self.view.page_title)
+        self.assertEqual('Related packages', self.view.page_title)
         self.assertEqual('summary_list_size', self.view._max_results_key)
         self.assertEqual(
             config.launchpad.summary_list_size,
@@ -917,16 +954,6 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
 
-    def test_verify_bugs_and_answers_links(self):
-        # Verify the links for bugs and answers point to locations that
-        # exist.
-        html = self.view()
-        expected_base = '/%s/+source/%s' % (
-            self.spph.distroseries.distribution.name,
-            self.spph.source_package_name)
-        self.assertIn('<a href="%s/+bugs">' % expected_base, html)
-        self.assertIn('<a href="%s/+questions">' % expected_base, html)
-
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
@@ -977,24 +1004,6 @@ class TestPersonSynchronisedPackagesView(TestCaseWithFactory):
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
 
-    def test_verify_bugs_and_answers_links(self):
-        # Verify the links for bugs and answers point to locations that
-        # exist.
-        html = self.view()
-        expected_base = '/%s/+source/%s' % (
-            self.copied_spph.distroseries.distribution.name,
-            self.copied_spph.source_package_name)
-        bug_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Bugs link', 'a',
-                attrs={'href': expected_base + '/+bugs'}))
-        question_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Questions link', 'a',
-                attrs={'href': expected_base + '/+questions'}))
-        self.assertThat(html, bug_matcher)
-        self.assertThat(html, question_matcher)
-
 
 class TestPersonRelatedProjectsView(TestCaseWithFactory):
     """Test the maintained packages view."""
@@ -1015,13 +1024,13 @@ class TestPersonRelatedProjectsView(TestCaseWithFactory):
             self.view.max_results_to_display)
 
 
-class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
-    """The related software views display links to failed builds."""
+class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
+    """The related packages views display links to failed builds."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareFailedBuild, self).setUp()
+        super(TestPersonRelatedPackagesFailedBuild, self).setUp()
         self.user = self.factory.makePerson()
 
         # First we need to publish some PPA packages with failed builds
@@ -1041,32 +1050,38 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.build = binaries[0].binarypackagerelease.build
         self.build.status = BuildStatus.FAILEDTOBUILD
         self.build.archive = publisher.distroseries.main_archive
+        # Update the releases cache table.
+        switch_dbuser('garbo_frequently')
+        job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+        while not job.isDone():
+            job(chunk_size=100)
+        switch_dbuser('launchpad')
         login(ANONYMOUS)
 
     def test_related_software_with_failed_build(self):
         # The link to the failed build is displayed.
-        self.view = create_view(self.user, name='+related-software')
+        self.view = create_view(self.user, name='+related-packages')
         html = self.view()
-        self.assertTrue(
+        self.assertIn(
             '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+                self.build.id), html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
-        self.assertTrue(
+        self.assertIn(
             '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
-                self.build.id) in html)
+                self.build.id), html)
 
 
-class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
-    """The related software views display links to synchronised packages."""
+class TestPersonRelatedPackagesSynchronisedPackages(TestCaseWithFactory):
+    """The related packages views display links to synchronised packages."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestPersonRelatedSoftwareSynchronisedPackages, self).setUp()
+        super(TestPersonRelatedPackagesSynchronisedPackages, self).setUp()
         self.user = self.factory.makePerson()
         self.spph = self.factory.makeSourcePackagePublishingHistory()
 
@@ -1089,7 +1104,7 @@ class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
     def test_related_software_no_link_synchronised_packages(self):
         # No link to the synchronised packages page if no synchronised
         # packages.
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
         self.assertThat(view(), Not(synced_package_link_matcher))
 
@@ -1097,13 +1112,13 @@ class TestPersonRelatedSoftwareSynchronisedPackages(TestCaseWithFactory):
         # If this person has synced packages, the link to the synchronised
         # packages page is present.
         self.createCopiedSource(self.user, self.spph)
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_package_link_matcher = self.getLinkToSynchronisedMatcher()
         self.assertThat(view(), synced_package_link_matcher)
 
     def test_related_software_displays_synchronised_packages(self):
         copied_spph = self.createCopiedSource(self.user, self.spph)
-        view = create_view(self.user, name='+related-software')
+        view = create_view(self.user, name='+related-packages')
         synced_packages_title = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Synchronised packages title', 'h2',

@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -14,6 +12,7 @@ __all__ = [
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
+    'spec_started_clause',
     ]
 
 from lazr.lifecycle.event import (
@@ -107,6 +106,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import fti_search
+from lp.services.database.lpstorm import IStore
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -576,28 +576,10 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         else:
             return False
 
-    # NB NB If you change this definition, please update the equivalent
-    # DB constraint Specification.specification_start_recorded_chk
-    # We choose to define "started" as the set of delivery states NOT
-    # in the values we select. Another option would be to say "anything less
-    # than a threshold" and to comment the dbschema that "anything not
-    # started should be less than the threshold". We'll see how maintainable
-    # this is.
-    started_clause = """
-        Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
-        (Specification.implementation_status = %s AND
-         Specification.definition_status = %s)
-        """ % sqlvalues(SpecificationImplementationStatus.UNKNOWN.value,
-                        SpecificationImplementationStatus.NOTSTARTED.value,
-                        SpecificationImplementationStatus.DEFERRED.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationDefinitionStatus.APPROVED.value)
-
     @property
     def is_started(self):
         """See ISpecification. This is a code implementation of the
-        SQL in self.started_clause
+        SQL in spec_started_clause
         """
         return (self.implementation_status not in [
                     SpecificationImplementationStatus.UNKNOWN,
@@ -1018,10 +1000,7 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).find(
-            Specification,
-            *clauses
-            )
+        results = Store.of(self).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1038,8 +1017,8 @@ class HasSpecificationsMixin:
 
     def specificationCount(self, user):
         """See IHasSpecifications."""
-        return self.specifications(user,
-                                   filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(
+            user, filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1177,10 +1156,16 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getByURL(self, url):
         """See ISpecificationSet."""
-        specification = Specification.selectOneBy(specurl=url)
-        if specification is None:
-            return None
-        return specification
+        return Specification.selectOneBy(specurl=url)
+
+    def getByName(self, pillar, name):
+        """See ISpecificationSet."""
+        clauses = [Specification.name == name]
+        if IDistribution.providedBy(pillar):
+            clauses.append(Specification.distributionID == pillar.id)
+        elif IProduct.providedBy(pillar):
+            clauses.append(Specification.productID == pillar.id)
+        return IStore(Specification).find(Specification, *clauses).one()
 
     @property
     def coming_sprints(self):
@@ -1334,3 +1319,23 @@ def get_specification_filters(filter):
             # A string in the filter is a text search filter.
             clauses.append(fti_search(Specification, constraint))
     return clauses
+
+
+# NB NB If you change this definition, please update the equivalent
+# DB constraint Specification.specification_start_recorded_chk
+# We choose to define "started" as the set of delivery states NOT
+# in the values we select. Another option would be to say "anything less
+# than a threshold" and to comment the dbschema that "anything not
+# started should be less than the threshold". We'll see how maintainable
+# this is.
+spec_started_clause = Or(Not(Specification.implementation_status.is_in([
+    SpecificationImplementationStatus.UNKNOWN,
+    SpecificationImplementationStatus.NOTSTARTED,
+    SpecificationImplementationStatus.DEFERRED,
+    SpecificationImplementationStatus.INFORMATIONAL,
+    ])),
+    And(Specification.implementation_status ==
+            SpecificationImplementationStatus.INFORMATIONAL,
+        Specification.definition_status ==
+            SpecificationDefinitionStatus.APPROVED
+    ))

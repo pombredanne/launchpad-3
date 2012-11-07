@@ -109,7 +109,10 @@ from zope.security.proxy import (
 
 from lp import _
 from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -130,6 +133,7 @@ from lp.blueprints.model.specification import (
     get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
+    spec_started_clause,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -202,7 +206,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
@@ -320,6 +327,7 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -792,23 +800,11 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-    # specification-related joins
-    @property
-    def assigned_specs(self):
-        return shortlist(Specification.selectBy(
-            assignee=self, orderBy=['-datecreated']))
-
-    @property
-    def assigned_specs_in_progress(self):
-        replacements = sqlvalues(assignee=self)
-        replacements['started_clause'] = Specification.started_clause
-        replacements['completed_clause'] = Specification.completeness_clause
-        query = """
-            (assignee = %(assignee)s)
-            AND (%(started_clause)s)
-            AND NOT (%(completed_clause)s)
-            """ % replacements
-        return Specification.select(query, orderBy=['-date_started'], limit=5)
+    def findVisibleAssignedInProgressSpecs(self, user):
+        """See `IPerson`."""
+        return self.specifications(user, in_progress=True, quantity=5,
+                                   sort=Desc(Specification.date_started),
+                                   filter=[SpecificationFilter.ASSIGNEE])
 
     @property
     def unique_displayname(self):
@@ -816,7 +812,7 @@ class Person(
         return "%s (%s)" % (self.displayname, self.name)
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       prejoin_people=True, in_progress=False):
         """See `IHasSpecifications`."""
         from lp.blueprints.model.specificationsubscription import (
             SpecificationSubscription,
@@ -829,11 +825,6 @@ class Person(
             filter = set(filter)
 
         # Now look at the filter and fill in the unsaid bits.
-
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
-        if SpecificationFilter.COMPLETE not in filter:
-            filter.add(SpecificationFilter.INCOMPLETE)
 
         # Defaults for acceptance: in this case we have nothing to do
         # because specs are not accepted/declined against a person.
@@ -866,12 +857,24 @@ class Person(
                         [SpecificationSubscription.person == self]
                     )))
         clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        # Defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE.
+        if SpecificationFilter.COMPLETE not in filter:
+            if (in_progress and SpecificationFilter.INCOMPLETE not in filter
+                and SpecificationFilter.ALL not in filter):
+                clauses.append(spec_started_clause)
+            filter.add(SpecificationFilter.INCOMPLETE)
+
         clauses.extend(get_specification_filters(filter))
         results = Store.of(self).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
-            results = results.order_by(Desc(Specification.datecreated))
+            sort = Desc(Specification.datecreated)
+        elif getattr(sort, 'enum', None) is SpecificationSort:
+            sort = None
+        if sort is not None:
+            results = results.order_by(sort)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1030,19 +1033,64 @@ class Person(
         cur.execute(query)
         return cur.fetchall()
 
-    def getAffiliatedPillars(self):
+    def _genAffiliatedProductSql(self, user=None):
+        """Helper to generate the product sql for getAffiliatePillars"""
+        base_query = """
+            SELECT name, 3 as kind, displayname
+            FROM product p
+            WHERE
+                p.active = True
+                AND (
+                    p.driver = %(person)s
+                    OR p.owner = %(person)s
+                    OR p.bug_supervisor = %(person)s
+                )
+        """ % sqlvalues(person=self)
+
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return base_query
+
+        # This is the raw sql version of model/product getProductPrivacyFilter
+        granted_products = """
+            SELECT p.id
+            FROM product p,
+                 accesspolicygrantflat apflat,
+                 teamparticipation part,
+                 accesspolicy ap
+             WHERE
+                apflat.grantee = part.team
+                AND part.person = %(user)s
+                AND apflat.policy = ap.id
+                AND ap.product = p.id
+                AND ap.type = p.information_type
+        """ % sqlvalues(user=user)
+
+        # We have to generate the sqlvalues first so that they're properly
+        # setup and escaped. Then we combine the above query which is already
+        # processed.
+        query_values = sqlvalues(information_type=InformationType.PUBLIC)
+        query_values.update(granted_sql=granted_products)
+
+        query = base_query + """
+                AND (
+                    p.information_type = %(information_type)s
+                    OR p.information_type is NULL
+                    OR p.id IN (%(granted_sql)s)
+                )
+        """ % query_values
+        return query
+
+    def getAffiliatedPillars(self, user):
         """See `IPerson`."""
         find_spec = (PillarName, SQL('kind'), SQL('displayname'))
-        origin = SQL("""
-            PillarName
-            JOIN (
-                SELECT name, 3 as kind, displayname
-                FROM product
-                WHERE
-                    active = True AND
-                    (driver = %(person)s
-                    OR owner = %(person)s
-                    OR bug_supervisor = %(person)s)
+        base = """PillarName
+                  JOIN (
+                    %s
+            """ % self._genAffiliatedProductSql(user=user)
+
+        origin = base + """
                 UNION
                 SELECT name, 2 as kind, displayname
                 FROM project
@@ -1059,8 +1107,9 @@ class Person(
                     OR bug_supervisor = %(person)s
                 ) _pillar
                 ON PillarName.name = _pillar.name
-            """ % sqlvalues(person=self))
-        results = IStore(self).using(origin).find(find_spec)
+            """ % sqlvalues(person=self)
+
+        results = IStore(self).using(SQL(origin)).find(find_spec)
         results = results.order_by('kind', 'displayname')
 
         def get_pillar_name(result):
@@ -1137,14 +1186,28 @@ class Person(
 
     def getRedeemableCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
+        # Circular imports.
+        from lp.registry.model.commercialsubscription import (
+            CommercialSubscription,
+            )
         if voucher_proxy is None:
             voucher_proxy = getUtility(ISalesforceVoucherProxy)
         vouchers = voucher_proxy.getUnredeemedVouchers(self)
-        for voucher in vouchers:
+        # Exclude pending vouchers being sent to Salesforce and vouchers which
+        # have already been redeemed.
+        voucher_ids = [unicode(voucher.voucher_id) for voucher in vouchers]
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = list(Store.of(self).using(CommercialSubscription)
+            .find(SQL(voucher_expr), SQL(voucher_expr).is_in(voucher_ids)))
+        redeemable_vouchers = [voucher for voucher in vouchers
+                               if voucher.voucher_id not in already_redeemed]
+        for voucher in redeemable_vouchers:
             assert voucher.status in REDEEMABLE_VOUCHER_STATUSES, (
                 "Voucher %s has invalid status %s" %
                 (voucher.voucher_id, voucher.status))
-        return vouchers
+        return redeemable_vouchers
 
     def hasCurrentCommercialSubscription(self):
         """See `IPerson`."""
@@ -1755,6 +1818,11 @@ class Person(
                     "The team membership policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
+        # Does the team own a productseries.branch?
+        if getUtility(IAllBranches).ownedBy(self).isSeries().count() != 0:
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it owns "
+                "or more branches linked to project series." % policy)
         # Does this team subscribe or is assigned to any private bugs.
         # Circular imports.
         from lp.bugs.model.bug import Bug
@@ -2095,14 +2163,46 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def canDeactivateAccount(self):
+        """See `IPerson`."""
+        can_deactivate, errors = self.canDeactivateAccountWithErrors()
+        return can_deactivate
+
+    def canDeactivateAccountWithErrors(self):
+        """See `IPerson`."""
+        # Users that own non-public products cannot be deactivated until the
+        # products are reassigned.
+        errors = []
+        product_set = getUtility(IProductSet)
+        non_public_products = product_set.get_users_private_products(self)
+        if non_public_products.count() != 0:
+            errors.append(('This account cannot be deactivated because it owns'
+                        ' the following non-public products: ') +
+                        ','.join([p.name for p in non_public_products]))
+
+        if self.account_status != AccountStatus.ACTIVE:
+            errors.append('This account is already deactivated.')
+
+        return (not errors), errors
+
     # XXX: salgado, 2009-04-16: This should be called just deactivate(),
     # because it not only deactivates this person's account but also the
     # person.
-    def deactivateAccount(self, comment):
+    def deactivateAccount(self, comment, can_deactivate=None):
         """See `IPersonSpecialRestricted`."""
         if not self.is_valid_person:
             raise AssertionError(
                 "You can only deactivate an account of a valid person.")
+
+        if can_deactivate is None:
+            # The person can only be deactivated if they do not own any
+            # non-public products.
+            can_deactivate = self.canDeactivateAccount()
+
+        if not can_deactivate:
+            message = ("You cannot deactivate an account that owns a "
+                       "non-public product.")
+            raise AssertionError(message)
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2127,12 +2227,16 @@ class Person(
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
-        for spec in self.assigned_specs:
+
+        assigned_specs = Store.of(self).find(
+            Specification, assignee=self)
+        for spec in assigned_specs:
             spec.assignee = None
+
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
             team.teamowner = registry_experts
-        for pillar_name in self.getAffiliatedPillars():
+        for pillar_name in self.getAffiliatedPillars(self):
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
@@ -2141,8 +2245,15 @@ class Person(
                 pillar.owner = registry_experts
                 changed = True
             if pillar.driver is not None and pillar.driver.id == self.id:
-                pillar.driver = registry_experts
+                pillar.driver = None
                 changed = True
+
+            # Products need to change the bug supervisor as well.
+            if IProduct.providedBy(pillar):
+                if (pillar.bug_supervisor is not None and
+                    pillar.bug_supervisor.id == self.id):
+                    pillar.bug_supervisor = None
+                    changed = True
 
             if not changed:
                 # Since we removed the person from all teams, something is
@@ -2157,7 +2268,9 @@ class Person(
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('AnswerContact', 'person')]
+            ('AnswerContact', 'person'),
+            ('LatestPersonSourcepackageReleaseCache', 'creator'),
+            ('LatestPersonSourcepackageReleaseCache', 'maintainer')]
         cur = cursor()
         for table, person_id_column in removals:
             cur.execute("DELETE FROM %s WHERE %s=%d"
@@ -2205,7 +2318,8 @@ class Person(
             return self._visibility_warning_cache
 
         cur = cursor()
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        references = list(
+            postgresql.listReferences(cur, 'person', 'id', indirect=False))
         # These tables will be skipped since they do not risk leaking
         # team membership information, except StructuralSubscription
         # which will be checked further down to provide a clearer warning.
@@ -2233,6 +2347,10 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team'),
+            # The following is denormalised reporting data only loaded if the
+            # user already has access to the team.
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ])
 
         # The following relationships are allowable for Private teams and
@@ -2248,17 +2366,24 @@ class Person(
                          ])
 
         warnings = set()
+        ref_query = []
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
             if (src_tab, src_col) in skip:
                 continue
-            cur.execute('SELECT 1 FROM %s WHERE %s=%d LIMIT 1'
-                        % (src_tab, src_col, self.id))
-            if cur.rowcount > 0:
-                if src_tab[0] in 'aeiou':
+            ref_query.append(
+                "SELECT '%(table)s' AS table FROM %(table)s "
+                "WHERE %(col)s = %(person_id)d"
+                % {'col': src_col, 'table': src_tab, 'person_id': self.id})
+        if ref_query:
+            cur.execute(' UNION '.join(ref_query))
+            for src_tab in cur.fetchall():
+                table_name = (
+                    src_tab[0] if isinstance(src_tab, tuple) else src_tab)
+                if table_name[0] in 'aeiou':
                     article = 'an'
                 else:
                     article = 'a'
-                warnings.add('%s %s' % (article, src_tab))
+                warnings.add('%s %s' % (article, table_name))
 
         # Private teams may have structural subscription, so the following
         # test is not applied to them.
@@ -2667,55 +2792,33 @@ class Person(
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
+    def hasMaintainedPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery()
+
+    def hasUploadedButNotMaintainedPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery(uploader_only=True)
+
+    def hasUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._hasReleasesQuery(uploader_only=True, ppa_only=True)
+
     def getLatestMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery()
-
-    def getLatestSynchronisedPublishings(self):
-        """See `IPerson`."""
-        query = """
-            SourcePackagePublishingHistory.id IN (
-                SELECT DISTINCT ON (spph.distroseries,
-                                    spr.sourcepackagename)
-                    spph.id
-                FROM
-                    SourcePackagePublishingHistory as spph, archive,
-                    SourcePackagePublishingHistory as ancestor_spph,
-                    SourcePackageRelease as spr
-                WHERE
-                    spph.sourcepackagerelease = spr.id AND
-                    spph.creator = %(creator)s AND
-                    spph.ancestor = ancestor_spph.id AND
-                    spph.archive = archive.id AND
-                    ancestor_spph.archive != spph.archive AND
-                    archive.purpose = %(archive_purpose)s
-                ORDER BY spph.distroseries,
-                    spr.sourcepackagename,
-                    spph.datecreated DESC,
-                    spph.id DESC
-            )
-            """ % dict(
-                   creator=quote(self.id),
-                   archive_purpose=quote(ArchivePurpose.PRIMARY),
-                   )
-
-        return SourcePackagePublishingHistory.select(
-            query,
-            orderBy=['-SourcePackagePublishingHistory.datecreated',
-                     '-SourcePackagePublishingHistory.id'],
-            prejoins=['sourcepackagerelease', 'archive'])
+        return self._latestReleasesQuery()
 
     def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery(uploader_only=True)
+        return self._latestReleasesQuery(uploader_only=True)
 
     def getLatestUploadedPPAPackages(self):
         """See `IPerson`."""
-        return self._latestSeriesQuery(
-            uploader_only=True, ppa_only=True)
+        return self._latestReleasesQuery(uploader_only=True, ppa_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
+    def _releasesQueryFilter(self, uploader_only=False, ppa_only=False):
+        """Return the filter used to find latest published source package
+        releases (SPRs) related to this person.
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
@@ -2731,55 +2834,127 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = ['sourcepackagerelease.upload_archive = archive.id']
-
+        clauses = []
         if uploader_only:
             clauses.append(
-                'sourcepackagerelease.creator = %s' % quote(self.id))
-
+                LatestPersonSourcepackageReleaseCache.creator_id == self.id)
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            clauses.append(
-                'sourcepackagerelease.maintainer != %s' % quote(self.id))
+            lpspr = ClassAlias(LatestPersonSourcepackageReleaseCache, 'lpspr')
+            clauses.append(Not(Exists(Select(1,
+            where=And(
+                lpspr.sourcepackagename_id ==
+                    LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+                lpspr.upload_archive_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_archive_id,
+                lpspr.upload_distroseries_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+                lpspr.archive_purpose != ArchivePurpose.PPA,
+                lpspr.maintainer_id == self.id),
+            tables=lpspr))))
         else:
             clauses.append(
-                'sourcepackagerelease.maintainer = %s' % quote(self.id))
-
+                LatestPersonSourcepackageReleaseCache.maintainer_id == self.id)
         if ppa_only:
             clauses.append(
-                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
+                LatestPersonSourcepackageReleaseCache.archive_purpose ==
+                ArchivePurpose.PPA)
         else:
             clauses.append(
-                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
+                LatestPersonSourcepackageReleaseCache.archive_purpose !=
+                ArchivePurpose.PPA)
+        return clauses
 
-        query_clauses = " AND ".join(clauses)
-        query = """
-            SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (upload_distroseries,
-                                    sourcepackagerelease.sourcepackagename,
-                                    upload_archive)
-                    sourcepackagerelease.id
-                FROM sourcepackagerelease, archive,
-                    sourcepackagepublishinghistory as spph
-                WHERE
-                    spph.sourcepackagerelease = sourcepackagerelease.id AND
-                    spph.archive = archive.id AND
-                    %(more_query_clauses)s
-                ORDER BY upload_distroseries,
-                    sourcepackagerelease.sourcepackagename,
-                    upload_archive, dateuploaded DESC
-              )
-              """ % dict(more_query_clauses=query_clauses)
+    def _hasReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Are there sourcepackagereleases (SPRs) related to this person.
+        See `_releasesQueryFilter` for details on the criteria used.
+        """
+        clauses = self._releasesQueryFilter(uploader_only, ppa_only)
+        rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
+            LatestPersonSourcepackageReleaseCache.publication_id, *clauses)
+        return not rs.is_empty()
 
-        rset = SourcePackageRelease.select(
-            query,
-            orderBy=['-SourcePackageRelease.dateuploaded',
-                     'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+    def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases records related to this person.
+        See `_releasesQueryFilter` for details on the criteria used."""
+        clauses = self._releasesQueryFilter(uploader_only, ppa_only)
+        rs = Store.of(self).find(
+            LatestPersonSourcepackageReleaseCache, *clauses).order_by(
+            Desc(LatestPersonSourcepackageReleaseCache.dateuploaded))
 
-        return rset
+        def load_related_objects(rows):
+            if rows and rows[0].maintainer_id:
+                list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                    set(map(attrgetter("maintainer_id"), rows))))
+            bulk.load_related(
+                SourcePackageName, rows, ['sourcepackagename_id'])
+            bulk.load_related(
+                SourcePackageRelease, rows, ['sourcepackagerelease_id'])
+            bulk.load_related(Archive, rows, ['upload_archive_id'])
+
+        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
+
+    def hasSynchronisedPublishings(self):
+        """See `IPerson`."""
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        ancestor_spph = ClassAlias(
+            SourcePackagePublishingHistory, "ancestor_spph")
+        tables = (
+            SourcePackageRelease,
+            Join(
+                spph,
+                spph.sourcepackagereleaseID ==
+                SourcePackageRelease.id),
+            Join(Archive, Archive.id == spph.archiveID),
+            Join(ancestor_spph, ancestor_spph.id == spph.ancestorID))
+        rs = Store.of(self).using(*tables).find(
+            spph.id,
+            spph.creatorID == self.id,
+            ancestor_spph.archiveID != spph.archiveID,
+            Archive.purpose == ArchivePurpose.PRIMARY)
+        return not rs.is_empty()
+
+    def getLatestSynchronisedPublishings(self):
+        """See `IPerson`."""
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        ancestor_spph = ClassAlias(
+            SourcePackagePublishingHistory, "ancestor_spph")
+        rs = Store.of(self).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(
+                Select(
+                    spph.id,
+                    tables=[
+                        SourcePackageRelease,
+                        Join(
+                            spph, spph.sourcepackagereleaseID ==
+                            SourcePackageRelease.id),
+                        Join(Archive, Archive.id == spph.archiveID),
+                        Join(
+                            ancestor_spph,
+                            ancestor_spph.id == spph.ancestorID)],
+                    where=And(
+                        spph.creatorID == self.id,
+                        ancestor_spph.archiveID != spph.archiveID,
+                        Archive.purpose == ArchivePurpose.PRIMARY),
+                    order_by=[spph.distroseriesID,
+                              SourcePackageRelease.sourcepackagenameID,
+                              Desc(spph.datecreated), Desc(spph.id)],
+                    distinct=(
+                        spph.distroseriesID,
+                        SourcePackageRelease.sourcepackagenameID)
+                    ))).order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
+
+        def load_related_objects(rows):
+            bulk.load_related(
+                SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+            bulk.load_related(Archive, rows, ['archiveID'])
+
+        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
     def createRecipe(self, name, description, recipe_text, distroseries,
                      registrant, daily_build_archive=None, build_daily=False):
@@ -2876,6 +3051,20 @@ class Person(
         """See `IPerson`."""
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getVisiblePPAs(self, user):
+        """See `IPerson`."""
+
+        # Avoid circular imports.
+        from lp.soyuz.model.archive import get_enabled_archive_filter
+
+        filter = get_enabled_archive_filter(
+            user, purpose=ArchivePurpose.PPA,
+            include_public=True, include_subscribed=True)
+        return Store.of(self).find(
+            Archive,
+            Archive.owner == self,
+            filter).order_by(Archive.name)
 
     def getPPAByName(self, name):
         """See `IPerson`."""
@@ -4169,6 +4358,8 @@ class PersonSet:
             # These are ON DELETE CASCADE and maintained by triggers.
             ('bugsummary', 'viewed_by'),
             ('bugsummaryjournal', 'viewed_by'),
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))

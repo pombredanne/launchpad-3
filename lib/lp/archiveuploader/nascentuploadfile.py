@@ -794,6 +794,29 @@ class BaseBinaryUploadFile(PackageUploadFile):
     #
     #   Database relationship methods
     #
+    def findCurrentSourcePublication(self):
+        """Return the respective ISourcePackagePublishingHistory for this
+        binary upload.
+
+        It inspects publication in the targeted DistroSeries.
+
+        It raises UploadError if the spph was not found.
+        """
+        assert self.source_name is not None
+        assert self.source_version is not None
+        distroseries = self.policy.distroseries
+        spphs = distroseries.getPublishedSources(
+            self.source_name, version=self.source_version,
+            include_pending=True, archive=self.policy.archive)
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
+        try:
+            return spphs[0]
+        except IndexError:
+            raise UploadError(
+                "Unable to find source publication %s/%s in %s" % (
+                self.source_name, self.source_version, distroseries.name))
+
     def findSourcePackageRelease(self):
         """Return the respective ISourcePackageRelease for this binary upload.
 
@@ -805,20 +828,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         mixed_uploads (source + binary) we do not have the source stored
         in DB yet (see verifySourcepackagerelease).
         """
-        assert self.source_name is not None
-        assert self.source_version is not None
-        distroseries = self.policy.distroseries
-        spphs = distroseries.getPublishedSources(
-            self.source_name, version=self.source_version,
-            include_pending=True, archive=self.policy.archive)
-        # Workaround storm bug in EmptyResultSet.
-        spphs = list(spphs[:1])
-        try:
-            return spphs[0].sourcepackagerelease
-        except IndexError:
-            raise UploadError(
-                "Unable to find source package %s/%s in %s" % (
-                self.source_name, self.source_version, distroseries.name))
+        spph = self.findCurrentSourcePublication()
+        return spph.sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""

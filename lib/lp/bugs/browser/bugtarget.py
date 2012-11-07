@@ -255,8 +255,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.context.pillar.getDefaultBugInformationType() in
             PRIVATE_INFORMATION_TYPES)
         json_dump_information_types(
-            cache,
-            self.context.pillar.getAllowedBugInformationTypes())
+            cache, self.context.pillar.getAllowedBugInformationTypes())
 
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
@@ -385,11 +384,19 @@ class FileBugViewBase(LaunchpadFormView):
             widget_error = self.widgets.get('comment')._error
             if widget_error and isinstance(widget_error.errors, TooLong):
                 self.setFieldError('comment',
-                    'The description is too long. If you have lots '
+                    'The description is too long. If you have lots of '
                     'text to add, attach a file to the bug instead.')
             elif not comment or widget_error is not None:
                 self.setFieldError(
                     'comment', "Provide details about the issue.")
+            # Check if there is an extra description, and if it is too long.
+            if self.extra_data.extra_description:
+                if len("%s\n\n%s" % (
+                    comment, self.extra_data.extra_description)) > 50000:
+                    self.setFieldError(
+                        'comment', 'The description and the additional '
+                        'information is too long. If you have lots of text '
+                        'to add, attach a file to the bug instead.')
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():

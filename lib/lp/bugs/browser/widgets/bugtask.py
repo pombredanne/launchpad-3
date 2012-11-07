@@ -487,6 +487,11 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     It accepts both binary and source package names.
     """
 
+    def __init__(self, field, vocabulary, request):
+        super(BugTaskSourcePackageNameWidget, self).__init__(
+            field, vocabulary, request)
+        self.cached_values = {}
+
     def getDistribution(self):
         """Get the distribution used for package validation.
 
@@ -506,16 +511,19 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             return self.context.missing_value
 
         distribution = self.getDistribution()
-
+        cached_value = self.cached_values.get(input)
+        if cached_value:
+            return cached_value
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
-                return self.convertTokensToValues([input])[0]
+                source = self.convertTokensToValues([input])[0]
             except InvalidValue:
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
+        self.cached_values[input] = source
         return source
 
 

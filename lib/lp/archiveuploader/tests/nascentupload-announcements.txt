@@ -513,6 +513,11 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG
     DEBUG ==
     DEBUG
+    DEBUG  OK: bar_1.0.orig.tar.gz
+    DEBUG  OK: bar_1.0-4.diff.gz
+    DEBUG  OK: bar_1.0-4.dsc
+    DEBUG      -> Component: universe Section: devel
+    DEBUG
     DEBUG Announcing to hoary-announce@lists.ubuntu.com
     DEBUG
     DEBUG Thank you for your contribution to Ubuntu Linux.
@@ -727,6 +732,11 @@ changes file is mentioned toward the end of the email.
     http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
     <BLANKLINE>
     =3D=3D
+    <BLANKLINE>
+     OK: bar_1.0.orig.tar.gz
+     OK: bar_1.0-10.diff.gz
+     OK: bar_1.0-10.dsc
+         -> Component: universe Section: devel
     <BLANKLINE>
     Announcing to hoary-announce@lists.ubuntu.com
     <BLANKLINE>

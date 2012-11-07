@@ -1955,6 +1955,10 @@ class ArchiveActivateView(LaunchpadFormView):
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @cachedproperty
+    def visible_ppas(self):
+        return self.context.getVisiblePPAs(self.user)
+
     @property
     def initial_values(self):
         """Set up default values for form fields."""

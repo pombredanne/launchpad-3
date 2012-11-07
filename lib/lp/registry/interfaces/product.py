@@ -428,7 +428,22 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(
+class IProductLimitedView(Interface):
+    """Attributes that must be visible for person with artifact grants
+    on bugs, branches or specifications for the product.
+    """
+
+    name = exported(
+        ProductNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_(
+                "At least one lowercase letter or number, followed by "
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as shown above.")))
+
+
+class IProductView(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
@@ -487,15 +502,6 @@ class IProductLimitedView(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    name = exported(
-        ProductNameField(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_(
-                "At least one lowercase letter or number, followed by "
-                "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above.")))
 
     displayname = exported(
         TextLine(
@@ -874,9 +880,9 @@ class IProductLimitedView(
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    @mutator_for(IProductLimitedView['bug_sharing_policy'])
+    @mutator_for(IProductView['bug_sharing_policy'])
     @operation_parameters(bug_sharing_policy=copy_field(
-        IProductLimitedView['bug_sharing_policy']))
+        IProductView['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBugSharingPolicy(bug_sharing_policy):
@@ -885,10 +891,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['branch_sharing_policy'])
+    @mutator_for(IProductView['branch_sharing_policy'])
     @operation_parameters(
         branch_sharing_policy=copy_field(
-            IProductLimitedView['branch_sharing_policy']))
+            IProductView['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
@@ -897,10 +903,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['specification_sharing_policy'])
+    @mutator_for(IProductView['specification_sharing_policy'])
     @operation_parameters(
         specification_sharing_policy=copy_field(
-            IProductLimitedView['specification_sharing_policy']))
+            IProductView['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setSpecificationSharingPolicy(specification_sharing_policy):
@@ -912,7 +918,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
-    IProductModerateRestricted, IProductDriverRestricted,
+    IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
     IStructuralSubscriptionTarget, IInformationType, IPillar):
     """A Product.
@@ -941,6 +947,13 @@ class IProductSet(Interface):
 
     all_active = Attribute(
         "All the active products, sorted newest first.")
+
+    def get_users_private_products(user):
+        """Get users non-public products.
+
+        :param user: Which user are we searching products for.
+        :return: An iterable of IProduct
+        """
 
     def get_all_active(eager_load=True):
         """Get all active products.
@@ -1079,19 +1092,6 @@ class IProductSet(Interface):
         Skips products that are not configured to be translated in
         Launchpad, as well as non-active ones.
         """
-
-    def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a random sample of translatable products.
-
-        Similar to `getTranslatables`, except the number of results is
-        limited and they are randomly chosen.
-
-        :param maximum_products: Maximum number of products to be
-            returned.
-        :return: An iterator over active, translatable products.
-        """
-        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
-        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in

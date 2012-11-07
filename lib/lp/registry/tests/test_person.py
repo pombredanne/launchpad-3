@@ -12,6 +12,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import smartquote
 import pytz
 from storm.store import Store
+from storm.locals import Desc
 from testtools.matchers import (
     Equals,
     LessThan,
@@ -336,7 +337,7 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             distribution.name, project_group.name, project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getAffiliatedPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_getAffiliatedPillars_roles(self):
@@ -352,7 +353,7 @@ class TestPerson(TestCaseWithFactory):
         expected_pillars = [
             driven_project.name, owned_project.name, supervised_project.name]
         received_pillars = [
-            pillar.name for pillar in  user.getAffiliatedPillars()]
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_getAffiliatedPillars_active_pillars(self):
@@ -364,7 +365,76 @@ class TestPerson(TestCaseWithFactory):
             inactive_project.active = False
         expected_pillars = [active_project.name]
         received_pillars = [pillar.name for pillar in
-            user.getAffiliatedPillars()]
+            user.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_minus_embargoed(self):
+        # Skip non public products if not allowed to see them.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [public.name]
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_self(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(owner)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeAdministrator()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_commercial_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeCommercialAdmin()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):
@@ -675,6 +745,26 @@ class TestPersonStates(TestCaseWithFactory):
         self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.UTC)
 
+    def test_canDeactivateAccount_private_projects(self):
+        """A user owning non-public products cannot be deactivated."""
+        user = self.factory.makePerson()
+        public_product = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            name="public",
+            owner=user)
+        public_product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            name="private",
+            owner=user)
+
+        login(user.preferredemail.email)
+        can_deactivate, errors = user.canDeactivateAccountWithErrors()
+
+        self.assertFalse(can_deactivate)
+        expected_error = ('This account cannot be deactivated because it owns '
+                        'the following non-public products: private')
+        self.assertIn(expected_error, errors)
+
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 
@@ -710,12 +800,15 @@ class TestPersonStates(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=user)
         with person_logged_in(user):
             product.driver = user
+            product.bug_supervisor = user
             user.deactivateAccount("Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         self.assertEqual(registry_team, product.owner,
                          "Owner is not registry team.")
-        self.assertEqual(registry_team, product.driver,
-                         "Driver is not registry team.")
+        self.assertEqual(None, product.driver,
+                         "Driver is not emptied.")
+        self.assertEqual(None, product.bug_supervisor,
+                         "Driver is not emptied.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
@@ -1815,3 +1908,59 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertEqual(
             [blueprint1],
             list_result(blueprint1.owner, user=grant.grantee))
+
+    def test_storm_sort(self):
+        # A Storm expression can be used to sort specs.
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner, name='a')
+        spec2 = self.factory.makeSpecification(owner=owner, name='z')
+        spec3 = self.factory.makeSpecification(owner=owner, name='b')
+        self.assertEqual([spec2, spec3, spec],
+                list(owner.specifications(owner,
+                     sort=Desc(Specification.name))))
+
+    def test_in_progress(self):
+        # In-progress filters to exclude not-started and completed.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        started = self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.STARTED)
+        self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.IMPLEMENTED)
+        specs = list(owner.specifications(owner, in_progress=True))
+        self.assertEqual([started], specs)
+
+    def test_in_progress_all(self):
+        # SpecificationFilter.ALL overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.ALL], in_progress=True))
+        self.assertEqual([notstarted], specs)
+
+    def test_complete_overrides_in_progress(self):
+        # SpecificationFilter.COMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        started = self.factory.makeSpecification(
+            implementation_status=enum.STARTED)
+        owner = started.owner
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED, owner=owner)
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.COMPLETE], in_progress=True))
+        self.assertEqual([implemented], specs)
+
+    def test_incomplete_overrides_in_progress(self):
+        # SpecificationFilter.INCOMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.INCOMPLETE],
+            in_progress=True))
+        self.assertEqual([notstarted], specs)

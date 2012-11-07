@@ -87,6 +87,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -550,6 +551,7 @@ class TestProduct(TestCaseWithFactory):
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
+        'launchpad.LimitedView': set(('name', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -593,7 +595,7 @@ class TestProduct(TestCaseWithFactory):
             'homepageurl', 'icon', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'logo', 'milestones',
-            'mugshot', 'name', 'name_with_project', 'newCodeImport',
+            'mugshot', 'name_with_project', 'newCodeImport',
             'obsolete_translatable_series', 'official_answers',
             'official_anything', 'official_blueprints', 'official_bug_tags',
             'official_codehosting', 'official_malone', 'owner',
@@ -734,11 +736,18 @@ class TestProduct(TestCaseWithFactory):
         with person_logged_in(ordinary_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        # Admins can access proprietary products.
-        with celebrity_logged_in('admin'):
+        # Access can be granted to a team too.
+        other_user = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[other_user])
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, team, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(other_user):
             for attribute_name in names:
                 getattr(product, attribute_name)
-        with celebrity_logged_in('registry_experts'):
+        # Admins can access proprietary products.
+        with celebrity_logged_in('admin'):
             for attribute_name in names:
                 getattr(product, attribute_name)
         # Commercial admins have access to all products.
@@ -755,6 +764,57 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
         with person_logged_in(self.factory.makeCommercialAdmin()):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_LimitedView_public_product(self):
+        # Everybody can access attributes of public products that
+        # require the permission launchpad.LimitedView.
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.LimitedView']
+        with person_logged_in(None):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_LimitedView_proprietary_product(self):
+        # Anonymous users and ordinary logged in users cannot access
+        # attributes of private products that require the permission
+        # launchpad.LimitedView.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        names = self.expected_get_permissions['launchpad.LimitedView']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        # Users with a grant on an artifact related to the product
+        # can access the attributes.
+        with person_logged_in(owner):
+            bug = self.factory.makeBug(
+                target=product, information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, bugs=[bug])
+        with person_logged_in(user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Users with a policy grant for the product also have access.
+        user2 = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user2, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user2):
             for attribute_name in names:
                 getattr(product, attribute_name)
 
@@ -900,6 +960,21 @@ class TestProduct(TestCaseWithFactory):
                 {'disclosure.private_project.traversal_override': 'on'}):
                 self.assertTrue(check_permission('launchpad.View', product))
             self.assertFalse(check_permission('launchpad.View', product))
+
+    def test_information_type_prevents_pruning(self):
+        # Access policies for Product.information_type are not pruned.
+        owner = self.factory.makePerson()
+        for info_type in [
+            InformationType.PROPRIETARY, InformationType.EMBARGOED]:
+            product = self.factory.makeProduct(
+                information_type=info_type, owner=owner)
+            with person_logged_in(owner):
+                product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
+                product.setSpecificationSharingPolicy(
+                    SpecificationSharingPolicy.PUBLIC)
+                product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
+            self.assertIsNot(None, getUtility(IAccessPolicySource).find(
+                [(product, info_type)]).one())
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
@@ -1866,6 +1941,22 @@ class TestProductSet(TestCaseWithFactory):
         clause = ProductSet.getProductPrivacyFilter(user)
         return IStore(Product).find(Product, clause)
 
+    def test_users_private_products(self):
+        # Ignore any public products the user may own.
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        result = ProductSet.get_users_private_products(owner)
+        self.assertIn(proprietary, result)
+        self.assertIn(embargoed, result)
+
     def test_get_all_active_omits_proprietary(self):
         # Ignore proprietary products for anonymous users
         proprietary = self.factory.makeProduct(
@@ -1958,3 +2049,31 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
+
+    def test_getTranslatables_filters_private_products(self):
+        # ProductSet.getTranslatables() returns rivate translatable
+        # products only for user that have grants for these products.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD)
+        series = self.factory.makeProductSeries(product)
+        self.factory.makePOTemplate(productseries=series)
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        # Anonymous users do not see private products.
+        with person_logged_in(ANONYMOUS):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertNotIn(product, list(translatables))
+        # Ordinary users do not see private products.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertNotIn(product, list(translatables))
+        # Users with policy grants on private products see them.
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            translatables = getUtility(IProductSet).getTranslatables()
+            self.assertIn(product, list(translatables))

@@ -38,6 +38,7 @@ class FakeUploadPolicy:
         self.distroseries = spph.distroseries
         self.archive = spph.distroseries.main_archive
         self.pocket = spph.pocket
+        self.redirect_warning = None
 
     setDistroSeriesAndPocket = FakeMethod()
     validateUploadType = FakeMethod()

@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-
 from textwrap import dedent
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -368,11 +367,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
 
     def filebug_via_view(self, information_type=None,
                          bug_sharing_policy=None, extra_data_token=None):
-        form = {
-            'field.title': 'A bug',
-            'field.comment': 'A comment',
-            'field.actions.submit_bug': 'Submit Bug Request',
-        }
+        form = self.get_form()
         if information_type:
             form['field.information_type'] = information_type
         product = self.factory.makeProduct(official_malone=True)
@@ -695,6 +690,40 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
              'The file "attachment2" was attached to the bug report.'],
             notifications)
 
+    def test_submit_comment_with_large_extra_description(self):
+        # Submitting a large blob will set a sensible error.
+        string = 'y' * 50001
+        token = self.process_extra_data("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            %s
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            A bug comment.
+
+            --boundary--
+            """ % string)
+        form = {
+            'field.title': 'Test title',
+            'field.comment': 'Test comment',
+            'field.actions.submit_bug': 'Submit Bug Report'}
+        view = self.create_initialized_view(form)
+        view.publishTraverse(view.request, token)
+        view.validate(self.get_form())
+        expected = [
+            u'The description and the additional information is too long. '
+            'If you have lots of text to add, attach a file to the bug '
+            'instead.']
+        self.assertContentEqual(expected, view.errors)
+
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
 
@@ -816,10 +845,8 @@ class TestFileBugRequestCache(TestCaseWithFactory):
                         'help': '', 'disabled': False,
                         'css_class': 'status' + item.name}
             bugtask_status_data.append(new_item)
-        self.assertEqual(
-            bugtask_status_data, cache['bugtask_status_data'])
-        excluded_importances = [
-            BugTaskImportance.UNKNOWN]
+        self.assertEqual(bugtask_status_data, cache['bugtask_status_data'])
+        excluded_importances = [BugTaskImportance.UNKNOWN]
         bugtask_importance_data = []
         for item in BugTaskImportance:
             item = item.value
