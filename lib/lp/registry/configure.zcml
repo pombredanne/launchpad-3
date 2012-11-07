@@ -1248,11 +1248,8 @@
         <allow
             interface="lp.registry.interfaces.pillar.IPillar"/>
         <require
-            permission="launchpad.LimitedView"
-            interface="lp.registry.interfaces.product.IProductLimitedView"/>
-        <require
             permission="launchpad.View"
-            interface="lp.registry.interfaces.product.IProductView"/>
+            interface="lp.registry.interfaces.product.IProductLimitedView"/>
         <require
             permission="launchpad.View"
             interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>

@@ -8,12 +8,6 @@ __metaclass__ = type
 import cgi
 import urllib
 
-from soupmatchers import (
-    HTMLContains,
-    Tag,
-    )
-from testtools.matchers import Not
-from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -30,7 +24,6 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
@@ -157,60 +150,6 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         url = get_register_upstream_url(source_package)
         self.assertInQueryString(
             url, 'field.homepageurl', 'http://eg.dom/bonkers')
-
-
-class TestSourcePackageView(BrowserTestCase):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_register_upstream_forbids_proprietary(self):
-        # Cannot specify information_type if registering for sourcepackage.
-        self.useFixture(FeatureFixture({'disclosure.private_projects.enabled':
-            'on'}))
-        sourcepackage = self.factory.makeSourcePackage()
-        browser = self.getViewBrowser(sourcepackage)
-        browser.getControl("Register the upstream project").click()
-        browser.getControl("Link to Upstream Project").click()
-        browser.getControl("Summary").value = "summary"
-        browser.getControl("Continue").click()
-        t = Tag('info_type', 'input', attrs={'name': 'field.information_type'})
-        self.assertThat(browser.contents, Not(HTMLContains(t)))
-
-    def test_link_upstream_handles_initial_proprietary(self):
-        # Proprietary product is not listed as an option.
-        owner = self.factory.makePerson()
-        sourcepackage = self.factory.makeSourcePackage()
-        product_name = sourcepackage.name
-        product_displayname = self.factory.getUniqueString()
-        self.factory.makeProduct(
-            name=product_name, owner=owner,
-            information_type=InformationType.PROPRIETARY,
-            displayname=product_displayname)
-        browser = self.getViewBrowser(sourcepackage, user=owner)
-        with ExpectedException(LookupError):
-            browser.getControl(product_displayname)
-
-    def test_link_upstream_handles_proprietary(self):
-        # Proprietary products produce an 'invalid value' error.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        product_name = product.name
-        product_displayname = product.displayname
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=product_name)
-        with person_logged_in(None):
-            browser = self.getViewBrowser(sourcepackage, user=owner)
-            with person_logged_in(owner):
-                product.information_type = InformationType.PROPRIETARY
-            browser.getControl(product_displayname).click()
-            browser.getControl("Link to Upstream Project").click()
-        error = Tag(
-            'error', 'div', attrs={'class': 'message'},
-            text='Invalid value')
-        self.assertThat(browser.contents, HTMLContains(error))
-        self.assertNotIn(
-            'The project %s was linked to this source package.' %
-            str(product_displayname), browser.contents)
 
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
@@ -360,7 +299,7 @@ class TestSourcePackageChangeUpstreamView(BrowserTestCase):
         """Packaging cannot be created for PROPRIETARY products"""
         product_owner = self.factory.makePerson()
         product_name = 'proprietary-product'
-        self.factory.makeProduct(
+        product = self.factory.makeProduct(
             name=product_name, owner=product_owner,
             information_type=InformationType.PROPRIETARY)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
