@@ -428,10 +428,19 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(Interface):
+class IProductLimitedView(IHasLogo):
     """Attributes that must be visible for person with artifact grants
     on bugs, branches or specifications for the product.
     """
+
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
 
     name = exported(
         ProductNameField(
@@ -446,7 +455,7 @@ class IProductLimitedView(Interface):
 class IProductView(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
@@ -613,15 +622,6 @@ class IProductView(
                 "size, that can be used to identify this project. The icon "
                 "will be displayed next to the project name everywhere in "
                 "Launchpad that we refer to the project and link to it.")))
-
-    logo = exported(
-        LogoImageUpload(
-            title=_("Logo"), required=False,
-            default_image_resource='/@@/product-logo',
-            description=_(
-                "An image of exactly 64x64 pixels that will be displayed in "
-                "the heading of all pages related to this project. It should "
-                "be no bigger than 50kb in size.")))
 
     mugshot = exported(
         MugshotImageUpload(

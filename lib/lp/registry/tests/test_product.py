@@ -551,7 +551,7 @@ class TestProduct(TestCaseWithFactory):
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
-        'launchpad.LimitedView': set(('name', )),
+        'launchpad.LimitedView': set(('logo', 'name', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -594,7 +594,7 @@ class TestProduct(TestCaseWithFactory):
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
             'homepageurl', 'icon', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
-            'license_info', 'license_status', 'licenses', 'logo', 'milestones',
+            'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'name_with_project', 'newCodeImport',
             'obsolete_translatable_series', 'official_answers',
             'official_anything', 'official_blueprints', 'official_bug_tags',
