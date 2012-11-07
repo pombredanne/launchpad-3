@@ -2852,8 +2852,7 @@ class Person(
                 lpspr.upload_distroseries_id ==
                     LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
-                lpspr.maintainer_id ==
-                    LatestPersonSourcepackageReleaseCache.creator_id),
+                lpspr.maintainer_id == self.id),
             tables=lpspr))))
         else:
             clauses.append(
@@ -2874,7 +2873,7 @@ class Person(
         """
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
-            LatestPersonSourcepackageReleaseCache.publication_id, clauses)
+            LatestPersonSourcepackageReleaseCache.publication_id, *clauses)
         return not rs.is_empty()
 
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):

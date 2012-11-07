@@ -1182,20 +1182,21 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         def _assert_release_by_creator(creator, spr):
             release_records = store.find(
                 LatestPersonSourcepackageReleaseCache,
-                LatestPersonSourcepackageReleaseCache.creator == creator)
+                LatestPersonSourcepackageReleaseCache.creator_id == creator.id)
             [record] = list(release_records)
             self.assertEqual(spr.creator, record.creator)
-            self.assertIsNone(record.maintainer)
+            self.assertIsNone(record.maintainer_id)
             self.assertEqual(
                 spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
 
         def _assert_release_by_maintainer(maintainer, spr):
             release_records = store.find(
                 LatestPersonSourcepackageReleaseCache,
-                LatestPersonSourcepackageReleaseCache.maintainer == maintainer)
+                LatestPersonSourcepackageReleaseCache.maintainer_id ==
+                maintainer.id)
             [record] = list(release_records)
             self.assertEqual(spr.maintainer, record.maintainer)
-            self.assertIsNone(record.creator)
+            self.assertIsNone(record.creator_id)
             self.assertEqual(
                 spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
 

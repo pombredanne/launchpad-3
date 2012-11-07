@@ -30,7 +30,7 @@ class LatestPersonSourcepackageReleaseCache(Storm):
 
     __storm_table__ = 'LatestPersonSourcepackageReleaseCache'
 
-    id = Int(name='id', primary=True)
+    cache_id = Int(name='id', primary=True)
     publication_id = Int(name='publication')
     publication = Reference(
         publication_id, 'SourcePackagePublishingHistory.id')

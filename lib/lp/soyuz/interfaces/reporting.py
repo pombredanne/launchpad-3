@@ -21,7 +21,7 @@ class ILatestPersonSourcepackageReleaseCache(ISourcePackageRelease):
     maintainers. Queries can be filtered by creator or maintainer as required.
     """
 
-    id = Attribute(
+    cache_id = Attribute(
         "The id of the associated LatestPersonSourcepackageReleaseCache"
         "record.")
     sourcepackagerelease = Attribute(
