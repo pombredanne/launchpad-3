@@ -328,10 +328,9 @@ class BranchScanJob(BranchJobDerived):
         from lp.services.scripts import log
         with server(get_ro_server(), no_replace=True):
             try:
-                lock = try_advisory_lock(
+                with try_advisory_lock(
                     LockType.BRANCH_SCAN, self.branch.id,
-                    Store.of(self.branch))
-                with lock:
+                    Store.of(self.branch)):
                     bzrsync = BzrSync(self.branch, log)
                     bzrsync.syncBranchAndClose()
             except LostObjectError:

@@ -185,14 +185,14 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit('First commit', rev_id='rev1')
             LaunchpadZopelessLayer.commit()
 
-            expected_message = (
-                'Skipping branch %s because it has been deleted.'
-                % db_branch.unique_name)
-            with self.expectedLog(expected_message):
-                job = BranchScanJob.create(db_branch)
-                db_branch.destroySelf()
-                with dbuser(config.branchscanner.dbuser):
-                    job.run()
+        expected_message = (
+            'Skipping branch %s because it has been deleted.'
+            % db_branch.unique_name)
+        with self.expectedLog(expected_message):
+            job = BranchScanJob.create(db_branch)
+            db_branch.destroySelf()
+            with dbuser(config.branchscanner.dbuser):
+                job.run()
 
     def test_run_with_private_linked_bug(self):
         """Ensure the job scans a branch with a private bug in the revprops."""
