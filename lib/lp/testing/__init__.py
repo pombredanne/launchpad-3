@@ -888,23 +888,15 @@ class BrowserTestCase(TestCaseWithFactory):
             if user is None:
                 user = self.user
             login_person(user)
-        query = None
-        final_url = None
-        if '?' in view_name:
-            view_name, query = view_name.split('?')
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
-        if query is not None:
-            final_url = '%s?%s' % (url, query)
-        else:
-            final_url = url
         logout()
         if no_login:
             from lp.testing.pages import setupBrowser
             browser = setupBrowser()
-            browser.open(final_url)
+            browser.open(url)
             return browser
         else:
-            return self.getUserBrowser(final_url, user)
+            return self.getUserBrowser(url, user)
 
     def getMainContent(self, context, view_name=None, rootsite=None,
                        no_login=False, user=None):
