@@ -428,7 +428,7 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(IHasLogo):
+class IProductLimitedView(IHasLogo, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
     on bugs, branches or specifications for the product.
     """
@@ -469,7 +469,7 @@ class IProductView(
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
     ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
