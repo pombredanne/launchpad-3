@@ -1,6 +1,5 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from storm.exceptions import LostObjectError
 
 __all__ = [
     'BranchJob',
@@ -45,6 +44,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
+from storm.exceptions import LostObjectError
 from storm.expr import (
     And,
     SQL,
