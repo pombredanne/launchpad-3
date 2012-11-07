@@ -551,6 +551,7 @@ class TestProduct(TestCaseWithFactory):
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
+        'launchpad.LimitedView': set(('name', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -594,7 +595,7 @@ class TestProduct(TestCaseWithFactory):
             'homepageurl', 'icon', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'logo', 'milestones',
-            'mugshot', 'name', 'name_with_project', 'newCodeImport',
+            'mugshot', 'name_with_project', 'newCodeImport',
             'obsolete_translatable_series', 'official_answers',
             'official_anything', 'official_blueprints', 'official_bug_tags',
             'official_codehosting', 'official_malone', 'owner',
@@ -763,6 +764,57 @@ class TestProduct(TestCaseWithFactory):
             for attribute_name in names:
                 getattr(product, attribute_name)
         with person_logged_in(self.factory.makeCommercialAdmin()):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_LimitedView_public_product(self):
+        # Everybody can access attributes of public products that
+        # require the permission launchpad.LimitedView.
+        product = self.factory.makeProduct()
+        names = self.expected_get_permissions['launchpad.LimitedView']
+        with person_logged_in(None):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        ordinary_user = self.factory.makePerson()
+        with person_logged_in(ordinary_user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+
+    def test_access_LimitedView_proprietary_product(self):
+        # Anonymous users and ordinary logged in users cannot access
+        # attributes of private products that require the permission
+        # launchpad.LimitedView.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        names = self.expected_get_permissions['launchpad.LimitedView']
+        with person_logged_in(None):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            for attribute_name in names:
+                self.assertRaises(
+                    Unauthorized, getattr, product, attribute_name)
+        # Users with a grant on an artifact related to the product
+        # can access the attributes.
+        with person_logged_in(owner):
+            bug = self.factory.makeBug(
+                target=product, information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, bugs=[bug])
+        with person_logged_in(user):
+            for attribute_name in names:
+                getattr(product, attribute_name)
+        # Users with a policy grant for the product also have access.
+        user2 = self.factory.makePerson()
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user2, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user2):
             for attribute_name in names:
                 getattr(product, attribute_name)
 

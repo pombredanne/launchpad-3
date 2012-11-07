@@ -307,7 +307,7 @@ class SQLObjectVocabularyBase(FilteredVocabularyBase):
     # search functionality produce a new vocabulary restricted to the
     # desired subset.
     def searchForTerms(self, query=None, vocab_filter=None):
-        results = self.search(query)
+        results = self.search(query, vocab_filter)
         return CountableIterator(results.count(), results, self.toTerm)
 
     def search(self, query, vocab_filter=None):

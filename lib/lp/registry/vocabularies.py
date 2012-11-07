@@ -296,12 +296,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = query.lower()
             like_query = "'%%%%' || %s || '%%%%'" % quote_like(like_query)
             fti_query = quote(query)
+            if vocab_filter is None:
+                vocab_filter = []
             where_clause = And(
                 SQL(
                     "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                         like_query, fti_query)),
                 ProductSet.getProductPrivacyFilter(
-                    getUtility(ILaunchBag).user))
+                    getUtility(ILaunchBag).user), *vocab_filter)
             order_by = SQL(
                 '(CASE name WHEN %s THEN 1 '
                 ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
