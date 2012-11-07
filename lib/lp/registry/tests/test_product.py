@@ -552,9 +552,10 @@ class TestProduct(TestCaseWithFactory):
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
         'launchpad.LimitedView': set((
-            'displayname', 'enable_bug_expiration', 'logo', 'name',
-            'official_answers', 'official_anything', 'official_blueprints',
-            'official_codehosting', 'official_malone', 'title', )),
+            'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
+            'logo', 'name', 'official_answers', 'official_anything',
+            'official_blueprints', 'official_codehosting', 'official_malone',
+            'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -564,7 +565,7 @@ class TestProduct(TestCaseWithFactory):
             'blueprints_usage', 'branch_sharing_policy',
             'bug_reported_acknowledgement', 'bug_reporting_guidelines',
             'bug_sharing_policy', 'bug_subscriptions', 'bug_supervisor',
-            'bug_tracking_usage', 'bugtargetdisplayname', 'bugtargetname',
+            'bug_tracking_usage', 'bugtargetname',
             'bugtracker', 'canUserAlterAnswerContact', 'codehosting_usage',
             'coming_sprints', 'commercial_subscription',
             'commercial_subscription_is_due', 'createBug',

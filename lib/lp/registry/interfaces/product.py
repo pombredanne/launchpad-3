@@ -89,7 +89,6 @@ from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget,
     IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
@@ -465,7 +464,7 @@ class IProductLimitedView(IHasLogo, ILaunchpadUsage):
 
 
 class IProductView(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,

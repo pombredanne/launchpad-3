@@ -1356,6 +1356,25 @@
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active"/>
 
+        <!-- IBugTarget -->
+
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                bugtargetdisplayname"/>
+
+        <require
+            permission="launchpad.View"
+            attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtargetname
+                createBug
+                enable_bugfiling_duplicate_search
+                getBugTaskWeightFunction
+                pillar
+                searchTasks"/>
+
         <!-- IHasAliases -->
 
         <require
