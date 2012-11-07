@@ -555,7 +555,7 @@ class TestProduct(TestCaseWithFactory):
             'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
             'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
-            'title', )),
+            'parent_subscription_target', 'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -600,7 +600,7 @@ class TestProduct(TestCaseWithFactory):
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'name_with_project', 'newCodeImport',
             'obsolete_translatable_series', 'official_bug_tags', 'owner',
-            'parent_subscription_target', 'packagedInDistros', 'packagings',
+            'packagedInDistros', 'packagings',
             'past_sprints', 'personHasDriverRights', 'pillar',
             'primary_translatable', 'private_bugs',
             'programminglang', 'project', 'qualifies_for_free_hosting',

@@ -1410,8 +1410,19 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <require
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target" />
+        <require
             permission="launchpad.View"
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions" />
         <require
             permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
