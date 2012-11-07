@@ -86,6 +86,7 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
+from lp.code.browser.codeimport import validate_import_url
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -660,10 +661,7 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         return 'Edit %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -697,10 +695,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    page_title = label
 
     @cachedproperty
     def milestones(self):
@@ -906,8 +901,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         """Validate data for link-lp-bzr case."""
         if 'branch_location' not in data:
             self.setFieldError(
-                'branch_location',
-                'The branch location must be set.')
+                'branch_location', 'The branch location must be set.')
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -925,16 +919,9 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'repo_url', 'You must set the external repository URL.')
         else:
-            # Ensure this URL has not been imported before.
-            code_import = getUtility(ICodeImportSet).getByURL(repo_url)
-            if code_import is not None:
-                self.setFieldError(
-                    'repo_url',
-                    structured("""
-                    This foreign branch URL is already specified for
-                    the imported branch <a href="%s">%s</a>.""",
-                               canonical_url(code_import.branch),
-                               code_import.branch.unique_name))
+            reason = validate_import_url(repo_url)
+            if reason:
+                self.setFieldError('repo_url', reason)
 
         # RCS type is mandatory.
         # This condition should never happen since an initial value is set.
@@ -945,19 +932,15 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 'You must specify the type of RCS for the remote host.')
         elif rcs_type == RevisionControlSystems.CVS:
             if 'cvs_module' not in data:
-                self.setFieldError(
-                    'cvs_module',
-                    'The CVS module must be set.')
+                self.setFieldError('cvs_module', 'The CVS module must be set.')
         self._validateBranch(data)
 
     def _validateBranch(self, data):
         """Validate that branch name and owner are set."""
         if 'branch_name' not in data:
-            self.setFieldError(
-                'branch_name', 'The branch name must be set.')
+            self.setFieldError('branch_name', 'The branch name must be set.')
         if 'branch_owner' not in data:
-            self.setFieldError(
-                'branch_owner', 'The branch owner must be set.')
+            self.setFieldError('branch_owner', 'The branch owner must be set.')
 
     def _setRequired(self, names, value):
         """Mark the widget field as optional."""
@@ -1030,25 +1013,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
+            self.context.branch = branch_location
             if branch_location != self.context.branch:
-                self.context.branch = branch_location
                 # Request an initial upload of translation files.
                 getUtility(IRosettaUploadJobSource).create(
                     self.context.branch, NULL_REVISION)
-            else:
-                self.context.branch = branch_location
             self.request.response.addInfoNotification(
                 'Series code location updated.')
         else:
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
 
-            # Import or mirror an external branch.
             if branch_type == IMPORT_EXTERNAL:
-                # Either create an externally hosted bzr branch
-                # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')
-                # We need to create an import request.
                 if rcs_type == RevisionControlSystems.CVS:
                     cvs_root = data.get('repo_url')
                     cvs_module = data.get('cvs_module')
@@ -1069,8 +1046,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
                 except BranchExists as e:
-                    self._setBranchExists(
-                        e.existing_branch, 'branch_name')
+                    self._setBranchExists(e.existing_branch, 'branch_name')
                     self.errors_in_action = True
                     # Abort transaction. This is normally handled
                     # by LaunchpadFormView, but we are already in
@@ -1126,13 +1102,11 @@ class ProductSeriesLinkBranchView(ReturnToReferrerMixin, ProductSeriesView,
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the branch attribute."""
+        self.updateContextFromData(data)
         if data['branch'] != self.context.branch:
-            self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(
                 self.context.branch, NULL_REVISION)
-        else:
-            self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
@@ -1177,8 +1151,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
 class ProductSeriesRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
-    template = ViewPageTemplateFile(
-        '../templates/productseries-rdf.pt')
+    template = ViewPageTemplateFile('../templates/productseries-rdf.pt')
 
     @property
     def filename(self):
