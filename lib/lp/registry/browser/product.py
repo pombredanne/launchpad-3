@@ -1984,14 +1984,18 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             'information_type': InformationType.PUBLIC,
         }
 
+    @property
+    def enable_information_type(self):
+        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
+        return private_projects and not self.source_package_name
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
         hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if not private_projects:
+        if not self.enable_information_type:
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
@@ -2033,9 +2037,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-
-        if private_projects and IProductSet.providedBy(self.context):
+        if (self.enable_information_type and
+            IProductSet.providedBy(self.context)):
             self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
@@ -2105,8 +2108,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             for error in errors:
                 self.errors.remove(error)
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if private_projects:
+        if self.enable_information_type:
             if data.get('information_type') != InformationType.PUBLIC:
                 for required_field in ('bug_supervisor', 'driver'):
                     if data.get(required_field) is None:

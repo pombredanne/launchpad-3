@@ -6,8 +6,9 @@
   <div id="ppas" class="portlet" tal:condition="view/should_show_ppa_section">
     <h2>Personal package archives</h2>
 
-    <div tal:replace="structure context/@@+ppas-list"/>
-
+    <tal:ppa tal:define="visible_ppas view/visible_ppas">
+      <metal:ppas-list use-macro="context/@@+macros/ppas-list"/>
+    </tal:ppa>
     <ul class="horizontal">
       <tal:can-create-ppa condition="context/canCreatePPA">
         <li tal:define="link context/menu:overview/activate_ppa"
