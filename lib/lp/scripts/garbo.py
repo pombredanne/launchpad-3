@@ -8,6 +8,8 @@ __all__ = [
     'DailyDatabaseGarbageCollector',
     'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
+    'load_garbo_job_state',
+    'save_garbo_job_state',
     ]
 
 from datetime import (
@@ -17,6 +19,7 @@ from datetime import (
 import logging
 import multiprocessing
 import os
+import simplejson
 import threading
 import time
 
@@ -28,11 +31,17 @@ import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
+    Alias,
+    And,
+    Desc,
     In,
+    Insert,
+    Join,
     Like,
     Select,
     Update,
     )
+from storm.info import ClassAlias
 from storm.locals import (
     Max,
     Min,
@@ -105,6 +114,10 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -118,6 +131,33 @@ from lp.translations.scripts.scrub_pofiletranslator import (
 
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
+
+
+# Garbo jobs may choose to persist state between invocations, if it is likely
+# that not all data can be processed in a single run. These utility methods
+# provide convenient access to that state data.
+def load_garbo_job_state(job_name):
+    # Load the json state data for the given job name.
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    job_data = store.execute(
+        "SELECT json_data FROM GarboJobState WHERE name = ?",
+        params=(unicode(job_name),)).get_one()
+    if job_data:
+        return simplejson.loads(job_data[0])
+    return None
+
+
+def save_garbo_job_state(job_name, job_data):
+    # Save the json state data for the given job name.
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    json_data = simplejson.dumps(job_data, ensure_ascii=False)
+    result = store.execute(
+        "UPDATE GarboJobState SET json_data = ? WHERE name = ?",
+        params=(json_data, unicode(job_name)))
+    if result.rowcount == 0:
+        store.execute(
+        "INSERT INTO GarboJobState(name, json_data) "
+        "VALUES (?, ?)", params=(unicode(job_name), unicode(json_data)))
 
 
 class BulkPruner(TunableLoop):
@@ -420,6 +460,159 @@ class VoucherRedeemer(TunableLoop):
             ).set(
                 CommercialSubscription.sales_system_id ==
                 SQL(self.voucher_expr))
+        transaction.commit()
+
+
+class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
+    """Populate the LatestPersonSourcepackageReleaseCache table.
+
+    The LatestPersonSourcepackageReleaseCache contains 2 sets of data, one set
+    for package maintainers and another for package creators. This job first
+    populates the creator data and then does the maintainer data.
+    """
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super_cl = super(PopulateLatestPersonSourcepackageReleaseCache, self)
+        super_cl.__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        # Keep a record of the processed source package release id and data
+        # type (creator or maintainer) so we know where to job got up to.
+        self.next_id = 0
+        self.current_person_filter_type = 'creator'
+        self.starting_person_filter_type = self.current_person_filter_type
+        self.job_name = self.__class__.__name__
+        job_data = load_garbo_job_state(self.job_name)
+        if job_data:
+            self.next_id = job_data['next_id']
+            self.current_person_filter_type = job_data['person_filter_type']
+            self.starting_person_filter_type = self.current_person_filter_type
+
+    def getPendingUpdates(self):
+        # Load the latest published source package release data keyed on either
+        # creator or maintainer as required.
+        if self.current_person_filter_type == 'creator':
+            person_filter = SourcePackageRelease.creatorID
+        else:
+            person_filter = SourcePackageRelease.maintainerID
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        origin = [
+            SourcePackageRelease,
+            Join(
+                spph,
+                And(spph.sourcepackagereleaseID == SourcePackageRelease.id,
+                    spph.archiveID == SourcePackageRelease.upload_archiveID))]
+        spr_select = self.store.using(*origin).find(
+            (SourcePackageRelease.id, Alias(spph.id, 'spph_id')),
+            SourcePackageRelease.id > self.next_id
+        ).order_by(
+            person_filter,
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.upload_archiveID,
+            Desc(SourcePackageRelease.dateuploaded),
+            SourcePackageRelease.id
+        ).config(distinct=(
+            person_filter,
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.upload_archiveID))._get_select()
+
+        spr = Alias(spr_select, 'spr')
+        origin = [
+            SourcePackageRelease,
+            Join(spr, SQL('spr.id') == SourcePackageRelease.id),
+            Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID)]
+        rs = self.store.using(*origin).find(
+            (SourcePackageRelease.id,
+            person_filter,
+            SourcePackageRelease.upload_archiveID,
+            Archive.purpose,
+            SourcePackageRelease.upload_distroseriesID,
+            SourcePackageRelease.sourcepackagenameID,
+            SourcePackageRelease.dateuploaded, SQL('spph_id'))
+        ).order_by(SourcePackageRelease.id)
+        return rs
+
+    def isDone(self):
+        # If there is no more data to process for creators, switch over to
+        # processing data for maintainers, or visa versa.
+        current_count = self.getPendingUpdates().count()
+        if current_count == 0:
+            if (self.current_person_filter_type !=
+                self.starting_person_filter_type):
+                return True
+            if  self.current_person_filter_type == 'creator':
+                self.current_person_filter_type = 'maintainer'
+            else:
+                self.current_person_filter_type = 'creator'
+            self.next_id = 0
+            current_count = self.getPendingUpdates().count()
+        return current_count == 0
+
+    def update_cache(self, updates):
+        # Update the LatestPersonSourcepackageReleaseCache table. Records for
+        # each creator/maintainer will either be new inserts or updates. We try
+        # to update first, and gather data for missing (new) records along the
+        # way. At the end, a bulk insert is done for any new data.
+        # Updates is a list of data records (tuples of values).
+        # Each record is keyed on:
+        # - (creator/maintainer), archive, distroseries, sourcepackagename
+        inserts = []
+        columns = (
+            LatestPersonSourcepackageReleaseCache.sourcepackagerelease_id,
+            LatestPersonSourcepackageReleaseCache.creator_id,
+            LatestPersonSourcepackageReleaseCache.maintainer_id,
+            LatestPersonSourcepackageReleaseCache.upload_archive_id,
+            LatestPersonSourcepackageReleaseCache.archive_purpose,
+            LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+            LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+            LatestPersonSourcepackageReleaseCache.dateuploaded,
+            LatestPersonSourcepackageReleaseCache.publication_id,
+        )
+        for update in updates:
+            (spr_id, person_id, archive_id, purpose,
+             distroseries_id, spn_id, dateuploaded, spph_id) = update
+            if self.current_person_filter_type == 'creator':
+                creator_id = person_id
+                maintainer_id = None
+            else:
+                creator_id = None
+                maintainer_id = person_id
+            values = (
+                spr_id, creator_id, maintainer_id, archive_id, purpose.value,
+                distroseries_id, spn_id, dateuploaded, spph_id)
+            data = dict(zip(columns, values))
+            result = self.store.execute(Update(
+                data, And(
+                LatestPersonSourcepackageReleaseCache.upload_archive_id ==
+                    archive_id,
+                LatestPersonSourcepackageReleaseCache.upload_distroseries_id ==
+                    distroseries_id,
+                LatestPersonSourcepackageReleaseCache.sourcepackagename_id ==
+                    spn_id,
+                LatestPersonSourcepackageReleaseCache.creator_id ==
+                    creator_id,
+                LatestPersonSourcepackageReleaseCache.maintainer_id ==
+                    maintainer_id)))
+            if result.rowcount == 0:
+                inserts.append(values)
+        if inserts:
+            self.store.execute(Insert(columns, values=inserts))
+
+    def __call__(self, chunk_size):
+        max_id = self.next_id
+        updates = []
+        for update in (self.getPendingUpdates()[:chunk_size]):
+            updates.append(update)
+            max_id = update[0]
+        self.update_cache(updates)
+
+        self.next_id = max_id
+        self.store.flush()
+        save_garbo_job_state(self.job_name, {
+            'next_id': max_id,
+            'person_filter_type': self.current_person_filter_type})
         transaction.commit()
 
 
@@ -1339,6 +1532,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
         VoucherRedeemer,
+        PopulateLatestPersonSourcepackageReleaseCache,
         ]
     experimental_tunable_loops = []
 
