@@ -174,6 +174,26 @@ class TestBranchScanJob(TestCaseWithFactory):
 
         self.assertEqual(db_branch.revision_count, 5)
 
+    def test_branch_deleted(self):
+        """Ensure a job for a deleted branch completes with logged message."""
+        self.useBzrBranches(direct_database=True)
+
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            bzr_tree.commit('First commit', rev_id='rev1')
+            LaunchpadZopelessLayer.commit()
+
+            expected_message = (
+                'Skipping branch %s because it has been deleted.'
+                % db_branch.unique_name)
+            with self.expectedLog(expected_message):
+                job = BranchScanJob.create(db_branch)
+                db_branch.destroySelf()
+                with dbuser(config.branchscanner.dbuser):
+                    job.run()
+
     def test_run_with_private_linked_bug(self):
         """Ensure the job scans a branch with a private bug in the revprops."""
         self.useBzrBranches(direct_database=True)
