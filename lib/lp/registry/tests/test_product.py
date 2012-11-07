@@ -551,7 +551,7 @@ class TestProduct(TestCaseWithFactory):
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
-        'launchpad.LimitedView': set(('logo', 'name', )),
+        'launchpad.LimitedView': set(('logo', 'name', 'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -610,7 +610,7 @@ class TestProduct(TestCaseWithFactory):
             'series',
             'sharesTranslationsWithOtherSide', 'sourceforgeproject',
             'sourcepackages', 'specification_sharing_policy', 'specifications',
-            'sprints', 'summary', 'target_type_display', 'title',
+            'sprints', 'summary', 'target_type_display',
             'translatable_packages', 'translatable_series',
             'translation_focus', 'translationgroup', 'translationgroups',
             'translationpermission', 'translations_usage', 'ubuntu_packages',

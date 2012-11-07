@@ -451,6 +451,11 @@ class IProductLimitedView(IHasLogo):
                 "letters, numbers, dots, hyphens or pluses. "
                 "Keep this name short; it is used in URLs as shown above.")))
 
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
+
 
 class IProductView(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
@@ -518,11 +523,6 @@ class IProductView(
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
-
-    title = exported(
-        Title(
-            title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
 
     summary = exported(
         Summary(
