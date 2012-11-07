@@ -188,9 +188,9 @@ class TestBranchScanJob(TestCaseWithFactory):
         expected_message = (
             'Skipping branch %s because it has been deleted.'
             % db_branch.unique_name)
+        job = BranchScanJob.create(db_branch)
+        db_branch.destroySelf()
         with self.expectedLog(expected_message):
-            job = BranchScanJob.create(db_branch)
-            db_branch.destroySelf()
             with dbuser(config.branchscanner.dbuser):
                 job.run()
 
