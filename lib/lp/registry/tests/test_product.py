@@ -551,7 +551,8 @@ class TestProduct(TestCaseWithFactory):
         CheckerPublic: set((
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
-        'launchpad.LimitedView': set(('logo', 'name', 'title', )),
+        'launchpad.LimitedView': set((
+            'displayname', 'logo', 'name', 'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', '_all_specifications',
             '_valid_specifications', 'active_or_packaged_series',
@@ -569,7 +570,7 @@ class TestProduct(TestCaseWithFactory):
             'createCustomLanguageCode', 'custom_language_codes',
             'date_next_suggest_packaging', 'datecreated', 'description',
             'development_focus', 'development_focusID',
-            'direct_answer_contacts', 'displayname', 'distrosourcepackages',
+            'direct_answer_contacts', 'distrosourcepackages',
             'downloadurl', 'driver', 'drivers', 'enable_bug_expiration',
             'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
             'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',

@@ -433,6 +433,13 @@ class IProductLimitedView(IHasLogo):
     on bugs, branches or specifications for the product.
     """
 
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_("""The name of the project as it would appear in a
+                paragraph.""")),
+        exported_as='display_name')
+
     logo = exported(
         LogoImageUpload(
             title=_("Logo"), required=False,
@@ -516,13 +523,6 @@ class IProductView(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    displayname = exported(
-        TextLine(
-            title=_('Display Name'),
-            description=_("""The name of the project as it would appear in a
-                paragraph.""")),
-        exported_as='display_name')
 
     summary = exported(
         Summary(
