@@ -427,7 +427,7 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(IHasLogo, ILaunchpadUsage):
+class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
     on bugs, branches or specifications for the product.
     """
@@ -457,6 +457,15 @@ class IProductLimitedView(IHasLogo, ILaunchpadUsage):
                 "letters, numbers, dots, hyphens or pluses. "
                 "Keep this name short; it is used in URLs as shown above.")))
 
+    owner = exported(
+        PersonChoice(
+            title=_('Maintainer'),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
+
     project = exported(
         ReferenceChoice(
             title=_('Part of'),
@@ -483,20 +492,11 @@ class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
-    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
+    IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
     ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
-
-    owner = exported(
-        PersonChoice(
-            title=_('Maintainer'),
-            required=True,
-            vocabulary='ValidPillarOwner',
-            description=_("The restricted team, moderated team, or person "
-                          "who maintains the project information in "
-                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
