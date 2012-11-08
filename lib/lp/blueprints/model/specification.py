@@ -1321,6 +1321,38 @@ def get_specification_filters(filter):
     return clauses
 
 
+def get_specification_query(user, sprint, filter):
+    from lp.blueprints.enums import SprintSpecificationStatus
+    from lp.blueprints.model.sprintspecification import SprintSpecification
+    from lp.registry.model.product import Product
+    from lp.registry.model.accesspolicy import (
+        AccessArtifact,
+        AccessPolicy,
+        AccessPolicyGrantFlat,
+        )
+    tables = [Specification, LeftJoin(Product,
+            Specification.productID == Product.id), LeftJoin(AccessPolicy,
+                And(Or(Specification.productID == AccessPolicy.product_id,
+                    Specification.distributionID ==
+                    AccessPolicy.distribution_id),
+                    Specification.information_type == AccessPolicy.type)),
+                LeftJoin(AccessPolicyGrantFlat, AccessPolicy.id ==
+                    AccessPolicyGrantFlat.policy_id),
+                LeftJoin(TeamParticipation, TeamParticipation.person ==
+                    user), LeftJoin(AccessArtifact,
+                        AccessPolicyGrantFlat.abstract_artifact_id ==
+                        AccessArtifact.id)]
+    clauses = [            Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
+                And(AccessPolicyGrantFlat.id != None,
+                    AccessPolicyGrantFlat.grantee_id ==
+                    TeamParticipation.teamID,
+                    Or(AccessPolicyGrantFlat.abstract_artifact == None,
+                        AccessArtifact.specification_id ==
+                        Specification.id))), Or(Specification.product == None, Product.active == True)]
+    clauses.extend(get_specification_filters(filter))
+    return tables, clauses
+
+
 # NB NB If you change this definition, please update the equivalent
 # DB constraint Specification.specification_start_recorded_chk
 # We choose to define "started" as the set of delivery states NOT
