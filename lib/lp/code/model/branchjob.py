@@ -240,8 +240,6 @@ class BranchJobDerived(BaseRunnableJob):
 
     def __init__(self, branch_job):
         self.context = branch_job
-        if branch_job.branch:
-            self.branch_unique_name = branch_job.branch.unique_name
 
     def __repr__(self):
         branch = self.branch
@@ -320,8 +318,13 @@ class BranchScanJob(BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
-        branch_job = BranchJob(branch, cls.class_job_type, {})
+        branch_job = BranchJob(
+            branch, cls.class_job_type, {'branch_name': branch.unique_name})
         return cls(branch_job)
+
+    @property
+    def branch_name(self):
+        return self.metadata['branch_name']
 
     def run(self):
         """See `IBranchScanJob`."""
@@ -335,7 +338,7 @@ class BranchScanJob(BranchJobDerived):
                     bzrsync.syncBranchAndClose()
             except LostObjectError:
                 log.warning('Skipping branch %s because it has been deleted.'
-                    % self.branch_unique_name)
+                    % self.branch_name)
 
     @classmethod
     @contextlib.contextmanager

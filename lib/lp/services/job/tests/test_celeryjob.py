@@ -4,6 +4,7 @@
 from cStringIO import StringIO
 import sys
 from time import sleep
+import transaction
 
 from lazr.jobrunner.bin.clear_queues import clear_queues
 from testtools.content import Content
@@ -39,6 +40,8 @@ class TestRunMissingJobs(TestCaseWithFactory):
 
     def createMissingJob(self):
         job = BranchScanJob.create(self.factory.makeBranch())
+        transaction.commit()
+
         self.addCleanup(drain_celery_queues)
         return job
 
