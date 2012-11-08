@@ -138,7 +138,6 @@ For Bazaar branches the scheme may only be http or https.
     ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with
     the following schemes may be used: bzr, http, https'))
 
-
 A correct URL is accepted.
 
     >>> form = {
@@ -161,6 +160,17 @@ A correct URL is accepted.
     blazer-branch
     >>> series.branch.registrant.name == driver.name
     True
+    
+External imports can not use an Launchpad URL.
+
+    >>> form['field.repo_url'] = 'http://bazaar.launchpad.net/firefox/foo'
+    >>> form['field.branch_name'] = 'chevette-branch'
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=driver, form=form)
+    >>> transaction.commit()
+    >>> for error in view.errors:
+    ...     print error
+    You can not create imports for branches that are hosted by Launchpad.
 
 Git branches cannnot use svn.
 
@@ -303,7 +313,7 @@ in an error.
     <BLANKLINE>
     This foreign branch URL is already specified for
     the imported branch
-    <a href="http://.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
+    <a href='http://.../chevy/chevette-branch'>~.../chevy/chevette-branch</a>.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
 
@@ -348,7 +358,7 @@ error if a duplicate name is used.
     ...     print error
     <BLANKLINE>
     This foreign branch URL is already specified for the imported branch
-    <a href="http://.../blazer-branch">...</a>.
+    <a href='http://.../blazer-branch'>...</a>.
     >>> print view.errors_in_action
     False
     >>> print view.next_url
