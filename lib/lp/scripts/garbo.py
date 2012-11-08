@@ -478,13 +478,15 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
-        self.next_id = 0
+        self.next_id_for_creator = 0
+        self.next_id_for_maintainer = 0
         self.current_person_filter_type = 'creator'
         self.starting_person_filter_type = self.current_person_filter_type
         self.job_name = self.__class__.__name__
         job_data = load_garbo_job_state(self.job_name)
         if job_data:
-            self.next_id = job_data['next_id']
+            self.next_id_for_creator = job_data['next_id_for_creator']
+            self.next_id_for_maintainer = job_data['next_id_for_maintainer']
             self.current_person_filter_type = job_data['person_filter_type']
             self.starting_person_filter_type = self.current_person_filter_type
 
@@ -493,8 +495,10 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         # creator or maintainer as required.
         if self.current_person_filter_type == 'creator':
             person_filter = SourcePackageRelease.creatorID
+            next_id = self.next_id_for_creator
         else:
             person_filter = SourcePackageRelease.maintainerID
+            next_id = self.next_id_for_maintainer
         spph = ClassAlias(SourcePackagePublishingHistory, "spph")
         origin = [
             SourcePackageRelease,
@@ -504,7 +508,7 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
                     spph.archiveID == SourcePackageRelease.upload_archiveID))]
         spr_select = self.store.using(*origin).find(
             (SourcePackageRelease.id, Alias(spph.id, 'spph_id')),
-            SourcePackageRelease.id > self.next_id
+            SourcePackageRelease.id > next_id
         ).order_by(
             person_filter,
             SourcePackageRelease.upload_distroseriesID,
@@ -546,7 +550,6 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
                 self.current_person_filter_type = 'maintainer'
             else:
                 self.current_person_filter_type = 'creator'
-            self.next_id = 0
             current_count = self.getPendingUpdates().count()
         return current_count == 0
 
@@ -601,17 +604,22 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
             self.store.execute(Insert(columns, values=inserts))
 
     def __call__(self, chunk_size):
-        max_id = self.next_id
+        max_id = None
         updates = []
         for update in (self.getPendingUpdates()[:chunk_size]):
             updates.append(update)
             max_id = update[0]
         self.update_cache(updates)
 
-        self.next_id = max_id
+        if max_id:
+            if self.current_person_filter_type == 'creator':
+                self.next_id_for_creator = max_id
+            else:
+                self.next_id_for_maintainer = max_id
         self.store.flush()
         save_garbo_job_state(self.job_name, {
-            'next_id': max_id,
+            'next_id_for_creator': self.next_id_for_creator,
+            'next_id_for_maintainer': self.next_id_for_maintainer,
             'person_filter_type': self.current_person_filter_type})
         transaction.commit()
 
