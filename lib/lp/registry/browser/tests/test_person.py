@@ -1,5 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -910,6 +911,15 @@ class TestPersonRelatedPackagesView(TestCaseWithFactory):
         count = len(
             self.view.latest_synchronised_publishings_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
+
+
+class TestFastPersonRelatedPackagesView(TestPersonRelatedPackagesView):
+    # Re-run TestPersonRelatedPackagesView with feature flag on.
+
+    def setUp(self):
+        super(TestFastPersonRelatedPackagesView, self).setUp()
+        self.useFixture(FeatureFixture({
+            'registry.fast_related_software.enabled': 'true'}))
 
 
 class TestPersonMaintainedPackagesView(TestCaseWithFactory):
