@@ -1042,7 +1042,8 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         """
         if ids is None:
             constraints = dict(
-                tti_constraint="AND 1 = 1", potmsgset_constraint="AND 1 = 1")
+                tti_constraint="AND TRUE",
+                potmsgset_constraint="AND TRUE")
         else:
             ids_in = ', '.join([str(id) for id in ids])
             constraints = dict(

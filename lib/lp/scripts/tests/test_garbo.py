@@ -1027,7 +1027,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # between calls.
         switch_dbuser('testadmin')
         potmsgset_pofile = {}
-        test_ids = []
         for n in xrange(4):
             pofile = self.factory.makePOFile()
             translation_message = self.factory.makeCurrentTranslationMessage(
@@ -1035,7 +1034,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             translation_message.potmsgset.setSequence(
                 pofile.potemplate, 0)
             potmsgset_pofile[translation_message.potmsgset.id] = pofile.id
-            test_ids.append(translation_message.potmsgset.id)
+        test_ids = potmsgset_pofile.keys()
         transaction.commit()
         store = IMasterStore(POTMsgSet)
         obsolete_msgsets = store.find(
