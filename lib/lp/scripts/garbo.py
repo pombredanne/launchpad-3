@@ -1031,10 +1031,15 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 
     @cachedproperty
     def msgset_ids_to_remove(self):
-        """Return the IDs of the POTMsgSets to remove."""
+        """The IDs of the POTMsgSets to remove."""
         return self._get_msgset_ids_to_remove()
 
     def _get_msgset_ids_to_remove(self, ids=None):
+        """Return a distrinct list IDs of the POTMsgSets to remove.
+
+        :param ids: a list of POTMsgSet ids to filter. If ids is None,
+            all unused POTMsgSet in the database are returned.
+        """
         if ids is None:
             constraints = dict(
                 tti_constraint="AND 1 = 1", potmsgset_constraint="AND 1 = 1")
@@ -1067,8 +1072,8 @@ class UnusedPOTMsgSetPruner(TunableLoop):
             """ % constraints
         store = IMasterStore(POTMsgSet)
         results = store.execute(query)
-        ids_to_remove = [id for (id,) in results.get_all()]
-        return ids_to_remove
+        ids_to_remove = set([id for (id,) in results.get_all()])
+        return list(ids_to_remove)
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""

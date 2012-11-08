@@ -71,6 +71,7 @@ from lp.scripts.garbo import (
     HourlyDatabaseGarbageCollector,
     LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
+    UnusedPOTMsgSetPruner,
     UnusedSessionPruner,
     )
 from lp.services.config import config
@@ -122,6 +123,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.translations.model.pofile import POFile
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -1020,11 +1022,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, obsolete_msgsets.count())
 
-    def test_UnusedPOTMsgSetPruner_avoids_mutating_potmsgsets(self):
+    def test_UnusedPOTMsgSetPruner_preserves_used_potmsgsets(self):
         # UnusedPOTMsgSetPruner will not remove a potmsgset if it changes
         # between calls.
-        from lp.scripts.garbo import UnusedPOTMsgSetPruner
-        from lp.translations.model.pofile import POFile
         switch_dbuser('testadmin')
         potmsgset_pofile = {}
         test_ids = []
@@ -1038,7 +1038,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             test_ids.append(translation_message.potmsgset.id)
         transaction.commit()
         store = IMasterStore(POTMsgSet)
-        store.invalidate()
         obsolete_msgsets = store.find(
             POTMsgSet,
             In(TranslationTemplateItem.potmsgsetID, test_ids),
@@ -1046,7 +1045,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(4, obsolete_msgsets.count())
         pruner = UnusedPOTMsgSetPruner(self.log)
         pruner(2)
-
+        # A potmsgeset is set to a sequence > 0 between batches/commits.
         last_id = pruner.msgset_ids_to_remove[-1]
         shared_potmsgsets = [
             pms for pms in obsolete_msgsets if pms.id == last_id]
@@ -1058,7 +1057,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             pofile=pofile, potmsgset=shared_potmsgset)
         shared_potmsgset.setSequence(pofile.potemplate, 1)
         transaction.commit()
-
+        # Next batch.
         pruner(2)
         self.assertEqual(0, obsolete_msgsets.count())
         preserved_msgsets = store.find(
