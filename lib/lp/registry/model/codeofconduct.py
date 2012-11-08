@@ -62,7 +62,7 @@ class CodeOfConductConf:
 
     path = 'lib/lp/registry/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.1'
+    currentrelease = '2.0'
     # Set the datereleased to the date that 1.0 CoC was released,
     # preserving everyone's Ubuntu Code of Conduct signatory status.
     # https://launchpad.net/products/launchpad/+bug/48995

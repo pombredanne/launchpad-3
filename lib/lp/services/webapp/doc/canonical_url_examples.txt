@@ -94,8 +94,8 @@ An ISignedCodeOfConduct
 
 An ICodeOfConduct
 
-    >>> canonical_url(cocset['1.1'])
-    u'http://launchpad.dev/codeofconduct/1.1'
+    >>> canonical_url(cocset['2.0'])
+    u'http://launchpad.dev/codeofconduct/2.0'
 
 
 Distributions, distroseriess and so on
