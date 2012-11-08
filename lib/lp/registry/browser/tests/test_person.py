@@ -39,6 +39,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcepackageReleaseCache
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
@@ -910,6 +911,15 @@ class TestPersonRelatedPackagesView(TestCaseWithFactory):
         count = len(
             self.view.latest_synchronised_publishings_with_stats)
         self.assertEqual(self.view.max_results_to_display, count)
+
+
+class TestFastPersonRelatedPackagesView(TestPersonRelatedPackagesView):
+    # Re-run TestPersonRelatedPackagesView with feature flag on.
+
+    def setUp(self):
+        super(TestFastPersonRelatedPackagesView, self).setUp()
+        self.useFixture(FeatureFixture({
+            'registry.fast_related_software.enabled': 'true'}))
 
 
 class TestPersonMaintainedPackagesView(TestCaseWithFactory):

@@ -264,6 +264,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -2871,6 +2872,9 @@ class Person(
         """Are there sourcepackagereleases (SPRs) related to this person.
         See `_releasesQueryFilter` for details on the criteria used.
         """
+        if not getFeatureFlag('registry.fast_related_software.enabled'):
+            return self._legacy_hasReleasesQuery(uploader_only, ppa_only)
+
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
             LatestPersonSourcepackageReleaseCache.publication_id, *clauses)
@@ -2879,6 +2883,10 @@ class Person(
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
         """Return the sourcepackagereleases records related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
+
+        if not getFeatureFlag('registry.fast_related_software.enabled'):
+            return self._legacy_latestReleasesQuery(uploader_only, ppa_only)
+
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).find(
             LatestPersonSourcepackageReleaseCache, *clauses).order_by(
@@ -2893,6 +2901,97 @@ class Person(
             bulk.load_related(
                 SourcePackageRelease, rows, ['sourcepackagerelease_id'])
             bulk.load_related(Archive, rows, ['upload_archive_id'])
+
+        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
+
+
+    def _legacy_releasesQueryFilter(self, uploader_only=False, ppa_only=False):
+        """Return the filter used to find sourcepackagereleases (SPRs)
+        related to this person.
+
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs) if the `ppa_only` parameter is also
+            False, or, if the flag is False, it returns all SPR maintained
+            by this person.
+
+        :param ppa_only: controls if we are interested only in source
+            package releases targeted to any PPAs or, if False, sources
+            targeted to primary archives.
+
+        Active 'ppa_only' flag is usually associated with active
+        'uploader_only' because there shouldn't be any sense of maintainership
+        for packages uploaded to PPAs by someone else than the user himself.
+        """
+        clauses = [SourcePackageRelease.upload_archive == Archive.id]
+
+        if uploader_only:
+            clauses.append(SourcePackageRelease.creator == self)
+
+        if ppa_only:
+            # Source maintainer is irrelevant for PPA uploads.
+            pass
+        elif uploader_only:
+            clauses.append(SourcePackageRelease.maintainer != self)
+        else:
+            clauses.append(SourcePackageRelease.maintainer == self)
+
+        if ppa_only:
+            clauses.append(Archive.purpose == ArchivePurpose.PPA)
+        else:
+            clauses.append(Archive.purpose != ArchivePurpose.PPA)
+
+        return clauses
+
+    def _legacy_hasReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Are there sourcepackagereleases (SPRs) related to this person.
+        See `_legacy_releasesQueryFilter` for details on the criteria used.
+        """
+        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        tables = (
+            SourcePackageRelease,
+            Join(
+                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
+            Join(Archive, Archive.id == spph.archiveID))
+        rs = Store.of(self).using(*tables).find(
+            SourcePackageRelease.id, clauses)
+        return not rs.is_empty()
+
+    def _legacy_latestReleasesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases (SPRs) related to this person.
+        See `_legacy_releasesQueryFilter` for details on the criteria used."""
+        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
+        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        rs = Store.of(self).find(
+            SourcePackageRelease,
+            SourcePackageRelease.id.is_in(
+                Select(
+                    SourcePackageRelease.id,
+                    tables=[
+                        SourcePackageRelease,
+                        Join(
+                            spph,
+                            spph.sourcepackagereleaseID ==
+                            SourcePackageRelease.id),
+                        Join(Archive, Archive.id == spph.archiveID)],
+                    where=And(*clauses),
+                    order_by=[SourcePackageRelease.upload_distroseriesID,
+                              SourcePackageRelease.sourcepackagenameID,
+                              SourcePackageRelease.upload_archiveID,
+                              Desc(SourcePackageRelease.dateuploaded)],
+                    distinct=(
+                        SourcePackageRelease.upload_distroseriesID,
+                        SourcePackageRelease.sourcepackagenameID,
+                        SourcePackageRelease.upload_archiveID)))
+        ).order_by(
+            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+
+        def load_related_objects(rows):
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                set(map(attrgetter("maintainerID"), rows))))
+            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
+            bulk.load_related(Archive, rows, ['upload_archiveID'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
