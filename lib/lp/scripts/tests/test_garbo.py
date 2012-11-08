@@ -1205,6 +1205,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_maintainer(maintainers[0], spr3)
         _assert_release_by_maintainer(maintainers[1], spr4)
 
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcepackageReleaseCache')
+        self.assertEqual(spr4.id, job_data['next_id_for_creator'])
+        self.assertEqual(spr4.id, job_data['next_id_for_maintainer'])
+
         # Create a newer published source package release and ensure the
         # release cache table is correctly updated.
         switch_dbuser('testadmin')
@@ -1223,6 +1228,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_creator(creators[1], spr5)
         _assert_release_by_maintainer(maintainers[0], spr3)
         _assert_release_by_maintainer(maintainers[1], spr5)
+
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcepackageReleaseCache')
+        self.assertEqual(spr5.id, job_data['next_id_for_creator'])
+        self.assertEqual(spr5.id, job_data['next_id_for_maintainer'])
 
 
 class TestGarboTasks(TestCaseWithFactory):
