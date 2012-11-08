@@ -4,8 +4,7 @@ We will have to check for a BranchJob being created for a branch, so
 let's put this check in a convenient function.
 
     >>> from zope.component import getUtility
-    >>> from lp.code.interfaces.branchjob import (
-    ...     IRosettaUploadJobSource)
+    >>> from lp.code.interfaces.branchjob import IRosettaUploadJobSource
     >>> job_counter = 0
     >>> def isUploadJobCreatedForBranch(productseries,
     ...                                 force_translations_upload=None):
@@ -57,8 +56,7 @@ BranchJob to upload translation files to rosetta is created.
     ...     method='POST',
     ...     form={'field.branch': branch.unique_name,
     ...           'field.actions.update': 'Update'})
-    >>> view = ProductSeriesLinkBranchView(
-    ...     productseries, request)
+    >>> view = ProductSeriesLinkBranchView(productseries, request)
     >>> view.initialize()
     >>> print isUploadJobCreatedForBranch(productseries)
     True

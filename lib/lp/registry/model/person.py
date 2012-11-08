@@ -327,6 +327,7 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
+from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -2267,7 +2268,9 @@ class Person(
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('AnswerContact', 'person')]
+            ('AnswerContact', 'person'),
+            ('LatestPersonSourcepackageReleaseCache', 'creator'),
+            ('LatestPersonSourcepackageReleaseCache', 'maintainer')]
         cur = cursor()
         for table, person_id_column in removals:
             cur.execute("DELETE FROM %s WHERE %s=%d"
@@ -2344,6 +2347,10 @@ class Person(
             # Skip mailing lists because if the mailing list is purged, it's
             # not a problem.  Do this check separately below.
             ('mailinglist', 'team'),
+            # The following is denormalised reporting data only loaded if the
+            # user already has access to the team.
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ])
 
         # The following relationships are allowable for Private teams and
@@ -2810,8 +2817,8 @@ class Person(
         return self._latestReleasesQuery(uploader_only=True, ppa_only=True)
 
     def _releasesQueryFilter(self, uploader_only=False, ppa_only=False):
-        """Return the filter used to find sourcepackagereleases (SPRs)
-        related to this person.
+        """Return the filter used to find latest published source package
+        releases (SPRs) related to this person.
 
         :param uploader_only: controls if we are interested in SPRs where
             the person in question is only the uploader (creator) and not the
@@ -2827,24 +2834,37 @@ class Person(
         'uploader_only' because there shouldn't be any sense of maintainership
         for packages uploaded to PPAs by someone else than the user himself.
         """
-        clauses = [SourcePackageRelease.upload_archive == Archive.id]
-
+        clauses = []
         if uploader_only:
-            clauses.append(SourcePackageRelease.creator == self)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.creator_id == self.id)
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            clauses.append(SourcePackageRelease.maintainer != self)
+            lpspr = ClassAlias(LatestPersonSourcepackageReleaseCache, 'lpspr')
+            clauses.append(Not(Exists(Select(1,
+            where=And(
+                lpspr.sourcepackagename_id ==
+                    LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+                lpspr.upload_archive_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_archive_id,
+                lpspr.upload_distroseries_id ==
+                    LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+                lpspr.archive_purpose != ArchivePurpose.PPA,
+                lpspr.maintainer_id == self.id),
+            tables=lpspr))))
         else:
-            clauses.append(SourcePackageRelease.maintainer == self)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.maintainer_id == self.id)
         if ppa_only:
-            clauses.append(Archive.purpose == ArchivePurpose.PPA)
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.archive_purpose ==
+                ArchivePurpose.PPA)
         else:
-            clauses.append(Archive.purpose != ArchivePurpose.PPA)
-
+            clauses.append(
+                LatestPersonSourcepackageReleaseCache.archive_purpose !=
+                ArchivePurpose.PPA)
         return clauses
 
     def _hasReleasesQuery(self, uploader_only=False, ppa_only=False):
@@ -2852,50 +2872,27 @@ class Person(
         See `_releasesQueryFilter` for details on the criteria used.
         """
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
-        tables = (
-            SourcePackageRelease,
-            Join(
-                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
-            Join(Archive, Archive.id == spph.archiveID))
-        rs = Store.of(self).using(*tables).find(
-            SourcePackageRelease.id, clauses)
+        rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
+            LatestPersonSourcepackageReleaseCache.publication_id, *clauses)
         return not rs.is_empty()
 
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
+        """Return the sourcepackagereleases records related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
         rs = Store.of(self).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(
-                Select(
-                    SourcePackageRelease.id,
-                    tables=[
-                        SourcePackageRelease,
-                        Join(
-                            spph,
-                            spph.sourcepackagereleaseID ==
-                            SourcePackageRelease.id),
-                        Join(Archive, Archive.id == spph.archiveID)],
-                    where=And(*clauses),
-                    order_by=[SourcePackageRelease.upload_distroseriesID,
-                              SourcePackageRelease.sourcepackagenameID,
-                              SourcePackageRelease.upload_archiveID,
-                              Desc(SourcePackageRelease.dateuploaded)],
-                    distinct=(
-                        SourcePackageRelease.upload_distroseriesID,
-                        SourcePackageRelease.sourcepackagenameID,
-                        SourcePackageRelease.upload_archiveID)))
-        ).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
+            LatestPersonSourcepackageReleaseCache, *clauses).order_by(
+            Desc(LatestPersonSourcepackageReleaseCache.dateuploaded))
 
         def load_related_objects(rows):
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                set(map(attrgetter("maintainerID"), rows))))
-            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
-            bulk.load_related(Archive, rows, ['upload_archiveID'])
+            if rows and rows[0].maintainer_id:
+                list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                    set(map(attrgetter("maintainer_id"), rows))))
+            bulk.load_related(
+                SourcePackageName, rows, ['sourcepackagename_id'])
+            bulk.load_related(
+                SourcePackageRelease, rows, ['sourcepackagerelease_id'])
+            bulk.load_related(Archive, rows, ['upload_archive_id'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
@@ -4361,6 +4358,8 @@ class PersonSet:
             # These are ON DELETE CASCADE and maintained by triggers.
             ('bugsummary', 'viewed_by'),
             ('bugsummaryjournal', 'viewed_by'),
+            ('latestpersonsourcepackagereleasecache', 'creator'),
+            ('latestpersonsourcepackagereleasecache', 'maintainer'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
