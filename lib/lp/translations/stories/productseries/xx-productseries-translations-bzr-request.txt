@@ -64,7 +64,7 @@ The request is made by clicking on a button labeled
 == The request page without a branch ==
 The official Bazaar branch gets removed from the product series.
 
-    >>> browser.open('http://launchpad.dev/evolution/trunk/+linkbranch')
+    >>> browser.open('http://launchpad.dev/evolution/trunk/+setbranch')
     >>> browser.getControl(name='field.branch').value = ''
     >>> browser.getControl('Update').click()
 
@@ -81,7 +81,7 @@ set the branch.
     Please set it first.
     >>> browser.getLink('Please set it first.').click()
     >>> print browser.url
-    http://launchpad.dev/evolution/trunk/+linkbranch
+    http://launchpad.dev/evolution/trunk/+setbranch
 
 The request button is missing completely from the page.
 
