@@ -37,7 +37,6 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.app.interfaces.services import IService
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -440,17 +439,6 @@ class ViewProduct(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return self.obj.userCanView(None)
-
-
-class LimitedViewProduct(ViewProduct):
-    permission = 'launchpad.LimitedView'
-    usedfor = IProduct
-
-    def checkAuthenticated(self, user):
-        return (
-            super(LimitedViewProduct, self).checkAuthenticated(user) or
-            getUtility(IService, 'sharing').userHasGrantsOnPillar(
-                self.obj, user))
 
 
 class ChangeProduct(ViewProduct):

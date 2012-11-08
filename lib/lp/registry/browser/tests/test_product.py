@@ -248,7 +248,7 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
 
-    def test_owner_is_requried_without_disclaim_maintainer(self):
+    def test_owner_is_requried_without_disclaim_maitainer(self):
         # A valid owner name is required if disclaim_maintainer is
         # not selected.
         registrant = self.factory.makePerson()
@@ -496,8 +496,7 @@ class TestProductEditView(BrowserTestCase):
                 product,
                 '+edit',
                 principal=product.owner)
-            vocabulary = view.widgets['information_type'].vocabulary
-            info_types = [t.name for t in vocabulary]
+            info_types = [t.name for t in view.widgets['information_type'].vocabulary]
             expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
             self.assertEqual(expected, info_types)
 
