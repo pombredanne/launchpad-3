@@ -322,9 +322,9 @@ class BranchScanJob(BranchJobDerived):
             branch, cls.class_job_type, {'branch_name': branch.unique_name})
         return cls(branch_job)
 
-    @property
-    def branch_name(self):
-        return self.metadata['branch_name']
+    def __init__(self, branch_job):
+        super(BranchScanJob, self).__init__(branch_job)
+        self._cached_branch_name = self.metadata['branch_name']
 
     def run(self):
         """See `IBranchScanJob`."""
@@ -338,7 +338,7 @@ class BranchScanJob(BranchJobDerived):
                     bzrsync.syncBranchAndClose()
             except LostObjectError:
                 log.warning('Skipping branch %s because it has been deleted.'
-                    % self.branch_name)
+                    % self._cached_branch_name)
 
     @classmethod
     @contextlib.contextmanager
