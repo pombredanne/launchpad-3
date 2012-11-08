@@ -1322,8 +1322,6 @@ def get_specification_filters(filter):
 
 
 def get_specification_query(user, sprint, filter):
-    from lp.blueprints.enums import SprintSpecificationStatus
-    from lp.blueprints.model.sprintspecification import SprintSpecification
     from lp.registry.model.product import Product
     from lp.registry.model.accesspolicy import (
         AccessArtifact,
@@ -1349,7 +1347,6 @@ def get_specification_query(user, sprint, filter):
                     Or(AccessPolicyGrantFlat.abstract_artifact == None,
                         AccessArtifact.specification_id ==
                         Specification.id))), Or(Specification.product == None, Product.active == True)]
-    clauses.extend(get_specification_filters(filter))
     return tables, clauses
 
 
