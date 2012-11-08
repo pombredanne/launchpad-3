@@ -519,7 +519,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(user):
             view = create_initialized_view(
                 bug.default_bugtask, name=u'+index', principal=user)
-            view.render()
+            contents = view.render()
+            self.assertTrue(bug.title in contents)
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
