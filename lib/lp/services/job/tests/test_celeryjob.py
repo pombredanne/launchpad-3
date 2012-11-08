@@ -41,7 +41,6 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def createMissingJob(self):
         job = BranchScanJob.create(self.factory.makeBranch())
         transaction.commit()
-
         self.addCleanup(drain_celery_queues)
         return job
 
