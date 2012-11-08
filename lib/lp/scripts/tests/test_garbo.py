@@ -1034,9 +1034,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             translation_message.potmsgset.setSequence(
                 pofile.potemplate, 0)
             potmsgset_pofile[translation_message.potmsgset.id] = pofile.id
-        test_ids = potmsgset_pofile.keys()
         transaction.commit()
         store = IMasterStore(POTMsgSet)
+        test_ids = potmsgset_pofile.keys()
         obsolete_msgsets = store.find(
             POTMsgSet,
             In(TranslationTemplateItem.potmsgsetID, test_ids),
@@ -1046,15 +1046,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         pruner(2)
         # A potmsgeset is set to a sequence > 0 between batches/commits.
         last_id = pruner.msgset_ids_to_remove[-1]
-        shared_potmsgsets = [
-            pms for pms in obsolete_msgsets if pms.id == last_id]
-        shared_potmsgset = shared_potmsgsets[-1]
-        pofile = store.find(
-            POFile,
-            POFile.id == potmsgset_pofile[last_id]).one()
+        used_potmsgset = store.find(POTMsgSet, POTMsgSet.id == last_id).one()
+        used_pofile = store.find(
+            POFile, POFile.id == potmsgset_pofile[last_id]).one()
         translation_message = self.factory.makeCurrentTranslationMessage(
-            pofile=pofile, potmsgset=shared_potmsgset)
-        shared_potmsgset.setSequence(pofile.potemplate, 1)
+            pofile=used_pofile, potmsgset=used_potmsgset)
+        used_potmsgset.setSequence(used_pofile.potemplate, 1)
         transaction.commit()
         # Next batch.
         pruner(2)
