@@ -157,8 +157,6 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
         """Return the series branch."""
         if self.context.branch:
             return BranchRef(self.context.branch)
-        else:
-            return None
 
     @stepto('+pots')
     def pots(self):
@@ -1013,11 +1011,13 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
-            self.context.branch = branch_location
             if branch_location != self.context.branch:
+                self.context.branch = branch_location
                 # Request an initial upload of translation files.
                 getUtility(IRosettaUploadJobSource).create(
                     self.context.branch, NULL_REVISION)
+            else:
+                self.context.branch = branch_location
             self.request.response.addInfoNotification(
                 'Series code location updated.')
         else:
@@ -1102,11 +1102,13 @@ class ProductSeriesLinkBranchView(ReturnToReferrerMixin, ProductSeriesView,
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the branch attribute."""
-        self.updateContextFromData(data)
         if data['branch'] != self.context.branch:
+            self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(
                 self.context.branch, NULL_REVISION)
+        else:
+            self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
