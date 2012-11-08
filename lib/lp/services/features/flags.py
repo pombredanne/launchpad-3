@@ -246,7 +246,7 @@ flag_info = sorted([
      'https://dev.launchpad.net/LEP/PrivateProjects'),
     ('registry.fast_related_software.enabled',
      'boolean',
-     ('If true, the use new new reporting cache to load a person''s related '
+     ('If true, use the new reporting cache to load a person''s related '
       'software information.'),
      '',
      '',
