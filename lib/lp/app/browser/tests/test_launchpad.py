@@ -554,6 +554,19 @@ class TestProductTraversal(TestCaseWithFactory, TraversalMixin):
             self.assertRaises(
                 NotFound, self.traverse_to_inactive_proprietary_product)
 
+    def test_access_for_persons_with_artifact_grant(self):
+        # Persons with an artifact grant related to a private product
+        # can traverse the product.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            bug = self.factory.makeBug(
+                target=self.active_proprietary_product,
+                information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], self.proprietary_product_owner, bugs=[bug])
+        with person_logged_in(user):
+            self.traverse_to_active_proprietary_product()
+
     def check_admin_access(self):
         self.traverse_to_active_public_product()
         self.traverse_to_inactive_public_product()
