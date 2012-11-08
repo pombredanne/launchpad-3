@@ -36,7 +36,7 @@ a message indicating so is displayed instead of the branch. The
 message also directs to the page where the branch can be set.
 
     >>> browser.open('http://launchpad.dev/evolution/trunk/+setbranch')
-    >>> browser.getControl(name='field.branch').value = ''
+    >>> browser.getControl(name='field.branch_location').value = ''
     >>> browser.getControl('Update').click()
 
     >>> browser.open(
