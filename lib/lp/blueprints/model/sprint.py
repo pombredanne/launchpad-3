@@ -40,8 +40,8 @@ from lp.blueprints.interfaces.sprint import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_query,
     HasSpecificationsMixin,
+    visible_specification_query,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
@@ -121,7 +121,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         """
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        tables, query = get_specification_query(user, self, filter)
+        tables, query = visible_specification_query(user)
         tables.append(SprintSpecification)
         query.extend([
             SprintSpecification.sprintID == self.id,
