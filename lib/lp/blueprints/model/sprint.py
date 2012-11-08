@@ -157,7 +157,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     def all_specifications(self, user):
         return self.specifications(user, filter=[SpecificationFilter.ALL])
 
-    def specifications(self, user, sort=None, quantity=None, filter=None,
+    def _specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=False):
         """See IHasSpecifications."""
         # prejoin_people  is provided only for interface compatibility and
@@ -185,6 +185,35 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if quantity is not None:
             results = results[:quantity]
         return results
+
+    def specifications(self, user, sort=None, quantity=None, filter=None,
+                       prejoin_people=False):
+        store = Store.of(self)
+        from lp.blueprints.model.specification import Specification
+        from storm.expr import LeftJoin, And, Or
+        from lp.registry.model.product import Product
+        from lp.registry.model.accesspolicy import (
+            AccessArtifact,
+            AccessPolicy,
+            AccessPolicyGrantFlat,
+            )
+        from lp.registry.model.teammembership import TeamParticipation
+        from lp.app.enums import ( PUBLIC_INFORMATION_TYPES,)
+
+        return store.using(Specification, LeftJoin(Product,
+            Specification.productID == Product.id), LeftJoin(AccessPolicy,
+                And(Or(Specification.productID == AccessPolicy.product_id,
+                    Specification.distributionID ==
+                    AccessPolicy.distribution_id),
+                    Specification.information_type == AccessPolicy.type)),
+                LeftJoin(AccessPolicyGrantFlat, AccessPolicy.id ==
+                    AccessPolicyGrantFlat.policy_id),
+                LeftJoin(TeamParticipation, TeamParticipation.person ==
+                    user), LeftJoin(AccessArtifact,
+                        AccessPolicyGrantFlat.abstract_artifact_id ==
+                        AccessArtifact.id),
+                    SprintSpecification).find(Specification,
+                    SprintSpecification.sprintID == self.id, Specification.id == SprintSpecification.specificationID, Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES), And(AccessPolicyGrantFlat.id != None, AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID, Or(AccessPolicyGrantFlat.abstract_artifact == None, AccessArtifact.specification_id == Specification.id))), SprintSpecification.status == SprintSpecificationStatus.ACCEPTED, Or(Specification.product == None, Product.active == True))
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
