@@ -1020,6 +1020,51 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, obsolete_msgsets.count())
 
+    def test_UnusedPOTMsgSetPruner_avoids_mutating_potmsgsets(self):
+        # UnusedPOTMsgSetPruner will not remove a potmsgset if it changes
+        # between calls.
+        from lp.scripts.garbo import UnusedPOTMsgSetPruner
+        from lp.translations.model.pofile import POFile
+        switch_dbuser('testadmin')
+        potmsgset_pofile = {}
+        test_ids = []
+        for n in xrange(4):
+            pofile = self.factory.makePOFile()
+            translation_message = self.factory.makeCurrentTranslationMessage(
+                pofile=pofile)
+            translation_message.potmsgset.setSequence(
+                pofile.potemplate, 0)
+            potmsgset_pofile[translation_message.potmsgset.id] = pofile.id
+            test_ids.append(translation_message.potmsgset.id)
+        transaction.commit()
+        store = IMasterStore(POTMsgSet)
+        store.invalidate()
+        obsolete_msgsets = store.find(
+            POTMsgSet,
+            In(TranslationTemplateItem.potmsgsetID, test_ids),
+            TranslationTemplateItem.sequence == 0)
+        self.assertEqual(4, obsolete_msgsets.count())
+        pruner = UnusedPOTMsgSetPruner(self.log)
+        pruner(2)
+
+        last_id = pruner.msgset_ids_to_remove[-1]
+        shared_potmsgsets = [
+            pms for pms in obsolete_msgsets if pms.id == last_id]
+        shared_potmsgset = shared_potmsgsets[-1]
+        pofile = store.find(
+            POFile,
+            POFile.id == potmsgset_pofile[last_id]).one()
+        translation_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=shared_potmsgset)
+        shared_potmsgset.setSequence(pofile.potemplate, 1)
+        transaction.commit()
+
+        pruner(2)
+        self.assertEqual(0, obsolete_msgsets.count())
+        preserved_msgsets = store.find(
+            POTMsgSet, In(TranslationTemplateItem.potmsgsetID, test_ids))
+        self.assertEqual(1, preserved_msgsets.count())
+
     def test_UnusedPOTMsgSetPruner_removes_unreferenced_message_sets(self):
         # If a POTMsgSet is not referenced by any templates the
         # UnusedPOTMsgSetPruner will remove it.
