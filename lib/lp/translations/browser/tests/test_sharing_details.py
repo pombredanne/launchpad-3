@@ -996,7 +996,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def assertBranchLinks(self, contents, real_links, enabled):
         if real_links:
             match = (
-                r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
+                r'^http://translations.launchpad.dev/.*/trunk/\+setbranch$')
 
             def link_matcher(url):
                 if url is None:

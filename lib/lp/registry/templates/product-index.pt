@@ -108,7 +108,7 @@
                   <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
                   <p tal:condition="trunk_visible">
                     <a tal:replace="structure trunk/fmt:link" />&nbsp;
-                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                    <a tal:replace="structure dev_focus/menu:overview/set_branch/fmt:icon" />
                     <br/>
                     <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
                   </p>

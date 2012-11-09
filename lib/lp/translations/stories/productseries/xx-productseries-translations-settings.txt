@@ -35,8 +35,8 @@ When the official Bazaar branch gets removed from the product series,
 a message indicating so is displayed instead of the branch. The
 message also directs to the page where the branch can be set.
 
-    >>> browser.open('http://launchpad.dev/evolution/trunk/+linkbranch')
-    >>> browser.getControl(name='field.branch').value = ''
+    >>> browser.open('http://launchpad.dev/evolution/trunk/+setbranch')
+    >>> browser.getControl(name='field.branch_location').value = ''
     >>> browser.getControl('Update').click()
 
     >>> browser.open(
@@ -48,7 +48,7 @@ message also directs to the page where the branch can be set.
     Set it now!
     >>> browser.getLink('Set it now!').click()
     >>> print browser.url
-    http://launchpad.dev/evolution/trunk/+linkbranch
+    http://launchpad.dev/evolution/trunk/+setbranch
 
 Pointer to one-time import
 --------------------------

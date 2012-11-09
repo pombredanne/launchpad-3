@@ -22,7 +22,7 @@
       <ul class="bulleted">
         <li>
           If the code is already in a Bazaar branch registered with Launchpad
-          <a tal:attributes="href context/menu:overview/link_branch/fmt:url">link
+          <a tal:attributes="href context/menu:overview/set_branch/fmt:url">link
           the branch to this series</a>.
         </li>
 
@@ -48,7 +48,7 @@
 
       <ul class="horizontal">
         <li>
-          <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />
+          <a tal:replace="structure context/menu:overview/set_branch/fmt:link" />
         </li>
       </ul>
     </tal:edit-link>
@@ -73,7 +73,7 @@
       tal:content="view/long_bzr_identity">Mozilla Thunderbird 0.9.1</a>
     - <a tal:replace="structure context/branch/owner/fmt:link:code/+ownedbranches" />
     <a
-      tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
+      tal:replace="structure context/menu:overview/set_branch/fmt:icon" />
   </div>
   <div id="branch-revision-details" tal:condition="context/branch/revision_count">
     <span tal:replace="context/branch/revision_count">35</span> revisions.
