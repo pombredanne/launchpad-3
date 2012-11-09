@@ -33,13 +33,6 @@ class UefiConfigurationError(CustomUploadError):
             self, "UEFI signing configuration error: %s" % message)
 
 
-class UefiNothingToSign(CustomUploadError):
-    """The tarball contained no *.efi files."""
-    def __init__(self, tarfile_path):
-        CustomUploadError.__init__(
-            self, "UEFI upload '%s' contained no *.efi files" % tarfile_path)
-
-
 class UefiUpload(CustomUpload):
     """UEFI boot loader custom upload.
 
@@ -77,16 +70,19 @@ class UefiUpload(CustomUpload):
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         if pubconf.uefiroot is None:
-            raise UefiConfigurationError(
-                "no UEFI root configured for this archive")
-        self.key = os.path.join(pubconf.uefiroot, "uefi.key")
-        self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
-        if not os.access(self.key, os.R_OK):
-            raise UefiConfigurationError(
-                "UEFI private key %s not readable" % self.key)
-        if not os.access(self.cert, os.R_OK):
-            raise UefiConfigurationError(
-                "UEFI certificate %s not readable" % self.cert)
+            if self.logger is not None:
+                self.logger.warning("No UEFI root configured for this archive")
+            self.key = None
+            self.cert = None
+        else:
+            self.key = os.path.join(pubconf.uefiroot, "uefi.key")
+            self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
+            if not os.access(self.key, os.R_OK):
+                raise UefiConfigurationError(
+                    "UEFI private key %s not readable" % self.key)
+            if not os.access(self.cert, os.R_OK):
+                raise UefiConfigurationError(
+                    "UEFI certificate %s not readable" % self.cert)
 
         loader_type, self.version, self.arch = self.parsePath(tarfile_path)
         self.targetdir = os.path.join(
@@ -114,7 +110,11 @@ class UefiUpload(CustomUpload):
 
     def sign(self, image):
         """Sign an image."""
-        subprocess.check_call(self.getSigningCommand(image))
+        if subprocess.call(self.getSigningCommand(image)) != 0:
+            # Just log this rather than failing, since custom upload errors
+            # tend to make the publisher rather upset.
+            if self.logger is not None:
+                self.logger.warning("Failed to sign %s" % image)
 
     def extract(self):
         """Copy the custom upload to a temporary directory, and sign it.
@@ -122,23 +122,22 @@ class UefiUpload(CustomUpload):
         No actual extraction is required.
         """
         super(UefiUpload, self).extract()
-        efi_filenames = list(self.findEfiFilenames())
-        if not efi_filenames:
-            raise UefiNothingToSign(self.tarfile_path)
-        for efi_filename in efi_filenames:
-            remove_if_exists("%s.signed" % efi_filename)
-            self.sign(efi_filename)
+        if self.key is not None and self.cert is not None:
+            efi_filenames = list(self.findEfiFilenames())
+            for efi_filename in efi_filenames:
+                remove_if_exists("%s.signed" % efi_filename)
+                self.sign(efi_filename)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
 
 
-def process_uefi(pubconf, tarfile_path, distroseries):
+def process_uefi(pubconf, tarfile_path, distroseries, logger=None):
     """Process a raw-uefi tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = UefiUpload()
+    upload = UefiUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)

@@ -100,12 +100,12 @@ class DistUpgraderUpload(CustomUpload):
         return version and not filename.startswith('current')
 
 
-def process_dist_upgrader(pubconf, tarfile_path, distroseries):
+def process_dist_upgrader(pubconf, tarfile_path, distroseries, logger=None):
     """Process a raw-dist-upgrader tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DistUpgraderUpload()
+    upload = DistUpgraderUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)
