@@ -17,7 +17,7 @@
 
 /* Nasty hack to get the bar moved since it's absolutely positioned
  * This also needs to be updated
- * */
+ */
 body.beta #locationbar, body.private #locationbar {
     top: 47px;
 }
