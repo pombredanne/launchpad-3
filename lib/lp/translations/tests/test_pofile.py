@@ -2149,6 +2149,37 @@ class TestPOFile(TestCaseWithFactory):
             language.code, with_plural=True)
         self.assertTrue(pofile.hasPluralFormInformation())
 
+    def test_prepare_pomessage_error_message(self):
+        errors = []
+        errors.append({
+            'potmsgset': self.factory.makePOTMsgSet(
+                potemplate=self.pofile.potemplate, sequence=1),
+            'pomessage': 'purrs',
+            'error-message': 'claws error',
+            })
+        errors.append({
+            'potmsgset': self.factory.makePOTMsgSet(
+                potemplate=self.pofile.potemplate, sequence=2),
+            'pomessage': 'plays',
+            'error-message': 'string error',
+            })
+        replacements = {'numberofmessages': 5}
+        pofile = removeSecurityProxy(self.pofile)
+        data = pofile._prepare_pomessage_error_message(
+            errors, replacements)
+        subject, template_mail, errorsdetails = data
+        pot_displayname = self.pofile.potemplate.displayname
+        self.assertEqual(
+            'Translation problems - Esperanto (eo) - %s' % pot_displayname,
+            subject)
+        self.assertEqual('poimport-with-errors.txt', template_mail)
+        self.assertEqual(2, replacements['numberoferrors'])
+        self.assertEqual(3, replacements['numberofcorrectmessages'])
+        self.assertEqual(errorsdetails, replacements['errorsdetails'])
+        self.assertEqual(
+            '1. "claws error":\n\npurrs\n\n2. "string error":\n\nplays\n\n',
+            errorsdetails)
+
 
 class TestPOFileUbuntuUpstreamSharingMixin:
     """Test sharing between Ubuntu und upstream POFiles."""
