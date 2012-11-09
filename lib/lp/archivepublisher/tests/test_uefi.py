@@ -11,10 +11,7 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.uefi import (
-    UefiConfigurationError,
-    UefiUpload,
-    )
+from lp.archivepublisher.uefi import UefiUpload
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -75,10 +72,12 @@ class TestUefi(TestCase):
         self.assertEqual(0, upload.sign.call_count)
 
     def test_missing_key_and_cert(self):
-        # If the configured key/cert are missing, processing fails.
+        # If the configured key/cert are missing, processing succeeds but
+        # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
-        self.assertRaises(UefiConfigurationError, self.process)
+        upload = self.process()
+        self.assertEqual(0, upload.sign.call_count)
 
     def test_no_efi_files(self):
         # Tarballs containing no *.efi files are extracted without complaint.

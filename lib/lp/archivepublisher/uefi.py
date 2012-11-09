@@ -26,13 +26,6 @@ from lp.archivepublisher.customupload import (
 from lp.services.osutils import remove_if_exists
 
 
-class UefiConfigurationError(CustomUploadError):
-    """No signing key location is configured."""
-    def __init__(self, message):
-        CustomUploadError.__init__(
-            self, "UEFI signing configuration error: %s" % message)
-
-
 class UefiUpload(CustomUpload):
     """UEFI boot loader custom upload.
 
@@ -78,11 +71,15 @@ class UefiUpload(CustomUpload):
             self.key = os.path.join(pubconf.uefiroot, "uefi.key")
             self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
             if not os.access(self.key, os.R_OK):
-                raise UefiConfigurationError(
-                    "UEFI private key %s not readable" % self.key)
+                if self.logger is not None:
+                    self.logger.warning(
+                        "UEFI private key %s not readable" % self.key)
+                self.key = None
             if not os.access(self.cert, os.R_OK):
-                raise UefiConfigurationError(
-                    "UEFI certificate %s not readable" % self.cert)
+                if self.logger is not None:
+                    self.logger.warning(
+                        "UEFI certificate %s not readable" % self.cert)
+                self.cert = None
 
         loader_type, self.version, self.arch = self.parsePath(tarfile_path)
         self.targetdir = os.path.join(
