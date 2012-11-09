@@ -74,12 +74,12 @@ class DebianInstallerUpload(CustomUpload):
         return filename.startswith('%s/' % self.version)
 
 
-def process_debian_installer(pubconf, tarfile_path, distroseries):
+def process_debian_installer(pubconf, tarfile_path, distroseries, logger=None):
     """Process a raw-installer tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DebianInstallerUpload()
+    upload = DebianInstallerUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)
