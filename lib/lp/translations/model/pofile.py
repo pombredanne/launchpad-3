@@ -1147,7 +1147,8 @@ class POFile(SQLBase, POFileMixIn):
         return (subject, message)
 
     def _prepare_pomessage_error_message(self, errors, replacements):
-        # There were some errors with translations.
+        # Return subject, template_mail, and errorsdetails to make
+        # an error enail message.
         error_count = len(errors)
         error_text = []
         for error in errors:
