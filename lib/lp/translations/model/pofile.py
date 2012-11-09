@@ -1149,17 +1149,15 @@ class POFile(SQLBase, POFileMixIn):
     def _prepare_pomessage_error_message(self, errors, replacements):
         # There were some errors with translations.
         error_count = len(errors)
-        errorsdetails = ''
+        error_text = []
         for error in errors:
             potmsgset = error['potmsgset']
             pomessage = error['pomessage']
             sequence = potmsgset.getSequence(self.potemplate) or -1
             error_message = error['error-message']
-            errorsdetails = '%s%d. "%s":\n\n%s\n\n' % (
-                errorsdetails,
-                sequence,
-                error_message,
-                pomessage)
+            error_text.append('%d. "%s":\n\n%s\n\n' % (
+                sequence, error_message, pomessage))
+        errorsdetails = ''.join(error_text)
         replacements['numberoferrors'] = error_count
         replacements['errorsdetails'] = errorsdetails
         replacements['numberofcorrectmessages'] = (
