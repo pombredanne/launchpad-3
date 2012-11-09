@@ -19,10 +19,7 @@ __all__ = [
 import os
 import subprocess
 
-from lp.archivepublisher.customupload import (
-    CustomUpload,
-    CustomUploadError,
-    )
+from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
 
 
