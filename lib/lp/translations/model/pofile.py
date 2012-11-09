@@ -1153,10 +1153,11 @@ class POFile(SQLBase, POFileMixIn):
         for error in errors:
             potmsgset = error['potmsgset']
             pomessage = error['pomessage']
+            sequence = potmsgset.getSequence(self.potemplate) or -1
             error_message = error['error-message']
             errorsdetails = '%s%d. "%s":\n\n%s\n\n' % (
                 errorsdetails,
-                potmsgset.getSequence(self.potemplate),
+                sequence,
                 error_message,
                 pomessage)
         replacements['numberoferrors'] = error_count
