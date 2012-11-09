@@ -174,6 +174,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         results = store.using(*tables).find(Specification, *query)
         if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
+            distinct = [SprintSpecification.date_created, Specification.id]
             # we need to establish if the listing will show specs that have
             # been decided only, or will include proposed specs.
             if (SpecificationFilter.ALL not in filter and
@@ -181,19 +182,21 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 # this will show only decided specs so use the date the spec
                 # was accepted or declined for the sprint
                 order = (Desc(SprintSpecification.date_decided),) + order
+                distinct = [SprintSpecification.date_decided] + distinct
             results = results.order_by(*order)
         else:
             assert sort is None or sort == SpecificationSort.PRIORITY
             # fall back to default, which is priority, descending.
+            distinct = True
         if quantity is not None:
             results = results[:quantity]
-        return results
+        return results.config(distinct=distinct)
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
         tables, query = self.spec_filter_clause(None, filter=filter)
-        store = Store.of(self)
-        return store.using(*tables).find(SprintSpecification, *query)
+        t_set = Store.of(self).using(*tables)
+        return t_set.find(SprintSpecification, *query).config(distinct=True)
 
     def getSpecificationLink(self, speclink_id):
         """See `ISprint`.
