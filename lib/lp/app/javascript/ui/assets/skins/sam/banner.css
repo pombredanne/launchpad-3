@@ -104,6 +104,6 @@ body.beta.private #locationbar {
 }
 .yui3-banner-content.private .banner-content {}
 .yui3-banner-content.private .badge {
-    background: url(/@@/notification-private.png); /* sprite-ref: icon-sprites */
+    background: url(/@@/notification-private.png);
     background-repeat: no-repeat;
 }
