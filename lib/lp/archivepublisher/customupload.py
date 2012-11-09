@@ -94,12 +94,13 @@ class CustomUpload:
     # This should be set as a class property on each subclass.
     custom_type = None
 
-    def __init__(self):
+    def __init__(self, logger=None):
         self.targetdir = None
         self.version = None
         self.arch = None
 
         self.tmpdir = None
+        self.logger = logger
 
     def process(self, pubconf, tarfile_path, distroseries):
         """Process the upload and install it into the archive."""
