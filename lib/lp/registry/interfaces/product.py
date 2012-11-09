@@ -89,6 +89,7 @@ from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
     IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
@@ -916,7 +917,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted,
+    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
     IStructuralSubscriptionTarget, IInformationType, IPillar):
