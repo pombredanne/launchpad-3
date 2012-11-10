@@ -164,7 +164,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
     def getArchs(self, suite):
         """Query architectures supported by the suite."""
         series, _ = self.distribution.getDistroSeriesAndPocket(suite)
-        return [arch.architecturetag for arch in series.architectures]
+        return [arch.architecturetag for arch in series.enabled_architectures]
 
     def getDirs(self, archs):
         """Subdirectories needed for each component."""

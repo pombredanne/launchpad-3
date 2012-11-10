@@ -203,10 +203,12 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertEqual(distro, script.distribution)
 
     def test_getArchs(self):
-        # getArchs returns a list of architectures in the distroseries.
+        # getArchs returns a list of enabled architectures in the distroseries.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distro)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, enabled=False)
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual(
             [das.architecturetag], script.getArchs(distroseries.name))
