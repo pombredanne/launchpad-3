@@ -14,7 +14,6 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     differ_in_content,
     execute,
     GenerateContentsFiles,
-    move_file,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
@@ -96,24 +95,6 @@ class TestHelpers(TestCaseWithFactory):
         filename = self.factory.getUniqueString()
         execute(logger, "touch", [filename])
         self.assertTrue(file_exists(filename))
-
-    def test_move_file_renames_file(self):
-        # move_file renames a file from its old name to its new name.
-        self.useTempDir()
-        text = self.factory.getUniqueString()
-        write_file("old_name", text)
-        move_file("old_name", "new_name")
-        self.assertEqual(text, file("new_name").read())
-
-    def test_move_file_overwrites_old_file(self):
-        # If move_file finds another file in the way, that file gets
-        # deleted.
-        self.useTempDir()
-        write_file("new_name", self.factory.getUniqueString())
-        new_text = self.factory.getUniqueString()
-        write_file("old_name", new_text)
-        move_file("old_name", "new_name")
-        self.assertEqual(new_text, file("new_name").read())
 
 
 class TestGenerateContentsFiles(TestCaseWithFactory):

@@ -94,16 +94,6 @@ def execute(logger, command, args=None):
             "Failure while running command: %s" % description)
 
 
-def move_file(old_path, new_path):
-    """Rename file `old_path` to `new_path`.
-
-    Mercilessly delete any file that may already exist at `new_path`.
-    """
-    if file_exists(new_path):
-        os.remove(new_path)
-    os.rename(old_path, new_path)
-
-
 class GenerateContentsFiles(LaunchpadCronScript):
 
     distribution = None
@@ -286,8 +276,8 @@ class GenerateContentsFiles(LaunchpadCronScript):
             contents_dest = os.path.join(
                 self.config.distsroot, suite, "%s.gz" % contents_filename)
 
-            move_file(current_contents, last_contents)
-            move_file(new_contents, contents_dest)
+            os.rename(current_contents, last_contents)
+            os.rename(new_contents, contents_dest)
             os.chmod(contents_dest, 0664)
         else:
             self.logger.debug(
