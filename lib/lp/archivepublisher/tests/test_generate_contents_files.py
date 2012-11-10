@@ -18,6 +18,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
+from lp.services.osutils import write_file
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
@@ -29,33 +30,24 @@ from lp.testing.layers import (
     )
 
 
-def write_file(filename, content=""):
-    """Write `content` to `filename`, and flush."""
-    output_file = file(filename, 'w')
-    output_file.write(content)
-    output_file.close()
-
-
 def fake_overrides(script, distroseries):
     """Fake overrides files so `script` can run `apt-ftparchive`."""
-    os.makedirs(script.config.overrideroot)
-
     components = ['main', 'restricted', 'universe', 'multiverse']
     architectures = script.getArchs(distroseries.name)
     suffixes = components + ['extra.' + component for component in components]
     for suffix in suffixes:
         write_file(os.path.join(
             script.config.overrideroot,
-            "override.%s.%s" % (distroseries.name, suffix)))
+            "override.%s.%s" % (distroseries.name, suffix)), "")
 
     for component in components:
         write_file(os.path.join(
             script.config.overrideroot,
-            "%s_%s_source" % (distroseries.name, component)))
+            "%s_%s_source" % (distroseries.name, component)), "")
         for arch in architectures:
             write_file(os.path.join(
                 script.config.overrideroot,
-                "%s_%s_binary-%s" % (distroseries.name, component, arch)))
+                "%s_%s_binary-%s" % (distroseries.name, component, arch)), "")
 
 
 class TestHelpers(TestCaseWithFactory):
@@ -162,9 +154,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         :return: The arbitrary string that is also in the file.
         """
         marker_contents = self.factory.getUniqueString()
-        dir_name = os.path.dirname(file_path)
-        if not file_exists(dir_name):
-            os.makedirs(dir_name)
         write_file(file_path, marker_contents)
         return marker_contents
 
