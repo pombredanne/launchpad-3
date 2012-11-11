@@ -109,7 +109,6 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_ALLOWED_TYPES,
     BUG_POLICY_DEFAULT_TYPES,
-    IBugTarget,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
@@ -346,7 +345,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IBugTarget, IFAQTarget, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 

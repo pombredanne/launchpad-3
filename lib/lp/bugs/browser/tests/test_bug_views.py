@@ -28,7 +28,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
 from lp.bugs.adapters.bugchange import BugAttachmentChange
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
@@ -499,28 +498,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             soup = BeautifulSoup(html)
         self.assertEqual(
             u'Private', soup.find('label', text="Private"))
-
-    def test_bugtask_view_user_with_grant_on_bug_for_private_product(self):
-        # The regular bug view is properly rendered even if the user
-        # does not have permissions to view every detail of a product.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            owner=owner,
-            information_type=InformationType.PROPRIETARY)
-        user = self.factory.makePerson()
-        with person_logged_in(owner):
-            bug = self.factory.makeBug(
-                target=product, information_type=InformationType.PROPRIETARY)
-            getUtility(IService, 'sharing').ensureAccessGrants(
-                [user], owner, bugs=[bug])
-            launchbag = getUtility(IOpenLaunchBag)
-            launchbag.add(bug)
-            launchbag.add(bug.default_bugtask)
-        with person_logged_in(user):
-            view = create_initialized_view(
-                bug.default_bugtask, name=u'+index', principal=user)
-            contents = view.render()
-            self.assertTrue(bug.title in contents)
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
