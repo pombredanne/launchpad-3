@@ -960,15 +960,11 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
         sponsored_person = data.get("sponsored_person")
 
-        # When syncing we *must* do it asynchronously so that a package
-        # copy job is created.  This gives the job a chance to inspect
-        # the copy and create a PackageUpload if required.
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user, force_async=True,
-            sponsored_person=sponsored_person):
+            person=self.user, sponsored_person=sponsored_person):
             # The copy worked so we redirect back to show the results. Include
             # the query string so that the user ends up on the same batch page
             # with the same filtering parameters as before.
