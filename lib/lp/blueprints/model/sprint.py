@@ -17,6 +17,7 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
+    Join,
     Or,
     Store,
     )
@@ -122,10 +123,11 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
         tables, query = visible_specification_query(user)
-        tables.append(SprintSpecification)
-        query.extend([
-            SprintSpecification.sprintID == self.id,
-            Specification.id == SprintSpecification.specificationID])
+        tables.append(Join(
+            SprintSpecification,
+            SprintSpecification.specification == Specification.id
+        ))
+        query.extend([SprintSpecification.sprintID == self.id])
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -153,7 +155,8 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        query.extend(get_specification_filters(filter))
+        query.extend(
+            get_specification_filters(filter, assume_product_active=True))
         return tables, query
 
     def all_specifications(self, user):

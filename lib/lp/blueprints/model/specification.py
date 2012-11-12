@@ -1307,7 +1307,9 @@ def visible_specification_query(user):
         LeftJoin(AccessPolicyGrantFlat,
                  AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
         LeftJoin(
-            TeamParticipation, TeamParticipation.person == user),
+            TeamParticipation,
+            And(AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
+                TeamParticipation.person == user)),
         LeftJoin(AccessArtifact,
                  AccessPolicyGrantFlat.abstract_artifact_id ==
                  AccessArtifact.id)
@@ -1315,24 +1317,28 @@ def visible_specification_query(user):
     clauses = [
         Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
            And(AccessPolicyGrantFlat.id != None,
-               AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
+               TeamParticipation.personID != None,
                Or(AccessPolicyGrantFlat.abstract_artifact == None,
                   AccessArtifact.specification_id == Specification.id))),
         Or(Specification.product == None, Product.active == True)]
     return tables, clauses
 
 
-def get_specification_filters(filter):
+def get_specification_filters(filter, assume_product_active=False):
     """Return a list of Storm expressions for filtering Specifications.
 
     :param filters: A collection of SpecificationFilter and/or strings.
         Strings are used for text searches.
+    :param assume_product_active: If True, assume the Product is active,
+        instead of ensuring it is active.
     """
     from lp.registry.model.product import Product
+    clauses = []
     # If Product is used, it must be active.
-    clauses = [Or(Specification.product == None,
-                  Not(Specification.productID.is_in(Select(Product.id,
-                      Product.active == False))))]
+    if not assume_product_active:
+        clauses.extend([Or(Specification.product == None,
+                        Not(Specification.productID.is_in(Select(Product.id,
+                        Product.active == False))))])
     # ALL is the trump card.
     if SpecificationFilter.ALL in filter:
         return clauses
