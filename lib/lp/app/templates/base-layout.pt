@@ -65,10 +65,14 @@
       ${view/fmt:global-css}
       yui3-skin-sam">
           <tal:beta-banner condition="view/beta_features">
-            <div class="beta_banner_container"></div>
+            <div class="beta_banner_container">
+                <noscript>Some parts of this page are in beta.</noscript>
+            </div>
           </tal:beta-banner>
           <tal:private-banner condition="view/private">
-            <div class="private_banner_container"></div>
+            <div class="private_banner_container">
+                <noscript>The information on this page is private.</noscript>
+            </div>
           </tal:private-banner>
         <script type="text/javascript"
           tal:condition="python: is_lpnet">
