@@ -1338,28 +1338,26 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if self.options.experimental:
             tunable_loops.extend(self.experimental_tunable_loops)
 
-#        threads = set()
-#        for count in range(0, self.options.threads):
-#            thread = threading.Thread(
-#                target=self.run_tasks_in_thread,
-#                name='Worker-%d' % (count + 1,),
-#                args=(tunable_loops,))
-#            thread.start()
-#            threads.add(thread)
-
-        self.run_tasks_in_thread(tunable_loops)
+        threads = set()
+        for count in range(0, self.options.threads):
+            thread = threading.Thread(
+                target=self.run_tasks_in_thread,
+                name='Worker-%d' % (count + 1,),
+                args=(tunable_loops,))
+            thread.start()
+            threads.add(thread)
 
         # Block until all the worker threads have completed. We block
         # until the script timeout is hit, plus 60 seconds. We wait the
         # extra time because the loops are supposed to shut themselves
         # down when the script timeout is hit, and the extra time is to
         # give them a chance to clean up.
-#        for thread in threads:
-#            time_to_go = self.get_remaining_script_time() + 60
-#            if time_to_go > 0:
-#                thread.join(time_to_go)
-#            else:
-#                break
+        for thread in threads:
+            time_to_go = self.get_remaining_script_time() + 60
+            if time_to_go > 0:
+                thread.join(time_to_go)
+            else:
+                break
 
         # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:
@@ -1515,12 +1513,12 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-frequently'
     tunable_loops = [
-#        BugSummaryJournalRollup,
-#        OAuthNoncePruner,
-#        OpenIDConsumerNoncePruner,
-#        OpenIDConsumerAssociationPruner,
-#        AntiqueSessionPruner,
-#        VoucherRedeemer,
+        BugSummaryJournalRollup,
+        OAuthNoncePruner,
+        OpenIDConsumerNoncePruner,
+        OpenIDConsumerAssociationPruner,
+        AntiqueSessionPruner,
+        VoucherRedeemer,
         PopulateLatestPersonSourcepackageReleaseCache,
         ]
     experimental_tunable_loops = []
