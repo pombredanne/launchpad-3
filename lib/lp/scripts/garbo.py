@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
-from lp.services.database.stormexpr import Greatest
 
 __metaclass__ = type
 __all__ = [
@@ -34,14 +33,13 @@ import pytz
 from storm.expr import (
     Alias,
     And,
-    Desc,
     In,
     Insert,
     Join,
     Like,
     Select,
     Update,
-    Exists, Not)
+    )
 from storm.info import ClassAlias
 from storm.locals import (
     Max,
@@ -87,7 +85,8 @@ from lp.services.database.sqlbase import (
     cursor,
     session_store,
     sqlvalues,
-    quote)
+    )
+from lp.services.database.stormexpr import Greatest
 from lp.services.features import (
     getFeatureFlag,
     install_feature_controller,
@@ -521,7 +520,7 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         return rs
 
     def isDone(self):
-         return self.getPendingUpdates().count() == 0
+        return self.getPendingUpdates().count() == 0
 
     def update_cache(self, update, inserts):
         # Update the LatestPersonSourcepackageReleaseCache table. Records for
