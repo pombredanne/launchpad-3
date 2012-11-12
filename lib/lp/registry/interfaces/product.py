@@ -428,15 +428,44 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
-    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
-    """Public IProduct properties."""
+class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
+    """Attributes that must be visible for person with artifact grants
+    on bugs, branches or specifications for the product.
+    """
+
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_("""The name of the project as it would appear in a
+                paragraph.""")),
+        exported_as='display_name')
+
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
+
+    name = exported(
+        ProductNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_(
+                "At least one lowercase letter or number, followed by "
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as shown above.")))
+
+    owner = exported(
+        PersonChoice(
+            title=_('Maintainer'),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
 
     project = exported(
         ReferenceChoice(
@@ -454,14 +483,21 @@ class IProductLimitedView(
                 'and security policy will apply to this project.')),
         exported_as='project_group')
 
-    owner = exported(
-        PersonChoice(
-            title=_('Maintainer'),
-            required=True,
-            vocabulary='ValidPillarOwner',
-            description=_("The restricted team, moderated team, or person "
-                          "who maintains the project information in "
-                          "Launchpad.")))
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
+
+
+class IProductView(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
+    IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
+    IHasMugshot, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    """Public IProduct properties."""
 
     registrant = exported(
         PublicPersonChoice(
@@ -487,27 +523,6 @@ class IProductLimitedView(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    name = exported(
-        ProductNameField(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_(
-                "At least one lowercase letter or number, followed by "
-                "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above.")))
-
-    displayname = exported(
-        TextLine(
-            title=_('Display Name'),
-            description=_("""The name of the project as it would appear in a
-                paragraph.""")),
-        exported_as='display_name')
-
-    title = exported(
-        Title(
-            title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
 
     summary = exported(
         Summary(
@@ -607,15 +622,6 @@ class IProductLimitedView(
                 "size, that can be used to identify this project. The icon "
                 "will be displayed next to the project name everywhere in "
                 "Launchpad that we refer to the project and link to it.")))
-
-    logo = exported(
-        LogoImageUpload(
-            title=_("Logo"), required=False,
-            default_image_resource='/@@/product-logo',
-            description=_(
-                "An image of exactly 64x64 pixels that will be displayed in "
-                "the heading of all pages related to this project. It should "
-                "be no bigger than 50kb in size.")))
 
     mugshot = exported(
         MugshotImageUpload(
@@ -874,9 +880,9 @@ class IProductLimitedView(
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    @mutator_for(IProductLimitedView['bug_sharing_policy'])
+    @mutator_for(IProductView['bug_sharing_policy'])
     @operation_parameters(bug_sharing_policy=copy_field(
-        IProductLimitedView['bug_sharing_policy']))
+        IProductView['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBugSharingPolicy(bug_sharing_policy):
@@ -885,10 +891,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['branch_sharing_policy'])
+    @mutator_for(IProductView['branch_sharing_policy'])
     @operation_parameters(
         branch_sharing_policy=copy_field(
-            IProductLimitedView['branch_sharing_policy']))
+            IProductView['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
@@ -897,10 +903,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductLimitedView['specification_sharing_policy'])
+    @mutator_for(IProductView['specification_sharing_policy'])
     @operation_parameters(
         specification_sharing_policy=copy_field(
-            IProductLimitedView['specification_sharing_policy']))
+            IProductView['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setSpecificationSharingPolicy(specification_sharing_policy):
@@ -911,8 +917,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted,
-    IProductModerateRestricted, IProductDriverRestricted,
+    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
     IStructuralSubscriptionTarget, IInformationType, IPillar):
     """A Product.
