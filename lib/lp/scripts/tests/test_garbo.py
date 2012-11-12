@@ -396,8 +396,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         # Run the garbage collectors to remove any existing garbage,
         # starting us in a known state.
-        self.runDaily()
-        self.runHourly()
+#        self.runDaily()
+#        self.runHourly()
         self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
@@ -1204,7 +1204,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
             date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
-        self.factory.makeSourcePackagePublishingHistory(
+        spph_1 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr4)
 
@@ -1247,8 +1247,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcepackageReleaseCache')
-        self.assertEqual(spr4.id, job_data['next_id_for_creator'])
-        self.assertEqual(spr4.id, job_data['next_id_for_maintainer'])
+        self.assertEqual(spph_1.id, job_data['next_spph_id'])
 
         # Create a newer published source package release and ensure the
         # release cache table is correctly updated.
@@ -1257,7 +1256,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
             date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
-        self.factory.makeSourcePackagePublishingHistory(
+        spph_2 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr5)
 
@@ -1271,8 +1270,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcepackageReleaseCache')
-        self.assertEqual(spr5.id, job_data['next_id_for_creator'])
-        self.assertEqual(spr5.id, job_data['next_id_for_maintainer'])
+        self.assertEqual(spph_2.id, job_data['next_spph_id'])
 
 
 class TestGarboTasks(TestCaseWithFactory):
