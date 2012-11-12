@@ -1391,7 +1391,7 @@ it via a page notification.
     >>> from lp.testing.pages import extract_text
     >>> for notification in view.request.response.notifications:
     ...     print extract_text(notification.message)
-    Requested sync of 1 package.
+    Requested sync of 1 package to PPA for Ubuntu Team.
     Please allow some time for this to be processed.
 
 There is one copy job waiting, which we run.

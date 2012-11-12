@@ -29,6 +29,7 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -1264,27 +1265,45 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             requester=person, sponsored=sponsored, unembargo=True,
             source_distroseries=spph.distroseries, source_pocket=spph.pocket)
 
-    return copy_asynchronously_message(len(source_pubs))
+    return copy_asynchronously_message(
+        len(source_pubs), dest_archive, dest_url, dest_display_name)
 
 
-def copy_asynchronously_message(source_pubs_count):
+def copy_asynchronously_message(source_pubs_count, dest_archive, dest_url=None,
+                                dest_display_name=None):
     """Return a message detailing the sync action.
 
     :param source_pubs_count: The number of source pubs requested for syncing.
+    :param dest_archive: The destination IArchive.
+    :param dest_url: The URL of the destination to display in the
+        notification box.  Defaults to the target archive and will be
+        automatically escaped for inclusion in the output.
+    :param dest_display_name: The text to use for the dest_url link.
+        Defaults to the target archive's display name and will be
+        automatically escaped for inclusion in the output.
     """
+    if dest_url is None:
+        dest_url = escape(
+            canonical_url(dest_archive) + '/+packages', quote=True)
+
+    if dest_display_name is None:
+        dest_display_name = escape(dest_archive.displayname)
+
     package_or_packages = get_plural_text(
         source_pubs_count, "package", "packages")
     if source_pubs_count == 0:
         return structured(
-            "Requested sync of %s %s.",
-            source_pubs_count, package_or_packages)
+            'Requested sync of %s %s to <a href="%s">%s</a>.',
+            source_pubs_count, package_or_packages, dest_url,
+            dest_display_name)
     else:
         this_or_these = get_plural_text(
             source_pubs_count, "this", "these")
         return structured(
-            "Requested sync of %s %s.<br />"
+            'Requested sync of %s %s to <a href="%s">%s</a>.<br />'
             "Please allow some time for %s to be processed.",
-            source_pubs_count, package_or_packages, this_or_these)
+            source_pubs_count, package_or_packages, dest_url,
+            dest_display_name, this_or_these)
 
 
 def render_cannotcopy_as_html(cannotcopy_exception):
