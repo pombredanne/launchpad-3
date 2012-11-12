@@ -35,6 +35,7 @@ from signal import (
     SIGHUP,
     signal,
     )
+from storm.exceptions import LostObjectError
 import sys
 from textwrap import dedent
 from uuid import uuid4
@@ -491,17 +492,22 @@ class TwistedJobRunner(BaseJobRunner):
                 self._logOopsId(response['oops_id'])
 
         def job_raised(failure):
-            self.incomplete_jobs.append(job)
-            exit_code = getattr(failure.value, 'exitCode', None)
-            if exit_code == self.TIMEOUT_CODE:
-                # The process ended with the error code that we have
-                # arbitrarily chosen to indicate a timeout. Rather than log
-                # that error (ProcessDone), we log a TimeoutError instead.
-                self._logTimeout(job)
+            try:
+                exit_code = getattr(failure.value, 'exitCode', None)
+                if exit_code == self.TIMEOUT_CODE:
+                    # The process ended with the error code that we have
+                    # arbitrarily chosen to indicate a timeout. Rather than log
+                    # that error (ProcessDone), we log a TimeoutError instead.
+                    self._logTimeout(job)
+                else:
+                    info = (failure.type, failure.value, failure.tb)
+                    oops = self._doOops(job, info)
+                    self._logOopsId(oops['id'])
+            except LostObjectError:
+                # The job may have been deleted, so we can ignore this error.
+                pass
             else:
-                info = (failure.type, failure.value, failure.tb)
-                oops = self._doOops(job, info)
-                self._logOopsId(oops['id'])
+                self.incomplete_jobs.append(job)
         deferred.addCallbacks(update, job_raised)
         return deferred
 
