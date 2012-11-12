@@ -334,6 +334,27 @@ class UnDeactivateable(Exception):
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
 
+bug_policy_default = {
+    InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
+    InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.PROPRIETARY,
+}
+
+
+branch_policy_default = {
+    InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
+}
+
+
+specification_policy_default = {
+    InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED:
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
+}
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
@@ -439,25 +460,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
                 raise CannotChangeInformationType('Answers is enabled.')
-            public_specs = Store.of(self).find(Specification,
-                Specification.product == self,
-                Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-            if not public_specs.is_empty():
-                raise CannotChangeInformationType(
-                    'Some blueprints are public.')
-            public_bugs = Store.of(self).find(
-                Bug, BugTask.product == self, BugTask.bug == Bug.id,
-                    Bug.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-            if not public_bugs.is_empty():
-                raise CannotChangeInformationType(
-                    'Some bugs are public.')
-            public_branches = Store.of(self).find(
-                Branch, Branch.product == self,
-                Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-            if not public_branches.is_empty():
-                raise CannotChangeInformationType(
-                    'Some branches are public.')
-
+            if not self._SO_creating:
+                public_specs = Store.of(self).find(Specification,
+                    Specification.product == self,
+                    Specification.information_type.is_in(
+                        PUBLIC_INFORMATION_TYPES))
+                if not public_specs.is_empty():
+                    raise CannotChangeInformationType(
+                        'Some blueprints are public.')
+                public_bugs = Store.of(self).find(
+                    Bug, BugTask.product == self, BugTask.bug == Bug.id,
+                        Bug.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+                if not public_bugs.is_empty():
+                    raise CannotChangeInformationType(
+                        'Some bugs are public.')
+                public_branches = Store.of(self).find(
+                    Branch, Branch.product == self,
+                    Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+                if not public_branches.is_empty():
+                    raise CannotChangeInformationType(
+                        'Some branches are public.')
 
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
@@ -491,6 +513,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
+        if not self._SO_creating:
+            if (self.information_type == InformationType.PUBLIC and
+                value != InformationType.PUBLIC):
+                self.setBranchSharingPolicy(branch_policy_default[value])
+                self.setBugSharingPolicy(bug_policy_default[value])
+                self.setSpecificationSharingPolicy(
+                    specification_policy_default[value])
         self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
@@ -1841,28 +1870,14 @@ class ProductSet:
             bug_supervisor=bug_supervisor, driver=driver,
             information_type=information_type)
 
-        # Set up the sharing policies and product licence.
-        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
-        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
-        specification_sharing_policy_to_use = (
-            SpecificationSharingPolicy.PUBLIC)
+        # Set up the product licence.
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
-        if information_type == InformationType.PROPRIETARY:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.PROPRIETARY)
-        if information_type == InformationType.EMBARGOED:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = (
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        product.setBugSharingPolicy(bug_sharing_policy_to_use)
-        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
+        product.setBugSharingPolicy(bug_policy_default[information_type])
+        product.setBranchSharingPolicy(
+            branch_policy_default[information_type])
         product.setSpecificationSharingPolicy(
-            specification_sharing_policy_to_use)
+            specification_policy_default[information_type])
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

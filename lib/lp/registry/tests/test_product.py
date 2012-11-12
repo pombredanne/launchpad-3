@@ -386,7 +386,7 @@ class TestProduct(TestCaseWithFactory):
         expected = [InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
-    def test_change_info_type_proprietary(self):
+    def test_change_info_type_proprietary_check_artifacts(self):
         # Cannot change product information_type if any artifacts are public.
         spec_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
@@ -422,6 +422,53 @@ class TestProduct(TestCaseWithFactory):
                                            product.owner)
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             product.information_type = info_type
+
+    def test_change_info_type_proprietary_sets_policies(self):
+        # Changing information type from public to proprietary sets the
+        # appropriate policies
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PROPRIETARY,
+            product.specification_sharing_policy)
+
+    def test_change_info_type_embargoed_sets_policies(self):
+        # Changing information type from public to proprietary sets the
+        # appropriate policies
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.EMBARGOED
+        self.assertEqual(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            product.specification_sharing_policy)
+
+    def test_proprietary_to_public_leaves_policies(self):
+        # Changing information type from public to proprietary sets the
+        # appropriate policies
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            product.information_type = InformationType.PUBLIC
+            # Setting information type to the current type should be a no-op
+            product.information_type = InformationType.PUBLIC
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PROPRIETARY,
+            product.specification_sharing_policy)
 
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than

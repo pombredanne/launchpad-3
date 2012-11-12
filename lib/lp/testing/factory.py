@@ -1022,8 +1022,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if specification_sharing_policy:
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
-        if information_type is not None:
-            naked_product.information_type = information_type
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
