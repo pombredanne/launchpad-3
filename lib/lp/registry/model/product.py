@@ -111,6 +111,7 @@ from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -123,6 +124,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -437,6 +439,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
                 raise CannotChangeInformationType('Answers is enabled.')
+            public_specs = Store.of(self).find(Specification,
+                Specification.product == self,
+                Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+            if not public_specs.is_empty():
+                raise CannotChangeInformationType(
+                    'Some blueprints are public.')
+            public_bugs = Store.of(self).find(
+                Bug, BugTask.product == self, BugTask.bug == Bug.id,
+                    Bug.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+            if not public_bugs.is_empty():
+                raise CannotChangeInformationType(
+                    'Some bugs are public.')
+            public_branches = Store.of(self).find(
+                Branch, Branch.product == self,
+                Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+            if not public_branches.is_empty():
+                raise CannotChangeInformationType(
+                    'Some branches are public.')
+
+
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
