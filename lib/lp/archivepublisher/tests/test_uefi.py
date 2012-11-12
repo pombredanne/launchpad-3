@@ -11,11 +11,7 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.uefi import (
-    UefiConfigurationError,
-    UefiNothingToSign,
-    UefiUpload,
-    )
+from lp.archivepublisher.uefi import UefiUpload
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
@@ -67,23 +63,30 @@ class TestUefi(TestCase):
             "%s-%s" % (loader_type, arch))
 
     def test_unconfigured(self):
-        # If there is no key/cert configuration, processing fails.
+        # If there is no key/cert configuration, processing succeeds but
+        # nothing is signed.
         self.pubconf = FakeConfig(self.temp_dir, None)
         self.openArchive("test", "1.0", "amd64")
-        self.assertRaises(UefiConfigurationError, self.process)
+        self.archive.add_file("1.0/empty.efi", "")
+        upload = self.process()
+        self.assertEqual(0, upload.sign.call_count)
 
     def test_missing_key_and_cert(self):
-        # If the configured key/cert are missing, processing fails.
+        # If the configured key/cert are missing, processing succeeds but
+        # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
-        self.assertRaises(UefiConfigurationError, self.process)
+        upload = self.process()
+        self.assertEqual(0, upload.sign.call_count)
 
     def test_no_efi_files(self):
-        # Tarballs containing no *.efi files are rejected.
+        # Tarballs containing no *.efi files are extracted without complaint.
         self.setUpKeyAndCert()
         self.openArchive("empty", "1.0", "amd64")
-        self.archive.add_file("hello", "world")
-        self.assertRaises(UefiNothingToSign, self.process)
+        self.archive.add_file("1.0/hello", "world")
+        self.process()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.getUefiPath("empty", "amd64"), "1.0", "hello")))
 
     def test_already_exists(self):
         # If the target directory already exists, processing fails.

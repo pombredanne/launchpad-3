@@ -97,6 +97,19 @@ URL.
     at http://user:password@bzr.example.com/firefox/trunk.
     The next import is scheduled to run
     as soon as possible.
+    
+Specifing a Launchpad URL results in an error.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Branch Name').value = "invalid"
+    >>> browser.getControl('Branch URL', index=0).value = (
+    ...     "http://bazaar.launchpad.net/firefox/trunk")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Request Import').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    You can not create imports for branches that are hosted by Launchpad.
 
 Requesting a Subversion import
 ==============================

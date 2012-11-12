@@ -47,7 +47,7 @@
 	  <a tal:replace="structure branch/fmt:link">
             branchname
 	  </a>
-	  <a tal:attributes="href view/link_branch_url"
+	  <a tal:attributes="href view/set_branch_url"
              title="Change official branch"
              class="edit sprite"></a>
 	</p>
@@ -59,7 +59,7 @@
       <p tal:condition="not:view/context/branch"
 	 id="no-branch-display">
 	This series does not have an official Bazaar branch.
-	<a tal:attributes="href view/link_branch_url">
+	<a tal:attributes="href view/set_branch_url">
 	  Please set it first.</a>
       </p>
     </div>

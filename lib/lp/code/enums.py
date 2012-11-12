@@ -20,6 +20,7 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
     'UICreatableBranchType',
     ]
@@ -856,3 +857,7 @@ class CodeReviewVote(DBEnumeratedType):
 
         The reviewer needs more information before making a decision.
         """)
+
+NON_CVS_RCS_TYPES = (
+    RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN,
+    RevisionControlSystems.GIT, RevisionControlSystems.BZR)

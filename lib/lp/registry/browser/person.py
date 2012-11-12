@@ -3644,17 +3644,19 @@ class PersonRelatedSoftwareView(LaunchpadView):
         builds_by_package = {}
         needs_build_by_package = {}
         for package in package_releases:
-            builds_by_package[package] = []
-            needs_build_by_package[package] = False
+            builds_by_package[package.id] = []
+            needs_build_by_package[package.id] = False
         for build in all_builds:
             if build.status == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.source_package_release].append(build)
+                builds_by_package[
+                    build.source_package_release.id].append(build)
             needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.source_package_release] = needs_build
+            needs_build_by_package[
+                build.source_package_release.id] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 
@@ -3665,8 +3667,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return [
             SourcePackageReleaseWithStats(
-                package, builds_by_package[package],
-                needs_build_by_package[package])
+                package, builds_by_package[package.id],
+                needs_build_by_package[package.id])
             for package in package_releases]
 
     def _addStatsToPublishings(self, publishings):
@@ -3679,8 +3681,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
         return [
             SourcePackagePublishingHistoryWithStats(
-                spph, builds_by_package[spph.sourcepackagerelease],
-                needs_build_by_package[spph.sourcepackagerelease])
+                spph, builds_by_package[spph.sourcepackagerelease.id],
+                needs_build_by_package[spph.sourcepackagerelease.id])
             for spph in filtered_spphs]
 
     def setUpBatch(self, packages):
