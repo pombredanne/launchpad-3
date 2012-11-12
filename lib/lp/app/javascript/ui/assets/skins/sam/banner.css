@@ -27,8 +27,7 @@ body.beta.private #locationbar {
     top: 94px;
 }
 
-/* If the container exists make sure we start out The information on this page
- * is private.with the rest of the page
+/* If the container exists make sure we start out with the rest of the page
  * bumped down the starting distance to reduce flash effect
  */
 .beta_banner_container, .private_banner_container {
