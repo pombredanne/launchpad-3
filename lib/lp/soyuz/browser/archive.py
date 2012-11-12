@@ -1261,7 +1261,8 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person, sponsored=sponsored, unembargo=True)
+            requester=person, sponsored=sponsored, unembargo=True,
+            source_distroseries=spph.distroseries, source_pocket=spph.pocket)
 
     return copy_asynchronously_message(len(source_pubs))
 
