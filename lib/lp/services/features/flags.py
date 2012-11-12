@@ -236,7 +236,7 @@ flag_info = sorted([
      'boolean',
      'If true, enabled access to private project registration features.',
      'disabled',
-     '',
+     'Allow registering a non-public project.',
      'http://blog.launchpad.net/general/private-projects-beta'),
     ('disclosure.private_project.traversal_override',
      'boolean',
