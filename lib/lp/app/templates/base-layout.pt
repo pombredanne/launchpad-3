@@ -66,12 +66,12 @@
       yui3-skin-sam">
           <tal:beta-banner condition="view/beta_features">
             <div class="beta_banner_container">
-                <noscript>Some parts of this page are in beta.</noscript>
+                <noscript ><strong>Some parts of this page are in beta.</strong></noscript>
             </div>
           </tal:beta-banner>
           <tal:private-banner condition="view/private">
             <div class="private_banner_container">
-                <noscript>The information on this page is private.</noscript>
+                <noscript><strong>The information on this page is private.</strong></noscript>
             </div>
           </tal:private-banner>
         <script type="text/javascript"
