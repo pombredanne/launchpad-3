@@ -445,8 +445,7 @@ class TestProductSeriesSet(TestCaseWithFactory):
         super(TestProductSeriesSet, self).setUp()
         self.ps_set = getUtility(IProductSeriesSet)
 
-    def _makeSeriesAndBranch(
-            self, import_mode, branch=None, link_branch=True):
+    def _makeSeriesAndBranch(self, import_mode, branch=None, link_branch=True):
         productseries = self.factory.makeProductSeries()
         productseries.translations_autoimport_mode = import_mode
         if branch is None:
@@ -484,24 +483,22 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, link_branch=False)
 
         self.assertContentEqual(
-                [],
-                self.ps_set.findByTranslationsImportBranch(branch))
+            [], self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_force_import(self):
         productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT)
 
         self.assertContentEqual(
-                [productseries],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [productseries],
+            self.ps_set.findByTranslationsImportBranch(branch, True))
 
     def test_findByTranslationsImportBranch_no_branch_force_import(self):
         productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT, link_branch=False)
 
         self.assertContentEqual(
-                [],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [], self.ps_set.findByTranslationsImportBranch(branch, True))
 
     def test_findByTranslationsImportBranch_multiple_series(self):
         productseries, branch = self._makeSeriesAndBranch(
@@ -510,8 +507,8 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
 
         self.assertContentEqual(
-                [productseries, second_series],
-                self.ps_set.findByTranslationsImportBranch(branch))
+            [productseries, second_series],
+            self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_multiple_series_force(self):
         # XXX henninge 2010-03-18 bug=521095: This will fail when the bug
@@ -522,8 +519,8 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
 
         self.assertContentEqual(
-                [productseries, second_series],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [productseries, second_series],
+            self.ps_set.findByTranslationsImportBranch(branch, True))
 
 
 class TestProductSeriesReleases(TestCaseWithFactory):
@@ -535,23 +532,20 @@ class TestProductSeriesReleases(TestCaseWithFactory):
         super(TestProductSeriesReleases, self).setUp()
         self.product = self.factory.makeProduct()
         self.productseries = self.factory.makeProductSeries(
-                                            product=self.product)
+            product=self.product)
 
     def test_getLatestRelease(self):
         # getLatestRelease returns the most recent release.
         self.assertIs(None, self.productseries.getLatestRelease())
 
         release = self.factory.makeProductRelease(
-                        product=self.product,
-                        productseries=self.productseries)
+            product=self.product, productseries=self.productseries)
         self.assertEqual(release, self.productseries.getLatestRelease())
 
         second_release = self.factory.makeProductRelease(
-                                product=self.product,
-                                productseries=self.productseries)
+            product=self.product, productseries=self.productseries)
         self.assertEqual(
-            second_release,
-            self.productseries.getLatestRelease())
+            second_release, self.productseries.getLatestRelease())
 
 
 class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
@@ -567,8 +561,7 @@ class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
             'all_milestones',
             ]
         self.assertThat(
-            productseries,
-            DoesNotSnapshot(skipped, IProductSeries))
+            productseries, DoesNotSnapshot(skipped, IProductSeries))
 
 
 class TestWebService(WebServiceTestCase):

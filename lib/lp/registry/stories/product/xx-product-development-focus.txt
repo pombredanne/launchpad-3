@@ -134,7 +134,7 @@ branch.
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       Change branch
       Change the branch for this series
-        (http://launchpad.dev/fooix/trunk/+linkbranch)
+        (http://launchpad.dev/fooix/trunk/+setbranch)
       Browse the code
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
@@ -171,6 +171,6 @@ appears as if there is no series branch set.
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       Change branch
       Change the branch for this series
-        (http://launchpad.dev/fooix/trunk/+linkbranch)
+        (http://launchpad.dev/fooix/trunk/+setbranch)
       Browse the code
         (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)

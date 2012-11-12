@@ -81,12 +81,12 @@ class DdtpTarballUpload(CustomUpload):
         pass
 
 
-def process_ddtp_tarball(pubconf, tarfile_path, distroseries):
+def process_ddtp_tarball(pubconf, tarfile_path, distroseries, logger=None):
     """Process a raw-ddtp-tarball tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
-    upload = DdtpTarballUpload()
+    upload = DdtpTarballUpload(logger=logger)
     upload.process(pubconf, tarfile_path, distroseries)

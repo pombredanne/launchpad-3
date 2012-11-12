@@ -367,7 +367,7 @@ class GenerateExtraOverrides(LaunchpadScript):
             series_name = series.name
             components = self.getComponents(series)
             architectures = sorted(
-                [arch.architecturetag for arch in series.architectures])
+                arch.architecturetag for arch in series.enabled_architectures)
 
             # This takes a while.  Ensure that we do it without keeping a
             # database transaction open.

@@ -106,7 +106,7 @@ an explanation where he can push the branch.
     bzr push lp:~name12/firefox/trunk ...
 
     >>> driver_browser.getLink('link the branch to this series')
-    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
+    <Link ... url='http://launchpad.dev/firefox/trunk/+setbranch'>
 
 Distribution packaging is listed too. There is a link to the source package
 in each Ubuntu series.

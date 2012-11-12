@@ -1726,18 +1726,6 @@
         template="../templates/milestone-add.pt"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+linkbranch"
-        class="lp.registry.browser.productseries.ProductSeriesLinkBranchView"
-        template="../templates/productseries-linkbranch.pt"
-        permission="launchpad.Edit"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+linkbranchtoseries"
-        class="lp.registry.browser.productseries.ProductSeriesLinkBranchFromCodeView"
-        template="../templates/productseries-linkbranch.pt"
-        permission="launchpad.Edit"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+setbranch"
         class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
         template="../templates/productseries-setbranch.pt"
