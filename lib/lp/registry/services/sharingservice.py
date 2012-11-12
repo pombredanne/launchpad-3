@@ -186,16 +186,21 @@ class SharingService:
         """See `ISharingService`."""
         return self._getSharedPillars(person, user, Distribution)
 
+    def getArtifactGrantsForPersonOnPillar(self, pillar, person):
+        """Return the artifact grants for the given person and pillar."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        flat_source = getUtility(IAccessPolicyGrantFlatSource)
+        return flat_source.findArtifactsByGrantee(person, policies)
+
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user, include_bugs=True,
                            include_branches=True, include_specifications=True):
         """See `ISharingService`."""
-        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
-        flat_source = getUtility(IAccessPolicyGrantFlatSource)
         bug_ids = set()
         branch_ids = set()
         specification_ids = set()
-        for artifact in flat_source.findArtifactsByGrantee(person, policies):
+        for artifact in self.getArtifactGrantsForPersonOnPillar(
+            pillar, person):
             if artifact.bug_id and include_bugs:
                 bug_ids.add(artifact.bug_id)
             elif artifact.branch_id and include_branches:
@@ -221,6 +226,11 @@ class SharingService:
             specifications = load(Specification, specification_ids)
 
         return bugtasks, branches, specifications
+
+    def userHasGrantsOnPillar(self, pillar, user):
+        """See `ISharingService`."""
+        return not self.getArtifactGrantsForPersonOnPillar(
+            pillar, user).is_empty()
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
