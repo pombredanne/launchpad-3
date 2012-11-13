@@ -1822,7 +1822,7 @@ class Archive(SQLBase):
         # permissions.
         do_copy(
             sources, self, series, pocket, include_binaries, person=person,
-            check_permissions=False, allow_delayed_copies=True)
+            check_permissions=False, unembargo=True)
 
     def getAuthToken(self, person):
         """See `IArchive`."""
