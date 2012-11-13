@@ -49,9 +49,13 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationSort,
     )
-
+from lp.blueprints.model.specification import (
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -64,6 +68,7 @@ from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
     InclusiveTeamLinkageError,
+    ProprietaryProduct,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
@@ -1604,6 +1609,27 @@ class BaseSharingPolicyTests:
                 [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
                 getAccessPolicyTypes(product))
 
+    def test_proprietary_products_forbid_public_types(self):
+        """Proprietary/embargoed products only have proprietary artifacts."""
+        owner = self.product.owner
+        with person_logged_in(owner):
+            self.product.licenses = [License.OTHER_PROPRIETARY]
+            self.product.information_type = InformationType.PROPRIETARY
+        policies_permitting_public = [self.public_policy]
+        policies_permitting_public.extend(
+            policy for policy in self.commercial_policies if
+            InformationType.PUBLIC in self.allowed_types[policy])
+        for policy in policies_permitting_public:
+            with ExpectedException(
+                ProprietaryProduct, "The project is Proprietary."):
+                self.setSharingPolicy(policy, owner)
+        with person_logged_in(owner):
+            self.product.information_type = InformationType.EMBARGOED
+        for policy in policies_permitting_public:
+            with ExpectedException(
+                ProprietaryProduct, "The project is Embargoed."):
+                self.setSharingPolicy(policy, owner)
+
 
 class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
                                       TestCaseWithFactory):
@@ -1618,6 +1644,7 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
         BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
         BugSharingPolicy.PROPRIETARY,
         )
+    allowed_types = BUG_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
@@ -1642,6 +1669,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         BranchSharingPolicy.PROPRIETARY,
         BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
+    allowed_types = BRANCH_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
@@ -1692,6 +1720,7 @@ class ProductSpecificationSharingPolicyTestCase(
         SpecificationSharingPolicy.PROPRIETARY,
         SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
+    allowed_types = SPECIFICATION_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):

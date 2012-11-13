@@ -141,6 +141,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    ProprietaryProduct,
     VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -674,6 +675,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             raise CommercialSubscribersOnly(
                 "A current commercial subscription is required to use "
                 "proprietary %s." % kind)
+        if self.information_type != InformationType.PUBLIC:
+            if InformationType.PUBLIC in allowed_types[var]:
+                raise ProprietaryProduct(
+                    "The project is %s." % self.information_type.title)
         required_policies = set(allowed_types[var]).intersection(
             set(PRIVATE_INFORMATION_TYPES))
         self._ensurePolicies(required_policies)
