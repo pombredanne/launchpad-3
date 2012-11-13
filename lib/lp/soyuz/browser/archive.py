@@ -1276,18 +1276,15 @@ def copy_asynchronously_message(source_pubs_count, dest_archive, dest_url=None,
     :param source_pubs_count: The number of source pubs requested for syncing.
     :param dest_archive: The destination IArchive.
     :param dest_url: The URL of the destination to display in the
-        notification box.  Defaults to the target archive and will be
-        automatically escaped for inclusion in the output.
+        notification box.  Defaults to the target archive.
     :param dest_display_name: The text to use for the dest_url link.
-        Defaults to the target archive's display name and will be
-        automatically escaped for inclusion in the output.
+        Defaults to the target archive's display name.
     """
     if dest_url is None:
-        dest_url = escape(
-            canonical_url(dest_archive) + '/+packages', quote=True)
+        dest_url = canonical_url(dest_archive) + '/+packages'
 
     if dest_display_name is None:
-        dest_display_name = escape(dest_archive.displayname)
+        dest_display_name = dest_archive.displayname
 
     package_or_packages = get_plural_text(
         source_pubs_count, "package", "packages")
