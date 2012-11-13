@@ -1,6 +1,5 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
 
@@ -160,21 +159,22 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def request_bzr_import_url(self):
         """URL to request a bazaar import."""
-        return canonical_url(self.context,
-                             view_name="+request-bzr-import",
-                             rootsite="translations")
+        return canonical_url(
+            self.context, view_name="+request-bzr-import",
+            rootsite="translations")
 
     @property
-    def link_branch_url(self):
+    def set_branch_url(self):
         """URL to link the series to a branch."""
-        return canonical_url(self.context, rootsite="mainsite",
-                             view_name="+linkbranch")
+        return canonical_url(
+            self.context, rootsite="mainsite", view_name="+setbranch")
 
     @property
     def translations_settings_url(self):
         """URL to change the translations for the series."""
-        return canonical_url(self.context, rootsite="translations",
-                             view_name="+translations-settings")
+        return canonical_url(
+            self.context, rootsite="translations",
+            view_name="+translations-settings")
 
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):

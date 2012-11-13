@@ -16,8 +16,6 @@ __all__ = [
     'ProductSeriesFileBugRedirect',
     'ProductSeriesInvolvedMenu',
     'ProductSeriesInvolvementView',
-    'ProductSeriesLinkBranchView',
-    'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
     'ProductSeriesOverviewMenu',
     'ProductSeriesOverviewNavigationMenu',
@@ -273,7 +271,6 @@ class ProductSeriesOverviewMenu(
             'delete',
             'driver',
             'edit',
-            'link_branch',
             'rdf',
             'set_branch',
             ]
@@ -311,7 +308,9 @@ class ProductSeriesOverviewMenu(
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
-    def _fetch_branch_link(self):
+    @enabled_with_permission('launchpad.Edit')
+    def set_branch(self):
+        """Return a link to set the bazaar branch for this series."""
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
@@ -320,20 +319,6 @@ class ProductSeriesOverviewMenu(
             text = "Change branch"
             icon = 'edit'
             summary = 'Change the branch for this series'
-        return (text, icon, summary)
-
-    @enabled_with_permission('launchpad.Edit')
-    def link_branch(self):
-        """Return a link to set the bazaar branch for this series."""
-        text, icon, summary = self._fetch_branch_link()
-        return Link('+linkbranch', text, summary, icon=icon)
-
-    @enabled_with_permission('launchpad.Edit')
-    def set_branch(self):
-        """Return a link to set the bazaar branch for this series."""
-        # Once +setbranch has been beta tested thoroughly, it should
-        # replace the +linkbranch page.
-        text, icon, summary = self._fetch_branch_link()
         return Link('+setbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -1082,44 +1067,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             # LaunchpadFormView, but we are already in the success handler.
             self._abort()
         return branch
-
-
-class ProductSeriesLinkBranchView(ReturnToReferrerMixin, ProductSeriesView,
-                                  LaunchpadEditFormView):
-    """View to set the bazaar branch for a product series."""
-
-    schema = IProductSeries
-    field_names = ['branch']
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Link an existing branch to %s %s series' % (
-            self.context.product.displayname, self.context.name)
-
-    page_title = label
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        """Update the branch attribute."""
-        if data['branch'] != self.context.branch:
-            self.updateContextFromData(data)
-            # Request an initial upload of translation files.
-            getUtility(IRosettaUploadJobSource).create(
-                self.context.branch, NULL_REVISION)
-        else:
-            self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Series code location updated.')
-
-
-class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
-    """Set the branch link from the code overview page."""
-
-    @property
-    def next_url(self):
-        """Take the user back to the code overview page."""
-        return canonical_url(self.context.product, rootsite="code")
 
 
 class ProductSeriesReviewView(LaunchpadEditFormView):

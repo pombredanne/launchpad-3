@@ -13,6 +13,7 @@ __all__ = [
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     'spec_started_clause',
+    'visible_specification_query',
     ]
 
 from lazr.lifecycle.event import (
@@ -1281,17 +1282,63 @@ def get_specification_privacy_filter(user):
                     AccessArtifact.specification_id == Specification.id))))
 
 
-def get_specification_filters(filter):
+def visible_specification_query(user):
+    """Return a Storm expression and list of tables for filtering
+    specifications by privacy.
+
+    :param user: A Person ID or a column reference.
+    :return: A tuple of tables, clauses to filter out specifications that the
+        user cannot see.
+    """
+    from lp.registry.model.product import Product
+    from lp.registry.model.accesspolicy import (
+        AccessArtifact,
+        AccessPolicy,
+        AccessPolicyGrantFlat,
+        )
+    tables = [
+        Specification,
+        LeftJoin(Product, Specification.productID == Product.id),
+        LeftJoin(AccessPolicy, And(
+            Or(Specification.productID == AccessPolicy.product_id,
+               Specification.distributionID ==
+               AccessPolicy.distribution_id),
+            Specification.information_type == AccessPolicy.type)),
+        LeftJoin(AccessPolicyGrantFlat,
+                 AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
+        LeftJoin(
+            TeamParticipation,
+            And(AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
+                TeamParticipation.person == user)),
+        LeftJoin(AccessArtifact,
+                 AccessPolicyGrantFlat.abstract_artifact_id ==
+                 AccessArtifact.id)
+        ]
+    clauses = [
+        Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
+           And(AccessPolicyGrantFlat.id != None,
+               TeamParticipation.personID != None,
+               Or(AccessPolicyGrantFlat.abstract_artifact == None,
+                  AccessArtifact.specification_id == Specification.id))),
+        Or(Specification.product == None, Product.active == True)]
+    return tables, clauses
+
+
+def get_specification_filters(filter, assume_product_active=False):
     """Return a list of Storm expressions for filtering Specifications.
 
     :param filters: A collection of SpecificationFilter and/or strings.
         Strings are used for text searches.
+    :param assume_product_active: If True, assume the Product is active,
+        instead of ensuring it is active.
     """
     from lp.registry.model.product import Product
+    clauses = []
     # If Product is used, it must be active.
-    clauses = [Or(Specification.product == None,
-                  Not(Specification.productID.is_in(Select(Product.id,
-                      Product.active == False))))]
+    if not assume_product_active:
+        clauses.extend([Or(Specification.product == None,
+                        Not(Specification.productID.is_in(Select(Product.id,
+                        Product.active == False))))])
     # ALL is the trump card.
     if SpecificationFilter.ALL in filter:
         return clauses

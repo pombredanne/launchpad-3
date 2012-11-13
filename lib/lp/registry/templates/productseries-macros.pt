@@ -15,7 +15,7 @@
   <table>
     <tbody>
       <tal:edit-link define="series_link series/fmt:url;
-                             edit_link string:${series_link}/+linkbranchtoseries">
+                             edit_link string:${series_link}/+setbranch">
       <tr>
         <th>Series:</th>
         <tal:comment condition="nothing">

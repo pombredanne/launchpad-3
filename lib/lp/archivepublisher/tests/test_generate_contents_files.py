@@ -14,10 +14,10 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     differ_in_content,
     execute,
     GenerateContentsFiles,
-    move_file,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
+from lp.services.osutils import write_file
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
@@ -29,33 +29,24 @@ from lp.testing.layers import (
     )
 
 
-def write_file(filename, content=""):
-    """Write `content` to `filename`, and flush."""
-    output_file = file(filename, 'w')
-    output_file.write(content)
-    output_file.close()
-
-
 def fake_overrides(script, distroseries):
     """Fake overrides files so `script` can run `apt-ftparchive`."""
-    os.makedirs(script.config.overrideroot)
-
     components = ['main', 'restricted', 'universe', 'multiverse']
     architectures = script.getArchs(distroseries.name)
     suffixes = components + ['extra.' + component for component in components]
     for suffix in suffixes:
         write_file(os.path.join(
             script.config.overrideroot,
-            "override.%s.%s" % (distroseries.name, suffix)))
+            "override.%s.%s" % (distroseries.name, suffix)), "")
 
     for component in components:
         write_file(os.path.join(
             script.config.overrideroot,
-            "%s_%s_source" % (distroseries.name, component)))
+            "%s_%s_source" % (distroseries.name, component)), "")
         for arch in architectures:
             write_file(os.path.join(
                 script.config.overrideroot,
-                "%s_%s_binary-%s" % (distroseries.name, component, arch)))
+                "%s_%s_binary-%s" % (distroseries.name, component, arch)), "")
 
 
 class TestHelpers(TestCaseWithFactory):
@@ -105,24 +96,6 @@ class TestHelpers(TestCaseWithFactory):
         execute(logger, "touch", [filename])
         self.assertTrue(file_exists(filename))
 
-    def test_move_file_renames_file(self):
-        # move_file renames a file from its old name to its new name.
-        self.useTempDir()
-        text = self.factory.getUniqueString()
-        write_file("old_name", text)
-        move_file("old_name", "new_name")
-        self.assertEqual(text, file("new_name").read())
-
-    def test_move_file_overwrites_old_file(self):
-        # If move_file finds another file in the way, that file gets
-        # deleted.
-        self.useTempDir()
-        write_file("new_name", self.factory.getUniqueString())
-        new_text = self.factory.getUniqueString()
-        write_file("old_name", new_text)
-        move_file("old_name", "new_name")
-        self.assertEqual(new_text, file("new_name").read())
-
 
 class TestGenerateContentsFiles(TestCaseWithFactory):
     """Tests for the actual `GenerateContentsFiles` script."""
@@ -162,9 +135,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         :return: The arbitrary string that is also in the file.
         """
         marker_contents = self.factory.getUniqueString()
-        dir_name = os.path.dirname(file_path)
-        if not file_exists(dir_name):
-            os.makedirs(dir_name)
         write_file(file_path, marker_contents)
         return marker_contents
 
@@ -203,10 +173,12 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertEqual(distro, script.distribution)
 
     def test_getArchs(self):
-        # getArchs returns a list of architectures in the distroseries.
+        # getArchs returns a list of enabled architectures in the distroseries.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distro)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        self.factory.makeDistroArchSeries(
+            distroseries=distroseries, enabled=False)
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual(
             [das.architecturetag], script.getArchs(distroseries.name))

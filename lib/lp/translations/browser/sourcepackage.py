@@ -380,7 +380,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         if packaging is not None:
             productseries = self.context.direct_packaging.productseries
             productseries_menu = ProductSeriesOverviewMenu(productseries)
-            branch_link = productseries_menu.link_branch()
+            branch_link = productseries_menu.set_branch()
             url = '%s/%s' % (canonical_url(productseries), branch_link.target)
             if branch_link.enabled:
                 return self.icon_link(id, icon, url, text, hidden=False)
