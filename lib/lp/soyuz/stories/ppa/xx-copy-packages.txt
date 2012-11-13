@@ -260,6 +260,7 @@ is presented.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in hoary
 
 James uses the link in the copy summary to go straight to the target
@@ -524,6 +525,7 @@ package copied in the available sources.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in grumpy
     DEBUG pmount-bin 0.1-1 in grumpy i386
     >>> jblack_browser.open(jblack_browser.url)
@@ -662,6 +664,7 @@ allowed if they are the same.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in warty
     DEBUG pmount-bin 0.1-1 in warty hppa
     DEBUG pmount-bin 0.1-1 in warty i386
@@ -757,8 +760,10 @@ package copied in the available sources.
     Requested sync of 2 packages to PPA for James Blackwell Friends.
     Please allow some time for these to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell Friends:
     DEBUG iceweasel 1.0 in hoary
     DEBUG mozilla-firefox 1.0 in hoary i386
+    DEBUG Packages copied to PPA for James Blackwell Friends:
     DEBUG pmount 0.1-1 in hoary
     DEBUG pmount 0.1-1 in hoary hppa
     DEBUG pmount 0.1-1 in hoary i386
@@ -893,6 +898,7 @@ conflicts and cannot be allowed.
     Requested sync of 3 packages to PPA for James Blackwell Sandbox.
     Please allow some time for these to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell Sandbox:
     DEBUG pmount 0.1-1 in warty
     INFO ... raised CannotCopy: pmount 0.1-1 in grumpy
     (same version already building in the destination archive for Warty)
@@ -946,6 +952,7 @@ deleted files will be re-published in his archive.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in hoary
     DEBUG pmount-bin 0.1-1 in hoary hppa
     DEBUG pmount-bin 0.1-1 in hoary i386
@@ -1031,6 +1038,7 @@ foo_2.0 version to his PPA.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG foo 2.0 in hoary
     DEBUG foo-bin 2.0 in hoary hppa
     DEBUG foo-bin 2.0 in hoary i386
@@ -1083,6 +1091,7 @@ do not enforce coherent version ordering across suites.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Packages copied to PPA for James Blackwell:
     DEBUG foo 1.1 in warty
     DEBUG foo-bin 1.1 in warty hppa
     DEBUG foo-bin 1.1 in warty i386

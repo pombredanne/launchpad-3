@@ -671,8 +671,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # does exist we need to make sure it gets moved to DONE.
             pu.setDone()
 
-        for copy in copied_publications:
-            self.logger.debug(copy.displayname)
+        if copied_publications:
+            self.logger.debug(
+                "Packages copied to %s:" % self.target_archive.displayname)
+            for copy in copied_publications:
+                self.logger.debug(copy.displayname)
 
     def abort(self):
         """Abort work."""
