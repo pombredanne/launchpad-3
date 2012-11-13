@@ -817,20 +817,25 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_redirect_to_project(self):
+    def makeProjectGroupFileBugView(self, product_name, bug_title):
         project_group = self.factory.makeProject()
+        owner = project_group.owner
         product = self.factory.makeProduct(
-            owner=project_group.owner, name='fnord', project=project_group)
-        with person_logged_in(project_group.owner):
+            owner=owner, name=product_name, project=project_group)
+        with person_logged_in(owner):
             product.official_malone = True
         form = {
-            'field.product': 'fnord',
-            'field.title': 'A bug',
+            'field.product': product_name,
+            'field.title': bug_title,
             'field.tags': '',
             'field.actions.projectgroupsearch': 'Continue',
             }
         view = create_initialized_view(
             project_group, name='+filebug', form=form, rootsite='bugs')
+        return view
+
+    def test_redirect_to_project(self):
+        view = self.makeProjectGroupFileBugView('fnord', 'A bug')
         response = view.request.response
         self.assertEqual(302, response.getStatus())
         self.assertEqual(
