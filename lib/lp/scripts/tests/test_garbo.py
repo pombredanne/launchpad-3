@@ -114,7 +114,7 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
     FakeAdapterMixin,
     person_logged_in,
@@ -1166,7 +1166,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(0, store.find(Product,
             Product._information_type == None).count())
 
-    def test_PopulateLatestPersonSourcepackageReleaseCache(self):
+    def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
         # releases for 2 different creators and maintainers.
@@ -1211,18 +1211,18 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         transaction.commit()
         self.runFrequently()
 
-        store = IMasterStore(LatestPersonSourcepackageReleaseCache)
+        store = IMasterStore(LatestPersonSourcePackageReleaseCache)
         # Check that the garbo state table has data.
         self.assertIsNotNone(
             store.execute(
                 'SELECT * FROM GarboJobState WHERE name=?',
-                params=[u'PopulateLatestPersonSourcepackageReleaseCache']
+                params=[u'PopulateLatestPersonSourcePackageReleaseCache']
             ).get_one())
 
         def _assert_release_by_creator(creator, spr):
             release_records = store.find(
-                LatestPersonSourcepackageReleaseCache,
-                LatestPersonSourcepackageReleaseCache.creator_id == creator.id)
+                LatestPersonSourcePackageReleaseCache,
+                LatestPersonSourcePackageReleaseCache.creator_id == creator.id)
             [record] = list(release_records)
             self.assertEqual(spr.creator, record.creator)
             self.assertIsNone(record.maintainer_id)
@@ -1231,8 +1231,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         def _assert_release_by_maintainer(maintainer, spr):
             release_records = store.find(
-                LatestPersonSourcepackageReleaseCache,
-                LatestPersonSourcepackageReleaseCache.maintainer_id ==
+                LatestPersonSourcePackageReleaseCache,
+                LatestPersonSourcePackageReleaseCache.maintainer_id ==
                 maintainer.id)
             [record] = list(release_records)
             self.assertEqual(spr.maintainer, record.maintainer)
@@ -1246,7 +1246,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_maintainer(maintainers[1], spr4)
 
         job_data = load_garbo_job_state(
-            'PopulateLatestPersonSourcepackageReleaseCache')
+            'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_1.id, job_data['next_spph_id'])
 
         # Create a newer published source package release and ensure the
@@ -1269,7 +1269,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_maintainer(maintainers[1], spr5)
 
         job_data = load_garbo_job_state(
-            'PopulateLatestPersonSourcepackageReleaseCache')
+            'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['next_spph_id'])
 
 

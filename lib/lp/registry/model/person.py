@@ -328,7 +328,7 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
-from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -2270,8 +2270,8 @@ class Person(
             ('QuestionSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
             ('AnswerContact', 'person'),
-            ('LatestPersonSourcepackageReleaseCache', 'creator'),
-            ('LatestPersonSourcepackageReleaseCache', 'maintainer')]
+            ('LatestPersonSourcePackageReleaseCache', 'creator'),
+            ('LatestPersonSourcePackageReleaseCache', 'maintainer')]
         cur = cursor()
         for table, person_id_column in removals:
             cur.execute("DELETE FROM %s WHERE %s=%d"
@@ -2838,33 +2838,33 @@ class Person(
         clauses = []
         if uploader_only:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.creator_id == self.id)
+                LatestPersonSourcePackageReleaseCache.creator_id == self.id)
         if ppa_only:
             # Source maintainer is irrelevant for PPA uploads.
             pass
         elif uploader_only:
-            lpspr = ClassAlias(LatestPersonSourcepackageReleaseCache, 'lpspr')
+            lpspr = ClassAlias(LatestPersonSourcePackageReleaseCache, 'lpspr')
             clauses.append(Not(Exists(Select(1,
             where=And(
                 lpspr.sourcepackagename_id ==
-                    LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
+                    LatestPersonSourcePackageReleaseCache.sourcepackagename_id,
                 lpspr.upload_archive_id ==
-                    LatestPersonSourcepackageReleaseCache.upload_archive_id,
+                    LatestPersonSourcePackageReleaseCache.upload_archive_id,
                 lpspr.upload_distroseries_id ==
-                    LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
+                    LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
                 lpspr.maintainer_id == self.id),
             tables=lpspr))))
         else:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.maintainer_id == self.id)
+                LatestPersonSourcePackageReleaseCache.maintainer_id == self.id)
         if ppa_only:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.archive_purpose ==
+                LatestPersonSourcePackageReleaseCache.archive_purpose ==
                 ArchivePurpose.PPA)
         else:
             clauses.append(
-                LatestPersonSourcepackageReleaseCache.archive_purpose !=
+                LatestPersonSourcePackageReleaseCache.archive_purpose !=
                 ArchivePurpose.PPA)
         return clauses
 
@@ -2876,8 +2876,8 @@ class Person(
             return self._legacy_hasReleasesQuery(uploader_only, ppa_only)
 
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
-        rs = Store.of(self).using(LatestPersonSourcepackageReleaseCache).find(
-            LatestPersonSourcepackageReleaseCache.publication_id, *clauses)
+        rs = Store.of(self).using(LatestPersonSourcePackageReleaseCache).find(
+            LatestPersonSourcePackageReleaseCache.publication_id, *clauses)
         return not rs.is_empty()
 
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
@@ -2889,8 +2889,8 @@ class Person(
 
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).find(
-            LatestPersonSourcepackageReleaseCache, *clauses).order_by(
-            Desc(LatestPersonSourcepackageReleaseCache.dateuploaded))
+            LatestPersonSourcePackageReleaseCache, *clauses).order_by(
+            Desc(LatestPersonSourcePackageReleaseCache.dateuploaded))
 
         def load_related_objects(rows):
             if rows and rows[0].maintainer_id:

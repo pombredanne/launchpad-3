@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'LatestPersonSourcepackageReleaseCache',
+    'LatestPersonSourcePackageReleaseCache',
     ]
 
 from lazr.delegates import delegates
@@ -18,17 +18,17 @@ from zope.interface import implements
 from lp.services.database.enumcol import EnumCol
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.reporting import (
-    ILatestPersonSourcepackageReleaseCache,
+    ILatestPersonSourcePackageReleaseCache,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-class LatestPersonSourcepackageReleaseCache(Storm):
-    """See `LatestPersonSourcepackageReleaseCache`."""
-    implements(ILatestPersonSourcepackageReleaseCache)
+class LatestPersonSourcePackageReleaseCache(Storm):
+    """See `LatestPersonSourcePackageReleaseCache`."""
+    implements(ILatestPersonSourcePackageReleaseCache)
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
-    __storm_table__ = 'LatestPersonSourcepackageReleaseCache'
+    __storm_table__ = 'LatestPersonSourcePackageReleaseCache'
 
     cache_id = Int(name='id', primary=True)
     publication_id = Int(name='publication')

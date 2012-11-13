@@ -31,7 +31,6 @@ import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
-    Alias,
     And,
     In,
     Insert,
@@ -40,7 +39,6 @@ from storm.expr import (
     Select,
     Update,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Max,
     Min,
@@ -86,7 +84,6 @@ from lp.services.database.sqlbase import (
     session_store,
     sqlvalues,
     )
-from lp.services.database.stormexpr import Greatest
 from lp.services.features import (
     getFeatureFlag,
     install_feature_controller,
@@ -116,7 +113,7 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.reporting import LatestPersonSourcepackageReleaseCache
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
@@ -463,49 +460,49 @@ class VoucherRedeemer(TunableLoop):
         transaction.commit()
 
 
-class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
-    """Populate the LatestPersonSourcepackageReleaseCache table.
+class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
+    """Populate the LatestPersonSourcePackageReleaseCache table.
 
-    The LatestPersonSourcepackageReleaseCache contains 2 sets of data, one set
+    The LatestPersonSourcePackageReleaseCache contains 2 sets of data, one set
     for package maintainers and another for package creators. This job iterates
     over the SPPH records, populating the cache table.
     """
     maximum_chunk_size = 1000
 
     cache_columns = (
-        LatestPersonSourcepackageReleaseCache.sourcepackagerelease_id,
-        LatestPersonSourcepackageReleaseCache.creator_id,
-        LatestPersonSourcepackageReleaseCache.maintainer_id,
-        LatestPersonSourcepackageReleaseCache.upload_archive_id,
-        LatestPersonSourcepackageReleaseCache.archive_purpose,
-        LatestPersonSourcepackageReleaseCache.upload_distroseries_id,
-        LatestPersonSourcepackageReleaseCache.sourcepackagename_id,
-        LatestPersonSourcepackageReleaseCache.dateuploaded,
-        LatestPersonSourcepackageReleaseCache.publication_id,
+        LatestPersonSourcePackageReleaseCache.sourcepackagerelease_id,
+        LatestPersonSourcePackageReleaseCache.creator_id,
+        LatestPersonSourcePackageReleaseCache.maintainer_id,
+        LatestPersonSourcePackageReleaseCache.upload_archive_id,
+        LatestPersonSourcePackageReleaseCache.archive_purpose,
+        LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
+        LatestPersonSourcePackageReleaseCache.sourcepackagename_id,
+        LatestPersonSourcePackageReleaseCache.dateuploaded,
+        LatestPersonSourcePackageReleaseCache.publication_id,
     )
 
     def __init__(self, log, abort_time=None):
-        super_cl = super(PopulateLatestPersonSourcepackageReleaseCache, self)
+        super_cl = super(PopulateLatestPersonSourcePackageReleaseCache, self)
         super_cl.__init__(log, abort_time)
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
-        self.next_spph_id = 0
+        self.last_spph_id = 0
         self.job_name = self.__class__.__name__
         job_data = load_garbo_job_state(self.job_name)
         if job_data:
-            self.next_spph_id = job_data.get('next_spph_id', 0)
+            self.last_spph_id = job_data.get('last_spph_id', 0)
 
     def getPendingUpdates(self):
         # Load the latest published source package release data.
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
+        spph = SourcePackagePublishingHistory
         origin = [
             SourcePackageRelease,
-            Join(Archive, Archive.id == SourcePackageRelease.upload_archiveID),
             Join(
                 spph,
                 And(spph.sourcepackagereleaseID == SourcePackageRelease.id,
-                    spph.archiveID == SourcePackageRelease.upload_archiveID))]
+                    spph.archiveID == SourcePackageRelease.upload_archiveID)),
+            Join(Archive, Archive.id == spph.archiveID)]
         rs = self.store.using(*origin).find(
             (SourcePackageRelease.id,
             SourcePackageRelease.creatorID,
@@ -514,72 +511,96 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
             Archive.purpose,
             SourcePackageRelease.upload_distroseriesID,
             SourcePackageRelease.sourcepackagenameID,
-            SourcePackageRelease.dateuploaded, Alias(spph.id, 'spph_id')),
-            spph.id > self.next_spph_id
+            SourcePackageRelease.dateuploaded, spph.id),
+            spph.id > self.last_spph_id
         ).order_by(spph.id)
         return rs
 
     def isDone(self):
-        return self.getPendingUpdates().count() == 0
-
-    def update_cache(self, update, inserts):
-        # Update the LatestPersonSourcepackageReleaseCache table. Records for
-        # each creator/maintainer will either be new inserts or updates. We try
-        # to update first, and gather data for missing (new) records along the
-        # way, allowing a bulk insert for any new data.
-        # Param update is a tuples of cache record values.
-        # Each record is keyed on:
-        # - (creator/maintainer), archive, distroseries, sourcepackagename
-
-        def perform_update(spr_id, creator_id, maintainer_id, archive_id,
-                            purpose, distroseries_id, spn_id, dateuploaded,
-                            spph_id):
-            values = (
-                spr_id, creator_id, maintainer_id, archive_id, purpose,
-                distroseries_id, spn_id,
-                Greatest(
-                    LatestPersonSourcepackageReleaseCache.dateuploaded,
-                    dateuploaded), spph_id)
-            data = dict(zip(self.cache_columns, values))
-            result = self.store.execute(Update(
-                data, And(
-                LatestPersonSourcepackageReleaseCache.upload_archive_id ==
-                    archive_id,
-                LatestPersonSourcepackageReleaseCache.upload_distroseries_id ==
-                    distroseries_id,
-                LatestPersonSourcepackageReleaseCache.sourcepackagename_id ==
-                    spn_id,
-                LatestPersonSourcepackageReleaseCache.creator_id ==
-                    creator_id,
-                LatestPersonSourcepackageReleaseCache.maintainer_id ==
-                    maintainer_id)))
-            return result.rowcount
-
-        (spr_id, creator_id, maintainer_id, archive_id, purpose,
-         distroseries_id, spn_id, dateuploaded, spph_id) = update
-        # Do the update for maintainers.
-        values = (spr_id, None, maintainer_id, archive_id, purpose.value,
-                 distroseries_id, spn_id, dateuploaded, spph_id)
-        rowcount = perform_update(*values)
-        if rowcount == 0:
-            inserts.append(values)
-        # Do the update for creators.
-        values = (spr_id, creator_id, None, archive_id, purpose.value,
-                  distroseries_id, spn_id, dateuploaded, spph_id)
-        rowcount = perform_update(*values)
-        if rowcount == 0:
-            inserts.append(values)
-        self.next_spph_id = spph_id
+        return self.getPendingUpdates().is_empty()
 
     def __call__(self, chunk_size):
-        inserts = []
-        for update in (self.getPendingUpdates()[:chunk_size]):
-            self.update_cache(update, inserts)
+        cache_filter_data = []
+        new_records = dict()
+        # Create a map of new published spr data for creators and maintainers.
+        for new_spph_data in self.getPendingUpdates()[:chunk_size]:
+            (spr_id, creator_id, maintainer_id, archive_id, purpose,
+             distroseries_id, spn_id, dateuploaded, spph_id) = new_spph_data
+            cache_filter_data.append((archive_id, distroseries_id, spn_id))
+
+            maintainer_key = (
+                maintainer_id, None, archive_id, spn_id, distroseries_id)
+            new_records[maintainer_key] = (
+                spr_id, None, maintainer_id, archive_id, purpose.value,
+                distroseries_id, spn_id, dateuploaded, spph_id)
+            creator_key = (
+                None, creator_id, archive_id, spn_id, distroseries_id)
+            new_records[creator_key] = (
+                spr_id, creator_id, None, archive_id, purpose.value,
+                distroseries_id, spn_id, dateuploaded, spph_id)
+            self.last_spph_id = spph_id
+
+        # Gather all the current cached reporting records corresponding to the
+        # data in the current batch. We select from the reporting cache table
+        # based on (archive_id, distroseries_id, sourcepackagename_id).
+        existing_records = dict()
+        lpsprc = LatestPersonSourcePackageReleaseCache
+        # Storm In() doesn't handle multi-column values.
+        inexpr = SQL(
+            '%s, %s, %s' % (
+                lpsprc.upload_archive_id.name,
+                lpsprc.upload_distroseries_id.name,
+                lpsprc.sourcepackagename_id.name))
+        invalues = SQL(', '.join([
+            ('(%s, %s, %s)' % cache_filter_record)
+            for cache_filter_record in cache_filter_data]))
+        rs = self.store.find(
+            lpsprc,
+            In(inexpr, invalues))
+        for lpsprc_record in rs:
+            if lpsprc_record.maintainer_id is not None:
+                key = (
+                    lpsprc_record.maintainer_id, None,
+                    lpsprc_record.upload_archive_id,
+                    lpsprc_record.sourcepackagename_id,
+                    lpsprc_record.upload_distroseries_id)
+            else:
+                key = (
+                    None, lpsprc_record.creator_id,
+                    lpsprc_record.upload_archive_id,
+                    lpsprc_record.sourcepackagename_id,
+                    lpsprc_record.upload_distroseries_id)
+            existing_records[key] = pytz.UTC.localize(
+                lpsprc_record.dateuploaded)
+
+        # Figure out what records from the new published spr data need to be
+        # inserted and updated into the cache table.
+        inserts = dict()
+        updates = set()
+        for key, new_spph_data in new_records.items():
+            existing_dateuploaded = existing_records.get(key, None)
+            new_dateuploaded = new_spph_data[7]
+            if existing_dateuploaded is None:
+                # No existing record, so save an insert for later.
+                existing_insert = inserts.get(key, None)
+                if (existing_insert is None
+                    or existing_insert[7] < new_dateuploaded):
+                    inserts[key] = new_spph_data
+            else:
+                # Existing record so check to see if it needs updating.
+                if existing_dateuploaded < new_dateuploaded:
+                    updates.add(new_spph_data)
+
         if inserts:
-            self.store.execute(Insert(self.cache_columns, values=inserts))
+            # Do a bulk insert.
+            self.store.execute(
+                Insert(self.cache_columns, values=inserts.values()))
+        if updates:
+            # Do a bulk update.
+            pass # TODO
         self.store.flush()
         save_garbo_job_state(self.job_name, {
-            'next_spph_id': self.next_spph_id})
+            'last_spph_id': self.last_spph_id})
         transaction.commit()
 
 
@@ -1338,26 +1359,28 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if self.options.experimental:
             tunable_loops.extend(self.experimental_tunable_loops)
 
-        threads = set()
-        for count in range(0, self.options.threads):
-            thread = threading.Thread(
-                target=self.run_tasks_in_thread,
-                name='Worker-%d' % (count + 1,),
-                args=(tunable_loops,))
-            thread.start()
-            threads.add(thread)
+#        threads = set()
+#        for count in range(0, self.options.threads):
+#            thread = threading.Thread(
+#                target=self.run_tasks_in_thread,
+#                name='Worker-%d' % (count + 1,),
+#                args=(tunable_loops,))
+#            thread.start()
+#            threads.add(thread)
+
+        self.run_tasks_in_thread(tunable_loops)
 
         # Block until all the worker threads have completed. We block
         # until the script timeout is hit, plus 60 seconds. We wait the
         # extra time because the loops are supposed to shut themselves
         # down when the script timeout is hit, and the extra time is to
         # give them a chance to clean up.
-        for thread in threads:
-            time_to_go = self.get_remaining_script_time() + 60
-            if time_to_go > 0:
-                thread.join(time_to_go)
-            else:
-                break
+#        for thread in threads:
+#            time_to_go = self.get_remaining_script_time() + 60
+#            if time_to_go > 0:
+#                thread.join(time_to_go)
+#            else:
+#                break
 
         # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:
@@ -1513,13 +1536,13 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-frequently'
     tunable_loops = [
-        BugSummaryJournalRollup,
-        OAuthNoncePruner,
-        OpenIDConsumerNoncePruner,
-        OpenIDConsumerAssociationPruner,
-        AntiqueSessionPruner,
-        VoucherRedeemer,
-        PopulateLatestPersonSourcepackageReleaseCache,
+#        BugSummaryJournalRollup,
+#        OAuthNoncePruner,
+#        OpenIDConsumerNoncePruner,
+#        OpenIDConsumerAssociationPruner,
+#        AntiqueSessionPruner,
+#        VoucherRedeemer,
+        PopulateLatestPersonSourcePackageReleaseCache,
         ]
     experimental_tunable_loops = []
 
