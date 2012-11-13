@@ -540,6 +540,10 @@ class FileImporter(object):
             # Translation credits cannot be added as suggestions.
             return self._storeCredits(potmsgset, sanitized_translations)
 
+        # XXX sinzui 2012-11-09: This next line may silently fail, but
+        # anything that triggers a flush() will raise an IntegrtyError
+        # because the potmsgset is not in the DB.
+
         # The message is first stored as a suggestion and only made
         # current if it validates.
         new_message = potmsgset.submitSuggestion(
@@ -690,6 +694,9 @@ class POTFileImporter(FileImporter):
         potmsgset.sourcecomment = message.source_comment
         potmsgset.filereferences = message.file_references
         potmsgset.flagscomment = flags_comment
+        # XXX sinzui 2012-11-09: mayeb flush the store to ensure
+        # the potmsgset is int the db before the next method creates
+        # a translationmessage for the suggestion.
 
         translation_message = self.storeTranslationsInDatabase(
                                   message, potmsgset)
