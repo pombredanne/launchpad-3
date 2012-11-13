@@ -1356,6 +1356,25 @@
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active"/>
 
+        <!-- IBugTarget -->
+
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                bugtargetdisplayname"/>
+
+        <require
+            permission="launchpad.View"
+            attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtargetname
+                createBug
+                enable_bugfiling_duplicate_search
+                getBugTaskWeightFunction
+                pillar
+                searchTasks"/>
+
         <!-- IHasAliases -->
 
         <require
@@ -1391,8 +1410,19 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <require
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target" />
+        <require
             permission="launchpad.View"
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions" />
         <require
             permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
