@@ -1053,17 +1053,15 @@ class TestProduct(TestCaseWithFactory):
     def test_information_type_prevents_pruning(self):
         # Access policies for Product.information_type are not pruned.
         owner = self.factory.makePerson()
-        for info_type in [
-            InformationType.PROPRIETARY, InformationType.EMBARGOED]:
-            product = self.factory.makeProduct(
-                information_type=info_type, owner=owner)
-            with person_logged_in(owner):
-                product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
-                product.setSpecificationSharingPolicy(
-                    SpecificationSharingPolicy.PUBLIC)
-                product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
-            self.assertIsNot(None, getUtility(IAccessPolicySource).find(
-                [(product, info_type)]).one())
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        with person_logged_in(owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            product.setSpecificationSharingPolicy(
+                SpecificationSharingPolicy.PROPRIETARY)
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+        self.assertIsNot(None, getUtility(IAccessPolicySource).find(
+            [(product, InformationType.EMBARGOED)]).one())
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
@@ -2164,15 +2162,15 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(proprietary, result)
 
     def test_getTranslatables_filters_private_products(self):
-        # ProductSet.getTranslatables() returns rivate translatable
+        # ProductSet.getTranslatables() returns private translatable
         # products only for user that have grants for these products.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD)
+            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD,
+            information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product)
-        self.factory.makePOTemplate(productseries=series)
         with person_logged_in(owner):
-            product.information_type = InformationType.PROPRIETARY
+            self.factory.makePOTemplate(productseries=series)
         # Anonymous users do not see private products.
         with person_logged_in(ANONYMOUS):
             translatables = getUtility(IProductSet).getTranslatables()

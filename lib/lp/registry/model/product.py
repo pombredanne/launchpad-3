@@ -514,19 +514,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
-        if not self._SO_creating:
-            if (self.information_type == InformationType.PUBLIC and
-                value != InformationType.PUBLIC):
-                self.setBranchSharingPolicy(branch_policy_default[value])
-                self.setBugSharingPolicy(bug_policy_default[value])
-                self.setSpecificationSharingPolicy(
-                    specification_policy_default[value])
+        old_info_type = self._information_type
         self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
         # However, only on edits. If this is a new Product it's handled
         # already.
         if not self._SO_creating:
+            if (old_info_type == InformationType.PUBLIC and
+                value != InformationType.PUBLIC):
+                self.setBranchSharingPolicy(branch_policy_default[value])
+                self.setBugSharingPolicy(bug_policy_default[value])
+                self.setSpecificationSharingPolicy(
+                    specification_policy_default[value])
             self._ensurePolicies([value])
 
     information_type = property(_get_information_type, _set_information_type)
