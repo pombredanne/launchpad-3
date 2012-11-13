@@ -17,6 +17,7 @@ from sqlobject import (
     )
 from storm.locals import (
     Desc,
+    Join,
     Or,
     Store,
     )
@@ -40,8 +41,8 @@ from lp.blueprints.interfaces.sprint import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
+    visible_specification_query,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
@@ -121,9 +122,12 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         """
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        query = [SprintSpecification.sprintID == self.id,
-                 SprintSpecification.specificationID == Specification.id]
-        query.append(get_specification_privacy_filter(user))
+        tables, query = visible_specification_query(user)
+        tables.append(Join(
+            SprintSpecification,
+            SprintSpecification.specification == Specification.id
+        ))
+        query.extend([SprintSpecification.sprintID == self.id])
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -151,8 +155,9 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        query.extend(get_specification_filters(filter))
-        return query
+        query.extend(
+            get_specification_filters(filter, assume_product_active=True))
+        return tables, query
 
     def all_specifications(self, user):
         return self.specifications(user, filter=[SpecificationFilter.ALL])
@@ -165,12 +170,14 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         assert not prejoin_people
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
-        query = self.spec_filter_clause(user, filter=filter)
+        tables, query = self.spec_filter_clause(user, filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        results = Store.of(self).find(Specification, *query)
+        store = Store.of(self)
+        results = store.using(*tables).find(Specification, *query)
         if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
+            distinct = [SprintSpecification.date_created, Specification.id]
             # we need to establish if the listing will show specs that have
             # been decided only, or will include proposed specs.
             if (SpecificationFilter.ALL not in filter and
@@ -178,19 +185,21 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 # this will show only decided specs so use the date the spec
                 # was accepted or declined for the sprint
                 order = (Desc(SprintSpecification.date_decided),) + order
+                distinct = [SprintSpecification.date_decided] + distinct
             results = results.order_by(*order)
         else:
             assert sort is None or sort == SpecificationSort.PRIORITY
             # fall back to default, which is priority, descending.
+            distinct = True
         if quantity is not None:
             results = results[:quantity]
-        return results
+        return results.config(distinct=distinct)
 
     def specificationLinks(self, filter=None):
         """See `ISprint`."""
-        query = self.spec_filter_clause(None, filter=filter)
-        result = Store.of(self).find(SprintSpecification, *query)
-        return result
+        tables, query = self.spec_filter_clause(None, filter=filter)
+        t_set = Store.of(self).using(*tables)
+        return t_set.find(SprintSpecification, *query).config(distinct=True)
 
     def getSpecificationLink(self, speclink_id):
         """See `ISprint`.
