@@ -126,7 +126,6 @@ class TestMaloneView(BrowserTestCase):
                 target=product, information_type=InformationType.PUBLIC,
                 title=title)
             self.assertEqual(bug.information_type, InformationType.PUBLIC)
-            self.assertEqual(bug.title, title)
         with person_logged_in(anon_user):
             browser = setupBrowserForUser(user=anon_user)
             browser.open(url)
