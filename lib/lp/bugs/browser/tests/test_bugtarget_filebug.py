@@ -835,6 +835,7 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
         return view
 
     def test_redirect_to_project(self):
+        # The view redirects to the select sub project.
         view = self.makeProjectGroupFileBugView('fnord', 'A bug')
         response = view.request.response
         self.assertEqual(302, response.getStatus())
@@ -842,6 +843,18 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
             'http://bugs.launchpad.dev/fnord/+filebug?'
             'field.actions.search=Continue&'
             'field.title=A+bug&'
+            'field.tags=',
+            response.getHeader('Location'))
+
+    def test_redirect_to_project_unicode_summary(self):
+        # Unicode is reencoded in the query string properly.
+        view = self.makeProjectGroupFileBugView('fnord', u'caf\xe9')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            'http://bugs.launchpad.dev/fnord/+filebug?'
+            'field.actions.search=Continue&'
+            'field.title=caf%C3%A9&'
             'field.tags=',
             response.getHeader('Location'))
 
