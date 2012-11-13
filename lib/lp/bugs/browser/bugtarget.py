@@ -1084,10 +1084,11 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
         base = canonical_url(
             data['product'], view_name='+filebug', rootsite='bugs')
         title = data['title'].encode('utf8')
+        tags = ' '.join(tag.encode('utf8') for tag in data['tags'])
         query = urllib.urlencode([
             ('field.actions.search', 'Continue'),
             ('field.title', title),
-            ('field.tags', ' '.join(data['tags'])),
+            ('field.tags', tags),
             ])
         url = '%s?%s' % (base, query)
         self.request.response.redirect(url)
