@@ -983,7 +983,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 (branch_sharing_policy is not None and
                  branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
                 (specification_sharing_policy is not None and
-                 specification_sharing_policy != SpecificationSharingPolicy.PUBLIC)
+                 specification_sharing_policy !=
+                 SpecificationSharingPolicy.PUBLIC)
                 ):
                 licenses = [License.OTHER_PROPRIETARY]
             else:
