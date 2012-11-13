@@ -1484,7 +1484,7 @@ class PackageUploadCustom(SQLBase):
         copy_and_close(self.libraryfilealias, temp_file)
         return temp_file_name
 
-    def _publishCustom(self, action_method):
+    def _publishCustom(self, action_method, logger=None):
         """Publish custom formats.
 
         Publish Either an installer, an upgrader or a ddtp upload using the
@@ -1496,7 +1496,7 @@ class PackageUploadCustom(SQLBase):
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
-            action_method(archive_config, temp_filename, suite)
+            action_method(archive_config, temp_filename, suite, logger=logger)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
@@ -1507,7 +1507,7 @@ class PackageUploadCustom(SQLBase):
         from lp.archivepublisher.debian_installer import (
             process_debian_installer)
 
-        self._publishCustom(process_debian_installer)
+        self._publishCustom(process_debian_installer, logger=logger)
 
     def publishDistUpgrader(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1516,7 +1516,7 @@ class PackageUploadCustom(SQLBase):
         from lp.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
 
-        self._publishCustom(process_dist_upgrader)
+        self._publishCustom(process_dist_upgrader, logger=logger)
 
     def publishDdtpTarball(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1525,7 +1525,7 @@ class PackageUploadCustom(SQLBase):
         from lp.archivepublisher.ddtp_tarball import (
             process_ddtp_tarball)
 
-        self._publishCustom(process_ddtp_tarball)
+        self._publishCustom(process_ddtp_tarball, logger=logger)
 
     def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1607,7 +1607,7 @@ class PackageUploadCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from lp.archivepublisher.uefi import process_uefi
 
-        self._publishCustom(process_uefi)
+        self._publishCustom(process_uefi, logger=logger)
 
     publisher_dispatch = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,

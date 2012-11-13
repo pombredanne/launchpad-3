@@ -116,11 +116,11 @@ The initial branch listing has the following branches in order:
 If a branch is associated with more than one series, it is only shown
 once, but both series are shown in the listing.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/trunk/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> admin_browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = '~name12/firefox/main'
     >>> admin_browser.getControl('Update').click()
-    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = '~name12/firefox/main'
     >>> admin_browser.getControl('Update').click()
 
     >>> browser.open('http://code.launchpad.dev/firefox')
@@ -133,8 +133,8 @@ once, but both series are shown in the listing.
 
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = (
+    >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+setbranch')
+    >>> admin_browser.getControl('Branch:').value = (
     ...     '~mark/firefox/release--0.9.1')
     >>> admin_browser.getControl('Update').click()
 

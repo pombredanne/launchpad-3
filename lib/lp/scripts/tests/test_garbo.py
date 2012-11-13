@@ -74,6 +74,7 @@ from lp.scripts.garbo import (
     LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
     save_garbo_job_state,
+    UnusedPOTMsgSetPruner,
     UnusedSessionPruner,
     )
 from lp.services.config import config
@@ -127,6 +128,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.translations.model.pofile import POFile
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -1034,6 +1036,44 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, obsolete_msgsets.count())
 
+    def test_UnusedPOTMsgSetPruner_preserves_used_potmsgsets(self):
+        # UnusedPOTMsgSetPruner will not remove a potmsgset if it changes
+        # between calls.
+        switch_dbuser('testadmin')
+        potmsgset_pofile = {}
+        for n in xrange(4):
+            pofile = self.factory.makePOFile()
+            translation_message = self.factory.makeCurrentTranslationMessage(
+                pofile=pofile)
+            translation_message.potmsgset.setSequence(
+                pofile.potemplate, 0)
+            potmsgset_pofile[translation_message.potmsgset.id] = pofile.id
+        transaction.commit()
+        store = IMasterStore(POTMsgSet)
+        test_ids = potmsgset_pofile.keys()
+        obsolete_msgsets = store.find(
+            POTMsgSet,
+            In(TranslationTemplateItem.potmsgsetID, test_ids),
+            TranslationTemplateItem.sequence == 0)
+        self.assertEqual(4, obsolete_msgsets.count())
+        pruner = UnusedPOTMsgSetPruner(self.log)
+        pruner(2)
+        # A potmsgeset is set to a sequence > 0 between batches/commits.
+        last_id = pruner.msgset_ids_to_remove[-1]
+        used_potmsgset = store.find(POTMsgSet, POTMsgSet.id == last_id).one()
+        used_pofile = store.find(
+            POFile, POFile.id == potmsgset_pofile[last_id]).one()
+        translation_message = self.factory.makeCurrentTranslationMessage(
+            pofile=used_pofile, potmsgset=used_potmsgset)
+        used_potmsgset.setSequence(used_pofile.potemplate, 1)
+        transaction.commit()
+        # Next batch.
+        pruner(2)
+        self.assertEqual(0, obsolete_msgsets.count())
+        preserved_msgsets = store.find(
+            POTMsgSet, In(TranslationTemplateItem.potmsgsetID, test_ids))
+        self.assertEqual(1, preserved_msgsets.count())
+
     def test_UnusedPOTMsgSetPruner_removes_unreferenced_message_sets(self):
         # If a POTMsgSet is not referenced by any templates the
         # UnusedPOTMsgSetPruner will remove it.
@@ -1205,6 +1245,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_maintainer(maintainers[0], spr3)
         _assert_release_by_maintainer(maintainers[1], spr4)
 
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcepackageReleaseCache')
+        self.assertEqual(spr4.id, job_data['next_id_for_creator'])
+        self.assertEqual(spr4.id, job_data['next_id_for_maintainer'])
+
         # Create a newer published source package release and ensure the
         # release cache table is correctly updated.
         switch_dbuser('testadmin')
@@ -1223,6 +1268,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         _assert_release_by_creator(creators[1], spr5)
         _assert_release_by_maintainer(maintainers[0], spr3)
         _assert_release_by_maintainer(maintainers[1], spr5)
+
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcepackageReleaseCache')
+        self.assertEqual(spr5.id, job_data['next_id_for_creator'])
+        self.assertEqual(spr5.id, job_data['next_id_for_maintainer'])
 
 
 class TestGarboTasks(TestCaseWithFactory):

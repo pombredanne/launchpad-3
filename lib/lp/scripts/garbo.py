@@ -478,13 +478,15 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
-        self.next_id = 0
+        self.next_id_for_creator = 0
+        self.next_id_for_maintainer = 0
         self.current_person_filter_type = 'creator'
         self.starting_person_filter_type = self.current_person_filter_type
         self.job_name = self.__class__.__name__
         job_data = load_garbo_job_state(self.job_name)
         if job_data:
-            self.next_id = job_data['next_id']
+            self.next_id_for_creator = job_data['next_id_for_creator']
+            self.next_id_for_maintainer = job_data['next_id_for_maintainer']
             self.current_person_filter_type = job_data['person_filter_type']
             self.starting_person_filter_type = self.current_person_filter_type
 
@@ -493,8 +495,10 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
         # creator or maintainer as required.
         if self.current_person_filter_type == 'creator':
             person_filter = SourcePackageRelease.creatorID
+            next_id = self.next_id_for_creator
         else:
             person_filter = SourcePackageRelease.maintainerID
+            next_id = self.next_id_for_maintainer
         spph = ClassAlias(SourcePackagePublishingHistory, "spph")
         origin = [
             SourcePackageRelease,
@@ -504,7 +508,7 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
                     spph.archiveID == SourcePackageRelease.upload_archiveID))]
         spr_select = self.store.using(*origin).find(
             (SourcePackageRelease.id, Alias(spph.id, 'spph_id')),
-            SourcePackageRelease.id > self.next_id
+            SourcePackageRelease.id > next_id
         ).order_by(
             person_filter,
             SourcePackageRelease.upload_distroseriesID,
@@ -546,7 +550,6 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
                 self.current_person_filter_type = 'maintainer'
             else:
                 self.current_person_filter_type = 'creator'
-            self.next_id = 0
             current_count = self.getPendingUpdates().count()
         return current_count == 0
 
@@ -601,17 +604,22 @@ class PopulateLatestPersonSourcepackageReleaseCache(TunableLoop):
             self.store.execute(Insert(columns, values=inserts))
 
     def __call__(self, chunk_size):
-        max_id = self.next_id
+        max_id = None
         updates = []
         for update in (self.getPendingUpdates()[:chunk_size]):
             updates.append(update)
             max_id = update[0]
         self.update_cache(updates)
 
-        self.next_id = max_id
+        if max_id:
+            if self.current_person_filter_type == 'creator':
+                self.next_id_for_creator = max_id
+            else:
+                self.next_id_for_maintainer = max_id
         self.store.flush()
         save_garbo_job_state(self.job_name, {
-            'next_id': max_id,
+            'next_id_for_creator': self.next_id_for_creator,
+            'next_id_for_maintainer': self.next_id_for_maintainer,
             'person_filter_type': self.current_person_filter_type})
         transaction.commit()
 
@@ -1224,14 +1232,32 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 
     @cachedproperty
     def msgset_ids_to_remove(self):
-        """Return the IDs of the POTMsgSets to remove."""
+        """The IDs of the POTMsgSets to remove."""
+        return self._get_msgset_ids_to_remove()
+
+    def _get_msgset_ids_to_remove(self, ids=None):
+        """Return a distrinct list IDs of the POTMsgSets to remove.
+
+        :param ids: a list of POTMsgSet ids to filter. If ids is None,
+            all unused POTMsgSet in the database are returned.
+        """
+        if ids is None:
+            constraints = dict(
+                tti_constraint="AND TRUE",
+                potmsgset_constraint="AND TRUE")
+        else:
+            ids_in = ', '.join([str(id) for id in ids])
+            constraints = dict(
+                tti_constraint="AND tti.potmsgset IN (%s)" % ids_in,
+                potmsgset_constraint="AND POTMsgSet.id IN (%s)" % ids_in)
         query = """
             -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
             -- and are not used (sequence != 0) in any other template.
             SELECT POTMsgSet
               FROM TranslationTemplateItem tti
-              WHERE sequence=0 AND
-              NOT EXISTS(
+              WHERE sequence=0
+              %(tti_constraint)s
+              AND NOT EXISTS(
                 SELECT id
                   FROM TranslationTemplateItem
                   WHERE potmsgset = tti.potmsgset AND sequence != 0)
@@ -1243,20 +1269,22 @@ class UnusedPOTMsgSetPruner(TunableLoop):
                LEFT OUTER JOIN TranslationTemplateItem
                  ON TranslationTemplateItem.potmsgset = POTMsgSet.id
                WHERE
-                 TranslationTemplateItem.potmsgset IS NULL);
-            """
+                 TranslationTemplateItem.potmsgset IS NULL
+                 %(potmsgset_constraint)s);
+            """ % constraints
         store = IMasterStore(POTMsgSet)
         results = store.execute(query)
-        ids_to_remove = [id for (id,) in results.get_all()]
-        return ids_to_remove
+        ids_to_remove = set([id for (id,) in results.get_all()])
+        return list(ids_to_remove)
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         # We cast chunk_size to an int to avoid issues with slicing
         # (DBLoopTuner passes in a float).
         chunk_size = int(chunk_size)
-        msgset_ids_to_remove = (
+        msgset_ids = (
             self.msgset_ids_to_remove[self.offset:][:chunk_size])
+        msgset_ids_to_remove = self._get_msgset_ids_to_remove(msgset_ids)
         # Remove related TranslationTemplateItems.
         store = IMasterStore(POTMsgSet)
         related_ttis = store.find(
