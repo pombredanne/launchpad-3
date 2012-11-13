@@ -791,10 +791,7 @@ class LaunchpadRootNavigation(Navigation):
                 if (not user.in_commercial_admin and not user.in_admin and
                     not user.in_registry_experts):
                     return None
-            permitted = check_permission('launchpad.LimitedView', pillar)
-        else:
-            permitted = check_permission('launchpad.View', pillar)
-        if permitted:
+        if check_permission('launchpad.LimitedView', pillar):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
