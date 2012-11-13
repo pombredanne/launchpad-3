@@ -817,7 +817,7 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeProjectGroupFileBugView(self, product_name, bug_title):
+    def makeProjectGroupFileBugView(self, product_name, bug_title, tags=''):
         project_group = self.factory.makeProject()
         owner = project_group.owner
         product = self.factory.makeProduct(
@@ -827,7 +827,7 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
         form = {
             'field.product': product_name,
             'field.title': bug_title,
-            'field.tags': '',
+            'field.tags': tags,
             'field.actions.projectgroupsearch': 'Continue',
             }
         view = create_initialized_view(
@@ -836,21 +836,20 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
 
     def test_redirect_to_project(self):
         # The view redirects to the select sub project.
-        view = self.makeProjectGroupFileBugView('fnord', 'A bug')
+        view = self.makeProjectGroupFileBugView('fnord', 'A bug', u'is os')
         response = view.request.response
         self.assertEqual(302, response.getStatus())
         self.assertEqual(
             'http://bugs.launchpad.dev/fnord/+filebug?'
             'field.actions.search=Continue&'
             'field.title=A+bug&'
-            'field.tags=',
+            'field.tags=is+os',
             response.getHeader('Location'))
 
     def test_redirect_to_project_unicode_summary(self):
-        # Unicode is reencoded in the query string properly.
-        view = self.makeProjectGroupFileBugView('fnord', u'caf\xe9')
+        # The summary is reencoded properly when it contains unicode.
+        view = self.makeProjectGroupFileBugView('fnord', u'caf\xe9', '')
         response = view.request.response
-        self.assertEqual(302, response.getStatus())
         self.assertEqual(
             'http://bugs.launchpad.dev/fnord/+filebug?'
             'field.actions.search=Continue&'
