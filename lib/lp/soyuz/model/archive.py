@@ -1100,9 +1100,6 @@ class Archive(SQLBase):
 
     def hasAnyPermission(self, person):
         """See `IArchive`."""
-        # Avoiding circular imports.
-        from lp.soyuz.model.archivepermission import ArchivePermission
-
         any_perm_on_archive = Store.of(self).find(
             TeamParticipation,
             ArchivePermission.archive == self.id,
@@ -2356,9 +2353,6 @@ class ArchiveSet:
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
-        # Avoiding circular imports.
-        from lp.soyuz.model.archivepermission import ArchivePermission
-
         # If there's no user logged in, then there's no archives.
         if user is None:
             return []
