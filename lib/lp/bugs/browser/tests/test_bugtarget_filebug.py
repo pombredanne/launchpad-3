@@ -813,6 +813,34 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
         self.assertIn("Thank you for your bug report.", msg)
 
 
+class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_redirect_to_project(self):
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            owner=project_group.owner, name='fnord', project=project_group)
+        with person_logged_in(project_group.owner):
+            product.official_malone = True
+        form = {
+            'field.product': 'fnord',
+            'field.title': 'A bug',
+            'field.tags': '',
+            'field.actions.projectgroupsearch': 'Continue',
+            }
+        view = create_initialized_view(
+            project_group, name='+filebug', form=form, rootsite='bugs')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            'http://bugs.launchpad.dev/fnord/+filebug?'
+            'field.actions.search=Continue&'
+            'field.title=A+bug&'
+            'field.tags=',
+            response.getHeader('Location'))
+
+
 class TestFileBugRequestCache(TestCaseWithFactory):
     # Tests to ensure the request cache contains the expected values for
     # file bug views.
