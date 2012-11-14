@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX upload_archive__upload_distroseries__sourcepackagename__idx
+CREATE INDEX latestpersonsourcepackagereleasecache__archive__distroseries__spn__idx
   ON latestpersonsourcepackagereleasecache (upload_archive, upload_distroseries, sourcepackagename);
 
 
