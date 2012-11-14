@@ -774,10 +774,11 @@ class ObjectImageDisplayAPI:
         if sprite_string == 'sprite':
             return None
         else:
-            if context.private:
+            if hasattr(context, 'private') and context.private:
                 return sprite_string + ' private'
             else:
                 return sprite_string
+
 
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
