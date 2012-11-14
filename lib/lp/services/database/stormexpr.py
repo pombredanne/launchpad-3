@@ -18,6 +18,7 @@ __all__ = [
     'NullCount',
     'TryAdvisoryLock',
     'Unnest',
+    'Values',
     ]
 
 from storm import Undef
@@ -72,6 +73,26 @@ def compile_bulkupdate(compile, update, state):
         tokens.append(compile(update.where, state, raw=True))
     state.pop()
     return "".join(tokens)
+
+
+class Values(Expr):
+    __slots__ = ("name", "cols", "values")
+
+    def __init__(self, name, cols, values):
+        self.name = name
+        self.cols = cols
+        self.values = values
+
+
+@compile.when(Values)
+def compile_values(compile, expr, state):
+    col_names, col_types = zip(*expr.cols)
+    first_row = ", ".join(
+        "%s::%s" % (compile(value, state), type)
+        for value, type in zip(expr.values[0], col_types))
+    rows = [first_row] + [compile(value, state) for value in expr.values[1:]]
+    return "(VALUES (%s)) AS %s(%s)" % (
+        "), (".join(rows), expr.name, ', '.join(col_names))
 
 
 class ColumnSelect(Expr):

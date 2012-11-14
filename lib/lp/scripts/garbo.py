@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
-from lp.services.database.stormexpr import BulkUpdate
 
 __metaclass__ = type
 __all__ = [
@@ -34,19 +33,17 @@ import pytz
 from storm.expr import (
     And,
     In,
-    Insert,
     Join,
     Like,
+    Max,
+    Min,
     Or,
     Row,
     Select,
+    SQL,
     Update,
     )
-from storm.locals import (
-    Max,
-    Min,
-    SQL,
-    )
+from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
@@ -75,6 +72,10 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
+from lp.services.database.bulk import (
+    create,
+    dbify_value,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import (
     IStoreSelector,
@@ -86,6 +87,10 @@ from lp.services.database.sqlbase import (
     cursor,
     session_store,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    BulkUpdate,
+    Values,
     )
 from lp.services.features import (
     getFeatureFlag,
@@ -473,15 +478,15 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     maximum_chunk_size = 1000
 
     cache_columns = (
-        LatestPersonSourcePackageReleaseCache.sourcepackagerelease_id,
-        LatestPersonSourcePackageReleaseCache.creator_id,
         LatestPersonSourcePackageReleaseCache.maintainer_id,
+        LatestPersonSourcePackageReleaseCache.creator_id,
         LatestPersonSourcePackageReleaseCache.upload_archive_id,
-        LatestPersonSourcePackageReleaseCache.archive_purpose,
         LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
         LatestPersonSourcePackageReleaseCache.sourcepackagename_id,
-        LatestPersonSourcePackageReleaseCache.dateuploaded,
+        LatestPersonSourcePackageReleaseCache.archive_purpose,
         LatestPersonSourcePackageReleaseCache.publication_id,
+        LatestPersonSourcePackageReleaseCache.dateuploaded,
+        LatestPersonSourcePackageReleaseCache.sourcepackagerelease_id,
     )
 
     def __init__(self, log, abort_time=None):
@@ -533,16 +538,13 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
              spph_id) = new_published_spr_data
             cache_filter_data.append((archive_id, distroseries_id, spn_id))
 
+            value = (purpose, spph_id, dateuploaded, spr_id)
             maintainer_key = (
-                maintainer_id, None, archive_id, spn_id, distroseries_id)
-            new_records[maintainer_key] = (
-                spr_id, None, maintainer_id, archive_id, purpose.value,
-                distroseries_id, spn_id, dateuploaded, spph_id)
+                maintainer_id, None, archive_id, distroseries_id, spn_id)
             creator_key = (
-                None, creator_id, archive_id, spn_id, distroseries_id)
-            new_records[creator_key] = (
-                spr_id, creator_id, None, archive_id, purpose.value,
-                distroseries_id, spn_id, dateuploaded, spph_id)
+                None, creator_id, archive_id, distroseries_id, spn_id)
+            new_records[maintainer_key] = maintainer_key + value
+            new_records[creator_key] = creator_key + value
             self.last_spph_id = spph_id
 
         # Gather all the current cached reporting records corresponding to the
@@ -551,121 +553,89 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
         # (archive_id, distroseries_id, sourcepackagename_id).
         existing_records = dict()
         lpsprc = LatestPersonSourcePackageReleaseCache
-        invalues = SQL(', '.join([
-            ('(%s, %s, %s)' % cache_filter_record)
-            for cache_filter_record in cache_filter_data]))
         rs = self.store.find(
             lpsprc,
-            In(Row(
-                lpsprc.upload_archive_id,
-                lpsprc.upload_distroseries_id,
-                lpsprc.sourcepackagename_id), invalues))
+            In(
+                Row(
+                    lpsprc.upload_archive_id,
+                    lpsprc.upload_distroseries_id,
+                    lpsprc.sourcepackagename_id),
+                map(Row, cache_filter_data)))
         for lpsprc_record in rs:
-            if lpsprc_record.maintainer_id is not None:
-                key = (
-                    lpsprc_record.maintainer_id, None,
-                    lpsprc_record.upload_archive_id,
-                    lpsprc_record.sourcepackagename_id,
-                    lpsprc_record.upload_distroseries_id)
-            else:
-                key = (
-                    None, lpsprc_record.creator_id,
-                    lpsprc_record.upload_archive_id,
-                    lpsprc_record.sourcepackagename_id,
-                    lpsprc_record.upload_distroseries_id)
+            key = (
+                lpsprc_record.maintainer_id,
+                lpsprc_record.creator_id,
+                lpsprc_record.upload_archive_id,
+                lpsprc_record.upload_distroseries_id,
+                lpsprc_record.sourcepackagename_id)
             existing_records[key] = pytz.UTC.localize(
                 lpsprc_record.dateuploaded)
 
         # Figure out what records from the new published spr data need to be
         # inserted and updated into the cache table.
         inserts = dict()
-        updates = set()
+        updates = dict()
         for key, new_published_spr_data in new_records.items():
             existing_dateuploaded = existing_records.get(key, None)
             new_dateuploaded = new_published_spr_data[7]
             if existing_dateuploaded is None:
-                # No existing record, so save an insert for later.
-                existing_insert = inserts.get(key, None)
-                if (existing_insert is None
-                    or existing_insert[7] < new_dateuploaded):
-                    inserts[key] = new_published_spr_data
+                target = inserts
             else:
-                # Existing record so check to see if it needs updating.
-                if existing_dateuploaded < new_dateuploaded:
-                    updates.add(new_published_spr_data)
+                target = updates
+
+            existing_action = target.get(key, None)
+            if (existing_action is None
+                or existing_action[7] < new_dateuploaded):
+                target[key] = new_published_spr_data
 
         if inserts:
             # Do a bulk insert.
-            self.store.execute(
-                Insert(self.cache_columns, values=inserts.values()))
+            create(self.cache_columns, inserts.values())
         if updates:
             # Do a bulk update.
+            cols = [
+                ("maintainer", "integer"),
+                ("creator", "integer"),
+                ("upload_archive", "integer"),
+                ("upload_distroseries", "integer"),
+                ("sourcepackagename", "integer"),
+                ("archive_purpose", "integer"),
+                ("publication", "integer"),
+                ("date_uploaded", "timestamp without time zone"),
+                ("sourcepackagerelease", "integer"),
+                ]
+            values = [
+                [dbify_value(col, val)[0]
+                 for (col, val) in zip(self.cache_columns, data)]
+                for data in updates.values()]
 
-            # First, construct a values expression with the tuples representing
-            # the updated cache data.
-
-            def id_or_zero(data_item):
-                if data_item is not None:
-                    return data_item
-                return 0
-
-            sql_update_data = []
-            for (
-                spr_id, creator_id, maintainer_id, archive_id, purpose,
-                distroseries_id, spn_id, dateuploaded, spph_id) in updates:
-                sql_update_data.append(
-                    (id_or_zero(creator_id), id_or_zero(maintainer_id),
-                     archive_id, distroseries_id, spn_id, spr_id, spph_id,
-                     dateuploaded))
-
-            update_values = ', '.join([
-                ("(%s, %s, %s, %s, %s, %s, %s, timestamp '%s')"
-                 % cache_filter_record)
-                for cache_filter_record in sql_update_data])
-
-            columns = (
-                '%s, %s, %s, %s, %s, %s, %s, %s' % (
-                    lpsprc.creator_id.name,
-                    lpsprc.maintainer_id.name,
-                    lpsprc.upload_archive_id.name,
-                    lpsprc.upload_distroseries_id.name,
-                    lpsprc.sourcepackagename_id.name,
-                    lpsprc.sourcepackagerelease_id.name,
-                    lpsprc.publication_id.name,
-                    lpsprc.dateuploaded.name,))
-
-            values_sql = SQL(
-                "(VALUES %(values)s) AS cache_data(%(columns)s)"
-                % {
-                    'columns': columns,
-                    'values': update_values
-                })
+            cache_data_expr = Values('cache_data', cols, values)
+            cache_data = ClassAlias(lpsprc, "cache_data")
 
             # The columns to be updated.
             updated_columns = dict([
-                (lpsprc.dateuploaded, SQL('cache_data.date_uploaded')),
+                (lpsprc.dateuploaded, cache_data.dateuploaded),
                 (lpsprc.sourcepackagerelease_id,
-                    SQL('cache_data.sourcepackagerelease')),
-                (lpsprc.publication_id, SQL('cache_data.publication'))])
+                 cache_data.sourcepackagerelease_id),
+                (lpsprc.publication_id, cache_data.publication_id)])
             # The update filter.
             filter = And(
                 Or(
-                    SQL('cache_data.creator') == 0,
-                    lpsprc.creator_id == SQL('cache_data.creator')),
+                    cache_data.creator_id == None,
+                    lpsprc.creator_id == cache_data.creator_id),
                 Or(
-                    SQL('cache_data.maintainer') == 0,
-                    lpsprc.maintainer_id == SQL('cache_data.maintainer')),
-                lpsprc.upload_archive_id == SQL('cache_data.upload_archive'),
+                    cache_data.maintainer_id == None,
+                    lpsprc.maintainer_id == cache_data.maintainer_id),
+                lpsprc.upload_archive_id == cache_data.upload_archive_id,
                 lpsprc.upload_distroseries_id ==
-                    SQL('cache_data.upload_distroseries'),
-                lpsprc.sourcepackagename_id ==
-                    SQL('cache_data.sourcepackagename'))
+                    cache_data.upload_distroseries_id,
+                lpsprc.sourcepackagename_id == cache_data.sourcepackagename_id)
 
             self.store.execute(
                 BulkUpdate(
                     updated_columns,
                     table=LatestPersonSourcePackageReleaseCache,
-                    values=values_sql, where=filter))
+                    values=cache_data_expr, where=filter))
         self.store.flush()
         save_garbo_job_state(self.job_name, {
             'last_spph_id': self.last_spph_id})
