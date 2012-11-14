@@ -391,43 +391,6 @@ class TestProduct(TestCaseWithFactory):
         expected = [InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
 
-    def test_change_info_type_proprietary_check_artifacts(self):
-        # Cannot change product information_type if any artifacts are public.
-        spec_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
-        product = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY],
-            specification_sharing_policy=spec_policy,
-            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
-            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-        )
-        self.useContext(person_logged_in(product.owner))
-        spec = self.factory.makeSpecification(product=product)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CannotChangeInformationType,
-                'Some blueprints are public.'):
-                product.information_type = info_type
-        spec.transitionToInformationType(InformationType.PROPRIETARY,
-                                         product.owner)
-        bug = self.factory.makeBug(target=product)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CannotChangeInformationType,
-                'Some bugs are public.'):
-                product.information_type = info_type
-        bug.transitionToInformationType(InformationType.PROPRIETARY,
-                                        product.owner)
-        branch = self.factory.makeBranch(product=product)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CannotChangeInformationType,
-                'Some branches are public.'):
-                product.information_type = info_type
-        branch.transitionToInformationType(InformationType.PROPRIETARY,
-                                           product.owner)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            product.information_type = info_type
-
     def test_change_info_type_proprietary_sets_policies(self):
         # Changing information type from public to proprietary sets the
         # appropriate policies

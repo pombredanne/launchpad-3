@@ -461,26 +461,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
                 raise CannotChangeInformationType('Answers is enabled.')
-            if not self._SO_creating:
-                public_specs = Store.of(self).find(Specification,
-                    Specification.product == self,
-                    Specification.information_type.is_in(
-                        PUBLIC_INFORMATION_TYPES))
-                if not public_specs.is_empty():
-                    raise CannotChangeInformationType(
-                        'Some blueprints are public.')
-                public_bugs = Store.of(self).find(
-                    Bug, BugTask.product == self, BugTask.bug == Bug.id,
-                        Bug.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-                if not public_bugs.is_empty():
-                    raise CannotChangeInformationType(
-                        'Some bugs are public.')
-                public_branches = Store.of(self).find(
-                    Branch, Branch.product == self,
-                    Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-                if not public_branches.is_empty():
-                    raise CannotChangeInformationType(
-                        'Some branches are public.')
 
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
