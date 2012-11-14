@@ -60,12 +60,28 @@ class StubConnection:
     def __init__(self):
         self._database = type('StubDatabase', (), dict(name='stub-database'))
 
+    def to_database(self, params):
+        for param in params:
+            yield param
+
+
+class StubCursor:
+
+    def mogrify(self, statement, params):
+        # This will behave rather differently than the real thing for
+        # most types, but we can't use psycopg2's mogrify without a real
+        # connection.
+        mangled_params = tuple(
+            repr(p) if isinstance(p, basestring) else p for p in params)
+        return statement % tuple(mangled_params)
+
 
 class TestLoggingOutsideOfRequest(TestCase):
 
     def setUp(self):
         super(TestLoggingOutsideOfRequest, self).setUp()
         self.connection = StubConnection()
+        self.cursor = StubCursor()
         original_time = da.time
         self.addCleanup(setattr, da, 'time', original_time)
         da.time = StubTime()
@@ -76,9 +92,9 @@ class TestLoggingOutsideOfRequest(TestCase):
         if statement is None:
             statement = 'SELECT * FROM bar WHERE bing = 42'
         tracer.connection_raw_execute(
-            self.connection, None, statement, params)
+            self.connection, self.cursor, statement, params)
         tracer.connection_raw_execute_success(
-            self.connection, None, statement, params)
+            self.connection, self.cursor, statement, params)
 
     def test_no_logging(self):
         with stderr() as file:
