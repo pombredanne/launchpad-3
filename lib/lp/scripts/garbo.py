@@ -33,20 +33,20 @@ from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
     And,
+    Cast,
     In,
     Insert,
     Join,
     Like,
+    Max,
+    Min,
     Or,
     Row,
     Select,
+    SQL,
     Update,
     )
-from storm.locals import (
-    Max,
-    Min,
-    SQL,
-    )
+from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
@@ -596,31 +596,34 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                  for (col, val) in zip(self.cache_columns, data)]
                 for data in updates.values()]
 
+            cache_data_expr = Values('cache_data', columns, values)
+            cache_data = ClassAlias(lpsprc, "cache_data")
+
             # The columns to be updated.
             updated_columns = dict([
-                (lpsprc.dateuploaded, SQL('cache_data.date_uploaded::timestamp')),
+                (lpsprc.dateuploaded,
+                 Cast(cache_data.dateuploaded, 'timestamp')),
                 (lpsprc.sourcepackagerelease_id,
-                    SQL('cache_data.sourcepackagerelease')),
-                (lpsprc.publication_id, SQL('cache_data.publication'))])
+                 cache_data.sourcepackagerelease_id),
+                (lpsprc.publication_id, cache_data.publication_id)])
             # The update filter.
             filter = And(
                 Or(
-                    SQL('cache_data.creator') == 0,
-                    lpsprc.creator_id == SQL('cache_data.creator')),
+                    cache_data.creator_id == None,
+                    lpsprc.creator_id == cache_data.creator_id),
                 Or(
-                    SQL('cache_data.maintainer') == 0,
-                    lpsprc.maintainer_id == SQL('cache_data.maintainer')),
-                lpsprc.upload_archive_id == SQL('cache_data.upload_archive'),
+                    cache_data.maintainer_id == None,
+                    lpsprc.maintainer_id == cache_data.maintainer_id),
+                lpsprc.upload_archive_id == cache_data.upload_archive_id,
                 lpsprc.upload_distroseries_id ==
-                    SQL('cache_data.upload_distroseries'),
-                lpsprc.sourcepackagename_id ==
-                    SQL('cache_data.sourcepackagename'))
+                    cache_data.upload_distroseries_id,
+                lpsprc.sourcepackagename_id == cache_data.sourcepackagename_id)
 
             self.store.execute(
                 BulkUpdate(
                     updated_columns,
                     table=LatestPersonSourcePackageReleaseCache,
-                    values=Values('cache_data', columns, values), where=filter))
+                    values=cache_data_expr, where=filter))
         self.store.flush()
         save_garbo_job_state(self.job_name, {
             'last_spph_id': self.last_spph_id})

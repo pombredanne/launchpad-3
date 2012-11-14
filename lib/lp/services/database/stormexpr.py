@@ -55,11 +55,12 @@ class BulkUpdate(Expr):
 
 @compile.when(BulkUpdate)
 def compile_bulkupdate(compile, update, state):
-    map = update.map
+    pairs = update.map.items()
     state.push("context", COLUMN_NAME)
-    sets = ["%s=%s" % (compile(col, state, token=True),
-                       compile(map[col], state))
-            for col in map]
+    col_names = [compile(col, state, token=True) for col, val in pairs]
+    state.push("context", EXPR)
+    col_values = [compile(val, state) for col, val in pairs]
+    sets = ["%s=%s" % (col, val) for col, val in zip(col_names, col_values)]
     state.context = TABLE
     tokens = ["UPDATE ", compile(update.table, state, token=True), " SET ",
               ", ".join(sets), " FROM "]
