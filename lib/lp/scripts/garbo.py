@@ -551,9 +551,9 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
         # (archive_id, distroseries_id, sourcepackagename_id).
         existing_records = dict()
         lpsprc = LatestPersonSourcePackageReleaseCache
-        invalues = SQL(', '.join([
-            ('(%s, %s, %s)' % cache_filter_record)
-            for cache_filter_record in cache_filter_data]))
+        invalues = [
+            Row(*cache_filter_record)
+            for cache_filter_record in cache_filter_data]
         rs = self.store.find(
             lpsprc,
             In(Row(
