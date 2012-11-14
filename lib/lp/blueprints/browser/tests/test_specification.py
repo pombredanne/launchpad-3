@@ -276,7 +276,7 @@ class TestSpecificationInformationType(BrowserTestCase):
         with person_logged_in(owner):
             browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
-                attrs={'class': 'banner-text'})
+                attrs={'class': 'private_banner_container'})
         self.assertThat(browser.contents,
                         soupmatchers.HTMLContains(privacy_banner))
 
@@ -332,7 +332,7 @@ class TestSpecificationInformationType(BrowserTestCase):
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
     def test_view_banner(self):
-        """The privacy banner should reflect the information_type."""
+        """The privacy banner should contain a noscript message"""
         owner = self.factory.makePerson()
         policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
@@ -343,8 +343,7 @@ class TestSpecificationInformationType(BrowserTestCase):
             product=product)
 
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
-                attrs={'class': 'banner-text'},
-                text=re.compile('This page contains Proprietary information'))
+                text=re.compile('The information on this page is private'))
 
         getUtility(IService, 'sharing').ensureAccessGrants(
               [owner], owner, specifications=[spec],
