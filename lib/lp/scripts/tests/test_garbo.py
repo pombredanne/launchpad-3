@@ -396,8 +396,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         # Run the garbage collectors to remove any existing garbage,
         # starting us in a known state.
-#        self.runDaily()
-#        self.runHourly()
+        self.runDaily()
+        self.runHourly()
         self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
