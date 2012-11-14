@@ -558,18 +558,12 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                 lpsprc.upload_distroseries_id,
                 lpsprc.sourcepackagename_id), invalues))
         for lpsprc_record in rs:
-            if lpsprc_record.maintainer_id is not None:
-                key = (
-                    lpsprc_record.maintainer_id, None,
-                    lpsprc_record.upload_archive_id,
-                    lpsprc_record.upload_distroseries_id,
-                    lpsprc_record.sourcepackagename_id)
-            else:
-                key = (
-                    None, lpsprc_record.creator_id,
-                    lpsprc_record.upload_archive_id,
-                    lpsprc_record.upload_distroseries_id,
-                    lpsprc_record.sourcepackagename_id)
+            key = (
+                lpsprc_record.maintainer_id,
+                lpsprc_record.creator_id,
+                lpsprc_record.upload_archive_id,
+                lpsprc_record.upload_distroseries_id,
+                lpsprc_record.sourcepackagename_id)
             existing_records[key] = pytz.UTC.localize(
                 lpsprc_record.dateuploaded)
 
