@@ -32,7 +32,6 @@ from psycopg2 import IntegrityError
 import pytz
 from storm.expr import (
     And,
-    Cast,
     In,
     Join,
     Like,
@@ -594,19 +593,28 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
             create(self.cache_columns, inserts.values())
         if updates:
             # Do a bulk update.
-            columns = [col.name for col in self.cache_columns]
+            cols = [
+                ("maintainer", "integer"),
+                ("creator", "integer"),
+                ("upload_archive", "integer"),
+                ("upload_distroseries", "integer"),
+                ("sourcepackagename", "integer"),
+                ("archive_purpose", "integer"),
+                ("publication", "integer"),
+                ("date_uploaded", "timestamp without time zone"),
+                ("sourcepackagerelease", "integer"),
+                ]
             values = [
                 [dbify_value(col, val)[0]
                  for (col, val) in zip(self.cache_columns, data)]
                 for data in updates.values()]
 
-            cache_data_expr = Values('cache_data', columns, values)
+            cache_data_expr = Values('cache_data', cols, values)
             cache_data = ClassAlias(lpsprc, "cache_data")
 
             # The columns to be updated.
             updated_columns = dict([
-                (lpsprc.dateuploaded,
-                 Cast(cache_data.dateuploaded, 'timestamp')),
+                (lpsprc.dateuploaded, cache_data.dateuploaded),
                 (lpsprc.sourcepackagerelease_id,
                  cache_data.sourcepackagerelease_id),
                 (lpsprc.publication_id, cache_data.publication_id)])

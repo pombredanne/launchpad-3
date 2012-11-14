@@ -77,19 +77,23 @@ def compile_bulkupdate(compile, update, state):
 
 
 class Values(Expr):
-    __slots__ = ("name", "col_names", "values")
+    __slots__ = ("name", "cols", "values")
 
-    def __init__(self, name, col_names, values):
+    def __init__(self, name, cols, values):
         self.name = name
-        self.col_names = col_names
+        self.cols = cols
         self.values = values
 
 
 @compile.when(Values)
 def compile_values(compile, expr, state):
+    col_names, col_types = zip(*expr.cols)
+    first_row = ", ".join(
+        "%s::%s" % (compile(value, state), type)
+        for value, type in zip(expr.values[0], col_types))
+    rows = [first_row] + [compile(value, state) for value in expr.values[1:]]
     return "(VALUES (%s)) AS %s(%s)" % (
-        "), (".join(compile(value, state) for value in expr.values),
-        expr.name, ', '.join(expr.col_names))
+        "), (".join(rows), expr.name, ', '.join(col_names))
 
 
 class ColumnSelect(Expr):
