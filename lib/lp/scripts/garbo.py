@@ -73,7 +73,10 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
-from lp.services.database.bulk import _dbify_value, create
+from lp.services.database.bulk import (
+    create,
+    dbify_value,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import (
     IStoreSelector,
@@ -593,7 +596,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
             # Do a bulk update.
             columns = [col.name for col in self.cache_columns]
             values = [
-                [_dbify_value(col, val)[0]
+                [dbify_value(col, val)[0]
                  for (col, val) in zip(self.cache_columns, data)]
                 for data in updates.values()]
 
