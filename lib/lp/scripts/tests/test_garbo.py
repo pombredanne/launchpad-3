@@ -1247,7 +1247,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
-        self.assertEqual(spph_1.id, job_data['next_spph_id'])
+        self.assertEqual(spph_1.id, job_data['last_spph_id'])
 
         # Create a newer published source package release and ensure the
         # release cache table is correctly updated.
@@ -1270,7 +1270,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
-        self.assertEqual(spph_2.id, job_data['next_spph_id'])
+        self.assertEqual(spph_2.id, job_data['last_spph_id'])
 
 
 class TestGarboTasks(TestCaseWithFactory):

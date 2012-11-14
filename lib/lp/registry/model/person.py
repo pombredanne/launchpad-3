@@ -2904,7 +2904,6 @@ class Person(
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
-
     def _legacy_releasesQueryFilter(self, uploader_only=False, ppa_only=False):
         """Return the filter used to find sourcepackagereleases (SPRs)
         related to this person.

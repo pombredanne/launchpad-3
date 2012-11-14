@@ -8,6 +8,7 @@ __all__ = [
     'ArrayAgg',
     'ArrayContains',
     'ArrayIntersects',
+    'BulkUpdate',
     'ColumnSelect',
     'Concatenate',
     'CountDistinct',
@@ -19,9 +20,11 @@ __all__ = [
     'Unnest',
     ]
 
+from storm import Undef
 from storm.exceptions import ClassInfoError
 from storm.expr import (
     BinaryOper,
+    COLUMN_NAME,
     ComparableExpr,
     compile,
     CompoundOper,
@@ -31,11 +34,44 @@ from storm.expr import (
     NamedFunc,
     Or,
     SQL,
+    TABLE,
     )
 from storm.info import (
     get_cls_info,
     get_obj_info,
     )
+
+
+class BulkUpdate(Expr):
+    # Perform a bulk table update using literal values.
+    __slots__ = ("map", "where", "table", "values")
+
+    def __init__(self, map, table, values, where=Undef):
+        self.map = map
+        self.where = where
+        self.table = table
+        self.values = values
+
+
+@compile.when(BulkUpdate)
+def compile_bulkupdate(compile, update, state):
+    map = update.map
+    state.push("context", COLUMN_NAME)
+    sets = ["%s=%s" % (compile(col, state, token=True),
+                       compile(map[col], state))
+            for col in map]
+    state.context = TABLE
+    tokens = ["UPDATE ", compile(update.table, state, token=True), " SET ",
+              ", ".join(sets), " FROM "]
+    state.context = EXPR
+    # We don't want the values expression wrapped in parenthesis.
+    state.precedence = 0
+    tokens.append(compile(update.values, state, raw=True))
+    if update.where is not Undef:
+        tokens.append(" WHERE ")
+        tokens.append(compile(update.where, state, raw=True))
+    state.pop()
+    return "".join(tokens)
 
 
 class ColumnSelect(Expr):
