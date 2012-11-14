@@ -738,46 +738,46 @@ class ObjectImageDisplayAPI:
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
         context = self._context
-        sprite_string = 'sprite'
+        sprite_string = None
         if IProduct.providedBy(context):
-            sprite_string = sprite_string + ' product'
+            sprite_string = 'product'
         elif IProjectGroup.providedBy(context):
-            sprite_string = sprite_string + ' project'
+            sprite_string = 'project'
         elif IPerson.providedBy(context):
             if context.is_team:
-                sprite_string = sprite_string + ' team'
+                sprite_string = 'team'
             else:
                 if context.is_valid_person:
-                    sprite_string = sprite_string + ' person'
+                    sprite_string = 'person'
                 else:
-                    sprite_string = sprite_string + ' person-inactive'
+                    sprite_string = 'person-inactive'
         elif IDistribution.providedBy(context):
-            sprite_string = sprite_string + ' distribution'
+            sprite_string = 'distribution'
         elif IDistributionSourcePackage.providedBy(context):
-            sprite_string = sprite_string + ' package-source'
+            sprite_string = 'package-source'
         elif ISprint.providedBy(context):
-            sprite_string = sprite_string + ' meeting'
+            sprite_string = 'meeting'
         elif IBug.providedBy(context):
-            sprite_string = sprite_string + ' bug'
+            sprite_string = 'bug'
         elif IPPA.providedBy(context):
             if context.enabled:
-                sprite_string = sprite_string + ' ppa-icon'
+                sprite_string = 'ppa-icon'
             else:
-                sprite_string = sprite_string + ' ppa-icon-inactive'
+                sprite_string = 'ppa-icon-inactive'
         elif IBranch.providedBy(context):
-            sprite_string = sprite_string + ' branch'
+            sprite_string = 'branch'
         elif ISpecification.providedBy(context):
-            sprite_string = sprite_string + ' blueprint'
+            sprite_string = 'blueprint'
         elif IBinaryAndSourcePackageName.providedBy(context):
-            sprite_string = sprite_string + ' package-source'
+            sprite_string = 'package-source'
 
-        if sprite_string == 'sprite':
+        if sprite_string is None:
             return None
         else:
             if hasattr(context, 'private') and context.private:
-                return sprite_string + ' private'
-            else:
-                return sprite_string
+                sprite_string = sprite_string + ' private'
+
+            return "sprite %s" % sprite_string
 
 
     def default_logo_resource(self, context):
