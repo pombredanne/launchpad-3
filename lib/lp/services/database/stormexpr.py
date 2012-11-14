@@ -18,6 +18,7 @@ __all__ = [
     'NullCount',
     'TryAdvisoryLock',
     'Unnest',
+    'Values',
     ]
 
 from storm import Undef

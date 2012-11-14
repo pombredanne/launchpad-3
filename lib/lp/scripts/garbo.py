@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
-from lp.services.database.stormexpr import BulkUpdate, Values
 
 __metaclass__ = type
 __all__ = [
@@ -35,7 +34,6 @@ from storm.expr import (
     And,
     Cast,
     In,
-    Insert,
     Join,
     Like,
     Max,
@@ -75,7 +73,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
-from lp.services.database.bulk import _dbify_value
+from lp.services.database.bulk import _dbify_value, create
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import (
     IStoreSelector,
@@ -87,6 +85,10 @@ from lp.services.database.sqlbase import (
     cursor,
     session_store,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    BulkUpdate,
+    Values,
     )
 from lp.services.features import (
     getFeatureFlag,
@@ -586,8 +588,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
 
         if inserts:
             # Do a bulk insert.
-            self.store.execute(
-                Insert(self.cache_columns, values=inserts.values()))
+            create(self.cache_columns, inserts.values())
         if updates:
             # Do a bulk update.
             columns = [col.name for col in self.cache_columns]
