@@ -738,38 +738,46 @@ class ObjectImageDisplayAPI:
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
         context = self._context
+        sprite_string = 'sprite'
         if IProduct.providedBy(context):
-            return 'sprite product'
+            sprite_string = sprite_string + ' product'
         elif IProjectGroup.providedBy(context):
-            return 'sprite project'
+            sprite_string = sprite_string + ' project'
         elif IPerson.providedBy(context):
             if context.is_team:
-                return 'sprite team'
+                sprite_string = sprite_string + ' team'
             else:
                 if context.is_valid_person:
-                    return 'sprite person'
+                    sprite_string = sprite_string + ' person'
                 else:
-                    return 'sprite person-inactive'
+                    sprite_string = sprite_string + ' person-inactive'
         elif IDistribution.providedBy(context):
-            return 'sprite distribution'
+            sprite_string = sprite_string + ' distribution'
         elif IDistributionSourcePackage.providedBy(context):
-            return 'sprite package-source'
+            sprite_string = sprite_string + ' package-source'
         elif ISprint.providedBy(context):
-            return 'sprite meeting'
+            sprite_string = sprite_string + ' meeting'
         elif IBug.providedBy(context):
-            return 'sprite bug'
+            sprite_string = sprite_string + ' bug'
         elif IPPA.providedBy(context):
             if context.enabled:
-                return 'sprite ppa-icon'
+                sprite_string = sprite_string + ' ppa-icon'
             else:
-                return 'sprite ppa-icon-inactive'
+                sprite_string = sprite_string + ' ppa-icon-inactive'
         elif IBranch.providedBy(context):
-            return 'sprite branch'
+            sprite_string = sprite_string + ' branch'
         elif ISpecification.providedBy(context):
-            return 'sprite blueprint'
+            sprite_string = sprite_string + ' blueprint'
         elif IBinaryAndSourcePackageName.providedBy(context):
-            return 'sprite package-source'
-        return None
+            sprite_string = sprite_string + ' package-source'
+
+        if sprite_string == 'sprite':
+            return None
+        else:
+            if context.private:
+                return sprite_string + ' private'
+            else:
+                return sprite_string
 
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
@@ -1029,11 +1037,16 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
     def sprite_css(self):
         """Return the CSS class for the sprite"""
+        sprite_str = "sprite blueprint"
+
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            return "sprite blueprint-%s" % priority
-        else:
-            return "sprite blueprint"
+            sprite_str = sprite_str +  "-%s" % priority
+
+        if self._context.private:
+            sprite_str = sprite_str + ' private'
+
+        return sprite_str
 
     def badges(self):
 

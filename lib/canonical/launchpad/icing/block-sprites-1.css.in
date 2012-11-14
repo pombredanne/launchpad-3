@@ -25,21 +25,21 @@
 /* Add some wider 30px images for indicating a private artifact. */
 .blueprint.private {
     background-image: url(/@@/blueprint-private.png); /* sprite-ref: icon-sprites */
-    padding: 32px;
+    padding-left: 32px;
     }
 .blueprint-undefined.private {
     background-image: url(/@@/blueprint-undefined-private.png); /* sprite-ref: icon-sprites */
-    padding: 32px;
+    padding-left: 32px;
     }
 .product.private {
     background-image: url(/@@/product-private.png); /* sprite-ref: icon-sprites */
-    padding: 32px;
+    padding-left: 32px;
     }
 .project.private {
     background-image: url(/@@/project-private.png); /* sprite-ref: icon-sprites */
-    padding: 32px;
+    padding-left: 32px;
     }
 .branch.private {
     background-image: url(/@@/branch-private.png); /* sprite-ref: icon-sprites */
-    padding: 32px;
+    padding-left: 32px;
     }

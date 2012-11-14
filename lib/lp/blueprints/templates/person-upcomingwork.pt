@@ -83,11 +83,7 @@
           </div>
           Blueprint
         </th>
-        <!-- Space for private sprite -->
-        <th></th>
         <th>Target</th>
-        <!-- Space for private sprite -->
-        <th></th>
         <th>Assignee</th>
         <th>Priority</th>
         <th>Progress</th>
@@ -102,15 +98,7 @@
             </span>
             <span tal:replace="structure container/html_link" />
           </td>
-          <td>
-              <img src="/@@/private" alt=""
-                   tal:condition="container/spec/private"/>
-          </td>
           <td tal:content="structure container/target_link" />
-          <td>
-              <img src="/@@/private" alt=""
-                   tal:condition="container/target/private"/>
-          </td>
           <td tal:content="structure container/assignee_link" />
           <td tal:content="container/priority_title" />
           <td>
