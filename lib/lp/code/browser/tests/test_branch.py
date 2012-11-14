@@ -537,7 +537,7 @@ class TestBranchView(BrowserTestCase):
                 [user], owner, branches=[branch])
         with person_logged_in(user):
             url = canonical_url(branch)
-        # The main check: No Unautorized error should be raised.
+        # The main check: No Unauthorized error should be raised.
         browser = self.getUserBrowser(url, user=user)
         self.assertIn(product_name, browser.contents)
 
