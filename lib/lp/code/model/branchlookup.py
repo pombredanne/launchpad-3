@@ -274,7 +274,8 @@ class BranchLookup:
             return (self.get(lookup['branch_id']), lookup['trailing'])
         elif lookup['type'] == 'alias':
             try:
-                return self.getByLPPath(lookup['lp_path'])
+                branch, trail = self.getByLPPath(lookup['lp_path'])
+                return branch, escape(trail)
             except (InvalidProductName, NoLinkedBranch,
                     CannotHaveLinkedBranch, NameLookupFailed,
                     InvalidNamespace):
