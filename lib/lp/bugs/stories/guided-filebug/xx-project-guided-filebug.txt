@@ -46,7 +46,7 @@ page.
 Project groups with no products using Launchpad Bugs
 ----------------------------------------------------
 
-When no projects within a project group use Launchpad to track bugs,
+When no projects within a project group used Launchpad to track bugs,
 the page explains the case.
 
     >>> login("test@canonical.com")
