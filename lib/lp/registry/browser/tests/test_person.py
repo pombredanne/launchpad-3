@@ -37,7 +37,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
-from lp.scripts.garbo import PopulateLatestPersonSourcepackageReleaseCache
+from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
@@ -849,7 +849,7 @@ class TestPersonRelatedPackagesView(TestCaseWithFactory):
             spphs.append(spph)
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
-        job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+        job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
         while not job.isDone():
             job(chunk_size=100)
         switch_dbuser('launchpad')
@@ -1062,7 +1062,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.build.archive = publisher.distroseries.main_archive
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
-        job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+        job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
         while not job.isDone():
             job(chunk_size=100)
         switch_dbuser('launchpad')

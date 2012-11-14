@@ -8,6 +8,7 @@ __all__ = [
     'ArrayAgg',
     'ArrayContains',
     'ArrayIntersects',
+    'BulkUpdate',
     'ColumnSelect',
     'Concatenate',
     'CountDistinct',
@@ -17,11 +18,14 @@ __all__ = [
     'NullCount',
     'TryAdvisoryLock',
     'Unnest',
+    'Values',
     ]
 
+from storm import Undef
 from storm.exceptions import ClassInfoError
 from storm.expr import (
     BinaryOper,
+    COLUMN_NAME,
     ComparableExpr,
     compile,
     CompoundOper,
@@ -31,11 +35,65 @@ from storm.expr import (
     NamedFunc,
     Or,
     SQL,
+    TABLE,
     )
 from storm.info import (
     get_cls_info,
     get_obj_info,
     )
+
+
+class BulkUpdate(Expr):
+    # Perform a bulk table update using literal values.
+    __slots__ = ("map", "where", "table", "values")
+
+    def __init__(self, map, table, values, where=Undef):
+        self.map = map
+        self.where = where
+        self.table = table
+        self.values = values
+
+
+@compile.when(BulkUpdate)
+def compile_bulkupdate(compile, update, state):
+    pairs = update.map.items()
+    state.push("context", COLUMN_NAME)
+    col_names = [compile(col, state, token=True) for col, val in pairs]
+    state.context = EXPR
+    col_values = [compile(val, state) for col, val in pairs]
+    sets = ["%s=%s" % (col, val) for col, val in zip(col_names, col_values)]
+    state.context = TABLE
+    tokens = ["UPDATE ", compile(update.table, state, token=True), " SET ",
+              ", ".join(sets), " FROM "]
+    state.context = EXPR
+    # We don't want the values expression wrapped in parenthesis.
+    state.precedence = 0
+    tokens.append(compile(update.values, state, raw=True))
+    if update.where is not Undef:
+        tokens.append(" WHERE ")
+        tokens.append(compile(update.where, state, raw=True))
+    state.pop()
+    return "".join(tokens)
+
+
+class Values(Expr):
+    __slots__ = ("name", "cols", "values")
+
+    def __init__(self, name, cols, values):
+        self.name = name
+        self.cols = cols
+        self.values = values
+
+
+@compile.when(Values)
+def compile_values(compile, expr, state):
+    col_names, col_types = zip(*expr.cols)
+    first_row = ", ".join(
+        "%s::%s" % (compile(value, state), type)
+        for value, type in zip(expr.values[0], col_types))
+    rows = [first_row] + [compile(value, state) for value in expr.values[1:]]
+    return "(VALUES (%s)) AS %s(%s)" % (
+        "), (".join(rows), expr.name, ', '.join(col_names))
 
 
 class ColumnSelect(Expr):

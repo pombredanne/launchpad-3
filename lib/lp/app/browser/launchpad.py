@@ -766,29 +766,32 @@ class LaunchpadRootNavigation(Navigation):
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=False)
 
-        if (pillar is not None and IProduct.providedBy(pillar) and
-            not pillar.active):
-            # Emergency brake for public but inactive products:
-            # These products should not be shown to ordinary users.
-            # The root problem is that many views iterate over products,
-            # inactive products included, and access attributes like
-            # name, displayname or call canonical_url(product) --
-            # and finally throw the data away, if the product is
-            # inactive. So we cannot make these attributes inaccessible
-            # for inactive public products. On the other hand, we
-            # require the permission launchpad.View to protect private
-            # products.
-            # This means that we cannot simply check if the current
-            # user has the permission launchpad.View for an inactive
-            # product.
-            user = getUtility(ILaunchBag).user
-            if user is None:
-                return None
-            user = IPersonRoles(user)
-            if (not user.in_commercial_admin and not user.in_admin and
-                not user.in_registry_experts):
-                return None
-        if pillar is not None and check_permission('launchpad.View', pillar):
+        if pillar is None:
+            return None
+
+        if IProduct.providedBy(pillar):
+            if not pillar.active:
+                # Emergency brake for public but inactive products:
+                # These products should not be shown to ordinary users.
+                # The root problem is that many views iterate over products,
+                # inactive products included, and access attributes like
+                # name, displayname or call canonical_url(product) --
+                # and finally throw the data away, if the product is
+                # inactive. So we cannot make these attributes inaccessible
+                # for inactive public products. On the other hand, we
+                # require the permission launchpad.View to protect private
+                # products.
+                # This means that we cannot simply check if the current
+                # user has the permission launchpad.View for an inactive
+                # product.
+                user = getUtility(ILaunchBag).user
+                if user is None:
+                    return None
+                user = IPersonRoles(user)
+                if (not user.in_commercial_admin and not user.in_admin and
+                    not user.in_registry_experts):
+                    return None
+        if check_permission('launchpad.LimitedView', pillar):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
