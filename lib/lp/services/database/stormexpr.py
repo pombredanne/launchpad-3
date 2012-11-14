@@ -74,6 +74,22 @@ def compile_bulkupdate(compile, update, state):
     return "".join(tokens)
 
 
+class Values(Expr):
+    __slots__ = ("name", "col_names", "values")
+
+    def __init__(self, name, col_names, values):
+        self.name = name
+        self.col_names = col_names
+        self.values = values
+
+
+@compile.when(Values)
+def compile_values(compile, expr, state):
+    return "(VALUES (%s)) AS %s(%s)" % (
+        "), (".join(compile(value, state) for value in expr.values),
+        expr.name, ', '.join(expr.col_names))
+
+
 class ColumnSelect(Expr):
     # Wrap a select statement in braces so that it can be used as a column
     # expression in another query.
