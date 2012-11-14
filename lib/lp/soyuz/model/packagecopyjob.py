@@ -187,6 +187,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
+        self.logger = logging.getLogger()
 
     @classmethod
     def get(cls, job_id):
@@ -574,8 +575,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # Remember the target archive purpose, as otherwise aborting the
             # transaction will forget it.
             target_archive_purpose = self.target_archive.purpose
-            logger = logging.getLogger()
-            logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
+            self.logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
             self.reportFailure(unicode(e))
 
@@ -670,6 +670,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # held in the queue because of policy/ancestry checks.  If one
             # does exist we need to make sure it gets moved to DONE.
             pu.setDone()
+
+        if copied_publications:
+            self.logger.debug(
+                "Packages copied to %s:" % self.target_archive.displayname)
+            for copy in copied_publications:
+                self.logger.debug(copy.displayname)
 
     def abort(self):
         """Abort work."""
