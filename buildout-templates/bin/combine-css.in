@@ -27,6 +27,7 @@ names = [
     #'lazr/build/yui/cssgrids/grids.css',
     'cssgrids/grids.css',
     'build/ui/assets/skins/sam/lazr.css',
+    'build/ui/assets/skins/sam/banner.css',
     'build/inlineedit/assets/skins/sam/editor.css',
     'build/autocomplete/assets/skins/sam/autocomplete.css',
     'build/overlay/assets/skins/sam/pretty-overlay.css',

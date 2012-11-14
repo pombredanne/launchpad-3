@@ -663,15 +663,16 @@ class ObjectFormatterAPI:
     def global_css(self):
         css_classes = set([])
         view = self._context
+
+        # XXX: Bug #1076074
         private = getattr(view, 'private', False)
         if private:
             css_classes.add('private')
-            css_classes.add('global-notification-visible')
         else:
             css_classes.add('public')
         beta = getattr(view, 'beta_features', [])
-        if beta != []:
-            css_classes.add('global-notification-visible')
+        if beta:
+            css_classes.add('beta')
         return ' '.join(list(css_classes))
 
     def _getSaneBreadcrumbDetail(self, breadcrumb):

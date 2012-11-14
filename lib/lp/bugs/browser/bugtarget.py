@@ -1081,10 +1081,12 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     @action("Continue", name="projectgroupsearch")
     def projectgroup_search_action(self, action, data):
         """Redirect to the chosen product's form."""
-        base = canonical_url(data['product'], view_name='+filebug')
+        base = canonical_url(
+            data['product'], view_name='+filebug', rootsite='bugs')
+        title = data['title'].encode('utf8')
         query = urllib.urlencode([
             ('field.actions.search', 'Continue'),
-            ('field.title', data['title']),
+            ('field.title', title),
             ('field.tags', ' '.join(data['tags'])),
             ])
         url = '%s?%s' % (base, query)

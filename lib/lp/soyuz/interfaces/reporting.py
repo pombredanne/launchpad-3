@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'ILatestPersonSourcepackageReleaseCache',
+    'ILatestPersonSourcePackageReleaseCache',
     ]
 
 
@@ -11,7 +11,7 @@ from zope.interface import Attribute
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-class ILatestPersonSourcepackageReleaseCache(ISourcePackageRelease):
+class ILatestPersonSourcePackageReleaseCache(ISourcePackageRelease):
     """Published source package release information for a person.
 
     The records represented by this object are the latest published source
@@ -22,7 +22,7 @@ class ILatestPersonSourcepackageReleaseCache(ISourcePackageRelease):
     """
 
     cache_id = Attribute(
-        "The id of the associated LatestPersonSourcepackageReleaseCache"
+        "The id of the associated LatestPersonSourcePackageReleaseCache"
         "record.")
     sourcepackagerelease = Attribute(
         "The SourcePackageRelease which this object represents.")

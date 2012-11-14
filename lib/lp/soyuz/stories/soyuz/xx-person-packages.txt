@@ -163,7 +163,7 @@ Let's make a helper function to print the PPA packages from the page:
 Make a function to update the cached latest person source package release
 records.
 
-    >>> from lp.scripts.garbo import PopulateLatestPersonSourcepackageReleaseCache
+    >>> from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.testing.dbuser import switch_dbuser
@@ -180,7 +180,7 @@ records.
     ...             "delete from latestpersonsourcepackagereleasecache")
     ...     flush_database_updates()
     ...     switch_dbuser('garbo_frequently')
-    ...     job = PopulateLatestPersonSourcepackageReleaseCache(FakeLogger())
+    ...     job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
     ...     while not job.isDone():
     ...         job(chunk_size=100)
     ...     switch_dbuser('launchpad')
