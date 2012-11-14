@@ -473,15 +473,15 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     maximum_chunk_size = 1000
 
     cache_columns = (
-        LatestPersonSourcePackageReleaseCache.sourcepackagerelease_id,
-        LatestPersonSourcePackageReleaseCache.creator_id,
         LatestPersonSourcePackageReleaseCache.maintainer_id,
+        LatestPersonSourcePackageReleaseCache.creator_id,
         LatestPersonSourcePackageReleaseCache.upload_archive_id,
-        LatestPersonSourcePackageReleaseCache.archive_purpose,
         LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
         LatestPersonSourcePackageReleaseCache.sourcepackagename_id,
-        LatestPersonSourcePackageReleaseCache.dateuploaded,
+        LatestPersonSourcePackageReleaseCache.archive_purpose,
         LatestPersonSourcePackageReleaseCache.publication_id,
+        LatestPersonSourcePackageReleaseCache.dateuploaded,
+        LatestPersonSourcePackageReleaseCache.sourcepackagerelease_id,
     )
 
     def __init__(self, log, abort_time=None):
@@ -533,16 +533,13 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
              spph_id) = new_published_spr_data
             cache_filter_data.append((archive_id, distroseries_id, spn_id))
 
+            value = (purpose.value, spph_id, dateuploaded, spr_id)
             maintainer_key = (
-                maintainer_id, None, archive_id, spn_id, distroseries_id)
-            new_records[maintainer_key] = (
-                spr_id, None, maintainer_id, archive_id, purpose.value,
-                distroseries_id, spn_id, dateuploaded, spph_id)
+                maintainer_id, None, archive_id, distroseries_id, spn_id)
             creator_key = (
-                None, creator_id, archive_id, spn_id, distroseries_id)
-            new_records[creator_key] = (
-                spr_id, creator_id, None, archive_id, purpose.value,
-                distroseries_id, spn_id, dateuploaded, spph_id)
+                None, creator_id, archive_id, distroseries_id, spn_id)
+            new_records[maintainer_key] = maintainer_key + value
+            new_records[creator_key] = creator_key + value
             self.last_spph_id = spph_id
 
         # Gather all the current cached reporting records corresponding to the
@@ -565,14 +562,14 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                 key = (
                     lpsprc_record.maintainer_id, None,
                     lpsprc_record.upload_archive_id,
-                    lpsprc_record.sourcepackagename_id,
-                    lpsprc_record.upload_distroseries_id)
+                    lpsprc_record.upload_distroseries_id,
+                    lpsprc_record.sourcepackagename_id)
             else:
                 key = (
                     None, lpsprc_record.creator_id,
                     lpsprc_record.upload_archive_id,
-                    lpsprc_record.sourcepackagename_id,
-                    lpsprc_record.upload_distroseries_id)
+                    lpsprc_record.upload_distroseries_id,
+                    lpsprc_record.sourcepackagename_id)
             existing_records[key] = pytz.UTC.localize(
                 lpsprc_record.dateuploaded)
 
