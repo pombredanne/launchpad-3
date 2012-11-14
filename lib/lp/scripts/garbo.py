@@ -635,7 +635,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                     lpsprc.dateuploaded.name,))
 
             values_sql = SQL(
-                "(VALUES %(values)s) AS sub(%(columns)s)"
+                "(VALUES %(values)s) AS cache_data(%(columns)s)"
                 % {
                     'columns': columns,
                     'values': update_values
@@ -643,22 +643,23 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
 
             # The columns to be updated.
             updated_columns = dict([
-                (lpsprc.dateuploaded, SQL('sub.date_uploaded')),
+                (lpsprc.dateuploaded, SQL('cache_data.date_uploaded')),
                 (lpsprc.sourcepackagerelease_id,
-                    SQL('sub.sourcepackagerelease')),
-                (lpsprc.publication_id, SQL('sub.publication'))])
+                    SQL('cache_data.sourcepackagerelease')),
+                (lpsprc.publication_id, SQL('cache_data.publication'))])
             # The update filter.
             filter = And(
                 Or(
-                    SQL('sub.creator') == 0,
-                    lpsprc.creator_id == SQL('sub.creator')),
+                    SQL('cache_data.creator') == 0,
+                    lpsprc.creator_id == SQL('cache_data.creator')),
                 Or(
-                    SQL('sub.maintainer') == 0,
-                    lpsprc.maintainer_id == SQL('sub.maintainer')),
-                lpsprc.upload_archive_id == SQL('sub.upload_archive'),
+                    SQL('cache_data.maintainer') == 0,
+                    lpsprc.maintainer_id == SQL('cache_data.maintainer')),
+                lpsprc.upload_archive_id == SQL('cache_data.upload_archive'),
                 lpsprc.upload_distroseries_id ==
-                    SQL('sub.upload_distroseries'),
-                lpsprc.sourcepackagename_id == SQL('sub.sourcepackagename'))
+                    SQL('cache_data.upload_distroseries'),
+                lpsprc.sourcepackagename_id ==
+                    SQL('cache_data.sourcepackagename'))
 
             self.store.execute(
                 BulkUpdate(
