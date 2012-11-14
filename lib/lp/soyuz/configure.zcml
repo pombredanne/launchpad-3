@@ -1003,9 +1003,9 @@
     </class>
 
     <class
-        class="lp.soyuz.model.reporting.LatestPersonSourcepackageReleaseCache">
+        class="lp.soyuz.model.reporting.LatestPersonSourcePackageReleaseCache">
         <allow
-            interface="lp.soyuz.interfaces.reporting.ILatestPersonSourcepackageReleaseCache"/>
+            interface="lp.soyuz.interfaces.reporting.ILatestPersonSourcePackageReleaseCache"/>
     </class>
 
     <!-- ProcessAcceptedBugsJobSource -->
