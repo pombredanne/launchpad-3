@@ -133,7 +133,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     spec_started_clause,
-    visible_specifications_query,
+    visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -857,7 +857,7 @@ class Person(
                     Select(SpecificationSubscription.specificationID,
                         [SpecificationSubscription.person == self]
                     )))
-        tables, clauses = visible_specifications_query(user)
+        tables, clauses = visible_specification_query(user)
         clauses.append(Or(*role_clauses))
         # Defaults for completeness: if nothing is said about completeness
         # then we want to show INCOMPLETE.
@@ -1467,7 +1467,7 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin, query = visible_specifications_query(user)
+        origin, query = visible_specification_query(user)
         origin.extend([
             Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
