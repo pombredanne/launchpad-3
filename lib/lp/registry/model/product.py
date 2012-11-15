@@ -1715,13 +1715,7 @@ class ProductSet:
     @staticmethod
     def getProductPrivacyFilter(user):
         if user is not None:
-            # Generally our `user` here is a Person object,
-            # but sometimes it's a PersonRoles object.
-            if IPersonRoles.providedBy(user):
-                roles = user
-                user = user.person
-            else:
-                roles = IPersonRoles(user)
+            roles = IPersonRoles(user)
             if roles.in_admin or roles.in_commercial_admin:
                 return True
         granted_products = And(

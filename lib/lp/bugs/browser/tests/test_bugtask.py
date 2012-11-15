@@ -141,7 +141,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(85)))
+        self.assertThat(recorder, HasQueryCount(LessThan(82)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -157,7 +157,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                87, self.factory.makePerson())
+                85, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -251,7 +251,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # Render the view with one activity.
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                85, self.factory.makePerson())
+                83, self.factory.makePerson())
             person = self.factory.makePerson()
             add_activity("description", person)
 
@@ -2036,10 +2036,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.invalidate_caches(bug)
         # count with single task
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(37)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
         # count with many tasks
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(37)))
+        self.assertThat(recorder, HasQueryCount(LessThan(35)))
 
     def test_mustache_model_in_json(self):
         """The IJSONRequestCache should contain mustache_model.

@@ -671,26 +671,10 @@ def _build_query(params):
                 Milestone.dateexpected <= dateexpected_before)
 
     if not params.ignore_privacy:
-        clause, decorator = _get_bug_privacy_filter_with_decorator(
-            params.user)
+        clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
         if clause:
             extra_clauses.append(clause)
             decorators.append(decorator)
-        cross_context_search = (
-            params.product is None
-            and params.project is None
-            and params.distribution is None
-            and params.productseries is None
-            and params.distroseries is None)
-        if params.product is not None or cross_context_search:
-            if Product not in clauseTables:
-                clauseTables.append(Product)
-                extra_clauses.append(
-                    Or(
-                        BugTaskFlat.product_id == Product.id,
-                        BugTaskFlat.product_id == None))
-            extra_clauses.append(
-                ProductSet.getProductPrivacyFilter(params.user))
 
     hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
