@@ -877,6 +877,7 @@ class Person(
             sort = None
         if sort is not None:
             results = results.order_by(sort)
+        results.config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1483,6 +1484,7 @@ class Person(
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
                Specification.assigneeID.is_in(self.participant_ids))))
         result = store.using(*origin).find(WorkItem, *query)
+        result.config(distinct=True)
 
         def eager_load(workitems):
             specs = bulk.load_related(
