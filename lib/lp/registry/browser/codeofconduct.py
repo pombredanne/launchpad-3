@@ -171,8 +171,6 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):
-        import pdb; pdb.set_trace()
-        
         signedcode = data["signedcode"]
         signedcocset = getUtility(ISignedCodeOfConductSet)
         error_message = signedcocset.verifyAndStore(self.user, signedcode)

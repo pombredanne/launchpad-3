@@ -245,7 +245,6 @@ class SignedCodeOfConductSet:
 
     def verifyAndStore(self, user, signedcode):
         """See ISignedCodeOfConductSet."""
-        import pdb; pdb.set_trace()
         # XXX cprov 2005-02-24:
         # Are we missing the version field in SignedCoC table?
         # how to figure out which CoC version is signed?
@@ -303,9 +302,6 @@ class SignedCodeOfConductSet:
         # recover the current CoC release
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)
         current = coc.content
-
-        import pdb; pdb.set_trace()
-        
 
         # calculate text digest
         if sig.plain_data.split() != current.split():

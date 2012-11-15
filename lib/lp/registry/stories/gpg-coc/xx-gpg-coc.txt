@@ -438,10 +438,8 @@ appear in the same order.
 
     >>> reformatted_coc = read_file('reformatted_20_coc.asc')
     >>> browser.getControl('Signed Code').value = reformatted_coc
-    >>> import pdb;pdb.set_trace()
     >>> browser.getControl('Continue').click()
     >>> print browser.url
-    >>> # GETTING ERROR BAD SIGNATURE
     http://launchpad.dev/~name12/+codesofconduct
 
 And now Sample Person's Codes of Conduct page shows that he's signed it.
