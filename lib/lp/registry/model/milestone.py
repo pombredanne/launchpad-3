@@ -177,11 +177,11 @@ class MilestoneData:
                             SpecificationWorkItem.deleted == False)),
                     all=True)),
             *clauses)
-        results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
                                            Specification.implementation_status,
                                            Specification.title)
+        ordered_results.config(distinct=True)
         mapper = lambda row: row[0]
         return DecoratedResultSet(ordered_results, mapper)
 

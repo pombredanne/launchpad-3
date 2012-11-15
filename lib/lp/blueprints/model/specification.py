@@ -960,7 +960,7 @@ class HasSpecificationsMixin:
         elif sort == SpecificationSort.DATE:
             return (Desc(Specification.datecreated), Specification.id)
 
-    def _preload_specifications_people(self, clauses):
+    def _preload_specifications_people(self, tables, clauses):
         """Perform eager loading of people and their validity for query.
 
         :param query: a string query generated in the 'specifications'
@@ -1001,7 +1001,7 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).find(Specification, *clauses)
+        results = Store.of(self).using(*tables).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
