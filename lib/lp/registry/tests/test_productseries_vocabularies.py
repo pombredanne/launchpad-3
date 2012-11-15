@@ -54,9 +54,11 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
             '%s/%s' % (self.product_prefix, self.series1_prefix))
         self.assertEqual([self.series], list(result))
 
-    def _makePrivateProductAndSeries(self):
+    def _makePrivateProductAndSeries(self, owner=None):
         product = self.factory.makeProduct(
-            self.product_prefix + "private-product")
+            self.product_prefix + "private-product",
+            information_type=InformationType.PROPRIETARY,
+            owner=owner)
         series = self.factory.makeProductSeries(product=product,
             name=self.series1_prefix + "private-series")
         return product, series
@@ -68,8 +70,9 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         self.assertEqual([self.series], list(result))
 
     def test_search_respects_privacy_user(self):
-        product, series = self._makePrivateProductAndSeries()
-        with person_logged_in(product.owner):
+        owner = self.factory.makePerson()
+        product, series = self._makePrivateProductAndSeries(owner=owner)
+        with person_logged_in(owner):
             result = self.vocabulary.search(
                 '%s/%s' % (self.product_prefix, self.series1_prefix))
         self.assertEqual(
