@@ -222,12 +222,7 @@ class QueueItemsView(LaunchpadView):
         if len(uploads) == 0:
             return None
 
-        # Operate only on upload and/or processed delayed-copies.
-        upload_ids = [
-            upload.id
-            for upload in uploads
-            if not (upload.is_delayed_copy and
-                    upload.status != PackageUploadStatus.DONE)]
+        upload_ids = [upload.id for upload in uploads]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
         binary_file_set.loadLibraryFiles(binary_files)
@@ -529,24 +524,6 @@ class CompletePackageUpload:
             self.package_sets = []
 
     @property
-    def pending_delayed_copy(self):
-        """Whether the context is a delayed-copy pending processing."""
-        return (
-            self.is_delayed_copy and self.status != PackageUploadStatus.DONE)
-
-    @property
-    def changesfile(self):
-        """Return the upload changesfile object, even for delayed-copies.
-
-        If the context `PackageUpload` is a delayed-copy, which doesn't
-        have '.changesfile' by design, return the changesfile originally
-        used to upload the contained source.
-        """
-        if self.is_delayed_copy:
-            return self.sourcepackagerelease.upload_changesfile
-        return self.context.changesfile
-
-    @property
     def display_package_sets(self):
         """Package sets, if any, for display on the +queue page."""
         return ' '.join(sorted(
@@ -611,7 +588,7 @@ class CompletePackageUpload:
         """Compose HTML: upload name and link to changes file."""
         raw_displayname = self.displayname
         displayname = cgi.escape(raw_displayname)
-        if self.pending_delayed_copy or self.changesfile is None:
+        if self.changesfile is None:
             return displayname
         else:
             return '<a href="%s" title="Changes file for %s">%s</a>' % (
