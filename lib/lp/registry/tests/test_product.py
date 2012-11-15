@@ -605,7 +605,7 @@ class TestProduct(TestCaseWithFactory):
             'userCanView',)),
         'launchpad.LimitedView': set((
             'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
-            'logo', 'name', 'official_answers', 'official_anything',
+            'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
@@ -647,7 +647,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'icon', 'invitesTranslationEdits',
+            'homepageurl', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'name_with_project', 'newCodeImport',

@@ -428,7 +428,7 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
+class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
     on bugs, branches or specifications for the product.
     """
@@ -439,6 +439,16 @@ class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
+
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
 
     logo = exported(
         LogoImageUpload(
@@ -491,7 +501,7 @@ class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
 
 class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasDrivers, IHasExternalBugTracker,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
@@ -612,16 +622,6 @@ class IProductView(
             "The content of this project's home page. Edit this and it will "
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-
-    icon = exported(
-        IconImageUpload(
-            title=_("Icon"), required=False,
-            default_image_resource='/@@/product',
-            description=_(
-                "A small image of exactly 14x14 pixels and at most 5kb in "
-                "size, that can be used to identify this project. The icon "
-                "will be displayed next to the project name everywhere in "
-                "Launchpad that we refer to the project and link to it.")))
 
     mugshot = exported(
         MugshotImageUpload(

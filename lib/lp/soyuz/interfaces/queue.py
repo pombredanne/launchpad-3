@@ -257,8 +257,6 @@ class IPackageUpload(Interface):
         "whether or not this upload contains a signed UEFI boot loader image")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
-    is_delayed_copy = Attribute(
-        "Whether or not this PackageUpload record is a delayed-copy.")
 
     components = Attribute(
         """The set of components used in this upload.
@@ -344,17 +342,6 @@ class IPackageUpload(Interface):
          * Publish and close bugs for 'single-source' uploads.
          * Skip bug-closing for PPA uploads.
          * Grant karma to people involved with the upload.
-
-        :raises: AssertionError if the context is a delayed-copy.
-        """
-
-    def acceptFromCopy():
-        """Perform upload acceptance for a delayed-copy record.
-
-         * Move the upload to accepted queue in all cases.
-
-        :raises: AssertionError if the context is not a delayed-copy or
-            has no sources associated to it.
         """
 
     @export_write_operation()
@@ -364,8 +351,6 @@ class IPackageUpload(Interface):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
-
-        :raises: AssertionError if the context is a delayed-copy.
         """
 
     @export_write_operation()
@@ -735,17 +720,6 @@ class IPackageUploadSet(Interface):
         If status is ommitted return the number of all entries.
         'distroseries' is optional and restrict the results in given
         distroseries, same for pocket.
-        """
-
-    def createDelayedCopy(archive, distroseries, pocket, signing_key):
-        """Return a `PackageUpload` record for a delayed-copy operation.
-
-        :param archive: target `IArchive`,
-        :param distroseries: target `IDistroSeries`,
-        :param pocket: target `PackagePublishingPocket`,
-        :param signing_key: `IGPGKey` of the user requesting this copy.
-
-        :return: an `IPackageUpload` record in NEW state.
         """
 
     def getAll(distroseries, created_since_date=None, status=None,

@@ -220,25 +220,6 @@
     :packageupload: A PackageUpload record for which we display files.
   </tal:comment>
 
-    <tal:copy condition="packageupload/pending_delayed_copy">
-      <tr tal:define="archive
-                      packageupload/sourcepackagerelease/upload_archive">
-        <td />
-        <td tal:condition="view/availableActions" />
-        <td>Copied from
-          <tal:linked condition="archive/required:launchpad.View">
-            <a tal:attributes="href archive/fmt:url"
-               tal:content="archive/displayname" />
-          </tal:linked>
-          <tal:not_linked
-            condition="not: archive/required:launchpad.View"
-            replace="archive/displayname">
-          </tal:not_linked>
-        </td>
-        <td colspan="6" />
-      </tr>
-    </tal:copy>
-
     <tal:sync condition="packageupload/package_copy_job">
       <tr>
         <td />
@@ -256,17 +237,16 @@
       </tr>
     </tal:sync>
 
-    <tal:upload condition="not: packageupload/pending_delayed_copy">
-      <tr tal:repeat="file packageupload/source_files">
-        <td/>
-        <td tal:condition="view/availableActions"/>
-        <td
-          tal:define="libraryfilealias file/libraryfile"
-          tal:condition="libraryfilealias">
-          <metal:file use-macro="template/macros/package-file"/>
-        </td>
-        <td colspan="6"/>
-      </tr>
+    <tr tal:repeat="file packageupload/source_files">
+      <td/>
+      <td tal:condition="view/availableActions"/>
+      <td
+        tal:define="libraryfilealias file/libraryfile"
+        tal:condition="libraryfilealias">
+        <metal:file use-macro="template/macros/package-file"/>
+      </td>
+      <td colspan="6"/>
+    </tr>
 
     <tal:package repeat="package packageupload/binary_packages">
       <tal:define
@@ -312,7 +292,6 @@
         <td colspan="6"/>
       </tr>
     </tal:diffs>
-    </tal:upload>
 
 </metal:macro>
 

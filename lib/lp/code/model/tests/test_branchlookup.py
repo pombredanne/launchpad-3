@@ -753,3 +753,37 @@ class TestGetByLPPath(TestCaseWithFactory):
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)
+
+
+class PerformLookupTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProductBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeProductBranch(
+            owner=owner, product=product, name='c')
+
+    def test_performLookup_with_branch_name(self):
+        # performLookup works with branch unique_name and
+        # escapes the trailing path.
+        product = make_product_with_branch(self.factory)
+        branch = product.development_focus.branch
+        lookup = dict(
+            type='branch_name', unique_name=branch.unique_name,
+            trailing='foo/+filediff')
+        branch_lookup = getUtility(IBranchLookup)
+        found_branch, trailing = branch_lookup.performLookup(lookup)
+        self.assertEqual(branch, found_branch)
+        self.assertEqual('foo/%2Bfilediff', trailing)
+
+    def test_performLookup_with_alias_and_extra_path(self):
+        # PerformLookup works with aliases and escapes the trailing path.
+        product = make_product_with_branch(self.factory)
+        lookup = dict(type='alias', lp_path='%s/foo/+filediff' % product.name)
+        branch_lookup = getUtility(IBranchLookup)
+        found_branch, trailing = branch_lookup.performLookup(lookup)
+        self.assertEqual(product.development_focus.branch, found_branch)
+        self.assertEqual('foo/%2Bfilediff', trailing)

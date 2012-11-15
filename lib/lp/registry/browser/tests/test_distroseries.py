@@ -2099,9 +2099,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        self.assertIn(
-            "Requested sync of 1 package.",
-            notifications[0].message)
+        self.assertIn("Requested sync of 1 package", notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
@@ -2311,25 +2309,42 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             self.assertEqual(1, len(view.cached_differences.batch))
 
 
-class TestCopyAsynchronouslyMessage(TestCase):
+class TestCopyAsynchronouslyMessage(TestCaseWithFactory):
     """Test the helper function `copy_asynchronously_message`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCopyAsynchronouslyMessage, self).setUp()
+        self.archive = self.factory.makeArchive()
+        self.series = self.factory.makeDistroSeries()
+        self.series_url = canonical_url(self.series)
+        self.series_title = self.series.displayname
+
+    def message(self, source_pubs_count):
+        return copy_asynchronously_message(
+            source_pubs_count, self.archive, dest_url=self.series_url,
+            dest_display_name=self.series_title)
 
     def test_zero_packages(self):
         self.assertEqual(
-            "Requested sync of 0 packages.",
-            copy_asynchronously_message(0).escapedtext)
+            'Requested sync of 0 packages to <a href="%s">%s</a>.' %
+                (self.series_url, self.series_title),
+            self.message(0).escapedtext)
 
     def test_one_package(self):
         self.assertEqual(
-            "Requested sync of 1 package.<br />Please "
-            "allow some time for this to be processed.",
-            copy_asynchronously_message(1).escapedtext)
+            'Requested sync of 1 package to <a href="%s">%s</a>.<br />'
+            'Please allow some time for this to be processed.' %
+                (self.series_url, self.series_title),
+            self.message(1).escapedtext)
 
     def test_multiple_packages(self):
         self.assertEqual(
-            "Requested sync of 5 packages.<br />Please "
-            "allow some time for these to be processed.",
-            copy_asynchronously_message(5).escapedtext)
+            'Requested sync of 5 packages to <a href="%s">%s</a>.<br />'
+            'Please allow some time for these to be processed.' %
+                (self.series_url, self.series_title),
+            self.message(5).escapedtext)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

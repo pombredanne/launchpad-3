@@ -91,7 +91,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
-    ISourcePackagePublishingHistory,
     name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
@@ -541,8 +540,6 @@ class PackageUpload(SQLBase):
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
-        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
-
         debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
@@ -570,8 +567,6 @@ class PackageUpload(SQLBase):
 
         assert self.package_copy_job is not None, (
             "This method is for copy-job uploads only.")
-        assert not self.is_delayed_copy, (
-            "This method is not for delayed copies.")
 
         if self.status == PackageUploadStatus.REJECTED:
             raise QueueInconsistentStateError(
@@ -596,8 +591,9 @@ class PackageUpload(SQLBase):
 
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
-        assert not self.is_delayed_copy, (
-            "This method is not for delayed copies.")
+        assert self.changesfile is not None, (
+            "Obsolete delayed copies can no longer be accepted. Repeat the "
+            "copy operation instead.")
 
         self.setAccepted()
 
@@ -629,8 +625,6 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, logger=None, dry_run=False, user=None):
         """See `IPackageUpload`."""
-        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
-
         if self.package_copy_job is None:
             self._acceptNonSyncFromQueue(logger, dry_run)
         else:
@@ -638,13 +632,6 @@ class PackageUpload(SQLBase):
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
             client.send(self, 'packageupload-accepted', user)
-
-    def acceptFromCopy(self):
-        """See `IPackageUpload`."""
-        assert self.is_delayed_copy, 'Can only process delayed-copies.'
-        assert len(self.sources) == 1, (
-            'Source is mandatory for delayed copies.')
-        self.setAccepted()
 
     def rejectFromQueue(self, logger=None, dry_run=False, user=None):
         """See `IPackageUpload`."""
@@ -674,11 +661,6 @@ class PackageUpload(SQLBase):
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()
             client.send(self, 'packageupload-rejected', user)
-
-    @property
-    def is_delayed_copy(self):
-        """See `IPackageUpload`."""
-        return self.changesfile is None and self.package_copy_job is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
@@ -794,10 +776,7 @@ class PackageUpload(SQLBase):
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
         # that they can be wrapped in table cells in the UI.
-        ret = ", ".join(names)
-        if self.is_delayed_copy:
-            ret += " (delayed)"
-        return ret
+        return ", ".join(names)
 
     @cachedproperty
     def displayarchs(self):
@@ -844,8 +823,6 @@ class PackageUpload(SQLBase):
             # them here.  The runner is also responsible for calling
             # setDone().
             return
-        # Circular imports.
-        from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
@@ -871,40 +848,6 @@ class PackageUpload(SQLBase):
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
                     return []
-
-        # Adjust component and file privacy of delayed_copies.
-        if self.is_delayed_copy:
-            for pub_record in publishing_records:
-                pub_record.overrideFromAncestry()
-
-                # Grab the .changes file of the original source package while
-                # it's available.
-                changes_file = None
-                if ISourcePackagePublishingHistory.providedBy(pub_record):
-                    release = pub_record.sourcepackagerelease
-                    changes_file = StringIO.StringIO(
-                        release.package_upload.changesfile.read())
-
-                for new_file in update_files_privacy(pub_record):
-                    debug(logger, "Made %s public" % new_file.filename)
-                for custom_file in self.customfiles:
-                    update_files_privacy(custom_file)
-                    debug(logger,
-                          "Made custom file %s public" %
-                          custom_file.libraryfilealias.filename)
-                if ISourcePackagePublishingHistory.providedBy(pub_record):
-                    pas_verify = BuildDaemonPackagesArchSpecific(
-                        config.builddmaster.root, self.distroseries)
-                    pub_record.createMissingBuilds(
-                        pas_verify=pas_verify, logger=logger)
-
-                if changes_file is not None:
-                    debug(
-                        logger,
-                        "sending email to %s" % self.distroseries.changeslist)
-                    self.notify(
-                        changes_file_object=changes_file, logger=logger)
-                    self.syncUpdate()
 
         self.setDone()
 
@@ -1242,27 +1185,10 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         is_ppa = self.packageupload.archive.is_ppa
-        is_delayed_copy = self.packageupload.is_delayed_copy
 
         for binary in self.build.binarypackages:
-            component = binary.component
-
-            if is_delayed_copy:
-                # For a delayed copy the component will not yet have
-                # had the chance to be overridden, so we'll check the value
-                # that will be overridden by querying the ancestor in
-                # the destination archive - if one is available.
-                binary_name = binary.name
-                ancestry = getUtility(IPublishingSet).getNearestAncestor(
-                    package_name=binary_name,
-                    archive=self.packageupload.archive,
-                    distroseries=self.packageupload.distroseries, binary=True)
-
-                if ancestry is not None:
-                    component = ancestry.component
-
-            if (not is_ppa and component not in
-                distroseries.upload_components):
+            if (not is_ppa and
+                binary.component not in distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
@@ -1395,20 +1321,6 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
-
-        if self.packageupload.is_delayed_copy:
-            # For a delayed copy the component will not yet have
-            # had the chance to be overridden, so we'll check the value
-            # that will be overridden by querying the ancestor in
-            # the destination archive - if one is available.
-            source_name = self.sourcepackagerelease.name
-            ancestry = getUtility(IPublishingSet).getNearestAncestor(
-                package_name=source_name,
-                archive=self.packageupload.archive,
-                distroseries=self.packageupload.distroseries)
-
-            if ancestry is not None:
-                component = ancestry.component
 
         if (not self.packageupload.archive.is_ppa and
             component not in distroseries.upload_components):
@@ -1647,13 +1559,6 @@ class PackageUploadSet:
             return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
-
-    def createDelayedCopy(self, archive, distroseries, pocket,
-                          signing_key):
-        """See `IPackageUploadSet`."""
-        return PackageUpload(
-            archive=archive, distroseries=distroseries, pocket=pocket,
-            status=PackageUploadStatus.NEW, signing_key=signing_key)
 
     def findSourceUpload(self, name, version, archive, distribution):
         """See `IPackageUploadSet`."""
