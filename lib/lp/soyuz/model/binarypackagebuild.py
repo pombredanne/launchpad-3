@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import datetime
-import logging
 import operator
 
 import apt_pkg
@@ -55,11 +54,7 @@ from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    ISlaveStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
