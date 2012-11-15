@@ -406,7 +406,7 @@ class TestProduct(TestCaseWithFactory):
                 product.specification_sharing_policy)
 
     def test_change_info_type_embargoed_sets_policies(self):
-        # Changing information type from public to proprietary sets the
+        # Changing information type from public to embargoed sets the
         # appropriate policies
         product = self.factory.makeProduct()
         with person_logged_in(product.owner):
@@ -421,8 +421,8 @@ class TestProduct(TestCaseWithFactory):
                 product.specification_sharing_policy)
 
     def test_proprietary_to_public_leaves_policies(self):
-        # Changing information type from public to proprietary sets the
-        # appropriate policies
+        # Changing information type from public leaves sharing policies
+        # unchanged.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY, owner=owner)
@@ -1571,8 +1571,9 @@ class BaseSharingPolicyTests:
                 [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
                 getAccessPolicyTypes(product))
 
-    def test_proprietary_products_forbid_public_types(self):
-        """Proprietary/embargoed products only have proprietary artifacts."""
+    def test_proprietary_products_forbid_public_policies(self):
+        # A proprietary project forbids any sharing policy that would permit
+        # public artifacts.
         owner = self.product.owner
         with person_logged_in(owner):
             self.product.licenses = [License.OTHER_PROPRIETARY]

@@ -1460,6 +1460,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             self.request.response.addWarningNotification(warning)
 
     def getPublicWarning(self, old_info_type):
+        """Get warning if public artifacts might expose the product.
+
+        :param old_info_type: The former information type of the product.
+        """
         if (old_info_type != InformationType.PUBLIC or
             self.context.information_type == InformationType.PUBLIC):
             return None

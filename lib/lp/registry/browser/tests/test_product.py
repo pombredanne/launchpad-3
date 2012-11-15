@@ -561,6 +561,7 @@ class TestProductEditView(BrowserTestCase):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         bug = self.factory.makeBug(target=product)
+
         def make_proprietary():
             with person_logged_in(None):
                 browser = self.getViewBrowser(product, '+edit',
@@ -572,6 +573,7 @@ class TestProductEditView(BrowserTestCase):
                 product.information_type = InformationType.PUBLIC
             return browser
         browser = make_proprietary()
+
         def assertWarning(browser, text):
             warning_tag = Tag('warning', 'div', text=text,
                               attrs={'class': 'warning message'})
@@ -636,7 +638,7 @@ class TestProductEditView(BrowserTestCase):
         # The message reflects an Embargoed product type.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
-        bug = self.factory.makeBug(target=product)
+        self.factory.makeBug(target=product)
         with person_logged_in(owner):
             product.information_type = InformationType.EMBARGOED
             view = create_initialized_view(product, '+edit')
@@ -650,7 +652,7 @@ class TestProductEditView(BrowserTestCase):
         # proprietary type.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
-        bug = self.factory.makeBug(target=product)
+        self.factory.makeBug(target=product)
         view = create_initialized_view(product, '+edit')
         for from_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
             for to_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
