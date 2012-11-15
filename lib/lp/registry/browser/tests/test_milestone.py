@@ -327,12 +327,12 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         #  10. All related people
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=11)
+            self.milestone, bugtask_count, query_limit=12)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        browses_under_limit = BrowsesWithQueryLimit(36, self.owner)
+        browses_under_limit = BrowsesWithQueryLimit(37, self.owner)
         self.add_bug(3)
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
@@ -450,7 +450,7 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         #  10. All related people.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=11)
+            self.milestone, bugtask_count, query_limit=12)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -509,12 +509,12 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=11)
+            self.milestone, bugtask_count, query_limit=12)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        browses_under_limit = BrowsesWithQueryLimit(35, self.owner)
+        browses_under_limit = BrowsesWithQueryLimit(36, self.owner)
         self.add_bug(4)
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
@@ -588,4 +588,4 @@ class TestMilestoneTagView(TestQueryCountBase):
         # bugtasks retrieval.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestonetag, bugtask_count, query_limit=11)
+            self.milestonetag, bugtask_count, query_limit=12)
