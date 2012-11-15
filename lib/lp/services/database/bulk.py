@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'create',
+    'dbify_value',
     'load',
     'load_referencing',
     'load_related',
@@ -167,7 +168,7 @@ def load_related(object_type, owning_objects, foreign_keys):
     return load(object_type, keys)
 
 
-def _dbify_value(col, val):
+def dbify_value(col, val):
     """Convert a value into a form that Storm can compile directly."""
     if isinstance(val, SQL):
         return (val,)
@@ -184,7 +185,7 @@ def _dbify_value(col, val):
         return (col.variable_factory(value=val),)
 
 
-def _dbify_column(col):
+def dbify_column(col):
     """Convert a column into a form that Storm can compile directly."""
     if isinstance(col, Reference):
         # References are mainly meant to be used as descriptors, so we
@@ -199,7 +200,7 @@ def create(columns, values, get_objects=False,
            get_primary_keys=False):
     """Create a large number of objects efficiently.
 
-    :param cols: The Storm columns to insert values into. Must be from a
+    :param columns: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
     :param get_objects: Return the created objects.
@@ -207,7 +208,7 @@ def create(columns, values, get_objects=False,
     :return: A list of the created objects if get_created, otherwise None.
     """
     # Flatten Reference faux-columns into their primary keys.
-    db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
+    db_cols = list(chain.from_iterable(map(dbify_column, columns)))
     clses = set(col.cls for col in db_cols)
     if len(clses) != 1:
         raise ValueError(
@@ -228,7 +229,7 @@ def create(columns, values, get_objects=False,
     # squashed into primary key variables.
     db_values = [
         list(chain.from_iterable(
-            _dbify_value(col, val) for col, val in zip(columns, value)))
+            dbify_value(col, val) for col, val in zip(columns, value)))
         for value in values]
 
     if get_objects or get_primary_keys:

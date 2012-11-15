@@ -98,15 +98,13 @@ class OopsHandler(logging.Handler):
 class LaunchpadFormatter(Formatter):
     """logging.Formatter encoding our preferred output format."""
 
-    def __init__(self, fmt=None, datefmt=None):
+    def __init__(self, fmt=None, datefmt="%Y-%m-%d %H:%M:%S"):
         if fmt is None:
             if config.isTestRunner():
                 # Don't output timestamps in the test environment
                 fmt = '%(levelname)-7s %(message)s'
             else:
                 fmt = '%(asctime)s %(levelname)-7s %(message)s'
-        if datefmt is None:
-            datefmt = "%Y-%m-%d %H:%M:%S"
         logging.Formatter.__init__(self, fmt, datefmt)
         # Output should be UTC.
         self.converter = time.gmtime
@@ -232,11 +230,13 @@ def dummy_logger_options(parser):
     define_verbosity_options(parser, None, do_nothing, do_nothing)
 
 
-def logger_options(parser, default=logging.INFO):
-    """Add the --verbose and --quiet options to an optparse.OptionParser.
+def logger_options(parser, default=logging.INFO, milliseconds=False):
+    """Add the --verbose, --quiet & --ms options to an optparse.OptionParser.
 
     The requested loglevel will end up in the option's loglevel attribute.
     Note that loglevel is not clamped to any particular range.
+
+    The milliseconds parameter specifies the default for the --ms option.
 
     >>> from optparse import OptionParser
     >>> parser = OptionParser()
@@ -327,8 +327,27 @@ def logger_options(parser, default=logging.INFO):
         help="Send log messages to FILE. LVL is one of %s" % debug_levels)
     parser.set_default('log_file_level', None)
 
+    def milliseconds_cb(option, opt_str, value, parser):
+        if opt_str == "--ms":
+            value = True
+        else:
+            value = False
+        parser.values.milliseconds = value
+        log._log = _logger(
+            parser.values.loglevel, out_stream=sys.stderr, milliseconds=value)
+
+    parser.add_option(
+        "--ms", action="callback", default=milliseconds,
+        dest="milliseconds", callback=milliseconds_cb,
+        help="Include milliseconds in log output timestamps")
+    parser.add_option(
+        "--no-ms", action="callback", default=milliseconds,
+        dest="milliseconds", callback=milliseconds_cb,
+        help="Include milliseconds in log output timestamps")
+
     # Set the global log
-    log._log = _logger(default, out_stream=sys.stderr)
+    log._log = _logger(
+        default, out_stream=sys.stderr, milliseconds=milliseconds)
 
 
 def logger(options=None, name=None):
@@ -359,7 +378,8 @@ def logger(options=None, name=None):
 
     return _logger(
         options.loglevel, out_stream=sys.stderr, name=name,
-        log_file=log_file, log_file_level=log_file_level)
+        log_file=log_file, log_file_level=log_file_level,
+        milliseconds=options.milliseconds)
 
 
 def reset_root_logger():
@@ -375,7 +395,7 @@ def reset_root_logger():
 
 def _logger(
     level, out_stream, name=None,
-    log_file=None, log_file_level=logging.DEBUG):
+    log_file=None, log_file_level=logging.DEBUG, milliseconds=False):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
@@ -403,7 +423,12 @@ def _logger(
     # logs.
     root_logger.setLevel(0)
     hdlr.setLevel(level)
-    formatter = LibrarianFormatter()
+    if milliseconds:
+        # Python default datefmt includes milliseconds.
+        formatter = LibrarianFormatter(datefmt=None)
+    else:
+        # Launchpad default datefmt does not include milliseconds.
+        formatter = LibrarianFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 

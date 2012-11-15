@@ -86,6 +86,7 @@ from lp.services.database.sqlbase import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
 from lp.services.log.logger import FakeLogger
+from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
@@ -2171,37 +2172,32 @@ class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
 
     def test_flag_False(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, u'   ')
+        with FeatureFixture({self.flag: u'   '}):
             self.assertFalse(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, bug_task.pillar.name)
+        with FeatureFixture({self.flag: bug_task.pillar.name}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag_of_many(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(
-                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+        flag_value = u'  foo bar  ' + bug_task.pillar.name + '    baz '
+        with FeatureFixture({self.flag: flag_value}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_match_all_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.flag, u'*')
+        with FeatureFixture({self.flag: u'*'}):
             self.assertTrue(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_alt_flag_does_not_affect(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
-        with feature_flags():
-            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+        with FeatureFixture({self.alt_flag: bug_task.pillar.name}):
             self.assertFalse(
                 removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
@@ -2256,9 +2252,9 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         person = self.factory.makePerson()
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
-        with feature_flags():
-            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
-                             autoconfirm_product.name)
+        with FeatureFixture({
+            u'bugs.autoconfirm.enabled_product_names':
+            autoconfirm_product.name}):
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
             with person_logged_in(person):
@@ -2273,9 +2269,9 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         another_person = self.factory.makePerson()
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
-        with feature_flags():
-            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
-                             autoconfirm_product.name)
+        with FeatureFixture({
+            u'bugs.autoconfirm.enabled_product_names':
+            autoconfirm_product.name}):
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
             with person_logged_in(another_person):
@@ -2634,6 +2630,20 @@ class TestTransitionToTarget(TestCaseWithFactory):
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
 
+    def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToTarget() is called.
+        new_product = self.factory.makeProduct()
+        task = self.factory.makeBugTask()
+        # The factory caused COMMENT notifications which filled the bug cache.
+        cache = get_property_cache(task.bug)
+        self.assertIsNotNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+        with person_logged_in(task.owner):
+            task.transitionToTarget(new_product, task.owner)
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+
     def test_accesspolicyartifacts_updated(self):
         # transitionToTarget updates the AccessPolicyArtifacts related
         # to the bug.
@@ -2671,6 +2681,27 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.assertContentEqual(
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
+
+
+class TransitionToMilestoneTestCase(TestCaseWithFactory):
+    """Tests for BugTask.transitionToMilestone."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cached_recipients_cleared(self):
+        # The bug's notification recipients caches are cleared when
+        # transitionToMilestone() is called.
+        task = self.factory.makeBugTask()
+        product = task.target
+        milestone = self.factory.makeMilestone(product=product)
+        # The factory caused COMMENT notifications which filled the bug cache.
+        cache = get_property_cache(task.bug)
+        self.assertIsNotNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
+        with person_logged_in(task.target.owner):
+            task.transitionToMilestone(milestone, task.target.owner)
+        self.assertIsNone(
+            getattr(cache, '_notification_recipients_for_comments', None))
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):

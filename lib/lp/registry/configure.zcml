@@ -1026,22 +1026,30 @@
         <allow
             attributes="
                 id
-                name
-                code_name
-                product
-                distribution
-                productseries
-                distroseries
-                dateexpected
+                userCanView
+                " />
+        <require
+            permission="launchpad.View"
+            attributes="
                 active
+                bugtasks
+                code_name
+                dateexpected
+                displayname
+                distribution
+                distroseries
+                getSpecifications
+                getTags
+                getTagsData
+                name
+                product
+                product_release
+                productseries
+                series_target
                 summary
                 target
-                series_target
-                displayname
                 title
-                bugtasks
-                specifications
-                product_release"/>
+                "/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -1051,15 +1059,13 @@
                 setTags
                 "/>
         <require
-            permission="zope.Public"
-            attributes="
-                getTags
-                getTagsData
-                "/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
             interface="lp.app.interfaces.security.IAuthorization"/>
@@ -1070,13 +1076,18 @@
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
 
     <!-- IMilestoneSet -->
 
@@ -1091,9 +1102,14 @@
 
     <class
         class="lp.registry.model.milestone.ProjectMilestone">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
+    <adapter
+        provides="lp.app.interfaces.informationtype.IInformationType"
+        for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
+        factory="lp.registry.adapters.information_type_from_product"/>
     <class
         class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
         <allow
@@ -1229,11 +1245,22 @@
         class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+            interface="lp.registry.interfaces.pillar.IPillar"/>
+        <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.product.IProductLimitedView"/>
         <require
             permission="launchpad.View"
+            interface="lp.registry.interfaces.product.IProductView"/>
+        <require
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+        <require
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="date_next_suggest_packaging"/>
         <require
             permission="launchpad.Driver"
@@ -1316,7 +1343,7 @@
                 translationpermission
                 translations_usage"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.View"
             attributes="
                 qualifies_for_free_hosting"/>
         <require
@@ -1329,9 +1356,29 @@
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active"/>
 
+        <!-- IBugTarget -->
+
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                bugtargetdisplayname"/>
+
+        <require
+            permission="launchpad.View"
+            attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtargetname
+                createBug
+                enable_bugfiling_duplicate_search
+                getBugTaskWeightFunction
+                pillar
+                searchTasks"/>
+
         <!-- IHasAliases -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             attributes="
                 aliases"/>
         <require
@@ -1341,14 +1388,17 @@
 
         <!-- IQuestionTarget -->
 
-        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-          permission="launchpad.AnyPerson"
+            permission="launchpad.View"
+            interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
+        <require
+          permission="launchpad.AnyAllowedPerson"
           interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
@@ -1359,15 +1409,28 @@
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target" />
+        <require
+            permission="launchpad.View"
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions" />
+        <require
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             attributes="
                 bug_supervisor"/>
         <require
@@ -1421,7 +1484,6 @@
                 search
                 latest
                 getTranslatables
-                featuredTranslatables
                 count_all
                 count_translatables
                 count_buggy
@@ -1479,10 +1541,16 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
-        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
+        <require
+            permission="launchpad.View"
+            interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1493,16 +1561,17 @@
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
@@ -1586,6 +1655,7 @@
                 official_malone
                 owner
                 package_derivatives_email
+                redirect_release_uploads
                 summary
                 title"/>
         <require

@@ -314,10 +314,17 @@ def validate_assignee(self, attr, value):
     return validate_person(self, attr, value)
 
 
-def validate_target(bug, target, retarget_existing=True):
+def validate_target(bug, target, retarget_existing=True,
+                    check_source_package=True):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist.
+
+    If the target is a source package, we need to check that it has been
+    published in the distribution since we don't trust the vocabulary to
+    enforce this. However, when using the UI, this check is done during the
+    validation stage of form submission and we don't want to do it again since
+    it uses an expensive query. So 'check_source_package' can be set to False.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -328,7 +335,7 @@ def validate_target(bug, target, retarget_existing=True):
         ISourcePackage.providedBy(target)):
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
-        if (target.sourcepackagename is not None and
+        if (check_source_package and target.sourcepackagename is not None and
             len(target.distribution.series) > 0):
             try:
                 target.distribution.guessPublishedSourcePackageName(
@@ -357,7 +364,7 @@ def validate_target(bug, target, retarget_existing=True):
                     % bug.default_bugtask.target.pillar.bugtargetdisplayname)
 
 
-def validate_new_target(bug, target):
+def validate_new_target(bug, target, check_source_package=True):
     """Validate a bugtask target to be added.
 
     Make sure that the isn't already a distribution task without a
@@ -391,7 +398,9 @@ def validate_new_target(bug, target):
                 "specified. You should fill in a package name for "
                 "the existing bug." % target.distribution.displayname)
 
-    validate_target(bug, target, retarget_existing=False)
+    validate_target(
+        bug, target, retarget_existing=False,
+        check_source_package=check_source_package)
 
 
 class BugTask(SQLBase):
@@ -664,10 +673,11 @@ class BugTask(SQLBase):
             if relevant:
                 key = bug_target_to_key(bugtask.target)
                 key['sourcepackagename'] = new_spn
+                # The relevance check above and the fact that the distro series
+                # task is already on the bug means we don't need to revalidate.
                 bugtask.transitionToTarget(
                     bug_target_from_key(**key),
-                    user,
-                    _sync_sourcepackages=False)
+                    user, validate=False, _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
         """See `IBugTask`."""
@@ -772,8 +782,10 @@ class BugTask(SQLBase):
             raise UserCannotEditBugTaskMilestone(
                 "User does not have sufficient permissions "
                 "to edit the bug task milestone.")
-        else:
-            self.milestone = new_milestone
+        self.milestone = new_milestone
+        # Clear the recipient caches so that the milestone subscribers are
+        # notified.
+        self.bug.clearBugNotificationRecipientsCache()
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
@@ -1033,7 +1045,7 @@ class BugTask(SQLBase):
 
         self.assignee = assignee
 
-    def validateTransitionToTarget(self, target):
+    def validateTransitionToTarget(self, target, check_source_package=True):
         """See `IBugTask`."""
         from lp.registry.model.distroseries import DistroSeries
 
@@ -1092,10 +1104,16 @@ class BugTask(SQLBase):
                         "tasks may only be retargeted to a different "
                         "package.")
 
-        validate_target(self.bug, target)
+        validate_target(
+            self.bug, target, check_source_package=check_source_package)
 
-    def transitionToTarget(self, target, user, _sync_sourcepackages=True):
+    def transitionToTarget(self, target, user, validate=True,
+                           _sync_sourcepackages=True):
         """See `IBugTask`.
+
+        If validate is True then we need to check that the new target is valid,
+        otherwise the check has already been done (eg during form submission)
+        and we don't need to repeat it.
 
         If _sync_sourcepackages is True (the default) and the
         sourcepackagename is being changed, any other tasks for the same
@@ -1105,7 +1123,8 @@ class BugTask(SQLBase):
         if self.target == target:
             return
 
-        self.validateTransitionToTarget(target)
+        if validate:
+            self.validateTransitionToTarget(target)
 
         target_before_change = self.target
 
@@ -1141,6 +1160,7 @@ class BugTask(SQLBase):
         # As a result of the transition, some subscribers may no longer
         # have access to the parent bug. We need to run a job to remove any
         # such subscriptions.
+        self.bug.clearBugNotificationRecipientsCache()
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, [self.bug], pillar=target_before_change.pillar)
 
@@ -1567,8 +1587,9 @@ class BugTaskSet:
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
-    def createManyTasks(self, bug, owner, targets, status=None,
-                        importance=None, assignee=None, milestone=None):
+    def createManyTasks(self, bug, owner, targets, validate_target=True,
+                        status=None, importance=None, assignee=None,
+                        milestone=None):
         """See `IBugTaskSet`."""
         if status is None:
             status = IBugTask['status'].default
@@ -1577,7 +1598,8 @@ class BugTaskSet:
         target_keys = []
         pillars = set()
         for target in targets:
-            validate_new_target(bug, target)
+            if validate_target:
+                validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
 
@@ -1602,8 +1624,8 @@ class BugTaskSet:
         removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 
-    def createTask(self, bug, owner, target, status=None, importance=None,
-                   assignee=None, milestone=None):
+    def createTask(self, bug, owner, target, validate_target=True, status=None,
+                   importance=None, assignee=None, milestone=None):
         """See `IBugTaskSet`."""
         # Create tasks for accepted nominations if this is a source
         # package addition. Distribution nominations are for all the
@@ -1619,8 +1641,9 @@ class BugTaskSet:
                         key['sourcepackagename']))
 
         tasks = self.createManyTasks(
-            bug, owner, targets, status=status, importance=importance,
-            assignee=assignee, milestone=milestone)
+            bug, owner, targets, validate_target=validate_target,
+            status=status, importance=importance, assignee=assignee,
+            milestone=milestone)
         return [task for task in tasks if task.target == target][0]
 
     def getStatusCountsForProductSeries(self, user, product_series):

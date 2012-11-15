@@ -1342,9 +1342,8 @@ value is submitted.
 Copy private files to public archives
 -------------------------------------
 
-Users are allowed to copy private sources into private PPAs, however
-it happens via 'delayed-copies' not the usual direct copying method.
-See more information in scripts/packagecopier.py
+Users are allowed to copy private sources into public PPAs.
+See more information in scripts/packagecopier.py.
 
 First we will enable Celso's private PPA.
 
@@ -1386,61 +1385,13 @@ the public Ubuntu-team PPA, which is empty.
     >>> len(view.errors)
     0
 
-The action is performed as a delayed-copy, and the user is informed of
+The action is performed as an asynchronous copy, and the user is informed of
 it via a page notification.
 
     >>> from lp.testing.pages import extract_text
     >>> for notification in view.request.response.notifications:
     ...     print extract_text(notification.message)
-    Packages copied to PPA for Ubuntu Team:
-    Delayed copy of foocomm - 2.0-1 (source)
-
-The delayed-copy request is waiting to be processed in the ACCEPTED
-upload queue.
-
-    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
-    >>> copy = getUtility(IPackageUploadSet).findSourceUpload(
-    ...     'foocomm', '2.0-1', ubuntu_team_ppa, ubuntu)
-
-    >>> print copy.status.name
-    ACCEPTED
-
-The action may also be performed asynchronously.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> from lp.soyuz.browser.archive import (
-    ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
-    ...     )
-    >>> fixture = FeatureFixture({
-    ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS: '0',
-    ...     })
-    >>> fixture.setUp()
-
-    >>> login('foo.bar@canonical.com')
-    >>> async_private_source = test_publisher.createSource(
-    ...     cprov_private_ppa, 'foocomm', '1.0-1', new_version='3.0-1')
-    >>> transaction.commit()
-
-    >>> print async_private_source.displayname
-    foocomm 3.0-1 in hoary
-
-    >>> login('celso.providelo@canonical.com')
-    >>> view = create_initialized_view(
-    ...     cprov_private_ppa, name="+copy-packages",
-    ...     form={
-    ...         'field.selected_sources': [str(async_private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team/ppa',
-    ...         'field.destination_series': '',
-    ...         'field.include_binaries': 'REBUILD_SOURCES',
-    ...         'field.actions.copy': 'Copy',
-    ...         })
-
-    >>> len(view.errors)
-    0
-
-    >>> for notification in view.request.response.notifications:
-    ...     print extract_text(notification.message)
-    Requested sync of 1 package.
+    Requested sync of 1 package to PPA for Ubuntu Team.
     Please allow some time for this to be processed.
 
 There is one copy job waiting, which we run.
@@ -1463,14 +1414,14 @@ The copy results in a pending source publication.
     >>> [copied_source] = ubuntu_team_ppa.getPublishedSources(
     ...     name="foocomm", exact_match=True)
     >>> print copied_source.displayname
-    foocomm 3.0-1 in hoary
+    foocomm 2.0-1 in hoary
 
 If we run the same copy again, it will fail.
 
     >>> view = create_initialized_view(
     ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
-    ...         'field.selected_sources': [str(async_private_source.id)],
+    ...         'field.selected_sources': [str(private_source.id)],
     ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
@@ -1495,11 +1446,9 @@ The job failure is shown in the UI.
     >>> for job in ubuntu_team_ppa_view.package_copy_jobs:
     ...     print job.status.title, job.package_name, job.package_version
     ...     print job.error_message
-    Failed foocomm 3.0-1
-    foocomm 3.0-1 in hoary (same version already building in the destination
+    Failed foocomm 2.0-1
+    foocomm 2.0-1 in hoary (same version already building in the destination
     archive for Hoary)
-
-    >>> fixture.cleanUp()
 
 
 External dependencies validation

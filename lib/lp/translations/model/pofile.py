@@ -1098,29 +1098,10 @@ class POFile(SQLBase, POFileMixIn):
             subject = 'Import problem - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
         elif len(errors) > 0:
-            # There were some errors with translations.
-            errorsdetails = ''
-            for error in errors:
-                potmsgset = error['potmsgset']
-                pomessage = error['pomessage']
-                error_message = error['error-message']
-                errorsdetails = '%s%d. "%s":\n\n%s\n\n' % (
-                    errorsdetails,
-                    potmsgset.getSequence(self.potemplate),
-                    error_message,
-                    pomessage)
-
+            data = self._prepare_pomessage_error_message(errors, replacements)
+            subject, template_mail, errorsdetails = data
             entry_to_import.setErrorOutput(
                 "Imported, but with errors:\n" + errorsdetails)
-
-            replacements['numberoferrors'] = len(errors)
-            replacements['errorsdetails'] = errorsdetails
-            replacements['numberofcorrectmessages'] = (
-                msgsets_imported - len(errors))
-
-            template_mail = 'poimport-with-errors.txt'
-            subject = 'Translation problems - %s - %s' % (
-                self.language.displayname, self.potemplate.displayname)
         else:
             # The import was successful.
             template_mail = 'poimport-confirmation.txt'
@@ -1164,6 +1145,28 @@ class POFile(SQLBase, POFileMixIn):
         template = get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
+
+    def _prepare_pomessage_error_message(self, errors, replacements):
+        # Return subject, template_mail, and errorsdetails to make
+        # an error email message.
+        error_count = len(errors)
+        error_text = []
+        for error in errors:
+            potmsgset = error['potmsgset']
+            pomessage = error['pomessage']
+            sequence = potmsgset.getSequence(self.potemplate) or -1
+            error_message = error['error-message']
+            error_text.append('%d. "%s":\n\n%s\n\n' % (
+                sequence, error_message, pomessage))
+        errorsdetails = ''.join(error_text)
+        replacements['numberoferrors'] = error_count
+        replacements['errorsdetails'] = errorsdetails
+        replacements['numberofcorrectmessages'] = (
+            replacements['numberofmessages'] - error_count)
+        template_mail = 'poimport-with-errors.txt'
+        subject = 'Translation problems - %s - %s' % (
+            self.language.displayname, self.potemplate.displayname)
+        return subject, template_mail, errorsdetails
 
     def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""

@@ -20,6 +20,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    In,
     Join,
     SQL,
     )
@@ -87,7 +88,10 @@ from lp.registry.model.milestone import (
     ProjectMilestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.productseries import ProductSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -100,6 +104,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
@@ -169,13 +174,15 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IPillar`."""
         return "Project Group"
 
-    def getProducts(self):
-        return Product.selectBy(
-            project=self, active=True, orderBy='displayname')
+    def getProducts(self, user):
+        results = Store.of(self).find(
+            Product, Product.project == self, Product.active == True,
+            ProductSet.getProductPrivacyFilter(user))
+        return results.order_by(Product.displayname)
 
     @cachedproperty
     def products(self):
-        return list(self.getProducts())
+        return list(self.getProducts(getUtility(ILaunchBag).user))
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
@@ -403,7 +410,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return And(Milestone.productID == Product.id,
                    Product.projectID == self.id)
 
-    def _getMilestones(self, only_active):
+    def _getMilestones(self, user, only_active):
         """Return a list of milestones for this project group.
 
         If only_active is True, only active milestones are returned,
@@ -421,7 +428,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             )
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
-                         Product.active == True)
+                         Product.active == True,
+                         ProductSet.getProductPrivacyFilter(user))
         result = store.find(columns, conditions)
         result.group_by(Milestone.name)
         if only_active:
@@ -431,8 +439,24 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.order_by(
             'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
             'DESC')
+        # An extra query is required here in order to get the correct
+        # products without affecting the group/order of the query above.
+        products_by_name = {}
+        if result.any() is not None:
+            milestone_names = [data[0] for data in result]
+            product_conditions = And(
+                Product.project == self,
+                Milestone.product == Product.id,
+                Product.active == True,
+                In(Milestone.name, milestone_names))
+            for product, name in (
+                store.find((Product, Milestone.name), product_conditions)):
+                if name not in products_by_name.keys():
+                    products_by_name[name] = product
         return shortlist(
-            [ProjectMilestone(self, name, dateexpected, active)
+            [ProjectMilestone(
+                self, name, dateexpected, active,
+                products_by_name.get(name, None))
              for name, dateexpected, active in result])
 
     @property
@@ -449,7 +473,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(only_active=True)
+        user = getUtility(ILaunchBag).user
+        return self._getMilestones(user, only_active=True)
 
     @property
     def product_milestones(self):
@@ -461,7 +486,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def all_milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(only_active=False)
+        user = getUtility(ILaunchBag).user
+        return self._getMilestones(user, only_active=False)
 
     def getMilestone(self, name):
         """See `IProjectGroup`."""

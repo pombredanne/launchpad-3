@@ -33,9 +33,9 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>Bugs</th>
-          <th>Blueprints</th>
-          <th>Questions</th>
+          <th>Owner</th>
+          <th>Driver</th>
+          <th>Bug Supervisor</th>
         </tr>
       </thead>
 
@@ -46,20 +46,14 @@
                tal:content="project/title">
             </a>
           </td>
-          <td style="text-align: right">
-            <a tal:attributes="href string:${project/url}/+bugs"
-               tal:content="project/bug_count">
-            </a>
+          <td>
+            <tal:yes-no replace="structure project/is_owner/image:boolean"/>
           </td>
-          <td style="text-align: right">
-            <a tal:attributes="href string:${project/url}/+specs"
-               tal:content="project/spec_count">
-            </a>
+          <td>
+            <tal:yes-no replace="structure project/is_driver/image:boolean"/>
           </td>
-          <td style="text-align: right">
-            <a tal:attributes="href string:${project/url}/+questions"
-               tal:content="project/question_count">
-            </a>
+          <td>
+            <tal:yes-no replace="structure project/is_bug_supervisor/image:boolean"/>
           </td>
         </tr>
       </tbody>

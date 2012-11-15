@@ -43,6 +43,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.answers.enums import (
@@ -113,6 +114,7 @@ from lp.services.messages.model.message import (
     MessageChunk,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
@@ -680,7 +682,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
-        message = self.messages[comment_number].message
+        question_message = self.messages[comment_number]
+        if not check_permission('launchpad.Moderate', question_message):
+            raise Unauthorized(
+                "Only admins, project maintainers, and comment authors "
+                "can change a comment's visibility.")
+        message = question_message.message
         message.visible = visible
 
 

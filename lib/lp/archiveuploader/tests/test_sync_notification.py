@@ -38,6 +38,7 @@ class FakeUploadPolicy:
         self.distroseries = spph.distroseries
         self.archive = spph.distroseries.main_archive
         self.pocket = spph.pocket
+        self.redirect_warning = None
 
     setDistroSeriesAndPocket = FakeMethod()
     validateUploadType = FakeMethod()
@@ -90,8 +91,7 @@ class TestSyncNotification(TestCaseWithFactory):
         self.makeUploader(requester, target_archive, spph.component)
         [synced_spph] = do_copy(
             [spph], target_archive, target_distroseries,
-            pocket=spph.pocket, person=requester, allow_delayed_copies=False,
-            close_bugs=False)
+            pocket=spph.pocket, person=requester, close_bugs=False)
         return synced_spph
 
     def makeChangesFile(self, spph, maintainer, maintainer_address,

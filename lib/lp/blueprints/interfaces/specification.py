@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Specification interfaces."""
 
@@ -692,6 +690,10 @@ class ISpecificationSet(IHasSpecifications):
 
     def getByURL(url):
         """Return the specification with the given url."""
+
+    def getByName(pillar, name):
+        """Return the specification with the given name for the given pillar.
+        """
 
     def new(name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,

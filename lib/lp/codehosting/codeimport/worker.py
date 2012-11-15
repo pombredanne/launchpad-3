@@ -888,6 +888,7 @@ class BzrImportWorker(PullingImportWorker):
         ConnectionError,
         ]
     unsupported_feature_exceptions = []
+    broken_remote_exceptions = []
 
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""

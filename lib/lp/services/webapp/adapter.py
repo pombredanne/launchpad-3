@@ -30,10 +30,7 @@ from psycopg2.extensions import (
     QueryCanceledError,
     )
 import pytz
-from storm.database import (
-    Connection,
-    register_scheme,
-    )
+from storm.database import register_scheme
 from storm.databases.postgres import (
     Postgres,
     PostgresTimeoutTracer,
@@ -661,18 +658,8 @@ class LaunchpadStatementTracer:
                                statement, params):
         statement_to_log = statement
         if params:
-            # There are some bind parameters so we want to insert them into
-            # the sql statement so we can log the statement.
-            query_params = list(Connection.to_database(params))
-            # We need to ensure % symbols used for LIKE statements etc are
-            # properly quoted or else the string format operation will fail.
-            quoted_statement = re.sub(
-                    "%%%", "%%%%", re.sub("%([^s])", r"%%\1", statement))
-            # We need to massage the query parameters a little to deal with
-            # string parameters which represent encoded binary data.
-            param_strings = [repr(p) if isinstance(p, basestring) else p
-                                 for p in query_params]
-            statement_to_log = quoted_statement % tuple(param_strings)
+            statement_to_log = raw_cursor.mogrify(
+                statement, tuple(connection.to_database(params)))
         # Record traceback to log, if requested.
         print_traceback = self._debug_sql_extra
         log_sql = getattr(_local, 'sql_logging', None)

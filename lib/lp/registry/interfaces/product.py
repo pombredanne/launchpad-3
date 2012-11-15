@@ -420,17 +420,62 @@ class IProductModerateRestricted(Interface):
                 "Not applicable to 'Other/Proprietary'.")))
 
 
-class IProductPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
-    IHasMergeProposals, IHasMilestones, IHasExpirableBugs, IHasMugshot,
-    IHasOwner, IHasSprints, IHasTranslationImports, ITranslationPolicy,
-    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
-    """Public IProduct properties."""
+class IProductPublic(Interface):
 
     id = Int(title=_('The Project ID'))
+
+    def userCanView(user):
+        """True if the given user has access to this product."""
+
+
+class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
+    """Attributes that must be visible for person with artifact grants
+    on bugs, branches or specifications for the product.
+    """
+
+    displayname = exported(
+        TextLine(
+            title=_('Display Name'),
+            description=_("""The name of the project as it would appear in a
+                paragraph.""")),
+        exported_as='display_name')
+
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
+
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
+
+    name = exported(
+        ProductNameField(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_(
+                "At least one lowercase letter or number, followed by "
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as shown above.")))
+
+    owner = exported(
+        PersonChoice(
+            title=_('Maintainer'),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
 
     project = exported(
         ReferenceChoice(
@@ -448,14 +493,21 @@ class IProductPublic(
                 'and security policy will apply to this project.')),
         exported_as='project_group')
 
-    owner = exported(
-        PersonChoice(
-            title=_('Maintainer'),
-            required=True,
-            vocabulary='ValidPillarOwner',
-            description=_("The restricted team, moderated team, or person "
-                          "who maintains the project information in "
-                          "Launchpad.")))
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The project title. Should be just a few words.")))
+
+
+class IProductView(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
+    IHasDrivers, IHasExternalBugTracker,
+    IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
+    IHasMugshot, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    """Public IProduct properties."""
 
     registrant = exported(
         PublicPersonChoice(
@@ -481,27 +533,6 @@ class IProductPublic(
         "Presents the drivers of this project as a list. A list is "
         "required because there might be a project driver and also a "
         "driver appointed in the overarching project group.")
-
-    name = exported(
-        ProductNameField(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_(
-                "At least one lowercase letter or number, followed by "
-                "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above.")))
-
-    displayname = exported(
-        TextLine(
-            title=_('Display Name'),
-            description=_("""The name of the project as it would appear in a
-                paragraph.""")),
-        exported_as='display_name')
-
-    title = exported(
-        Title(
-            title=_('Title'),
-            description=_("The project title. Should be just a few words.")))
 
     summary = exported(
         Summary(
@@ -591,25 +622,6 @@ class IProductPublic(
             "The content of this project's home page. Edit this and it will "
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-
-    icon = exported(
-        IconImageUpload(
-            title=_("Icon"), required=False,
-            default_image_resource='/@@/product',
-            description=_(
-                "A small image of exactly 14x14 pixels and at most 5kb in "
-                "size, that can be used to identify this project. The icon "
-                "will be displayed next to the project name everywhere in "
-                "Launchpad that we refer to the project and link to it.")))
-
-    logo = exported(
-        LogoImageUpload(
-            title=_("Logo"), required=False,
-            default_image_resource='/@@/product-logo',
-            description=_(
-                "An image of exactly 64x64 pixels that will be displayed in "
-                "the heading of all pages related to this project. It should "
-                "be no bigger than 50kb in size.")))
 
     mugshot = exported(
         MugshotImageUpload(
@@ -868,9 +880,9 @@ class IProductPublic(
 class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
-    @mutator_for(IProductPublic['bug_sharing_policy'])
+    @mutator_for(IProductView['bug_sharing_policy'])
     @operation_parameters(bug_sharing_policy=copy_field(
-        IProductPublic['bug_sharing_policy']))
+        IProductView['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBugSharingPolicy(bug_sharing_policy):
@@ -879,10 +891,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductPublic['branch_sharing_policy'])
+    @mutator_for(IProductView['branch_sharing_policy'])
     @operation_parameters(
         branch_sharing_policy=copy_field(
-            IProductPublic['branch_sharing_policy']))
+            IProductView['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
@@ -891,10 +903,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    @mutator_for(IProductPublic['specification_sharing_policy'])
+    @mutator_for(IProductView['specification_sharing_policy'])
     @operation_parameters(
         specification_sharing_policy=copy_field(
-            IProductPublic['specification_sharing_policy']))
+            IProductView['specification_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
     def setSpecificationSharingPolicy(specification_sharing_policy):
@@ -905,10 +917,10 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 
 class IProduct(
-    IHasBugSupervisor, IProductEditRestricted,
-    IProductModerateRestricted, IProductDriverRestricted,
-    IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType):
+    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IProductModerateRestricted, IProductDriverRestricted, IProductView,
+    IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
+    IStructuralSubscriptionTarget, IInformationType, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -935,6 +947,13 @@ class IProductSet(Interface):
 
     all_active = Attribute(
         "All the active products, sorted newest first.")
+
+    def get_users_private_products(user):
+        """Get users non-public products.
+
+        :param user: Which user are we searching products for.
+        :return: An iterable of IProduct
+        """
 
     def get_all_active(eager_load=True):
         """Get all active products.
@@ -1020,7 +1039,9 @@ class IProductSet(Interface):
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
     @export_operation_as('licensing_search')
-    def forReview(search_text=None,
+    @call_with(user=REQUEST_USER)
+    def forReview(user,
+                  search_text=None,
                   active=None,
                   project_reviewed=None,
                   licenses=None,
@@ -1071,19 +1092,6 @@ class IProductSet(Interface):
         Skips products that are not configured to be translated in
         Launchpad, as well as non-active ones.
         """
-
-    def featuredTranslatables(maximumproducts=8):
-        """Return an iterator over a random sample of translatable products.
-
-        Similar to `getTranslatables`, except the number of results is
-        limited and they are randomly chosen.
-
-        :param maximum_products: Maximum number of products to be
-            returned.
-        :return: An iterator over active, translatable products.
-        """
-        # XXX JeroenVermeulen 2008-07-31 bug=253583: this is not
-        # currently used!
 
     def count_all():
         """Return a count of the total number of products registered in

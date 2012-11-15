@@ -54,6 +54,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -69,6 +73,7 @@ from lp.app.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
@@ -85,13 +90,14 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
-    SpecificationImplementationStatus,
     )
 from lp.blueprints.model.specification import (
+    get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
@@ -133,6 +139,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
@@ -155,6 +162,7 @@ from lp.registry.interfaces.product import (
     LicenseStatus,
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -172,6 +180,7 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
@@ -186,15 +195,16 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -694,6 +704,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         )
         allowed_types = allowed_bug_types.union(allowed_branch_types)
         allowed_types = allowed_types.union(allowed_specification_types)
+        allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
         # APAs are unused and can be deleted.
@@ -745,6 +756,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
@@ -1350,47 +1374,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        base = 'Specification.product = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
+        clauses = [Specification.product == self,
+                   get_specification_privacy_filter(user)]
+        clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(query)
+            results = self._preload_specifications_people(clauses)
         else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
+            results = Store.of(self).find(Specification, *clauses)
         results.order_by(order)
         if quantity is not None:
             results = results[:quantity]
@@ -1518,6 +1508,32 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        if getFeatureFlag('disclosure.private_project.traversal_override'):
+            return True
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        if not IPersonRoles.providedBy(user):
+            user = IPersonRoles(user)
+        if user.in_commercial_admin or user.in_admin:
+            self._known_viewers.add(user.id)
+            return True
+        if getUtility(IService, 'sharing').checkPillarAccess(
+            [self], self.information_type, user):
+            self._known_viewers.add(user.id)
+            return True
+        return False
 
 
 def get_precached_products(products, need_licences=False, need_projects=False,
@@ -1694,11 +1710,38 @@ class ProductSet:
 
     @property
     def all_active(self):
-        return self.get_all_active()
+        return self.get_all_active(None)
 
-    def get_all_active(self, eager_load=True):
-        result = IStore(Product).find(Product, Product.active
-            ).order_by(Desc(Product.datecreated))
+    @staticmethod
+    def getProductPrivacyFilter(user):
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
+        granted_products = And(
+            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
+            TeamParticipation.person == user,
+            AccessPolicyGrantFlat.policy == AccessPolicy.id,
+            AccessPolicy.product == Product.id,
+            AccessPolicy.type == Product._information_type)
+        return Or(Product._information_type == InformationType.PUBLIC,
+                  Product._information_type == None,
+                  Product.id.is_in(Select(Product.id, granted_products)))
+
+    @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
+
+    @classmethod
+    def get_all_active(cls, user, eager_load=True):
+        clause = cls.getProductPrivacyFilter(user)
+        result = IStore(Product).find(Product, Product.active,
+                    clause).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 
@@ -1808,7 +1851,7 @@ class ProductSet:
         product.development_focus = trunk
         return product
 
-    def forReview(self, search_text=None, active=None,
+    def forReview(self, user, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
                   created_after=None, created_before=None,
                   has_subscription=None,
@@ -1818,7 +1861,7 @@ class ProductSet:
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = []
+        conditions = [self.getProductPrivacyFilter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)
@@ -1959,39 +2002,21 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        user = getUtility(ILaunchBag).user
+        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID).config(
+            Person.id == Product._ownerID,
+            privacy_clause).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
-
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

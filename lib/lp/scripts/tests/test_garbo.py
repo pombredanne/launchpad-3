@@ -11,12 +11,14 @@ from datetime import (
     timedelta,
     )
 import logging
+import pytz
 from StringIO import StringIO
 import time
 
 from pytz import UTC
 from storm.expr import (
     In,
+    Like,
     Min,
     Not,
     SQL,
@@ -59,6 +61,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -67,8 +70,11 @@ from lp.scripts.garbo import (
     DuplicateSessionPruner,
     FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
+    load_garbo_job_state,
     LoginTokenPruner,
     OpenIDConsumerAssociationPruner,
+    save_garbo_job_state,
+    UnusedPOTMsgSetPruner,
     UnusedSessionPruner,
     )
 from lp.services.config import config
@@ -97,6 +103,8 @@ from lp.services.oauth.model import (
     OAuthNonce,
     )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
+from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
+from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
 from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
@@ -105,7 +113,10 @@ from lp.services.session.model import (
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
+    FakeAdapterMixin,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -117,6 +128,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.translations.model.pofile import POFile
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -370,7 +382,7 @@ class TestSessionPruner(TestCase):
         self.assertEqual(expected_sessions, found_sessions)
 
 
-class TestGarbo(TestCaseWithFactory):
+class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -417,6 +429,15 @@ class TestGarbo(TestCaseWithFactory):
         collector.logger = self.log
         collector.main()
         return collector
+
+    def test_persist_garbo_state(self):
+        # Test that loading and saving garbo job state works.
+        save_garbo_job_state('job', {'data': 1})
+        data = load_garbo_job_state('job')
+        self.assertEqual({'data': 1}, data)
+        save_garbo_job_state('job', {'data': 2})
+        data = load_garbo_job_state('job')
+        self.assertEqual({'data': 2}, data)
 
     def test_OAuthNoncePruner(self):
         now = datetime.now(UTC)
@@ -966,6 +987,36 @@ class TestGarbo(TestCaseWithFactory):
             "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
         self.assertThat(num_rows, Equals(0))
 
+    def test_VoucherRedeemer(self):
+        switch_dbuser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        voucher_proxy = TestSalesforceVoucherProxy()
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+
+        # Mark has some unredeemed vouchers so set one of them as pending.
+        mark = getUtility(IPersonSet).getByName('mark')
+        voucher = voucher_proxy.getUnredeemedVouchers(mark)[0]
+        product = self.factory.makeProduct(owner=mark)
+        redeemed_id = voucher.voucher_id
+        self.factory.makeCommercialSubscription(
+            product, False, 'pending-%s' % redeemed_id)
+        transaction.commit()
+
+        self.runFrequently()
+
+        # There should now be 0 pending vouchers in Launchpad.
+        num_rows = store.find(
+            CommercialSubscription,
+            Like(CommercialSubscription.sales_system_id, u'pending-%')
+            ).count()
+        self.assertThat(num_rows, Equals(0))
+        # Salesforce should also now have redeemed the voucher.
+        unredeemed_ids = [
+            voucher.voucher_id
+            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
+        self.assertNotIn(redeemed_id, unredeemed_ids)
+
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
         # participating in a POTemplate only as obsolete messages.
@@ -984,6 +1035,44 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, obsolete_msgsets.count())
         self.runDaily()
         self.assertEqual(0, obsolete_msgsets.count())
+
+    def test_UnusedPOTMsgSetPruner_preserves_used_potmsgsets(self):
+        # UnusedPOTMsgSetPruner will not remove a potmsgset if it changes
+        # between calls.
+        switch_dbuser('testadmin')
+        potmsgset_pofile = {}
+        for n in xrange(4):
+            pofile = self.factory.makePOFile()
+            translation_message = self.factory.makeCurrentTranslationMessage(
+                pofile=pofile)
+            translation_message.potmsgset.setSequence(
+                pofile.potemplate, 0)
+            potmsgset_pofile[translation_message.potmsgset.id] = pofile.id
+        transaction.commit()
+        store = IMasterStore(POTMsgSet)
+        test_ids = potmsgset_pofile.keys()
+        obsolete_msgsets = store.find(
+            POTMsgSet,
+            In(TranslationTemplateItem.potmsgsetID, test_ids),
+            TranslationTemplateItem.sequence == 0)
+        self.assertEqual(4, obsolete_msgsets.count())
+        pruner = UnusedPOTMsgSetPruner(self.log)
+        pruner(2)
+        # A potmsgeset is set to a sequence > 0 between batches/commits.
+        last_id = pruner.msgset_ids_to_remove[-1]
+        used_potmsgset = store.find(POTMsgSet, POTMsgSet.id == last_id).one()
+        used_pofile = store.find(
+            POFile, POFile.id == potmsgset_pofile[last_id]).one()
+        translation_message = self.factory.makeCurrentTranslationMessage(
+            pofile=used_pofile, potmsgset=used_potmsgset)
+        used_potmsgset.setSequence(used_pofile.potemplate, 1)
+        transaction.commit()
+        # Next batch.
+        pruner(2)
+        self.assertEqual(0, obsolete_msgsets.count())
+        preserved_msgsets = store.find(
+            POTMsgSet, In(TranslationTemplateItem.potmsgsetID, test_ids))
+        self.assertEqual(1, preserved_msgsets.count())
 
     def test_UnusedPOTMsgSetPruner_removes_unreferenced_message_sets(self):
         # If a POTMsgSet is not referenced by any templates the
@@ -1076,6 +1165,112 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, store.find(Product,
             Product._information_type == None).count())
+
+    def test_PopulateLatestPersonSourcePackageReleaseCache(self):
+        switch_dbuser('testadmin')
+        # Make some same test data - we create published source package
+        # releases for 2 different creators and maintainers.
+        creators = []
+        for _ in range(2):
+            creators.append(self.factory.makePerson())
+        maintainers = []
+        for _ in range(2):
+            maintainers.append(self.factory.makePerson())
+
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries()
+        spr1 = self.factory.makeSourcePackageRelease(
+            creator=creators[0], maintainer=maintainers[0],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr1)
+        spr2 = self.factory.makeSourcePackageRelease(
+            creator=creators[0], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 2, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr2)
+        spr3 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[0],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 3, tzinfo=pytz.UTC))
+        self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr3)
+        spr4 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
+        spph_1 = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr4)
+
+        transaction.commit()
+        self.runFrequently()
+
+        store = IMasterStore(LatestPersonSourcePackageReleaseCache)
+        # Check that the garbo state table has data.
+        self.assertIsNotNone(
+            store.execute(
+                'SELECT * FROM GarboJobState WHERE name=?',
+                params=[u'PopulateLatestPersonSourcePackageReleaseCache']
+            ).get_one())
+
+        def _assert_release_by_creator(creator, spr):
+            release_records = store.find(
+                LatestPersonSourcePackageReleaseCache,
+                LatestPersonSourcePackageReleaseCache.creator_id == creator.id)
+            [record] = list(release_records)
+            self.assertEqual(spr.creator, record.creator)
+            self.assertIsNone(record.maintainer_id)
+            self.assertEqual(
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+
+        def _assert_release_by_maintainer(maintainer, spr):
+            release_records = store.find(
+                LatestPersonSourcePackageReleaseCache,
+                LatestPersonSourcePackageReleaseCache.maintainer_id ==
+                maintainer.id)
+            [record] = list(release_records)
+            self.assertEqual(spr.maintainer, record.maintainer)
+            self.assertIsNone(record.creator_id)
+            self.assertEqual(
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+
+        _assert_release_by_creator(creators[0], spr2)
+        _assert_release_by_creator(creators[1], spr4)
+        _assert_release_by_maintainer(maintainers[0], spr3)
+        _assert_release_by_maintainer(maintainers[1], spr4)
+
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcePackageReleaseCache')
+        self.assertEqual(spph_1.id, job_data['last_spph_id'])
+
+        # Create a newer published source package release and ensure the
+        # release cache table is correctly updated.
+        switch_dbuser('testadmin')
+        spr5 = self.factory.makeSourcePackageRelease(
+            creator=creators[1], maintainer=maintainers[1],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
+        spph_2 = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr5)
+
+        transaction.commit()
+        self.runFrequently()
+
+        _assert_release_by_creator(creators[0], spr2)
+        _assert_release_by_creator(creators[1], spr5)
+        _assert_release_by_maintainer(maintainers[0], spr3)
+        _assert_release_by_maintainer(maintainers[1], spr5)
+
+        job_data = load_garbo_job_state(
+            'PopulateLatestPersonSourcePackageReleaseCache')
+        self.assertEqual(spph_2.id, job_data['last_spph_id'])
 
 
 class TestGarboTasks(TestCaseWithFactory):

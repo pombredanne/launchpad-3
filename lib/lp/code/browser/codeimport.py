@@ -12,8 +12,10 @@ __all__ = [
     'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
     'CodeImportSetView',
+    'validate_import_url',
     ]
 
+from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interface import (
@@ -49,6 +51,7 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
+    NON_CVS_RCS_TYPES,
     RevisionControlSystems,
     )
 from lp.code.errors import BranchExists
@@ -167,10 +170,7 @@ class CodeImportBaseView(LaunchpadFormView):
 
     def setSecondaryFieldError(self, field, error):
         """Set the field error only if there isn't an error already."""
-        if self.getFieldError(field):
-            # Leave this one as it is often required or a validator error.
-            pass
-        else:
+        if not self.getFieldError(field):
             self.setFieldError(field, error)
 
     def _validateCVS(self, cvs_root, cvs_module, existing_import=None):
@@ -201,16 +201,9 @@ class CodeImportBaseView(LaunchpadFormView):
             self.setSecondaryFieldError(
                 field_name, 'Enter the URL of a foreign VCS branch.')
         else:
-            code_import = getUtility(ICodeImportSet).getByURL(url)
-            if (code_import is not None and
-                code_import != existing_import):
-                self.setFieldError(
-                    field_name,
-                    structured("""
-                    This foreign branch URL is already specified for
-                    the imported branch <a href="%s">%s</a>.""",
-                    canonical_url(code_import.branch),
-                    code_import.branch.unique_name))
+            reason = validate_import_url(url, existing_import)
+            if reason:
+                self.setFieldError(field_name, reason)
 
 
 class NewCodeImportForm(Interface):
@@ -540,12 +533,8 @@ class CodeImportEditView(CodeImportBaseView):
         # fields, and vice versa.
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
             self.form_fields = self.form_fields.omit('url')
-        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
-                                           RevisionControlSystems.BZR_SVN,
-                                           RevisionControlSystems.GIT,
-                                           RevisionControlSystems.BZR):
-            self.form_fields = self.form_fields.omit(
-                'cvs_root', 'cvs_module')
+        elif self.code_import.rcs_type in NON_CVS_RCS_TYPES:
+            self.form_fields = self.form_fields.omit('cvs_root', 'cvs_module')
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -575,10 +564,7 @@ class CodeImportEditView(CodeImportBaseView):
             self._validateCVS(
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
-        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
-                                           RevisionControlSystems.BZR_SVN,
-                                           RevisionControlSystems.GIT,
-                                           RevisionControlSystems.BZR):
+        elif self.code_import.rcs_type in NON_CVS_RCS_TYPES:
             self._validateURL(data.get('url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
@@ -593,3 +579,19 @@ class CodeImportMachineView(LaunchpadView):
     def machines(self):
         """Get the machines, sorted alphabetically by hostname."""
         return getUtility(ICodeImportMachineSet).getAll()
+
+
+def validate_import_url(url, existing_import=None):
+    """Validate the given import URL."""
+    if urlparse(url).netloc.endswith('launchpad.net'):
+        return (
+            "You can not create imports for branches that are hosted by "
+            "Launchpad.")
+    code_import = getUtility(ICodeImportSet).getByURL(url)
+    if code_import is not None:
+        if existing_import and code_import == existing_import:
+            return None
+        return structured(
+            "This foreign branch URL is already specified for the imported "
+            "branch <a href='%s'>%s</a>.", canonical_url(code_import.branch),
+            code_import.branch.unique_name)

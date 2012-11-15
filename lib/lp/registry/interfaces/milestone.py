@@ -123,8 +123,6 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
                 "The product, distribution, or project group for this "
                 "milestone."),
             required=False))
-    specifications = Attribute(
-        "A list of specifications targeted to this object.")
     dateexpected = exported(
         FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
@@ -142,6 +140,9 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
 
     def bugtasks(user):
         """Get a list of non-conjoined bugtasks visible to this user."""
+
+    def getSpecifications(user):
+        """Return the specifications visible to this user."""
 
 
 class IAbstractMilestone(IMilestoneData):
@@ -266,6 +267,9 @@ class IMilestone(IAbstractMilestone):
         See above the IMilestone.setTags docstring for an explanation of
         why this is not a property.
         """
+
+    def userCanView(user):
+        """True if the given user has access to this product."""
 
 
 # Avoid circular imports

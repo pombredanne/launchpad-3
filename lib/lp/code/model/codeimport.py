@@ -38,6 +38,7 @@ from lp.code.enums import (
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    NON_CVS_RCS_TYPES,
     RevisionControlSystems,
     )
 from lp.code.errors import (
@@ -71,8 +72,7 @@ class CodeImport(SQLBase):
     _defaultOrder = ['id']
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    branch = ForeignKey(dbName='branch', foreignKey='Branch',
-                        notNull=True)
+    branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -243,10 +243,7 @@ class CodeImportSet:
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
             assert url is None
-        elif rcs_type in (RevisionControlSystems.SVN,
-                          RevisionControlSystems.BZR_SVN,
-                          RevisionControlSystems.GIT,
-                          RevisionControlSystems.BZR):
+        elif rcs_type in NON_CVS_RCS_TYPES:
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:

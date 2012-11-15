@@ -909,7 +909,7 @@
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
             class="lp.registry.browser.person.PersonRelatedSoftwareView"
-            name="+related-software"
+            name="+related-packages"
             template="../templates/person-related-software.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -925,12 +925,16 @@
             template="../templates/person-related-software-navlinks.pt"/>
         <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
+            name="+related-software"
+            new_name="+related-packages"/>
+        <browser:renamed-page
+            for="lp.registry.interfaces.person.IPerson"
             name="+packages"
-            new_name="+related-software"/>
+            new_name="+related-packages"/>
         <browser:renamed-page
             for="lp.registry.interfaces.person.IPerson"
             name="+projects"
-            new_name="+related-software"/>
+            new_name="+related-projects"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
             permission="zope.Public"
@@ -1268,6 +1272,9 @@
         <browser:page
             name="+productrelease-data"
             template="../templates/productrelease-portlet-data.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/milestone-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+pillar-table-row"
@@ -1660,6 +1667,9 @@
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"/>
+        <browser:page
+            name="+portlet-privacy"
+            template="../templates/productseries-portlet-privacy.pt"/>
     </browser:pages>
     <browser:page
         name="+ubuntupkg"
@@ -1714,18 +1724,6 @@
         class="lp.registry.browser.milestone.MilestoneAddView"
         permission="launchpad.Edit"
         template="../templates/milestone-add.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+linkbranch"
-        class="lp.registry.browser.productseries.ProductSeriesLinkBranchView"
-        template="../templates/productseries-linkbranch.pt"
-        permission="launchpad.Edit"/>
-    <browser:page
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        name="+linkbranchtoseries"
-        class="lp.registry.browser.productseries.ProductSeriesLinkBranchFromCodeView"
-        template="../templates/productseries-linkbranch.pt"
-        permission="launchpad.Edit"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+setbranch"

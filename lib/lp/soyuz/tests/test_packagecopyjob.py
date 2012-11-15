@@ -400,7 +400,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     def test_target_ppa_message(self):
         # When copying to a PPA archive the error message is stored in the
-        # job's metadata and the job fails.
+        # job's metadata and the job fails, but no OOPS is recorded.
         distroseries = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
@@ -412,12 +412,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False, package_version='1.0',
             requester=self.factory.makePerson())
         transaction.commit()
-        self.runJob(job)
+        switch_dbuser(self.dbuser)
+        runner = JobRunner([job])
+        runner.runAll()
         self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
-            "Destination pocket must be 'release' for a PPA.",
-            job.error_message)
+            "PPA uploads must be for the RELEASE pocket.", job.error_message)
+        self.assertEqual([], runner.oops_ids)
 
     def assertOopsRecorded(self, job):
         self.assertEqual(JobStatus.FAILED, job.status)
@@ -451,6 +453,35 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         transaction.abort()
         self.assertOopsRecorded(job)
 
+    def test_target_primary_redirects(self):
+        # For primary archives with redirect_release_uploads set, ordinary
+        # uploaders may not copy directly into the release pocket.
+        job = create_proper_job(self.factory)
+        job.target_archive.distribution.redirect_release_uploads = True
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+        transaction.commit()
+        self.runJob(job)
+        self.assertEqual(1, naked_job.reportFailure.call_count)
+
+    def test_target_primary_queue_admin_bypasses_redirect(self):
+        # For primary archives with redirect_release_uploads set, queue
+        # admins may copy directly into the release pocket anyway.
+        job = create_proper_job(self.factory)
+        job.target_archive.distribution.redirect_release_uploads = True
+        with person_logged_in(job.target_archive.owner):
+            job.target_archive.newPocketQueueAdmin(
+                job.requester, PackagePublishingPocket.RELEASE)
+        # CannotCopy exceptions when copying into a primary archive are
+        # swallowed, but reportFailure is still called.
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+        transaction.commit()
+        self.runJob(job)
+        self.assertEqual(0, naked_job.reportFailure.call_count)
+
     def test_run(self):
         # A proper test run synchronizes packages.
 
@@ -477,6 +508,33 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # notification tests)
         emails = pop_notifications()
         self.assertEqual(len(emails), 1)
+
+    def test_iterReady_orders_by_copy_policy(self):
+        # iterReady prioritises mass-sync copies below anything else.
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        self.makeJob()
+        self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        ready_jobs = list(getUtility(IPlainPackageCopyJobSource).iterReady())
+        self.assertEqual([
+            PackageCopyPolicy.INSECURE,
+            PackageCopyPolicy.MASS_SYNC,
+            PackageCopyPolicy.MASS_SYNC,
+            ], [job.copy_policy for job in ready_jobs])
+
+    def test_iterReady_preempt(self):
+        # Ordinary ("insecure") copy jobs that arrive in the middle of a
+        # long mass-sync run take precedence immediately.
+        for i in range(2):
+            self.makeJob(copy_policy=PackageCopyPolicy.MASS_SYNC)
+        iterator = getUtility(IPlainPackageCopyJobSource).iterReady()
+        self.assertEqual(
+            PackageCopyPolicy.MASS_SYNC, next(iterator).copy_policy)
+        self.makeJob()
+        self.assertEqual(
+            PackageCopyPolicy.INSECURE, next(iterator).copy_policy)
+        self.assertEqual(
+            PackageCopyPolicy.MASS_SYNC, next(iterator).copy_policy)
+        self.assertRaises(StopIteration, next, iterator)
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
@@ -867,8 +925,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         if return_job:
             return job
-        pcj = removeSecurityProxy(job).context
-        return pcj
+        return removeSecurityProxy(job).context
 
     def test_copying_to_main_archive_debian_override_contrib(self):
         # The job uses the overrides to map debian components to
@@ -1385,9 +1442,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         metadata_component = getUtility(
@@ -1444,12 +1499,26 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         switch_dbuser('copy_packages')
 
         override = SourceOverride(
-            source_package_name=name,
-            component=component,
-            section=section)
+            source_package_name=name, component=component, section=section)
         pcj.addSourceOverride(override)
 
         self.assertEqual(override, pcj.getSourceOverride())
+
+    def test_findSourcePublication_with_source_series_and_pocket(self):
+        # The source_distroseries and source_pocket parameters cause
+        # findSourcePublication to select a matching source publication.
+        spph = self.publisher.getPubSource()
+        other_series = self.factory.makeDistroSeries(
+            distribution=spph.distroseries.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        spph.copyTo(
+            other_series, PackagePublishingPocket.PROPOSED, spph.archive)
+        spph.requestDeletion(spph.archive.owner)
+        job = self.createCopyJobForSPPH(
+            spph, spph.archive, spph.archive,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            source_distroseries=spph.distroseries, source_pocket=spph.pocket)
+        self.assertEqual(spph, job.findSourcePublication())
 
     def test_getPolicyImplementation_returns_policy(self):
         # getPolicyImplementation returns the ICopyPolicy that was

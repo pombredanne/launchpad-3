@@ -184,7 +184,6 @@
                 displayname
                 displayarchs
                 displayversion
-                is_delayed_copy
                 isPPA
                 package_copy_job
                 package_copy_job_id
@@ -206,7 +205,6 @@
                 addCustom
                 syncUpdate
                 notify
-                acceptFromCopy
                 acceptFromUploader
                 acceptFromQueue
                 rejectFromQueue
@@ -1000,6 +998,12 @@
     <!-- OverridePolicy -->
     <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
       <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+    </class>
+
+    <class
+        class="lp.soyuz.model.reporting.LatestPersonSourcePackageReleaseCache">
+        <allow
+            interface="lp.soyuz.interfaces.reporting.ILatestPersonSourcePackageReleaseCache"/>
     </class>
 
     <!-- ProcessAcceptedBugsJobSource -->

@@ -148,7 +148,10 @@ from lp.registry.model.person import (
     Person,
     )
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
@@ -288,17 +291,28 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
             query = ensure_unicode(query)
             like_query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
+            like_query = "'%%%%' || %s || '%%%%'" % quote_like(like_query)
             fti_query = quote(query)
-            sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query)
-            order_by = (
+            if vocab_filter is None:
+                vocab_filter = []
+            where_clause = And(
+                SQL(
+                    "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
+                        like_query, fti_query)),
+                ProductSet.getProductPrivacyFilter(
+                    getUtility(ILaunchBag).user), *vocab_filter)
+            order_by = SQL(
                 '(CASE name WHEN %s THEN 1 '
                 ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
                 % (fti_query, fti_query))
-            return self._table.select(sql, orderBy=order_by, limit=100)
+            result = store.find(self._table, where_clause)
+            result.order_by(order_by)
+            result.config(limit=100)
+            return result
+
         return self.emptySelectResults()
 
 

@@ -596,10 +596,11 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         # series on the main site, not the code site.
         branch = self.factory.makeProductBranch()
         series = self.factory.makeProductSeries(product=branch.product)
+        series_name = series.name
         remove_security_proxy_and_shout_at_engineer(series).branch = branch
         browser = self.getUserBrowser(
             canonical_url(branch.product, rootsite='code'))
-        link = browser.getLink(re.compile('^' + series.name + '$'))
+        link = browser.getLink(re.compile('^' + series_name + '$'))
         self.assertEqual('launchpad.dev', URI(link.url).host)
 
 

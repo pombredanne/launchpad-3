@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -332,8 +333,7 @@ class TestBranchView(BrowserTestCase):
             self.assertTrue(
                 bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
-    # XXX wgrant 2011-10-21 bug=879197: Disabled due to spurious failure.
-    def disabled_test_linked_bugs_nonseries_branch_query_scaling(self):
+    def test_linked_bugs_nonseries_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
         # constant.
         branch = self.factory.makeAnyBranch()
@@ -520,6 +520,27 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(linked_bug_urls[0], links[3]['href'])
         self.assertEqual(linked_bug_urls[1], links[4]['href'])
 
+    def test_view_for_user_with_artifact_grant(self):
+        # Users with an artifact grant for a branch related to a private
+        # product can view the main branch page.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            product_name = product.name
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, branches=[branch])
+        with person_logged_in(user):
+            url = canonical_url(branch)
+        # The main check: No Unauthorized error should be raised.
+        browser = self.getUserBrowser(url, user=user)
+        self.assertIn(product_name, browser.contents)
+
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
     """ Tests that branches with private team artifacts can be viewed.
@@ -694,11 +715,11 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
             base_url = canonical_url(branch, rootsite='code')
             product_url = canonical_url(product, rootsite='code')
         url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        expected_title = "Code : %s" % product.displayname
         browser = self._getBrowser(user=subscriber)
         browser.open(url)
         browser.getControl('Unsubscribe').click()
         self.assertEqual(product_url, browser.url)
-        expected_title = "Code : %s" % product.displayname
         self.assertEqual(expected_title, browser.title)
 
 

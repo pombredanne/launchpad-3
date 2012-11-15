@@ -17,7 +17,7 @@ shown in the list of options.
     ['evolution']
 
 After we selected a product and entered a summary, we're sent to the
-product's +filebug page and presented with a list of possible duplicates.
+product's +filebug page to search for duplicates.
 
     >>> user_browser.getControl('Project', index=0).value = ['evolution']
     >>> user_browser.getControl('Summary', index=0).value = (
@@ -25,10 +25,11 @@ product's +filebug page and presented with a list of possible duplicates.
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.url
-    'http://bugs...search=Continue&field.title=Evolution+crashes&field.tags='
+    'http://bugs...?field.title=Evolution+crashes&field.tags='
     >>> print find_main_content(user_browser.contents).renderContents()
     <...
-    No similar bug reports were found...
+    <input type="submit" id="field.actions.search"
+    name="field.actions.search" value="Continue" class="button" /> ...
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -42,69 +43,21 @@ page.
     'Bug #...Evolution crashes... : Bugs : Evolution'
 
 
-Empty ProjectGroups
--------------------
+Project groups with no products using Launchpad Bugs
+----------------------------------------------------
 
-It isn't possible to file a bug against an empty project. However, we
-give the user some feedback in this regard. We need to create a new
-project first.
+When no projects within a project group used Launchpad to track bugs,
+the page explains the case.
 
-    >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
-    >>> admin_browser.getControl('Name:', index=0).value = 'test-group'
-    >>> admin_browser.getControl('Display Name:').value = 'Test Group'
-    >>> admin_browser.getControl('Title:').value = 'Test Group'
-    >>> admin_browser.getControl('Project Group Summary:').value = 'Summary'
-    >>> admin_browser.getControl('Description:').value = 'Description'
-    >>> admin_browser.getControl('Maintainer:').value = 'cprov'
-    >>> admin_browser.getControl('Add').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/test-group'
-
-A user navigating to the filebug page will see an information message.
-The user can only get to the filebug page by entering its URL directly
-because all links to the page are disabled for empty project groups.
-Since there are users who would navigate to the page in that manner we
-test it here.
+    >>> login("test@canonical.com")
+    >>> project = factory.makeProject(
+    ...     displayname='Test Group', name='test-group')
+    >>> logout()
 
     >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
     >>> user_browser.url
     'http://launchpad.dev/test-group/+filebug'
 
-    >>> for message in find_tags_by_class(user_browser.contents,
-    ...     'informational message'):
-    ...     print message.renderContents()
-    There are no projects registered for Test Group that either use Launchpad
-    to track bugs or allow new bugs to be filed.
-
-
-ProjectGroups With no Products Using Launchpad Bugs
----------------------------------------------------
-
-If we add a new product to our test project (specifically one that
-doesn't use Launchpad for bug tracking) information about that product
-will also be displayed.
-
-    >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl(name='field.name', index=0).value = 'testy'
-    >>> admin_browser.getControl(name='field.displayname').value = (
-    ...     'Testy Product')
-    >>> admin_browser.getControl(name='field.title').value = (
-    ...     'A Product for Testing')
-    >>> admin_browser.getControl(name='field.summary').value = (
-    ...     'Used for testing')
-    >>> admin_browser.getControl('Continue').click()
-    >>> print admin_browser.url
-    http://launchpad.dev/test-group/+newproduct
-
-    >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl('Complete Registration').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/testy'
-
-The user will now see the new product on the project's +filebug page,
-but will not be able to file a bug against it.
-
-    >>> user_browser.reload()
     >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()

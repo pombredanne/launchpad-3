@@ -28,6 +28,7 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.registry.browser.product import (
+    PRIVATE_PROJECTS_FLAG,
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
@@ -39,7 +40,9 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    )
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -177,6 +180,7 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertContentEqual(
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
+        self.assertIn(PRIVATE_PROJECTS_FLAG, cache.objects['related_features'])
 
     def test_staging_message_is_not_demo(self):
         view = create_initialized_view(self.product_set, '+new')
@@ -244,7 +248,7 @@ class TestProductAddView(TestCaseWithFactory):
         product = self.product_set.getByName('fnord')
         self.assertEqual('registry', product.owner.name)
 
-    def test_owner_is_requried_without_disclaim_maitainer(self):
+    def test_owner_is_requried_without_disclaim_maintainer(self):
         # A valid owner name is required if disclaim_maintainer is
         # not selected.
         registrant = self.factory.makePerson()
@@ -296,7 +300,7 @@ class TestProductAddView(TestCaseWithFactory):
                 InformationType.PROPRIETARY, product.information_type)
 
 
-class TestProductView(TestCaseWithFactory):
+class TestProductView(BrowserTestCase):
     """Tests the ProductView."""
 
     layer = DatabaseFunctionalLayer
@@ -431,6 +435,24 @@ class TestProductView(TestCaseWithFactory):
             team_membership_policy_data,
             cache.objects['team_membership_policy_data'])
 
+    def test_index_proprietary_specification(self):
+        # Ordinary users can see page, but proprietary specs are only listed
+        # for users with access to them.
+        proprietary = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        product = proprietary.product
+        with person_logged_in(product.owner):
+            product.blueprints_usage = ServiceUsage.LAUNCHPAD
+            public = self.factory.makeSpecification(product=product)
+            browser = self.getViewBrowser(product, '+index')
+        self.assertIn(public.name, browser.contents)
+        self.assertNotIn(proprietary.name, browser.contents)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(product, '+index',
+                                          user=product.owner)
+        self.assertIn(public.name, browser.contents)
+        self.assertIn(proprietary.name, browser.contents)
+
 
 class TestProductEditView(BrowserTestCase):
     """Tests for the ProductEditView"""
@@ -464,6 +486,20 @@ class TestProductEditView(BrowserTestCase):
             'field.licenses': licenses,
             'field.license_info': license_info,
         }
+
+    def test_limited_information_types_allowed(self):
+        """Products can only be PUBLIC_PROPRIETARY_INFORMATION_TYPES"""
+        product = self.factory.makeProduct()
+        with FeatureFixture({u'disclosure.private_projects.enabled': u'on'}):
+            login_person(product.owner)
+            view = create_initialized_view(
+                product,
+                '+edit',
+                principal=product.owner)
+            vocabulary = view.widgets['information_type'].vocabulary
+            info_types = [t.name for t in vocabulary]
+            expected = ['PUBLIC', 'PROPRIETARY', 'EMBARGOED']
+            self.assertEqual(expected, info_types)
 
     def test_change_information_type_proprietary(self):
         product = self.factory.makeProduct(name='fnord')
@@ -631,9 +667,88 @@ class TestProductRdfView(BrowserTestCase):
     def test_headers(self):
         """The headers for the RDF view of a product should be as expected."""
         product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+rdf')
         content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        browser = self.getViewBrowser(product, view_name='+rdf')
         self.assertEqual(
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
             'application/rdf+xml', browser.headers['Content-type'])
+
+
+class TestProductSet(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAllInformationTypes(self):
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC, owner=owner)
+        proprietary = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        embargoed = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        return owner, public, proprietary, embargoed
+
+    def test_proprietary_products_skipped(self):
+        # Ignore proprietary products for anonymous users
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        browser = self.getViewBrowser(getUtility(IProductSet))
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners(self):
+        # Owners will see their proprietary products listed
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_skipped_all(self):
+        # Ignore proprietary products for anonymous users
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        product_set = getUtility(IProductSet)
+        browser = self.getViewBrowser(product_set, view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_proprietary_products_shown_to_owners_all(self):
+        # Owners will see their proprietary products listed
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        browser = self.getViewBrowser(getUtility(IProductSet), user=owner,
+                view_name='+all')
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)
+
+    def test_review_exclude_proprietary_for_expert(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        expert = self.factory.makeRegistryExpert()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=expert)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertNotIn(proprietary.name, browser.contents)
+            self.assertNotIn(embargoed.name, browser.contents)
+
+    def test_review_include_proprietary_for_admin(self):
+        owner, public, proprietary, embargoed = self.makeAllInformationTypes()
+        transaction.commit()
+        admin = self.factory.makeAdministrator()
+        browser = self.getViewBrowser(getUtility(IProductSet),
+                                      view_name='+review-licenses',
+                                      user=admin)
+        with person_logged_in(owner):
+            self.assertIn(public.name, browser.contents)
+            self.assertIn(proprietary.name, browser.contents)
+            self.assertIn(embargoed.name, browser.contents)

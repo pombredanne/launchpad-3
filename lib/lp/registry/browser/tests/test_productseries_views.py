@@ -8,12 +8,14 @@ __metaclass__ = type
 
 import soupmatchers
 from testtools.matchers import Not
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -22,6 +24,54 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
+
+
+class TestProductSeries(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_public(self):
+        # A ProductSeries view should include its information_type,
+        # which defaults to Public for new projects.
+        series = self.factory.makeProductSeries()
+        view = create_initialized_view(series, '+index')
+        self.assertEqual('Public', view.information_type)
+
+    def test_information_type_proprietary(self):
+        # A ProductSeries view should get its information_type
+        # from the related product even if the product is changed to
+        # PROPRIETARY.
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        series = self.factory.makeProductSeries(product=product)
+        with person_logged_in(owner):
+            view = create_initialized_view(series, '+index')
+            self.assertEqual('Proprietary', view.information_type)
+
+    def test_privacy_portlet(self):
+        # A ProductSeries page should include a privacy portlet that
+        # accurately describes the information_type.
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        series = self.factory.makeProductSeries(product=product)
+        privacy_portlet = soupmatchers.Tag(
+            'info-type-portlet', 'span',
+            attrs={'id': 'information-type-summary'})
+        privacy_portlet_proprietary = soupmatchers.Tag(
+            'info-type-text', 'strong', attrs={'id': 'information-type'},
+            text='Proprietary')
+        browser = self.getViewBrowser(series, '+index', user=owner)
+        # First, assert that the portlet exists.
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_portlet))
+        # Then, assert that the text displayed matches the information_type.
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(
+            privacy_portlet_proprietary))
 
 
 class TestProductSeriesHelp(TestCaseWithFactory):
@@ -60,6 +110,11 @@ class TestWithBrowser(BrowserTestCase):
         browser = self.getViewBrowser(series)
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
 
+    def getBrowser(self, series, view_name=None):
+        series = removeSecurityProxy(series)
+        url = canonical_url(series, view_name=view_name)
+        return self.getUserBrowser(url, series.product.owner)
+
     def test_package_proprietary_error(self):
         """Packaging a proprietary product produces an error."""
         product = self.factory.makeProduct(
@@ -68,7 +123,7 @@ class TestWithBrowser(BrowserTestCase):
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
         sp = self.factory.makeSourcePackage(distroseries=ubuntu_series,
                                             publish=True)
-        browser = self.getViewBrowser(productseries, '+ubuntupkg')
+        browser = self.getBrowser(productseries, '+ubuntupkg')
         browser.getControl('Source Package Name').value = (
             sp.sourcepackagename.name)
         browser.getControl(ubuntu_series.displayname).selected = True
@@ -84,7 +139,7 @@ class TestWithBrowser(BrowserTestCase):
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product=product)
-        browser = self.getViewBrowser(series)
+        browser = self.getBrowser(series)
         tag = soupmatchers.Tag(
             'portlet-packages', True, attrs={'id': 'portlet-packages'})
         self.assertThat(browser.contents, Not(soupmatchers.HTMLContains(tag)))

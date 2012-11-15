@@ -80,7 +80,10 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
-from lp.registry.model.product import Product
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -386,7 +389,8 @@ def _build_query(params):
                         where=And(
                             Product.project == params.milestone.target,
                             Milestone.productID == Product.id,
-                            Milestone.name == params.milestone.name))))
+                            Milestone.name == params.milestone.name,
+                            ProductSet.getProductPrivacyFilter(params.user)))))
         else:
             extra_clauses.append(
                 search_value_to_storm_where_condition(
@@ -440,7 +444,7 @@ def _build_query(params):
     if params.has_cve:
         extra_clauses.append(
             BugTaskFlat.bug_id.is_in(
-                Select(BugCve.bugID, tables=[BugCve], distinct=True)))
+                Select(BugCve.bugID, tables=[BugCve])))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -628,8 +632,7 @@ def _build_query(params):
                 BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
-                    BugMessage.owner == params.bug_commenter),
-                distinct=True)))
+                    BugMessage.owner == params.bug_commenter))))
 
     if params.affects_me:
         params.affected_user = params.user
@@ -1024,7 +1027,7 @@ def _build_hardware_related_clause(params):
     clauses.append(_userCanAccessSubmissionStormClause(params.user))
 
     return BugTaskFlat.bug_id.is_in(
-        Select(Bug.id, tables=tables, where=And(*clauses), distinct=True))
+        Select(Bug.id, tables=tables, where=And(*clauses)))
 
 
 def _build_blueprint_related_clause(params):

@@ -14,6 +14,7 @@ __all__ = [
 from operator import methodcaller
 
 from storm.expr import (
+    And,
     Select,
     Union,
     )
@@ -36,6 +37,7 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
+from lp.app.interfaces.services import IService
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -154,6 +156,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesView,
     ITimelineProductSeries,
     )
 from lp.registry.interfaces.projectgroup import (
@@ -218,6 +221,10 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
@@ -424,6 +431,41 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
+class ViewProduct(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class LimitedViewProduct(ViewProduct):
+    permission = 'launchpad.LimitedView'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        return (
+            super(LimitedViewProduct, self).checkAuthenticated(user) or
+            getUtility(IService, 'sharing').userHasGrantsOnPillar(
+                self.obj, user))
+
+
+class ChangeProduct(ViewProduct):
+    """Used for attributes of IProduct that are accessible to any logged
+    in user for public product but only to persons with access grants
+    for private products.
+    """
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProduct
+
+    def checkUnauthenticated(self):
+        return False
+
+
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 
@@ -485,7 +527,7 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewMilestone(AnonymousAuthorization):
+class ViewAbstractMilestone(AnonymousAuthorization):
     """Anyone can view an IMilestone or an IProjectGroupMilestone."""
     usedfor = IAbstractMilestone
 
@@ -693,12 +735,40 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewProjectMilestone(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = IProjectGroupMilestone
+
+    def __init__(self, obj):
+        super(ViewProjectMilestone, self).__init__(
+            obj, obj.product, 'launchpad.View')
+
+
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
 
     def checkAuthenticated(self, user):
         """IProjectGroupMilestone is a fake content object."""
+        return False
+
+
+class ViewMilestone(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(user=None)
+
+
+class EditMilestone(ViewMilestone):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IMilestone
+
+    def checkUnauthenticated(self):
         return False
 
 
@@ -1242,9 +1312,26 @@ class DriveProduct(SeriesDrivers):
             or False)
 
 
-class ViewProductSeries(AnonymousAuthorization):
+class ViewProductSeries(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IProductSeriesView
 
-    usedfor = IProductSeries
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class ChangeProductSeries(ViewProductSeries):
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = IProductSeriesView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
@@ -1746,17 +1833,9 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin.
-
-        If it's a delayed-copy, check if the user can upload to its targeted
-        archive.
-        """
+        """Return True if user has an ArchivePermission or is an admin."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
-
-        if self.obj.is_delayed_copy:
-            archive_append = AppendArchive(self.obj.archive)
-            return archive_append.checkAuthenticated(user)
 
         return self.obj.archive.canAdministerQueue(
             user.person, self.obj.components, self.obj.pocket,
@@ -1913,15 +1992,6 @@ class ViewBuildFarmJobOld(DelegatedAuthorization):
         return objects
 
 
-class SetQuestionCommentVisibility(AuthorizationBase):
-    permission = 'launchpad.Moderate'
-    usedfor = IQuestion
-
-    def checkAuthenticated(self, user):
-        """Admins and registry admins can set bug comment visibility."""
-        return (user.in_admin or user.in_registry_experts)
-
-
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
@@ -1971,6 +2041,17 @@ class ViewQuestion(AnonymousAuthorization):
 
 class ViewQuestionMessage(AnonymousAuthorization):
     usedfor = IQuestionMessage
+
+
+class ModerateQuestionMessage(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IQuestionMessage
+
+    def checkAuthenticated(self, user):
+        """Admins, Registry, Maintainers, and comment owners can moderate."""
+        return (user.in_admin or user.in_registry_experts
+                or user.inTeam(self.obj.owner)
+                or user.inTeam(self.obj.question.target.owner))
 
 
 class AppendFAQTarget(EditByOwnersOrAdmins):
@@ -2421,18 +2502,10 @@ class ViewArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        # Subscribers can view private PPAs.
-        if self.obj.is_ppa and self.obj.private:
-            archive_subs = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                user.person, self.obj).any()
-            if archive_subs:
-                return True
-
-        return False
+        filter = get_enabled_archive_filter(
+            user.person, include_subscribed=True)
+        return not IStore(self.obj).find(
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""

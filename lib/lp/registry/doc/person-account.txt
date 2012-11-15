@@ -12,6 +12,7 @@ A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
+    >>> from lp.blueprints.enums import SpecificationFilter
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet,
     ...     )
@@ -100,11 +101,12 @@ will cause this spec to be reassigned.
     >>> foobar.searchTasks(params).count() > 0
     True
 
-    >>> len(foobar.assigned_specs) > 0
+    >>> foobar.specifications(
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count() > 0
     True
 
     >>> foobar_pillars = []
-    >>> for pillar_name in foobar.getAffiliatedPillars():
+    >>> for pillar_name in foobar.getAffiliatedPillars(foobar):
     ...     pillar = pillar_name.pillar
     ...     if pillar.owner == foobar or pillar.driver == foobar:
     ...         foobar_pillars.append(pillar_name)
@@ -173,7 +175,8 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no assigned specs...
 
-    >>> len(foobar.assigned_specs)
+    >>> foobar.specifications(
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count()
     0
 
 ...no owned teams...
@@ -183,7 +186,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no owned or driven pillars...
 
-    >>> foobar.getAffiliatedPillars().count()
+    >>> foobar.getAffiliatedPillars(foobar).count()
     0
 
 ...and, finally, to not be considered a valid person in Launchpad.
@@ -198,7 +201,7 @@ Bar are now owned/driven by the registry admins team.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
-    >>> registry_pillars = set(registry_experts.getAffiliatedPillars())
+    >>> registry_pillars = set(registry_experts.getAffiliatedPillars(foobar))
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 

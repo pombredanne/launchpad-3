@@ -65,7 +65,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
     )
-from lp.registry.interfaces.product import NoSuchProduct
+from lp.registry.interfaces.product import (
+    NoSuchProduct,
+    InvalidProductName,
+    )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.webapp import LaunchpadXMLRPCView
@@ -219,6 +222,8 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             except NoSuchProduct as e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
+            except InvalidProductName as e:
+                return faults.InvalidProductName(escape(e.name))
             except NoSuchSourcePackageName as e:
                 try:
                     getUtility(ISourcePackageNameSet).new(e.name)

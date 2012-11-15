@@ -36,6 +36,7 @@ from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -612,6 +613,21 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertTrue(os.path.exists(output("all.sources")))
         self.assertTrue(os.path.exists(output(seed_new)))
         self.assertFalse(os.path.exists(output(seed_old)))
+
+    def test_process_skips_disabled_distroarchseries(self):
+        # The script does not generate overrides for disabled DistroArchSeries.
+        flavour = self.factory.getUniqueString()
+        self.setUpDistroAndScript(extra_args=[flavour])
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries[0])
+        self.factory.makeDistroArchSeries(
+            distroseries=self.distroseries[0], enabled=False)
+        self.script.generateExtraOverrides = FakeMethod()
+        self.script.process()
+        self.assertEqual(1, self.script.generateExtraOverrides.call_count)
+        self.assertEqual(
+            [das.architecturetag],
+            self.script.generateExtraOverrides.calls[0][0][2])
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
