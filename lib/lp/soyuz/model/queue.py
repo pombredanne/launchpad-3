@@ -591,6 +591,9 @@ class PackageUpload(SQLBase):
 
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
+        assert self.changesfile is not None, (
+            "Obsolete delayed copies can no longer be accepted. Repeat the "
+            "copy operation instead.")
 
         self.setAccepted()
 
