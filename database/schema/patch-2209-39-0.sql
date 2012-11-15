@@ -1,7 +1,8 @@
 SET client_min_messages=ERROR;
 
 CREATE EXTENSION plpythonu FROM unpackaged;
-CREATE EXTENSION debversion FROM unpackaged;
+-- Do this after upgrades to Ubuntu 12.04 to avoid backporting
+--CREATE EXTENSION debversion FROM unpackaged;
 
 -- Per PGBug 7661, clean our our old unpackaged pgstattuple. It is too
 -- ancient for the 9.1.6 upgrade script to work with.
