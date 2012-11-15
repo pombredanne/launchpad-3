@@ -64,12 +64,16 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         return product, series
 
     def test_search_respects_privacy_no_user(self):
+        # The vocabulary doesn't show series on NONPUBLIC products to
+        # anonymous/not logged in users.
         self._makePrivateProductAndSeries()
         result = self.vocabulary.search(
             '%s/%s' % (self.product_prefix, self.series1_prefix))
         self.assertEqual([self.series], list(result))
 
     def test_search_respects_privacy_user(self):
+        # The vocabulary shows series on NONPUBLIC products to user with the
+        # right to see the product.
         owner = self.factory.makePerson()
         product, series = self._makePrivateProductAndSeries(owner=owner)
         with person_logged_in(owner):
