@@ -9,6 +9,7 @@ from lazr.restfulclient.errors import Unauthorized
 import transaction
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -19,6 +20,33 @@ from lp.testing import (
     )
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+
+
+class TestTranslationGroup(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_non_public_products_hidden(self):
+        """Non Public products are not returned via products attribute."""
+        owner = self.makePerson()
+        private_owner = self.makePerson()
+        group = self.factory.makeTranslationGroup(owner=owner)
+
+        with person_logged_in(owner):
+            public_product = self.factory.makeProduct()
+            public_product.translationgroup = group
+
+        with person_logged_in(private_owner):
+            private_product = self.factory.makeProduct(
+                information_type=InformationType.PROPRIETARY)
+            private_product.translationgroup = group
+
+        import pdb; pdb.set_trace()
+        with person_logged_in(owner):
+
+            self.assertEqual(1, len(group.products),
+                'There is only one product for this user')
+
 
 
 class TestTranslationGroupSet(TestCaseWithFactory):
