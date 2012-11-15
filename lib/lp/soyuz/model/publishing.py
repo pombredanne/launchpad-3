@@ -1396,8 +1396,7 @@ def expand_binary_requests(distroseries, binaries):
         else:
             target_archs = archs
         for target_arch in target_archs:
-            if target_arch.enabled:
-                expanded.append((target_arch, bpr, overrides))
+            expanded.append((target_arch, bpr, overrides))
     return expanded
 
 
