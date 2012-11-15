@@ -7,8 +7,12 @@ __metaclass__ = type
 
 from operator import attrgetter
 
+from lp.app.enums import InformationType
 from lp.registry.vocabularies import ProductSeriesVocabulary
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -26,9 +30,6 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         self.series = self.factory.makeProductSeries(
             product=self.product, name=self.series1_prefix + "series1")
         self.series2 = self.factory.makeProductSeries(product=self.product)
-
-    def tearDown(self):
-        super(TestProductSeriesVocabulary, self).tearDown()
 
     def test_search_by_product_name(self):
         # Test that searching by the product name finds all its series.
@@ -52,6 +53,28 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         result = self.vocabulary.search(
             '%s/%s' % (self.product_prefix, self.series1_prefix))
         self.assertEqual([self.series], list(result))
+
+    def _makePrivateProductAndSeries(self):
+        product = self.factory.makeProduct(
+            self.product_prefix + "private-product")
+        series = self.factory.makeProductSeries(product=product,
+            name=self.series1_prefix + "private-series")
+        return product, series
+
+    def test_search_respects_privacy_no_user(self):
+        self._makePrivateProductAndSeries()
+        result = self.vocabulary.search(
+            '%s/%s' % (self.product_prefix, self.series1_prefix))
+        self.assertEqual([self.series], list(result))
+
+    def test_search_respects_privacy_user(self):
+        product, series = self._makePrivateProductAndSeries()
+        with person_logged_in(product.owner):
+            result = self.vocabulary.search(
+                '%s/%s' % (self.product_prefix, self.series1_prefix))
+        self.assertEqual(
+            [self.series, series].sort(key=attrgetter('id')),
+            list(result).sort(key=attrgetter('id')))
 
     def test_toTerm(self):
         # Test the ProductSeriesVocabulary.toTerm() method.
