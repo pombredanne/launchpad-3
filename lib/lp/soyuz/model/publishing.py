@@ -1458,7 +1458,8 @@ class PublishingSet:
         # architecture.
         expanded = expand_binary_requests(distroseries, binaries)
         if len(expanded) == 0:
-            # The binaries are for a disabled DistroArchSeries.
+            # The binaries are for a disabled DistroArchSeries or for
+            # an unsupported architecture.
             return []
 
         # Find existing publications.

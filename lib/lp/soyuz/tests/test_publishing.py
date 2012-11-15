@@ -1600,7 +1600,7 @@ class TestPublishBinaries(TestCaseWithFactory):
             set(bpph.distroarchseries for bpph in bpphs))
 
     def test_architecture_disabled(self):
-        # An empty result set is return if the architecture was disabled.
+        # An empty list is return if the DistroArchSeries was disabled.
         arch_tag = self.factory.getUniqueString('arch-')
         orig_das = self.factory.makeDistroArchSeries(
             architecturetag=arch_tag)
