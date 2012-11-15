@@ -1324,21 +1324,14 @@ def visible_specification_query(user):
     return tables, clauses
 
 
-def get_specification_filters(filter, assume_product_active=False):
+def get_specification_filters(filter):
     """Return a list of Storm expressions for filtering Specifications.
 
     :param filters: A collection of SpecificationFilter and/or strings.
         Strings are used for text searches.
-    :param assume_product_active: If True, assume the Product is active,
-        instead of ensuring it is active.
     """
-    from lp.registry.model.product import Product
     clauses = []
     # If Product is used, it must be active.
-    if not assume_product_active:
-        clauses.extend([Or(Specification.product == None,
-                        Not(Specification.productID.is_in(Select(Product.id,
-                        Product.active == False))))])
     # ALL is the trump card.
     if SpecificationFilter.ALL in filter:
         return clauses

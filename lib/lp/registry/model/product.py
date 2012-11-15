@@ -1410,8 +1410,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #
         tables, clauses = visible_specification_query(user)
         clauses.append(Specification.product == self)
-        clauses.extend(get_specification_filters(filter,
-                       assume_product_active=True))
+        clauses.extend(get_specification_filters(filter))
         if prejoin_people:
             results = self._preload_specifications_people(tables, clauses)
         else:
