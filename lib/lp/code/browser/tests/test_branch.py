@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -518,6 +519,27 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(mp_url, links[2]['href'])
         self.assertEqual(linked_bug_urls[0], links[3]['href'])
         self.assertEqual(linked_bug_urls[1], links[4]['href'])
+
+    def test_view_for_user_with_artifact_grant(self):
+        # Users with an artifact grant for a branch related to a private
+        # product can view the main branch page.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            product_name = product.name
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, branches=[branch])
+        with person_logged_in(user):
+            url = canonical_url(branch)
+        # The main check: No Unauthorized error should be raised.
+        browser = self.getUserBrowser(url, user=user)
+        self.assertIn(product_name, browser.contents)
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
