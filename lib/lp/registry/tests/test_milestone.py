@@ -483,7 +483,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         public_milestone = self.factory.makeMilestone(product=public_product)
         product = self.factory.makeProduct(
             owner=owner, information_type=InformationType.PROPRIETARY,
-            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
+            project=projectgroup)
         target_milestone = self.factory.makeMilestone(
             product=product, name=public_milestone.name)
         milestone = projectgroup.getMilestone(name=public_milestone.name)
@@ -530,8 +530,12 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         # way to get a proprietary milestone.
         milestone, target_milestone, owner = self.makeMixedMilestone()
         with person_logged_in(owner):
+            product = target_milestone.product
+            product.information_type = InformationType.PUBLIC
+            product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
             bugtask = self.factory.makeBugTask(
                 target=target_milestone.product)
+            product.information_type = InformationType.PROPRIETARY
         with person_logged_in(bugtask.owner):
             bugtask.transitionToMilestone(target_milestone, owner)
         self.assertContentEqual([], milestone.bugtasks(None))
