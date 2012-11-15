@@ -397,7 +397,7 @@ Code of Conduct registration problems
 Sample Person tries unsuccessfully to register a truncated code of conduct.
 
     >>> truncated_coc = read_file('truncated_coc.asc')
-    >>> browser.open('http://launchpad.dev/codeofconduct/1.1/+sign')
+    >>> browser.open('http://launchpad.dev/codeofconduct/2.0/+sign')
     >>> browser.getControl('Signed Code').value = truncated_coc
     >>> browser.getControl('Continue').click()
     >>> print_errors(browser.contents)
@@ -422,11 +422,11 @@ that there is a new version available.
     >>> browser.open('http://launchpad.dev/codeofconduct/1.0/+sign')
     >>> browser.getLink('the current version').click()
     >>> print browser.url
-    http://launchpad.dev/codeofconduct/1.1
+    http://launchpad.dev/codeofconduct/2.0
 
     >>> browser.getLink('Sign it').click()
     >>> print browser.url
-    http://launchpad.dev/codeofconduct/1.1/+sign
+    http://launchpad.dev/codeofconduct/2.0/+sign
 
 
 Code of Conduct registration
@@ -436,10 +436,12 @@ Sample Person registers the code of conduct, using a reformatted copy which
 has leading spaces removed.  This succeeds because the words the same and
 appear in the same order.
 
-    >>> reformatted_coc = read_file('reformatted_11_coc.asc')
+    >>> reformatted_coc = read_file('reformatted_20_coc.asc')
     >>> browser.getControl('Signed Code').value = reformatted_coc
+    >>> import pdb;pdb.set_trace()
     >>> browser.getControl('Continue').click()
     >>> print browser.url
+    >>> # GETTING ERROR BAD SIGNATURE
     http://launchpad.dev/~name12/+codesofconduct
 
 And now Sample Person's Codes of Conduct page shows that he's signed it.
@@ -688,11 +690,11 @@ Test if the advertisement email was sent:
   >>> browser.open('http://localhost:9000/codeofconduct')
   >>> browser.getLink('current version').click()
 
-  >>> 'Ubuntu Code of Conduct - 1.1' in browser.contents
+  >>> 'Ubuntu Code of Conduct - 2.0' in browser.contents
   True
 
   >>> browser.getLink('Sign it').url
-  'http://localhost:9000/codeofconduct/1.1/+sign'
+  'http://localhost:9000/codeofconduct/2.0/+sign'
 
   >>> browser.getLink('Download this version').url
-  'http://localhost:9000/codeofconduct/1.1/+download'
+  'http://localhost:9000/codeofconduct/2.0/+download'

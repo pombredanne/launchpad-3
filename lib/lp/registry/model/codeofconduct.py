@@ -62,7 +62,7 @@ class CodeOfConductConf:
 
     path = 'lib/lp/registry/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.1'
+    currentrelease = '2.0'
     # Set the datereleased to the date that 1.0 CoC was released,
     # preserving everyone's Ubuntu Code of Conduct signatory status.
     # https://launchpad.net/products/launchpad/+bug/48995
@@ -245,6 +245,7 @@ class SignedCodeOfConductSet:
 
     def verifyAndStore(self, user, signedcode):
         """See ISignedCodeOfConductSet."""
+        import pdb; pdb.set_trace()
         # XXX cprov 2005-02-24:
         # Are we missing the version field in SignedCoC table?
         # how to figure out which CoC version is signed?
@@ -302,6 +303,9 @@ class SignedCodeOfConductSet:
         # recover the current CoC release
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)
         current = coc.content
+
+        import pdb; pdb.set_trace()
+        
 
         # calculate text digest
         if sig.plain_data.split() != current.split():
