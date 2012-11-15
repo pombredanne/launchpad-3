@@ -1456,6 +1456,12 @@ class PublishingSet:
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
         expanded = expand_binary_requests(distroseries, binaries)
+        expanded = [
+            (das, bpr, overrides)
+            for das, bpr, overrides in expanded if das.enabled]
+        if len(expanded) == 0:
+            # The candiates are no longer valid; the das was disabled.
+            return []
 
         # Find existing publications.
         # We should really be able to just compare BPR.id, but
