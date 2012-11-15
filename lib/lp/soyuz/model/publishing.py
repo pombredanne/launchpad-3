@@ -1396,7 +1396,8 @@ def expand_binary_requests(distroseries, binaries):
         else:
             target_archs = archs
         for target_arch in target_archs:
-            expanded.append((target_arch, bpr, overrides))
+            if target_arch.enabled:
+                expanded.append((target_arch, bpr, overrides))
     return expanded
 
 
@@ -1456,11 +1457,8 @@ class PublishingSet:
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
         expanded = expand_binary_requests(distroseries, binaries)
-        expanded = [
-            (das, bpr, overrides)
-            for das, bpr, overrides in expanded if das.enabled]
         if len(expanded) == 0:
-            # The candiates are no longer valid; the das was disabled.
+            # The binaries are for a disabled DistroArchSeries.
             return []
 
         # Find existing publications.
