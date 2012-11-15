@@ -105,6 +105,7 @@ from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -127,6 +128,9 @@ from lp.app.widgets.product import (
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
+    )
+from lp.blueprints.enums import (
+    SpecificationFilter,
     )
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
@@ -1446,10 +1450,43 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
+        old_info_type = self.context.information_type
         try:
             self.updateContextFromData(data)
         except CannotChangeInformationType as e:
             self.setFieldError('information_type', str(e))
+        warning = self.getPublicWarning(old_info_type)
+        if warning is not None:
+            self.request.response.addWarningNotification(warning)
+
+    def getPublicWarning(self, old_info_type):
+        if (old_info_type != InformationType.PUBLIC or
+            self.context.information_type == InformationType.PUBLIC):
+            return None
+        public_bugs = self.context.searchTasks(None,
+            information_type=PUBLIC_INFORMATION_TYPES,
+            omit_duplicates=False, omit_targeted=False)
+        public_artifacts = []
+        if not public_bugs.is_empty():
+            public_artifacts.append('bugs')
+        # Default returns all public branches.
+        public_branches = self.context.getBranches()
+        if not public_branches.is_empty():
+            public_artifacts.append('branches')
+        # All specs located by an ALL search are public.
+        public_specs = self.context.specifications(
+            None, filter=[SpecificationFilter.ALL])
+        if not public_specs.is_empty():
+            public_artifacts.append('blueprints')
+        if len(public_artifacts) == 0:
+            return None
+        elif len(public_artifacts) < 3:
+            list_phrase = ' and '.join(public_artifacts)
+        else:
+            list_phrase = 'bugs, branches, and blueprints'
+        return ('Some %s are public.  This project will not be fully '
+                '%s until they have been changed.' %
+                (list_phrase, self.context.information_type.title))
 
 
 class ProductValidationMixin:

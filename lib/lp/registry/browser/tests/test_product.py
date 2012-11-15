@@ -25,6 +25,7 @@ from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.registry.browser.product import (
@@ -551,6 +552,116 @@ class TestProductEditView(BrowserTestCase):
             updated_product = product_set.getByName('fnord')
             self.assertEqual(
                 InformationType.PUBLIC, updated_product.information_type)
+
+    def test_warning_on_public_artifacts(self):
+        # When changing to proprietary, any public artifacts will trigger a
+        # warning.
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(target=product)
+        def make_proprietary():
+            with person_logged_in(None):
+                browser = self.getViewBrowser(product, '+edit',
+                    user=product.owner)
+                info_type = browser.getControl(name='field.information_type')
+                info_type.value = ['PROPRIETARY']
+                browser.getControl('Change').click()
+            with person_logged_in(owner):
+                product.information_type = InformationType.PUBLIC
+            return browser
+        browser = make_proprietary()
+        def assertWarning(browser, text):
+            warning_tag = Tag('warning', 'div', text=text,
+                              attrs={'class': 'warning message'})
+            self.assertThat(browser.contents, HTMLContains(warning_tag))
+        assertWarning(
+            browser, 'Some bugs are public.  This project will not be fully '
+            'Proprietary until they have been changed.')
+        browser = make_proprietary()
+        with person_logged_in(bug.owner):
+            bug.transitionToInformationType(InformationType.PROPRIETARY,
+                                            bug.owner)
+        browser = make_proprietary()
+        self.assertThat(browser.contents, Not(HTMLContains(
+            Tag('warning', 'div', attrs={'class': 'warning message'}))))
+
+    def test_getPublicWarning_artifacts(self):
+        # The warning indicates what kinds of artifacts are public, in
+        # grammatical English.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(target=product)
+        view = create_initialized_view(product, '+edit')
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some bugs are public.  This project will not be fully '
+            'Proprietary until they have been changed.', warning)
+        spec = self.factory.makeSpecification(product=product)
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some bugs and blueprints are public.  This project will not be '
+            'fully Proprietary until they have been changed.', warning)
+        branch = self.factory.makeBranch(product=product, owner=owner,
+                information_type=InformationType.PUBLIC)
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some bugs, branches, and blueprints are public.  This project '
+            'will not be fully Proprietary until they have been changed.',
+            warning)
+        with person_logged_in(owner):
+            bug.transitionToInformationType(
+                InformationType.PROPRIETARY, owner)
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some branches and blueprints are public.  This project '
+            'will not be fully Proprietary until they have been changed.',
+            warning)
+        with person_logged_in(owner):
+            branch.transitionToInformationType(
+                InformationType.PROPRIETARY, owner)
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some blueprints are public.  This project will not be fully '
+            'Proprietary until they have been changed.', warning)
+        with person_logged_in(owner):
+            spec.transitionToInformationType(
+                InformationType.PROPRIETARY, owner)
+        self.assertIs(None, view.getPublicWarning(InformationType.PUBLIC))
+
+    def test_getPublicWarning_embargoed(self):
+        # The message reflects an Embargoed product type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(target=product)
+        with person_logged_in(owner):
+            product.information_type = InformationType.EMBARGOED
+            view = create_initialized_view(product, '+edit')
+        warning = view.getPublicWarning(InformationType.PUBLIC)
+        self.assertEqual(
+            'Some bugs are public.  This project will not be fully '
+            'Embargoed until they have been changed.', warning)
+
+    def test_getPublicWarning_transition(self):
+        # The warning is emitted only when transitioning from PUBLIC to a
+        # proprietary type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(target=product)
+        view = create_initialized_view(product, '+edit')
+        for from_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+            for to_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+                with person_logged_in(owner):
+                    product.information_type = to_type
+                warning = view.getPublicWarning(from_type)
+                if (to_type in PROPRIETARY_INFORMATION_TYPES and
+                    from_type == InformationType.PUBLIC):
+                    self.assertIsNot(None, warning)
+                else:
+                    self.assertIs(None, warning)
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
