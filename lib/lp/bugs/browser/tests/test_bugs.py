@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -16,16 +15,19 @@ from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     celebrity_logged_in,
     person_logged_in,
-    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.pages import find_tag_by_id
+from lp.testing.pages import (
+    find_tag_by_id,
+    setupBrowserForUser,
+    )
 from lp.testing.views import create_initialized_view
 
 
-class TestMaloneView(TestCaseWithFactory):
+class TestMaloneView(BrowserTestCase):
     """Test the MaloneView for the Bugs application."""
     layer = DatabaseFunctionalLayer
 
@@ -103,6 +105,34 @@ class TestMaloneView(TestCaseWithFactory):
         content = view.render()
         # we should get some valid content out of this
         self.assertIn('Search all bugs', content)
+
+    def test_search_bugs_with_proprietary_product(self):
+        owner = self.factory.makePerson()
+        anon_user = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        title = 'huhdwudwyhbdwhbdwhbwdwhb'
+        query_string = (
+                '?field.searchtext=%s&search=Search+Bug+Reports'
+                '&field.scope=all&field.scope.target=' % title)
+        base_url = canonical_url(
+            self.application, view_name='+bugs', rootsite='bugs')
+        url = '%s%s' % (base_url, query_string)
+        with person_logged_in(owner):
+            product.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+            bug = self.factory.makeBug(
+                target=product, information_type=InformationType.PUBLIC,
+                title=title)
+            self.assertEqual(bug.information_type, InformationType.PUBLIC)
+        with person_logged_in(anon_user):
+            browser = setupBrowserForUser(user=anon_user)
+            browser.open(url)
+            # It doesn't matter what we assert here.  The test is really
+            # just to confirm the browser.open call above didn't raise
+            # an Unauthorized error.
+            self.assertIn('No results for search', browser.contents)
 
     def _assert_getBugData(self, related_bug=None):
         # The getBugData method works as expected.
