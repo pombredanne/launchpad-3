@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'get_specification_filters',
-    'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
     'recursive_dependent_query',
@@ -1228,58 +1227,6 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
-
-
-def get_specification_privacy_filter(user):
-    """Return a Storm expression for filtering specifications by privacy.
-
-    :param user: A Person ID or a column reference.
-    :return: A Storm expression to check if a peron has access grants
-         for a specification.
-    """
-    # Avoid circular imports.
-    from lp.registry.model.accesspolicy import (
-        AccessArtifact,
-        AccessPolicy,
-        AccessPolicyGrantFlat,
-        )
-    public_specification_filter = (
-        Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-    if user is None:
-        return public_specification_filter
-    return Or(
-        public_specification_filter,
-        Specification.id.is_in(
-            Select(
-                Specification.id,
-                tables=(
-                    Specification,
-                    Join(
-                        AccessPolicy,
-                        And(
-                            Or(
-                                Specification.productID ==
-                                    AccessPolicy.product_id,
-                                Specification.distributionID ==
-                                    AccessPolicy.distribution_id),
-                            Specification.information_type ==
-                                AccessPolicy.type)),
-                    Join(
-                        AccessPolicyGrantFlat,
-                        AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
-                    LeftJoin(
-                        AccessArtifact,
-                        AccessPolicyGrantFlat.abstract_artifact_id ==
-                            AccessArtifact.id),
-                    Join(
-                        TeamParticipation,
-                        And(
-                            TeamParticipation.team ==
-                                AccessPolicyGrantFlat.grantee_id,
-                            TeamParticipation.person == user))),
-                where=Or(
-                    AccessPolicyGrantFlat.abstract_artifact_id == None,
-                    AccessArtifact.specification_id == Specification.id))))
 
 
 def visible_specification_query(user):
