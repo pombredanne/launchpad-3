@@ -151,14 +151,12 @@ class ProductReleaseFinder:
         try:
             product = getUtility(IProductSet).getByName(product_name)
             if product is not None:
-                milestone = product.getMilestone(release_name)
-                if milestone is not None:
-                    release = milestone.product_release
-                    if release is not None:
-                        for fileinfo in release.files:
-                            if filename == fileinfo.libraryfile.filename:
-                                has_file = True
-                                break
+                release = product.getRelease(release_name)
+                if release is not None:
+                    for fileinfo in release.files:
+                        if filename == fileinfo.libraryfile.filename:
+                            has_file = True
+                            break
         finally:
             self.ztm.abort()
         return has_file
