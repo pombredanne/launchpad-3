@@ -363,7 +363,7 @@ class TestProduct(TestCaseWithFactory):
                 licenses=[License.OTHER_PROPRIETARY],
                 information_type=InformationType.EMBARGOED)
             self.assertEqual(
-                BugSharingPolicy.PROPRIETARY,
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.bug_sharing_policy)
             self.assertEqual(
                 BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
