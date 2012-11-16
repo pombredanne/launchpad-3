@@ -184,7 +184,6 @@ class SpecificationSharingPolicy(DBEnumeratedType):
         """)
 
 
-
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
