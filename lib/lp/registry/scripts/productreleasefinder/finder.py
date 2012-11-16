@@ -151,9 +151,9 @@ class ProductReleaseFinder:
         try:
             product = getUtility(IProductSet).getByName(product_name)
             if product is not None:
-                series = product.getSeries(series_name)
-                if series is not None:
-                    release = series.getRelease(release_name)
+                milestone = product.getMilestone(release_name)
+                if milestone is not None:
+                    release = milestone.product_release
                     if release is not None:
                         for fileinfo in release.files:
                             if filename == fileinfo.libraryfile.filename:
