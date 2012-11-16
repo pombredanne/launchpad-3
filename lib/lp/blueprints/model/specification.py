@@ -1278,7 +1278,6 @@ def get_specification_filters(filter):
         Strings are used for text searches.
     """
     clauses = []
-    # If Product is used, it must be active.
     # ALL is the trump card.
     if SpecificationFilter.ALL in filter:
         return clauses

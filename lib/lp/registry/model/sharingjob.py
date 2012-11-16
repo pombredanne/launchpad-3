@@ -457,6 +457,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
 
 def spec_not_visible(person_id):
+    """Return an expression for finding specs not visible to the person."""
     tables, clauses = visible_specification_query(person_id)
     subselect = Select(Specification.id, tables=tables, where=And(clauses))
     return Not(Specification.id.is_in(subselect))
