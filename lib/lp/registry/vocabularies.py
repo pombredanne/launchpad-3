@@ -1365,7 +1365,8 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
-
+        user = getUtility(ILaunchBag).user
+        privacy_filter = ProductSet.getProductPrivacyFilter(user)
         query = ensure_unicode(query).lower().strip('/')
         # If there is a slash splitting the product and productseries
         # names, they must both match. If there is no slash, we don't
@@ -1380,11 +1381,11 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
             substring_search = Or(
                 CONTAINSSTRING(Product.name, query),
                 CONTAINSSTRING(ProductSeries.name, query))
-
         result = IStore(self._table).find(
             self._table,
             Product.id == ProductSeries.productID,
-            substring_search)
+            substring_search,
+            privacy_filter)
         result = result.order_by(self._order_by)
         return result
 
