@@ -160,7 +160,7 @@ them.
     ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/pppa" class="sprite ppa-icon">PPA named pppa
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named pppa
     for Joe Smith</a>
 
     >>> login(ANONYMOUS)
@@ -1571,7 +1571,7 @@ Foo Bar is an administrator so he can see all.
     >>> login('foo.bar@canonical.com')
     >>> myteam = getUtility(IPersonSet).getByName('myteam')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...class="sprite team"...>My Team</a>'
+    u'<a ...class="sprite team private"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1583,7 +1583,7 @@ Owner is a member of myteam so he can see all.
 
     >>> login('owner@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...class="sprite team"...>My Team</a>'
+    u'<a ...class="sprite team private"...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'

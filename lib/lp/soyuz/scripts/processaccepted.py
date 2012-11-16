@@ -122,11 +122,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
         return
 
     if changesfile_object is None:
-        if queue_item.is_delayed_copy:
-            sourcepackagerelease = queue_item.sources[0].sourcepackagerelease
-            changesfile_object = sourcepackagerelease.upload_changesfile
-        else:
-            changesfile_object = queue_item.changesfile
+        changesfile_object = queue_item.changesfile
 
     for source_queue_item in queue_item.sources:
         close_bugs_for_sourcepackagerelease(

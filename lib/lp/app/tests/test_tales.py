@@ -236,7 +236,7 @@ class TestTeamFormatterAPI(TestCaseWithFactory):
 
     def test_can_view_icon(self):
         self._test_can_view_attribute(
-            'icon', '<span class="sprite team"></span>')
+            'icon', '<span class="sprite team private"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):

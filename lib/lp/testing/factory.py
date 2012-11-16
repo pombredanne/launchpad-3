@@ -977,7 +977,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 displayname = name.capitalize()
         if licenses is None:
-            if information_type in PROPRIETARY_INFORMATION_TYPES:
+            if (information_type in PROPRIETARY_INFORMATION_TYPES or
+                (bug_sharing_policy is not None and
+                 bug_sharing_policy != BugSharingPolicy.PUBLIC) or
+                (branch_sharing_policy is not None and
+                 branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
+                (specification_sharing_policy is not None and
+                 specification_sharing_policy !=
+                 SpecificationSharingPolicy.PUBLIC)
+                ):
                 licenses = [License.OTHER_PROPRIETARY]
             else:
                 licenses = [License.GNU_GPL_V2]
@@ -1008,14 +1016,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if ((branch_sharing_policy and
-            branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
-            (bug_sharing_policy and
-            bug_sharing_policy != BugSharingPolicy.PUBLIC) or
-            (specification_sharing_policy and
-            specification_sharing_policy !=
-                SpecificationSharingPolicy.PUBLIC)):
-            self.makeCommercialSubscription(product)
         if branch_sharing_policy:
             naked_product.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
@@ -1023,8 +1023,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if specification_sharing_policy:
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
-        if information_type is not None:
-            naked_product.information_type = information_type
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
