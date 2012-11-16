@@ -41,10 +41,9 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
         # Milestones for a projectgroup should not include those on an
         # associated private product.
         owner = self.factory.makePerson()
-        user = self.factory.makePerson()
         group = self.factory.makeProject(owner=owner)
-        public = self.factory.makeProduct(project=group)
-        private = self.factory.makeProduct(project=group,
+        public = self.factory.makeProduct(project=group, owner=owner)
+        private = self.factory.makeProduct(project=group, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             m1 = self.factory.makeMilestone(name='public', product=public)
@@ -53,6 +52,12 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
         expected = [m1.title]
         listing = [term.title for term in vocabulary]
         self.assertEqual(expected, listing)
+
+        with person_logged_in(owner):
+            vocabulary = MilestoneVocabulary(group)
+            expected = [m1.title, m2.title]
+            listing = [term.title for term in vocabulary]
+            self.assertEqual(expected, listing)
 
     def testProductMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a product."""
