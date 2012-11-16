@@ -29,6 +29,7 @@ class SpecificationWorkItem(StormBase):
     implements(ISpecificationWorkItem)
 
     __storm_table__ = 'SpecificationWorkItem'
+    __storm_order__ = 'id'
 
     id = Int(primary=True)
     title = Unicode(allow_none=False)
