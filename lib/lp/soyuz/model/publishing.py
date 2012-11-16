@@ -1456,6 +1456,10 @@ class PublishingSet:
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
         expanded = expand_binary_requests(distroseries, binaries)
+        if len(expanded) == 0:
+            # The binaries are for a disabled DistroArchSeries or for
+            # an unsupported architecture.
+            return []
 
         # Find existing publications.
         # We should really be able to just compare BPR.id, but

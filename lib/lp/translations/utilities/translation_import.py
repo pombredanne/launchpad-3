@@ -25,6 +25,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -373,7 +374,7 @@ class FileImporter(object):
     """
 
     def __init__(self, translation_import_queue_entry,
-                 importer, logger = None):
+                 importer, logger=None):
         """Base constructor to set up common attributes and parse the imported
         file into a member variable (self.translation_file).
 
@@ -536,6 +537,10 @@ class FileImporter(object):
             potmsgset.singular_text, message_data.translations,
             self.pofile.language.pluralforms)
 
+        # Flush the store now because flush order rules can cause messages
+        # to be flushed before the potmsgset arrives in the database.
+        IStore(potmsgset).flush()
+
         if potmsgset.is_translation_credit:
             # Translation credits cannot be added as suggestions.
             return self._storeCredits(potmsgset, sanitized_translations)
@@ -680,7 +685,7 @@ class POTFileImporter(FileImporter):
             message._translations = None
 
         if len(message.flags) > 0:
-            flags_comment = u", "+u", ".join(message.flags)
+            flags_comment = u", " + u", ".join(message.flags)
         else:
             flags_comment = u""
 

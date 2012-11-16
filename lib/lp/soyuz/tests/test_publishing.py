@@ -1599,6 +1599,21 @@ class TestPublishBinaries(TestCaseWithFactory):
             set((target_das_a, target_das_b)),
             set(bpph.distroarchseries for bpph in bpphs))
 
+    def test_architecture_disabled(self):
+        # An empty list is return if the DistroArchSeries was disabled.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
+        target_das.enabled = False
+        args = self.makeArgs([bpr], target_das.distroseries)
+        results = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEqual([], results)
+
     def test_does_not_duplicate(self):
         # An attempt to copy something for a second time is ignored.
         bpr = self.factory.makeBinaryPackageRelease()
