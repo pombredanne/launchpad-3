@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestCase
-
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
@@ -23,6 +21,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+
 
 class TestMilestoneVocabulary(TestCaseWithFactory):
     """Test that the MilestoneVocabulary behaves as expected."""
