@@ -54,12 +54,12 @@ class SpecificationWorkItem(StormBase):
 
     def __init__(self, title, status, specification, assignee, milestone,
                  sequence):
-        self.title=title
-        self.status=status
+        self.title = title
+        self.status = status
         self.specification = specification
-        self.assignee=assignee
-        self.milestone=milestone
-        self.sequence=sequence
+        self.assignee = assignee
+        self.milestone = milestone
+        self.sequence = sequence
 
     @property
     def is_complete(self):

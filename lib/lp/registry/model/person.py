@@ -2846,6 +2846,8 @@ class Person(
             pass
         elif uploader_only:
             lpspr = ClassAlias(LatestPersonSourcePackageReleaseCache, 'lpspr')
+            upload_distroseries_id = (
+                LatestPersonSourcePackageReleaseCache.upload_distroseries_id)
             clauses.append(Not(Exists(Select(1,
             where=And(
                 lpspr.sourcepackagename_id ==
@@ -2853,7 +2855,7 @@ class Person(
                 lpspr.upload_archive_id ==
                     LatestPersonSourcePackageReleaseCache.upload_archive_id,
                 lpspr.upload_distroseries_id ==
-                    LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
+                    upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
                 lpspr.maintainer_id == self.id),
             tables=lpspr))))
