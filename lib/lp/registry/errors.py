@@ -24,6 +24,7 @@ __all__ = [
     'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
+    'ProprietaryProduct',
     'TeamMembershipTransitionError',
     'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
@@ -85,6 +86,10 @@ class CommercialSubscribersOnly(Unauthorized):
     Raised when a user tries to invoke an operation that is only available to
     current commercial subscribers and they don't have an active subscription.
     """
+
+
+class ProprietaryProduct(Exception):
+    """Cannot make the change because the project is proprietary."""
 
 
 class NoSuchSourcePackageName(NameLookupFailed):

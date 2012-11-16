@@ -123,6 +123,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -139,6 +140,7 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    ProprietaryProduct,
     VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -332,6 +334,27 @@ class UnDeactivateable(Exception):
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
 
+bug_policy_default = {
+    InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
+    InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.PROPRIETARY,
+}
+
+
+branch_policy_default = {
+    InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
+}
+
+
+specification_policy_default = {
+    InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED:
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
+}
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
@@ -469,12 +492,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
+        old_info_type = self._information_type
         self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
         # However, only on edits. If this is a new Product it's handled
         # already.
         if not self._SO_creating:
+            if (old_info_type == InformationType.PUBLIC and
+                value != InformationType.PUBLIC):
+                self.setBranchSharingPolicy(branch_policy_default[value])
+                self.setBugSharingPolicy(bug_policy_default[value])
+                self.setSpecificationSharingPolicy(
+                    specification_policy_default[value])
             self._ensurePolicies([value])
 
     information_type = property(_get_information_type, _set_information_type)
@@ -623,6 +653,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             raise CommercialSubscribersOnly(
                 "A current commercial subscription is required to use "
                 "proprietary %s." % kind)
+        if self.information_type != InformationType.PUBLIC:
+            if InformationType.PUBLIC in allowed_types[var]:
+                raise ProprietaryProduct(
+                    "The project is %s." % self.information_type.title)
         required_policies = set(allowed_types[var]).intersection(
             set(PRIVATE_INFORMATION_TYPES))
         self._ensurePolicies(required_policies)
@@ -1482,7 +1516,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.branch import Branch
         store = Store.of(self)
         return store.find(
             SourcePackageRecipe,
@@ -1715,13 +1748,7 @@ class ProductSet:
     @staticmethod
     def getProductPrivacyFilter(user):
         if user is not None:
-            # Generally our `user` here is a Person object,
-            # but sometimes it's a PersonRoles object.
-            if IPersonRoles.providedBy(user):
-                roles = user
-                user = user.person
-            else:
-                roles = IPersonRoles(user)
+            roles = IPersonRoles(user)
             if roles.in_admin or roles.in_commercial_admin:
                 return True
         granted_products = And(
@@ -1825,28 +1852,14 @@ class ProductSet:
             bug_supervisor=bug_supervisor, driver=driver,
             information_type=information_type)
 
-        # Set up the sharing policies and product licence.
-        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
-        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
-        specification_sharing_policy_to_use = (
-            SpecificationSharingPolicy.PUBLIC)
+        # Set up the product licence.
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
-        if information_type == InformationType.PROPRIETARY:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.PROPRIETARY)
-        if information_type == InformationType.EMBARGOED:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = (
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        product.setBugSharingPolicy(bug_sharing_policy_to_use)
-        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
+        product.setBugSharingPolicy(bug_policy_default[information_type])
+        product.setBranchSharingPolicy(
+            branch_policy_default[information_type])
         product.setSpecificationSharingPolicy(
-            specification_sharing_policy_to_use)
+            specification_policy_default[information_type])
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
