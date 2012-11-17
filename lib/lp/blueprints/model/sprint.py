@@ -155,8 +155,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        query.extend(
-            get_specification_filters(filter, assume_product_active=True))
+        query.extend(get_specification_filters(filter))
         return tables, query
 
     def all_specifications(self, user):

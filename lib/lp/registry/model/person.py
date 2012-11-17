@@ -130,10 +130,10 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     spec_started_clause,
+    visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -857,7 +857,8 @@ class Person(
                     Select(SpecificationSubscription.specificationID,
                         [SpecificationSubscription.person == self]
                     )))
-        clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Or(*role_clauses))
         # Defaults for completeness: if nothing is said about completeness
         # then we want to show INCOMPLETE.
         if SpecificationFilter.COMPLETE not in filter:
@@ -867,7 +868,7 @@ class Person(
             filter.add(SpecificationFilter.INCOMPLETE)
 
         clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).find(Specification, *clauses)
+        results = Store.of(self).using(*tables).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
@@ -876,6 +877,7 @@ class Person(
             sort = None
         if sort is not None:
             results = results.order_by(sort)
+        results.config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1466,23 +1468,23 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin = [
-            WorkItem,
-            Join(Specification, WorkItem.specification == Specification.id),
+        origin, query = visible_specification_query(user)
+        origin.extend([
+            Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            ]
+            ])
         today = datetime.today().date()
-        query = And(
-            get_specification_privacy_filter(user),
+        query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification.assigneeID.is_in(self.participant_ids)))
-        result = store.using(*origin).find(WorkItem, query)
+               Specification.assigneeID.is_in(self.participant_ids))])
+        result = store.using(*origin).find(WorkItem, *query)
+        result.config(distinct=True)
 
         def eager_load(workitems):
             specs = bulk.load_related(
@@ -2844,6 +2846,8 @@ class Person(
             pass
         elif uploader_only:
             lpspr = ClassAlias(LatestPersonSourcePackageReleaseCache, 'lpspr')
+            upload_distroseries_id = (
+                LatestPersonSourcePackageReleaseCache.upload_distroseries_id)
             clauses.append(Not(Exists(Select(1,
             where=And(
                 lpspr.sourcepackagename_id ==
@@ -2851,7 +2855,7 @@ class Person(
                 lpspr.upload_archive_id ==
                     LatestPersonSourcePackageReleaseCache.upload_archive_id,
                 lpspr.upload_distroseries_id ==
-                    LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
+                    upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
                 lpspr.maintainer_id == self.id),
             tables=lpspr))))
