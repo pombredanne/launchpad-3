@@ -33,8 +33,8 @@ from lp.blueprints.enums import (
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specification import (
-    get_specification_privacy_filter,
     Specification,
+    visible_specification_query,
     )
 from lp.registry.enums import (
     SharingPermission,
@@ -397,8 +397,8 @@ class SpecificationTests(TestCaseWithFactory):
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
 
-    def test_get_specification_privacy_filter(self):
-        # get_specification_privacy_filter() returns a Storm expression
+    def test_visible_specification_query(self):
+        # visible_specification_query returns a Storm expression
         # that can be used to filter specifications by their visibility-
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
@@ -413,30 +413,32 @@ class SpecificationTests(TestCaseWithFactory):
         all_specs = [
             public_spec, proprietary_spec_1, proprietary_spec_2]
         store = Store.of(product)
-        specs_for_anon = store.find(
-            Specification, get_specification_privacy_filter(None),
-            Specification.productID == product.id)
-        self.assertContentEqual([public_spec], specs_for_anon)
+        tables, query = visible_specification_query(None)
+        specs_for_anon = store.using(*tables).find(
+            Specification,
+            Specification.productID == product.id, *query)
+        self.assertContentEqual([public_spec],
+                                specs_for_anon.config(distinct=True))
         # Product owners havae grants on the product, the privacy
         # filter returns thus all specifications for them.
-        specs_for_owner = store.find(
-            Specification, get_specification_privacy_filter(owner.id),
-            Specification.productID == product.id)
+        tables, query = visible_specification_query(owner.id)
+        specs_for_owner = store.using(*tables).find(
+            Specification, Specification.productID == product.id, *query)
         self.assertContentEqual(all_specs, specs_for_owner)
         # The filter returns only public specs for ordinary users.
         user = self.factory.makePerson()
-        specs_for_other_user = store.find(
-            Specification, get_specification_privacy_filter(user.id),
-            Specification.productID == product.id)
+        tables, query = visible_specification_query(user.id)
+        specs_for_other_user = store.using(*tables).find(
+            Specification, Specification.productID == product.id, *query)
         self.assertContentEqual([public_spec], specs_for_other_user)
         # If the user has a grant for a specification, the filter returns
         # this specification too.
         with person_logged_in(owner):
             getUtility(IService, 'sharing').ensureAccessGrants(
                 [user], owner, specifications=[proprietary_spec_1])
-        specs_for_other_user = store.find(
-            Specification, get_specification_privacy_filter(user.id),
-            Specification.productID == product.id)
+        tables, query = visible_specification_query(user.id)
+        specs_for_other_user = store.using(*tables).find(
+            Specification, Specification.productID == product.id, *query)
         self.assertContentEqual(
             [public_spec, proprietary_spec_1], specs_for_other_user)
 

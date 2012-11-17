@@ -952,7 +952,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     constraint)
 
         if prejoin_people:
-            results = self._preload_specifications_people(query)
+            results = self._preload_specifications_people([Specification],
+                                                          query)
         else:
             results = Store.of(self).find(
                 Specification,
