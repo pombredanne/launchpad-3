@@ -185,7 +185,7 @@ class IProductReleaseFilePublic(Interface):
     productrelease = exported(
         ReferenceChoice(title=_('Project release'),
                         description=_("The parent product release."),
-                        schema=Interface, # Defined later.
+                        schema=Interface,  # Defined later.
                         required=True,
                         vocabulary='ProductRelease'),
         exported_as='project_release')
@@ -254,6 +254,8 @@ class IProductReleaseEditRestricted(Interface):
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.
+        :raises: InvalidFilename if the filename is invalid or a duplicate
+            of a file previously added to the release.
         """
 
     @export_write_operation()
@@ -284,7 +286,7 @@ class IProductReleasePublic(Interface):
     version = exported(
         ProductReleaseVersionField(
             title=_('Version'),
-            description= u'The specific version number assigned to this '
+            description=u'The specific version number assigned to this '
             'release. Letters and numbers are acceptable, for releases like '
             '"1.2rc3".',
             constraint=sane_version)
