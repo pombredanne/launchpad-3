@@ -184,6 +184,26 @@ class TestSpecificationView(TestCaseWithFactory):
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
 
+    def test_view_for_user_with_artifact_grant(self):
+        # Users with an artifact grant for a specification related to a
+        # private  product can view the specification page.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, specifications=[spec])
+        with person_logged_in(user):
+            view = create_initialized_view(
+                spec, name='+index', principal=user, rootsite='blueprints')
+            # Calling render() does not raise any exceptions.
+            self.assertIn(spec.name, view.render())
+
 
 def set_blueprint_information_type(test_case, enabled):
     value = 'true' if enabled else ''

@@ -180,6 +180,8 @@ records.
     ...             "delete from latestpersonsourcepackagereleasecache")
     ...     flush_database_updates()
     ...     switch_dbuser('garbo_frequently')
+    ...     if delete_all:
+    ...         store.execute("delete from garbojobstate")
     ...     job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
     ...     while not job.isDone():
     ...         job(chunk_size=100)

@@ -130,10 +130,10 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     spec_started_clause,
+    visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -857,7 +857,8 @@ class Person(
                     Select(SpecificationSubscription.specificationID,
                         [SpecificationSubscription.person == self]
                     )))
-        clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Or(*role_clauses))
         # Defaults for completeness: if nothing is said about completeness
         # then we want to show INCOMPLETE.
         if SpecificationFilter.COMPLETE not in filter:
@@ -867,7 +868,7 @@ class Person(
             filter.add(SpecificationFilter.INCOMPLETE)
 
         clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).find(Specification, *clauses)
+        results = Store.of(self).using(*tables).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
@@ -876,6 +877,7 @@ class Person(
             sort = None
         if sort is not None:
             results = results.order_by(sort)
+        results.config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1466,23 +1468,23 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin = [
-            WorkItem,
-            Join(Specification, WorkItem.specification == Specification.id),
+        origin, query = visible_specification_query(user)
+        origin.extend([
+            Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            ]
+            ])
         today = datetime.today().date()
-        query = And(
-            get_specification_privacy_filter(user),
+        query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification.assigneeID.is_in(self.participant_ids)))
-        result = store.using(*origin).find(WorkItem, query)
+               Specification.assigneeID.is_in(self.participant_ids))])
+        result = store.using(*origin).find(WorkItem, *query)
+        result.config(distinct=True)
 
         def eager_load(workitems):
             specs = bulk.load_related(
@@ -2844,6 +2846,8 @@ class Person(
             pass
         elif uploader_only:
             lpspr = ClassAlias(LatestPersonSourcePackageReleaseCache, 'lpspr')
+            upload_distroseries_id = (
+                LatestPersonSourcePackageReleaseCache.upload_distroseries_id)
             clauses.append(Not(Exists(Select(1,
             where=And(
                 lpspr.sourcepackagename_id ==
@@ -2851,7 +2855,7 @@ class Person(
                 lpspr.upload_archive_id ==
                     LatestPersonSourcePackageReleaseCache.upload_archive_id,
                 lpspr.upload_distroseries_id ==
-                    LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
+                    upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
                 lpspr.maintainer_id == self.id),
             tables=lpspr))))
@@ -2872,9 +2876,6 @@ class Person(
         """Are there sourcepackagereleases (SPRs) related to this person.
         See `_releasesQueryFilter` for details on the criteria used.
         """
-        if not getFeatureFlag('registry.fast_related_software.enabled'):
-            return self._legacy_hasReleasesQuery(uploader_only, ppa_only)
-
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).using(LatestPersonSourcePackageReleaseCache).find(
             LatestPersonSourcePackageReleaseCache.publication_id, *clauses)
@@ -2883,9 +2884,6 @@ class Person(
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
         """Return the sourcepackagereleases records related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
-
-        if not getFeatureFlag('registry.fast_related_software.enabled'):
-            return self._legacy_latestReleasesQuery(uploader_only, ppa_only)
 
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).find(
@@ -2901,96 +2899,6 @@ class Person(
             bulk.load_related(
                 SourcePackageRelease, rows, ['sourcepackagerelease_id'])
             bulk.load_related(Archive, rows, ['upload_archive_id'])
-
-        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
-
-    def _legacy_releasesQueryFilter(self, uploader_only=False, ppa_only=False):
-        """Return the filter used to find sourcepackagereleases (SPRs)
-        related to this person.
-
-        :param uploader_only: controls if we are interested in SPRs where
-            the person in question is only the uploader (creator) and not the
-            maintainer (debian-syncs) if the `ppa_only` parameter is also
-            False, or, if the flag is False, it returns all SPR maintained
-            by this person.
-
-        :param ppa_only: controls if we are interested only in source
-            package releases targeted to any PPAs or, if False, sources
-            targeted to primary archives.
-
-        Active 'ppa_only' flag is usually associated with active
-        'uploader_only' because there shouldn't be any sense of maintainership
-        for packages uploaded to PPAs by someone else than the user himself.
-        """
-        clauses = [SourcePackageRelease.upload_archive == Archive.id]
-
-        if uploader_only:
-            clauses.append(SourcePackageRelease.creator == self)
-
-        if ppa_only:
-            # Source maintainer is irrelevant for PPA uploads.
-            pass
-        elif uploader_only:
-            clauses.append(SourcePackageRelease.maintainer != self)
-        else:
-            clauses.append(SourcePackageRelease.maintainer == self)
-
-        if ppa_only:
-            clauses.append(Archive.purpose == ArchivePurpose.PPA)
-        else:
-            clauses.append(Archive.purpose != ArchivePurpose.PPA)
-
-        return clauses
-
-    def _legacy_hasReleasesQuery(self, uploader_only=False, ppa_only=False):
-        """Are there sourcepackagereleases (SPRs) related to this person.
-        See `_legacy_releasesQueryFilter` for details on the criteria used.
-        """
-        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
-        tables = (
-            SourcePackageRelease,
-            Join(
-                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
-            Join(Archive, Archive.id == spph.archiveID))
-        rs = Store.of(self).using(*tables).find(
-            SourcePackageRelease.id, clauses)
-        return not rs.is_empty()
-
-    def _legacy_latestReleasesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
-        See `_legacy_releasesQueryFilter` for details on the criteria used."""
-        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
-        rs = Store.of(self).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(
-                Select(
-                    SourcePackageRelease.id,
-                    tables=[
-                        SourcePackageRelease,
-                        Join(
-                            spph,
-                            spph.sourcepackagereleaseID ==
-                            SourcePackageRelease.id),
-                        Join(Archive, Archive.id == spph.archiveID)],
-                    where=And(*clauses),
-                    order_by=[SourcePackageRelease.upload_distroseriesID,
-                              SourcePackageRelease.sourcepackagenameID,
-                              SourcePackageRelease.upload_archiveID,
-                              Desc(SourcePackageRelease.dateuploaded)],
-                    distinct=(
-                        SourcePackageRelease.upload_distroseriesID,
-                        SourcePackageRelease.sourcepackagenameID,
-                        SourcePackageRelease.upload_archiveID)))
-        ).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
-
-        def load_related_objects(rows):
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                set(map(attrgetter("maintainerID"), rows))))
-            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
-            bulk.load_related(Archive, rows, ['upload_archiveID'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 

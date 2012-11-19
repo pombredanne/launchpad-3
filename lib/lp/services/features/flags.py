@@ -154,12 +154,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('soyuz.derived_series.max_synchronous_syncs',
-     'int',
-     "How many package syncs may be done directly in a web request.",
-     '100',
-     '',
-     ''),
     ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
@@ -244,14 +238,6 @@ flag_info = sorted([
      'Traversal to private projects requires special access.',
      'Override traveral checks.',
      'https://dev.launchpad.net/LEP/PrivateProjects'),
-    ('registry.fast_related_software.enabled',
-     'boolean',
-     ('If true, use the new reporting cache to load a person\'s related '
-      'software information.'),
-     '',
-     '',
-     ''),
-
     ])
 
 # The set of all flag names that are documented.

@@ -97,11 +97,11 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     SPECIFICATION_POLICY_DEFAULT_TYPES,
+    visible_specification_query,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -337,7 +337,7 @@ class UnDeactivateable(Exception):
 bug_policy_default = {
     InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
     InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
-    InformationType.EMBARGOED: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
 }
 
 
@@ -1408,14 +1408,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        clauses = [Specification.product == self,
-                   get_specification_privacy_filter(user)]
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Specification.product == self)
         clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(clauses)
+            results = self._preload_specifications_people(tables, clauses)
         else:
-            results = Store.of(self).find(Specification, *clauses)
-        results.order_by(order)
+            tableset = Store.of(self).using(*tables)
+            results = tableset.find(Specification, *clauses)
+        results.order_by(order).config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results

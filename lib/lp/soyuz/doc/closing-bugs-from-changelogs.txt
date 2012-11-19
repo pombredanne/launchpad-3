@@ -242,28 +242,6 @@ close_bugs_for_queue_item is "NEW".
     Before: NEW
     After: NEW
 
-Delayed-copies to allowed archives and pockets will close bugs when
-processed.
-
-    # Create the cdrkit 'original upload' in ubuntu/breezy-autotest
-    # with an appropriate 'changelog_entry'.
-    >>> original_upload = add_package_upload(
-    ...     cdrkit_release, cdrkit_bug_id,
-    ...     distroseries=cdrkit_release.upload_distroseries)
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(cdrkit_release).changelog_entry = 'Something!'
-
-    # Create a delayed-copy for cdrkit in ubuntu/hoary.
-    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
-    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-    ...     archive=ubuntu.main_archive, distroseries=ubuntu_hoary,
-    ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
-    >>> unused = delayed_copy.addSource(cdrkit_release)
-
-    >>> close_bugs_and_check_status([cdrkit_bug_id], delayed_copy)
-    Before: NEW
-    After: FIXRELEASED
-
 It's possible to specify more than one bug in the Launchpad-bugs-fixed
 header, each will be marked as Fix Released. If a nonexistent bug,
 '666', is specified, it's ignored.

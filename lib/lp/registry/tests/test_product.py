@@ -363,7 +363,7 @@ class TestProduct(TestCaseWithFactory):
                 licenses=[License.OTHER_PROPRIETARY],
                 information_type=InformationType.EMBARGOED)
             self.assertEqual(
-                BugSharingPolicy.PROPRIETARY,
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.bug_sharing_policy)
             self.assertEqual(
                 BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
@@ -415,7 +415,8 @@ class TestProduct(TestCaseWithFactory):
                 BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.branch_sharing_policy)
             self.assertEqual(
-                BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.bug_sharing_policy)
             self.assertEqual(
                 SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.specification_sharing_policy)
@@ -605,7 +606,7 @@ class TestProduct(TestCaseWithFactory):
             'userCanView',)),
         'launchpad.LimitedView': set((
             'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
-            'logo', 'name', 'official_answers', 'official_anything',
+            'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
@@ -647,7 +648,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'icon', 'invitesTranslationEdits',
+            'homepageurl', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'name_with_project', 'newCodeImport',
