@@ -28,6 +28,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
+from lp.registry.errors import InvalidFilename
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -168,6 +169,8 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
+        if self.hasProductReleaseFile(filename):
+            raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
         file_obj, file_size = self._getFileObjectAndSize(file_content)

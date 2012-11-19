@@ -7,9 +7,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.registry.errors import InvalidFilename
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.services.database.lpstorm import IStore
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -60,3 +64,13 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
         file_name = release_file.libraryfile.filename
         self.assertTrue(release.hasProductReleaseFile(file_name))
         self.assertFalse(release.hasProductReleaseFile('pting'))
+
+    def test_addReleaseFile_duplicate(self):
+        release_file = self.factory.makeProductReleaseFile()
+        release = release_file.productrelease
+        library_file = release_file.libraryfile
+        maintainer = release.milestone.product.owner
+        with person_logged_in(maintainer):
+            self.assertRaises(
+                InvalidFilename, release.addReleaseFile,
+                library_file.filename, 'test', 'text/plain', maintainer)
