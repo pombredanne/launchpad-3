@@ -10,7 +10,10 @@ from zope.component import getUtility
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class ProductReleaseSetTestcase(TestCaseWithFactory):
@@ -45,3 +48,15 @@ class ProductReleaseSetTestcase(TestCaseWithFactory):
         release = self.product_release_set.getBySeriesAndVersion(
             series, '0.0.1')
         self.assertStatementCount(0, getattr, release, 'milestone')
+
+
+class ProductReleaseFileTestcase(TestCaseWithFactory):
+    """Tests for ProductReleaseFile."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_hasProductReleaseFile(self):
+        release_file = self.factory.makeProductReleaseFile()
+        release = release_file.productrelease
+        file_name = release_file.libraryfile.filename
+        self.assertTrue(release.hasProductReleaseFile(file_name))
+        self.assertFalse(release.hasProductReleaseFile('pting'))

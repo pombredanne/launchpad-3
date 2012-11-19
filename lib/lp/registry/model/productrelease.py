@@ -212,6 +212,14 @@ class ProductRelease(SQLBase):
                 return file_
         raise NotFoundError(name)
 
+    def hasProductReleaseFile(self, name):
+        """See `IProductRelease`."""
+        try:
+            self.getProductReleaseFileByName(name)
+            return True
+        except NotFoundError:
+            return False
+
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
