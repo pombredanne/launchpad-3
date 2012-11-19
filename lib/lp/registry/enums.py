@@ -130,6 +130,14 @@ class BugSharingPolicy(DBEnumeratedType):
         No new bugs may be reported, but existing bugs may still be updated.
         """)
 
+    EMBARGOED_OR_PROPRIETARY = DBItem(6, """
+        Embargoed, can be proprietary
+
+        New bugs are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new bugs.
+        """)
+
 
 class SpecificationSharingPolicy(DBEnumeratedType):
 
@@ -174,7 +182,6 @@ class SpecificationSharingPolicy(DBEnumeratedType):
         No new specifications may be created, but existing specifications may
         still be updated.
         """)
-
 
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
