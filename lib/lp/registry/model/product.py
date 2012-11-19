@@ -472,22 +472,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
         if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
-            public_specs = Store.of(self).find(Specification,
-                Specification.product == self,
-                Specification.information_type.is_in(
-                    PUBLIC_INFORMATION_TYPES))
+            # All specs located by an ALL search are public.
+            public_specs = self.specifications(
+                None, filter=[SpecificationFilter.ALL])
             if not public_specs.is_empty():
                 raise CannotChangeInformationType(
                     'Some blueprints are public.')
-            public_bugs = Store.of(self).find(
-                Bug, BugTask.product == self, BugTask.bug == Bug.id,
-                    Bug.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+            public_bugs = self.searchTasks(None,
+                information_type=PUBLIC_INFORMATION_TYPES,
+                omit_duplicates=False, omit_targeted=False)
             if not public_bugs.is_empty():
                 raise CannotChangeInformationType(
                     'Some bugs are public.')
-            public_branches = Store.of(self).find(
-                Branch, Branch.product == self,
-                Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+            # Default returns all public branches.
+            public_branches = self.getBranches()
             if not public_branches.is_empty():
                 raise CannotChangeInformationType(
                     'Some branches are public.')
