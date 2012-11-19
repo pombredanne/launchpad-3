@@ -29,16 +29,12 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
-from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_caches
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     PackagePublishingStatus,
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -48,13 +44,15 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
     )
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.packagecopier import (
-    _do_delayed_copy,
     _do_direct_copy,
     CopyChecker,
     do_copy,
@@ -328,7 +326,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
 class CopyCheckerHarness:
     """Basic checks common for all scenarios."""
 
-    def assertCanCopySourceOnly(self, delayed=False):
+    def assertCanCopySourceOnly(self, **kwargs):
         """Source-only copy is allowed.
 
         Initialize a `CopyChecker` and assert a `checkCopy` call returns
@@ -339,11 +337,9 @@ class CopyCheckerHarness:
          * 1 'CheckedCopy' was allowed and stored as so.
          * Since it was source-only, the `CheckedCopy` objects is in
            NEEDSBUILD state.
-         * Finally check whether is a delayed-copy or not according to the
-           given state.
         """
         copy_checker = CopyChecker(
-            self.archive, include_binaries=False, allow_delayed_copies=delayed)
+            self.archive, include_binaries=False, **kwargs)
         self.assertIsNone(
             copy_checker.checkCopy(
                 self.source, self.series, self.pocket,
@@ -354,9 +350,8 @@ class CopyCheckerHarness:
         self.assertEqual(
             BuildSetStatus.NEEDSBUILD,
             checked_copy.getStatusSummaryForBuilds()['status'])
-        self.assertEqual(delayed, checked_copy.delayed)
 
-    def assertCanCopyBinaries(self, delayed=False):
+    def assertCanCopyBinaries(self, **kwargs):
         """Source and binary copy is allowed.
 
         Initialize a `CopyChecker` and assert a `checkCopy` call returns
@@ -367,11 +362,9 @@ class CopyCheckerHarness:
          * 1 'CheckedCopy' was allowed and stored as so.
          * The `CheckedCopy` objects is in FULLYBUILT_PENDING or FULLYBUILT
            status, so there are binaries to be copied.
-         * Finally check whether is a delayed-copy or not according to the
-           given state.
         """
         copy_checker = CopyChecker(
-            self.archive, include_binaries=True, allow_delayed_copies=delayed)
+            self.archive, include_binaries=True, **kwargs)
         self.assertIsNone(
             copy_checker.checkCopy(
                 self.source, self.series, self.pocket,
@@ -382,15 +375,15 @@ class CopyCheckerHarness:
         self.assertTrue(
             checked_copy.getStatusSummaryForBuilds()['status'] >=
             BuildSetStatus.FULLYBUILT_PENDING)
-        self.assertEqual(delayed, checked_copy.delayed)
 
     def assertCannotCopySourceOnly(self, msg, person=None,
-                                   check_permissions=False):
+                                   check_permissions=False, **kwargs):
         """`CopyChecker.checkCopy()` for source-only copy raises CannotCopy.
 
         No `CheckedCopy` is stored.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=False)
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=False, **kwargs)
         self.assertRaisesWithContent(
             CannotCopy, msg,
             copy_checker.checkCopy, self.source, self.series, self.pocket,
@@ -398,12 +391,13 @@ class CopyCheckerHarness:
         checked_copies = list(copy_checker.getCheckedCopies())
         self.assertEqual(0, len(checked_copies))
 
-    def assertCannotCopyBinaries(self, msg):
+    def assertCannotCopyBinaries(self, msg, **kwargs):
         """`CopyChecker.checkCopy()` including binaries raises CannotCopy.
 
         No `CheckedCopy` is stored.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=True)
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=True, **kwargs)
         self.assertRaisesWithContent(
             CannotCopy, msg,
             copy_checker.checkCopy, self.source, self.series, self.pocket,
@@ -671,18 +665,24 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
 
     def test_can_copy_only_source_from_private_archives(self):
         # Source-only copies from private archives to public ones
-        # are allowed and result in a delayed-copy.
+        # are allowed, but only with unembargo=True.
         self.switchToAPrivateSource()
-        self.assertCanCopySourceOnly(delayed=True)
+        self.assertCannotCopySourceOnly(
+            "Cannot copy restricted files to a public archive without "
+            "explicit unembargo option.")
+        self.assertCanCopySourceOnly(unembargo=True)
 
     def test_can_copy_binaries_from_private_archives(self):
         # Source and binary copies from private archives to public ones
-        # are allowed and result in a delayed-copy.
+        # are allowed, but only with unembargo=True.
         self.switchToAPrivateSource()
         self.test_publisher.getPubBinaries(
             pub_source=self.source,
             status=PackagePublishingStatus.PUBLISHED)
-        self.assertCanCopyBinaries(delayed=True)
+        self.assertCannotCopyBinaries(
+            "Cannot copy restricted files to a public archive without "
+            "explicit unembargo option.")
+        self.assertCanCopyBinaries(unembargo=True)
 
     def test_cannot_copy_ddebs_to_primary_archives(self):
         # The primary archive cannot (yet) cope with DDEBs, see bug
@@ -1032,78 +1032,6 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             copy_checker.checkCopy,
             copied_source, copied_source.distroseries, copied_source.pocket,
             None, False)
-
-    def test_checkCopy_identifies_delayed_copies_conflicts(self):
-        # checkCopy() detects copy conflicts in the upload queue for
-        # delayed-copies. This is mostly caused by previous delayed-copies
-        # that are waiting to be processed.
-
-        # Create a private archive with a restricted source publication.
-        private_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        private_archive.buildd_secret = 'x'
-        private_archive.private = True
-        source = self.test_publisher.createSource(
-            private_archive, 'foocomm', '1.0-2')
-
-        archive = self.test_publisher.ubuntutest.main_archive
-        series = source.distroseries
-        pocket = source.pocket
-
-        # Commit so the just-created files are accessible and perform
-        # the delayed-copy.
-        self.layer.txn.commit()
-        do_copy(
-            [source], archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, check_permissions=False)
-
-        # Repeating the copy is denied.
-        copy_checker = CopyChecker(
-            archive, include_binaries=False, allow_delayed_copies=True)
-        self.assertRaisesWithContent(
-            CannotCopy,
-            'same version already uploaded and waiting in ACCEPTED queue',
-            copy_checker.checkCopy, source, series, pocket, None, False)
-
-    def test_checkCopy_suppressing_delayed_copies(self):
-        # `CopyChecker` can request delayed-copies by passing
-        # `allow_delayed_copies` as True, which was an old mechanism to
-        # support restricted files being copied to public archives.  If this
-        # is disabled, which is the default, the operation will be performed
-        # as a direct-copy.
-
-        # Create a private archive with a restricted source publication.
-        private_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        private_archive.buildd_secret = 'x'
-        private_archive.private = True
-        source = self.test_publisher.getPubSource(archive=private_archive)
-
-        archive = self.test_publisher.ubuntutest.main_archive
-        series = source.distroseries
-        pocket = source.pocket
-
-        # `CopyChecker` can store a delayed-copy representing this
-        # operation, since restricted files are being copied to public
-        # archives.
-        copy_checker = CopyChecker(
-            archive, include_binaries=False, allow_delayed_copies=True)
-        copy_checker.checkCopy(
-            source, series, pocket, check_permissions=False)
-        [checked_copy] = list(copy_checker.getCheckedCopies())
-        self.assertTrue(checked_copy.delayed)
-
-        # When 'allow_delayed_copies' is off, a direct-copy will be
-        # scheduled.  This requires an explicit option to say that we know
-        # we're going to be exposing previously restricted files.
-        copy_checker = CopyChecker(
-            archive, include_binaries=False, unembargo=True)
-        copy_checker.checkCopy(
-            source, series, pocket, check_permissions=False)
-        [checked_copy] = list(copy_checker.getCheckedCopies())
-        self.assertFalse(checked_copy.delayed)
 
 
 class BaseDoCopyTests:
@@ -1699,237 +1627,34 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         self.assertIsNone(copied_source.sponsor)
 
-
-class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
-
-    layer = LaunchpadZopelessLayer
-    dbuser = config.archivepublisher.dbuser
-
-    def setUp(self):
-        super(TestDoDelayedCopy, self).setUp()
-
-        self.test_publisher = SoyuzTestPublisher()
-        self.test_publisher.prepareBreezyAutotest()
-
-        # Setup to copy into the main archive security pocket
-        self.copy_archive = self.test_publisher.ubuntutest.main_archive
-        self.copy_series = self.test_publisher.distroseries
-        self.copy_pocket = PackagePublishingPocket.SECURITY
-
-        # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
-        # pocket can be accepted.
-        self.test_publisher.breezy_autotest.status = SeriesStatus.CURRENT
-
-    def assertCopied(self, copy, series, arch_tags):
-        self.assertEqual(
-            copy.sources[0].sourcepackagerelease.title, 'foo - 666')
-        self.assertContentEqual(
-            arch_tags, [pub.build.arch_tag for pub in copy.builds])
-
-    def doCopy(self, source, archive, series, pocket, include_binaries):
-        return _do_delayed_copy(source, archive, series, pocket, True)
-
-    def createDelayedCopyContext(self):
-        """Create a context to allow delayed-copies test.
-
-        The returned source publication in a private archive with
-        binaries and a custom upload.
-        """
-        ppa = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        ppa.buildd_secret = 'x'
-        ppa.private = True
-
-        source = self.test_publisher.createSource(ppa, 'foocomm', '1.0-2')
-        self.test_publisher.getPubBinaries(pub_source=source)
-
-        [build] = source.getBuilds()
-        custom_file = self.factory.makeLibraryFileAlias(restricted=True)
-        build.package_upload.addCustom(
-            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
-
-        # Commit for making the just-create library files available.
-        self.layer.txn.commit()
-
-        return source
-
-    def do_delayed_copy(self, source):
-        """Execute and return the delayed copy."""
-
-        switch_dbuser(self.dbuser)
-
-        delayed_copy = _do_delayed_copy(
-            source, self.copy_archive, self.copy_series, self.copy_pocket,
-            True)
-
-        switch_dbuser('launchpad')
-        return delayed_copy
-
-    def test_do_delayed_copy_simple(self):
-        # _do_delayed_copy() return an `IPackageUpload` record configured
-        # as a delayed-copy and with the expected contents (source,
-        # binaries and custom uploads) in ACCEPTED state.
-        source = self.createDelayedCopyContext()
-
-        # Setup and execute the delayed copy procedure.
-        delayed_copy = self.do_delayed_copy(source)
-
-        # A delayed-copy `IPackageUpload` record is returned.
-        self.assertTrue(delayed_copy.is_delayed_copy)
-        self.assertEqual(PackageUploadStatus.ACCEPTED, delayed_copy.status)
-
-        # The returned object has a more descriptive 'displayname'
-        # attribute than plain `IPackageUpload` instances.
-        self.assertEqual(
-            'Delayed copy of foocomm - '
-            '1.0-2 (source, i386, raw-dist-upgrader)',
-            delayed_copy.displayname)
-
-        # It is targeted to the right publishing context.
-        self.assertEqual(self.copy_archive, delayed_copy.archive)
-        self.assertEqual(self.copy_series, delayed_copy.distroseries)
-        self.assertEqual(self.copy_pocket, delayed_copy.pocket)
-
-        # And it contains the source, build and custom files.
-        self.assertEqual(
-            [source.sourcepackagerelease],
-            [pus.sourcepackagerelease for pus in delayed_copy.sources])
-
-        [build] = source.getBuilds()
-        self.assertEqual([build], [pub.build for pub in delayed_copy.builds])
-
-        [custom_file] = [
-            custom.libraryfilealias
-            for custom in build.package_upload.customfiles]
-        self.assertEqual(
-            [custom_file],
-            [custom.libraryfilealias for custom in delayed_copy.customfiles])
-
-    def test_do_delayed_copy_wrong_component_no_ancestry(self):
-        """An original PPA upload for an invalid component will have been
-        overridden when uploaded to the PPA, but when copying it to another
-        archive, only the ancestry in the destination archive can be used.
-        If that ancestry doesn't exist, an exception is raised."""
-        # We'll simulate an upload that was overridden to main in the
-        # ppa, by explicitly setting the spr's and bpr's component to
-        # something else.
-        source = self.createDelayedCopyContext()
-        contrib = getUtility(IComponentSet).new('contrib')
-        source.sourcepackagerelease.component = contrib
-        [build] = source.getBuilds()
-        [binary] = build.binarypackages
-        binary.override(component=contrib)
-        self.layer.txn.commit()
-
-        # Setup and execute the delayed copy procedure. This should
-        # raise an exception, as it won't be able to find an ancestor
-        # whose component can be used for overriding.
-        do_delayed_copy_method = self.do_delayed_copy
-        self.assertRaises(
-            QueueInconsistentStateError, do_delayed_copy_method, source)
-
-    def test_do_delayed_copy_wrong_component_with_ancestry(self):
-        """An original PPA upload for an invalid component will have been
-        overridden when uploaded to the PPA, but when copying it to another
-        archive, only the ancestry in the destination archive can be used.
-        If an ancestor is found in the destination archive, its component
-        is assumed for this package upload."""
-        # We'll simulate an upload that was overridden to main in the
-        # ppa, by explicitly setting the spr's and bpr's component to
-        # something else.
-        source = self.createDelayedCopyContext()
-        contrib = getUtility(IComponentSet).new('contrib')
-        source.sourcepackagerelease.component = contrib
-        [build] = source.getBuilds()
-        [binary] = build.binarypackages
-        binary.override(component=contrib)
-
-        # This time, we'll ensure that there is already an ancestor for
-        # foocom in the destination archive with binaries.
-        ancestor = self.test_publisher.getPubSource(
-            'foocomm', '0.9', component='multiverse',
-            archive=self.copy_archive,
-            status=PackagePublishingStatus.PUBLISHED)
-        self.test_publisher.getPubBinaries(
-            binaryname='foo-bin', archive=self.copy_archive,
-            status=PackagePublishingStatus.PUBLISHED, pub_source=ancestor)
-        self.layer.txn.commit()
-
-        # Setup and execute the delayed copy procedure. This should
-        # now result in an accepted delayed upload.
-        delayed_copy = self.do_delayed_copy(source)
-        self.assertEqual(PackageUploadStatus.ACCEPTED, delayed_copy.status)
-
-        # And it contains the source, build and custom files.
-        self.assertEqual(
-            [source.sourcepackagerelease],
-            [pus.sourcepackagerelease for pus in delayed_copy.sources])
-
-        [build] = source.getBuilds()
-        self.assertEqual([build], [pub.build for pub in delayed_copy.builds])
-
-        [custom_file] = [
-            custom.libraryfilealias
-            for custom in build.package_upload.customfiles]
-        self.assertEqual(
-            [custom_file],
-            [custom.libraryfilealias for custom in delayed_copy.customfiles])
-
-    def createPartiallyBuiltDelayedCopyContext(self):
-        """Allow tests on delayed-copies of partially built sources.
-
-        Create an architecture-specific source publication in a private PPA
-        capable of building for i386 and hppa architectures.
-
-        Upload and publish only the i386 binary, letting the hppa build
-        in pending status.
-        """
-        self.test_publisher.prepareBreezyAutotest()
-
-        ppa = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        ppa.buildd_secret = 'x'
-        ppa.private = True
-        ppa.require_virtualized = False
-
-        source = self.test_publisher.getPubSource(
-            archive=ppa, architecturehintlist='any')
-
+    def test_copy_partially_built_sources(self):
+        # Copies of partially built sources are allowed and only the
+        # FULLYBUILT builds are copied.
+        nobby, archive, source = self._setup_archive()
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
         [build_hppa, build_i386] = source.createMissingBuilds()
         lazy_bin = self.test_publisher.uploadBinaryForBuild(
             build_i386, 'lazy-bin')
-        self.test_publisher.publishBinaryInArchive(lazy_bin, source.archive)
+        self.test_publisher.publishBinaryInArchive(lazy_bin, archive)
         changes_file_name = '%s_%s_%s.changes' % (
             lazy_bin.name, lazy_bin.version, build_i386.arch_tag)
-        package_upload = self.test_publisher.addPackageUpload(
-            ppa, build_i386.distro_arch_series.distroseries,
-            build_i386.pocket, changes_file_content='anything',
+        self.test_publisher.addPackageUpload(
+            archive, nobby, build_i386.pocket, changes_file_content='anything',
             changes_file_name=changes_file_name)
-        package_upload.addBuild(build_i386)
 
-        # Commit for making the just-create library files available.
+        # Make the new library files available.
         self.layer.txn.commit()
 
-        return source
-
-    def test_do_delayed_copy_of_partially_built_sources(self):
-        # delayed-copies of partially built sources are allowed and only
-        # the FULLYBUILT builds are copied.
-        source = self.createPartiallyBuiltDelayedCopyContext()
-
-        # Perform the delayed-copy including binaries.
-        delayed_copy = self.do_delayed_copy(source)
-
-        # Only the i386 build is included in the delayed-copy.
-        # For the record, later on, when the delayed-copy gets processed,
-        # a new hppa build record will be created in the destination
-        # archive context. Also after this point, the same delayed-copy
-        # request will be denied by `CopyChecker`.
-        [build_hppa, build_i386] = source.getBuilds()
-        self.assertEqual(
-            [build_i386], [pub.build for pub in delayed_copy.builds])
+        # Only the source and the fully-built binary are copied.
+        copies = do_copy(
+            [source], target_archive, nobby, source.pocket,
+            include_binaries=True, person=target_archive.owner,
+            check_permissions=False, send_email=False)
+        self.assertEqual(2, len(copies))
+        self.assertIsInstance(copies[0], SourcePackagePublishingHistory)
+        self.assertIsInstance(copies[1], BinaryPackagePublishingHistory)
+        self.assertEqual("i386", copies[1].distroarchseries.architecturetag)
 
 
 class TestCopyBuildRecords(TestCaseWithFactory):

@@ -1833,17 +1833,9 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin.
-
-        If it's a delayed-copy, check if the user can upload to its targeted
-        archive.
-        """
+        """Return True if user has an ArchivePermission or is an admin."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
-
-        if self.obj.is_delayed_copy:
-            archive_append = AppendArchive(self.obj.archive)
-            return archive_append.checkAuthenticated(user)
 
         return self.obj.archive.canAdministerQueue(
             user.person, self.obj.components, self.obj.pocket,

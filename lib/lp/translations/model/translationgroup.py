@@ -115,9 +115,7 @@ class TranslationGroup(SQLBase):
             Product,
             ProductSet,
         )
-        # testing the query
         user = getUtility(ILaunchBag).user
-        import pdb; pdb.set_trace()
         results = Store.of(self).find(
             Product,
             Product.active==True,
@@ -219,6 +217,9 @@ class TranslationGroup(SQLBase):
             columns,
             Product.translationgroupID == self.id, Product.active == True)
         product_data = product_data.order_by(Product.displayname)
+
+        import pdb; pdb.set_trace()
+        
 
         return [
             ProductWithLicenses(product, tuple(licenses))

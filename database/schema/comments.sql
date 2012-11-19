@@ -1182,7 +1182,7 @@ COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to th
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload. It is null for records refering to a delayed-copy.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
 
 COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 

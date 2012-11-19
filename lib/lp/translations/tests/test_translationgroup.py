@@ -31,7 +31,7 @@ class TestTranslationGroup(TestCaseWithFactory):
         """Non Public products are not returned via products attribute."""
         user = self.factory.makePerson()
         private_owner = self.factory.makePerson()
-        group = self.factory.makeTranslationGroup(owner=user)
+        group = self.factory.makeTranslationGroup()
 
         with person_logged_in(user):
             public_product = self.factory.makeProduct()
@@ -39,23 +39,49 @@ class TestTranslationGroup(TestCaseWithFactory):
 
         with person_logged_in(private_owner):
             private_product = self.factory.makeProduct(
-                information_type=InformationType.PROPRIETARY)
+                information_type=InformationType.PROPRIETARY,
+                owner=private_owner)
             private_product.translationgroup = group
 
         with person_logged_in(user):
-            import pdb; pdb.set_trace()
             self.assertEqual(
                 1,
                 group.products.count(),
                 'There is only one public product for this user')
 
         with person_logged_in(private_owner):
-            import pdb; pdb.set_trace()
             self.assertEqual(
                 2,
                 group.products.count(),
                 'There are two for the private user.')
 
+    def test_non_public_products_hidden_for_display(self):
+        """Non Public products are not returned via fetchProductsForDisplay."""
+        user = self.factory.makePerson()
+        private_owner = self.factory.makePerson()
+        group = self.factory.makeTranslationGroup()
+
+        with person_logged_in(user):
+            public_product = self.factory.makeProduct()
+            public_product.translationgroup = group
+
+        with person_logged_in(private_owner):
+            private_product = self.factory.makeProduct(
+                information_type=InformationType.PROPRIETARY,
+                owner=private_owner)
+            private_product.translationgroup = group
+
+        with person_logged_in(user):
+            self.assertEqual(
+                1,
+                len(group.fetchProjectsForDisplay()),
+                'There is only one public product for this user')
+
+        with person_logged_in(private_owner):
+            self.assertEqual(
+                2,
+                len(group.fetchProductsForDisplay()),
+                'There are two for the private user.')
 
 
 

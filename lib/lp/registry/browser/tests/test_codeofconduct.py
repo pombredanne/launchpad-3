@@ -160,11 +160,11 @@ class TestCodeOfConductBrowser(BrowserTestCase):
 
     def test_response(self):
         """Ensure the headers and body are as expected."""
-        coc = getUtility(ICodeOfConductSet)['1.1']
+        coc = getUtility(ICodeOfConductSet)['2.0']
         content = coc.content
         browser = self.getViewBrowser(coc, '+download')
         self.assertEqual(content, browser.contents)
         self.assertEqual(str(len(content)), browser.headers['Content-length'])
-        disposition = 'attachment; filename="UbuntuCodeofConduct-1.1.txt"'
+        disposition = 'attachment; filename="UbuntuCodeofConduct-2.0.txt"'
         self.assertEqual(disposition, browser.headers['Content-disposition'])
         self.assertEqual('text/plain', browser.headers['Content-type'])

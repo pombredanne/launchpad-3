@@ -381,16 +381,19 @@ class Bugzilla(ExternalBugTracker):
             buglist_page = 'buglist.cgi'
             data = {
                 'form_name': 'buglist.cgi',
-                'bug_id_type': 'include',
                 'columnlist':
                     ('id,product,bug_status,resolution,'
                      'priority,bug_severity'),
                 'bug_id': ','.join(bug_ids),
                 }
             if self.version < (2, 17, 1):
-                data.update({'format': 'rdf'})
+                data['format'] = 'rdf'
             else:
-                data.update({'ctype': 'rdf'})
+                data['ctype'] = 'rdf'
+            if self.version >= (3, 6, 0):
+                data['bugidtype'] = 'include'
+            else:
+                data['bug_id_type'] = 'include'
             bug_tag = 'bz:bug'
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'

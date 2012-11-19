@@ -407,8 +407,12 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
-        return And(Milestone.productID == Product.id,
-                   Product.projectID == self.id)
+        user = getUtility(ILaunchBag).user
+        privacy_filter = ProductSet.getProductPrivacyFilter(user)
+        return And(
+            Milestone.productID == Product.id,
+            Product.projectID == self.id,
+            privacy_filter)
 
     def _getMilestones(self, user, only_active):
         """Return a list of milestones for this project group.
