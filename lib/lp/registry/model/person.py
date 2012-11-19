@@ -1017,24 +1017,17 @@ class Person(
         # We want this person's total karma on a given context (that is,
         # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
-        query = """
-            SELECT PillarName.name, KarmaCache.karmavalue
-            FROM KarmaCache
-            JOIN PillarName ON
-                COALESCE(KarmaCache.distribution, -1) =
-                COALESCE(PillarName.distribution, -1)
-                AND
-                COALESCE(KarmaCache.product, -1) =
-                COALESCE(PillarName.product, -1)
-            WHERE person = %(person)s
-                AND KarmaCache.category IS NULL
-                AND KarmaCache.project IS NULL
-            ORDER BY karmavalue DESC, name
-            LIMIT %(limit)s;
-            """ % sqlvalues(person=self, limit=limit)
-        cur = cursor()
-        cur.execute(query)
-        return cur.fetchall()
+        tableset = Store.of(self).using(KarmaCache, Join(PillarName, Or(
+            KarmaCache.distributionID == PillarName.distributionID,
+            KarmaCache.productID == PillarName.productID)
+            ))
+        result = tableset.find(
+            (PillarName.name, KarmaCache.karmavalue),
+             KarmaCache.personID == self.id,
+             KarmaCache.category == None,
+             KarmaCache.project == None)
+        result.order_by(Desc(KarmaCache.karmavalue), PillarName.name)
+        return result[:limit]
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
