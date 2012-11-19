@@ -1102,7 +1102,8 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         # Verify that pillars are ordered by karma.
         results = removeSecurityProxy(
             self.person)._getProjectsWithTheMostKarma()
-        results = list(results)
+        results = [((distro or product).name, karma)
+                   for product, distro, karma in results]
         self.assertEqual(
             [('cc', 150), ('bb', 50), ('aa', 10)], results)
 

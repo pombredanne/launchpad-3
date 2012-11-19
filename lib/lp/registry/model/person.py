@@ -992,24 +992,18 @@ class Person(
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
         contributions = []
-        # Pillars names have no concept of active. Extra pillars names are
-        # requested because deactivated pillars will be filtered out.
-        extra_limit = limit + 5
-        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
-        for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(
-                pillar_name, ignore_inactive=True)
-            if pillar is not None:
-                contributions.append(
-                    {'project': pillar,
-                     'categories': self._getContributedCategories(pillar)})
-            if len(contributions) == limit:
-                break
+        results = self._getProjectsWithTheMostKarma(limit=limit)
+        for product, distro, karma in results:
+            pillar = (product or distro)
+            contributions.append(
+                {'project': pillar,
+                 'categories': self._getContributedCategories(pillar)})
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
-        """Return the names and karma points of this person on the
-        product/distribution with that name.
+        """Return the product/distribution and karma points of this person.
+
+        Inactive products are ignored.
 
         The results are ordered descending by the karma points and limited to
         the given limit.
@@ -1017,16 +1011,22 @@ class Person(
         # We want this person's total karma on a given context (that is,
         # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
-        tableset = Store.of(self).using(KarmaCache, Join(PillarName, Or(
-            KarmaCache.distributionID == PillarName.distributionID,
-            KarmaCache.productID == PillarName.productID)
-            ))
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        tableset = Store.of(self).using(
+            KarmaCache, LeftJoin(Product, Product.id == KarmaCache.productID),
+            LeftJoin(Distribution, Distribution.id ==
+                     KarmaCache.distributionID))
         result = tableset.find(
-            (PillarName.name, KarmaCache.karmavalue),
+            (Product, Distribution, KarmaCache.karmavalue),
              KarmaCache.personID == self.id,
              KarmaCache.category == None,
-             KarmaCache.project == None)
-        result.order_by(Desc(KarmaCache.karmavalue), PillarName.name)
+             KarmaCache.project == None,
+             Or(
+                And(Product.id != None, Product.active == True),
+                Distribution.id != None))
+        result.order_by(Desc(KarmaCache.karmavalue),
+                        Coalesce(Product.name, Distribution.name))
         return result[:limit]
 
     def _genAffiliatedProductSql(self, user=None):
