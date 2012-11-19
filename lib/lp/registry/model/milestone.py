@@ -39,8 +39,8 @@ from zope.interface import implements
 
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import (
-    get_specification_privacy_filter,
     Specification,
+    visible_specification_query
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -155,10 +155,10 @@ class MilestoneData:
         """See `IMilestoneData`"""
         from lp.registry.model.person import Person
         store = Store.of(self.target)
-        origin = [
-            Specification,
+        origin, clauses = visible_specification_query(user)
+        origin.extend([
             LeftJoin(Person, Specification.assigneeID == Person.id),
-            ]
+            ])
         milestones = self._milestone_ids_expr(user)
 
         results = store.using(*origin).find(
@@ -176,12 +176,12 @@ class MilestoneData:
                                 milestones),
                             SpecificationWorkItem.deleted == False)),
                     all=True)),
-            get_specification_privacy_filter(user))
-        results.config(distinct=True)
+            *clauses)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
                                            Specification.implementation_status,
                                            Specification.title)
+        ordered_results.config(distinct=True)
         mapper = lambda row: row[0]
         return DecoratedResultSet(ordered_results, mapper)
 
