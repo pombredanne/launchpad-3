@@ -957,6 +957,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 signature_filename=signature_filename,
                 signature_content=signature_content,
                 description=description)
+        IStore(release).flush()
         return release_file
 
     def makeProduct(

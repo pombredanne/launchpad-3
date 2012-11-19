@@ -8,7 +8,10 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.registry.errors import InvalidFilename
-from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.productrelease import (
+    IProductReleaseSet,
+    UpstreamFileType,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.testing import (
     person_logged_in,
@@ -59,11 +62,25 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_hasProductReleaseFile(self):
-        release_file = self.factory.makeProductReleaseFile()
-        release = release_file.productrelease
+        release = self.factory.makeProductRelease()
+        release_file = self.factory.makeProductReleaseFile(release=release)
         file_name = release_file.libraryfile.filename
         self.assertTrue(release.hasProductReleaseFile(file_name))
         self.assertFalse(release.hasProductReleaseFile('pting'))
+
+    def test_addReleaseFile(self):
+        release = self.factory.makeProductRelease()
+        maintainer = release.milestone.product.owner
+        with person_logged_in(maintainer):
+            release_file = release.addReleaseFile(
+                'pting.txt', 'test', 'text/plain', maintainer,
+                file_type=UpstreamFileType.README, description='desc')
+            self.assertEqual('desc', release_file.description)
+            self.assertEqual(UpstreamFileType.README, release_file.filetype)
+            #self.assertEqual(maintainer, release_file.uploader)
+            self.assertEqual('pting.txt', release_file.libraryfile.filename)
+            #self.assertEqual('text/plain', release_file.mimetype)
+            #self.assertEqual('test', release_file.libraryfile.read())
 
     def test_addReleaseFile_duplicate(self):
         release_file = self.factory.makeProductReleaseFile()
