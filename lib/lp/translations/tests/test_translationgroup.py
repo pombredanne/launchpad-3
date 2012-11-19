@@ -15,6 +15,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -28,11 +29,11 @@ class TestTranslationGroup(TestCaseWithFactory):
 
     def test_non_public_products_hidden(self):
         """Non Public products are not returned via products attribute."""
-        owner = self.makePerson()
-        private_owner = self.makePerson()
-        group = self.factory.makeTranslationGroup(owner=owner)
+        user = self.factory.makePerson()
+        private_owner = self.factory.makePerson()
+        group = self.factory.makeTranslationGroup(owner=user)
 
-        with person_logged_in(owner):
+        with person_logged_in(user):
             public_product = self.factory.makeProduct()
             public_product.translationgroup = group
 
@@ -41,11 +42,21 @@ class TestTranslationGroup(TestCaseWithFactory):
                 information_type=InformationType.PROPRIETARY)
             private_product.translationgroup = group
 
-        import pdb; pdb.set_trace()
-        with person_logged_in(owner):
+        with person_logged_in(user):
+            import pdb; pdb.set_trace()
+            self.assertEqual(
+                1,
+                group.products.count(),
+                'There is only one public product for this user')
 
-            self.assertEqual(1, len(group.products),
-                'There is only one product for this user')
+        with person_logged_in(private_owner):
+            import pdb; pdb.set_trace()
+            self.assertEqual(
+                2,
+                group.products.count(),
+                'There are two for the private user.')
+
+
 
 
 
@@ -95,6 +106,7 @@ class TestTranslationGroupSet(TestCaseWithFactory):
 
 
 class TestWebService(WebServiceTestCase):
+    layer = ZopelessDatabaseLayer
 
     def test_getByName(self):
         """getByName returns the TranslationGroup for the specified name."""

@@ -115,7 +115,9 @@ class TranslationGroup(SQLBase):
             Product,
             ProductSet,
         )
+        # testing the query
         user = getUtility(ILaunchBag).user
+        import pdb; pdb.set_trace()
         results = Store.of(self).find(
             Product,
             Product.active==True,
