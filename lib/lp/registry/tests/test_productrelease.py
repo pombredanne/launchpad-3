@@ -61,12 +61,12 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
     """Tests for ProductReleaseFile."""
     layer = LaunchpadFunctionalLayer
 
-    def test_hasProductReleaseFile(self):
+    def test_hasReleaseFile(self):
         release = self.factory.makeProductRelease()
         release_file = self.factory.makeProductReleaseFile(release=release)
         file_name = release_file.libraryfile.filename
-        self.assertTrue(release.hasProductReleaseFile(file_name))
-        self.assertFalse(release.hasProductReleaseFile('pting'))
+        self.assertTrue(release.hasReleaseFile(file_name))
+        self.assertFalse(release.hasReleaseFile('pting'))
 
     def test_addReleaseFile(self):
         release = self.factory.makeProductRelease()

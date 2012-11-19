@@ -379,7 +379,7 @@ class IProductReleasePublic(Interface):
 
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
-    def hasProductReleaseFile(name):
+    def hasReleaseFile(name):
         """Does the release have a file that matches the name?"""
 
 

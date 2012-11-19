@@ -169,7 +169,7 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
-        if self.hasProductReleaseFile(filename):
+        if self.hasReleaseFile(filename):
             raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
@@ -215,7 +215,7 @@ class ProductRelease(SQLBase):
                 return file_
         raise NotFoundError(name)
 
-    def hasProductReleaseFile(self, name):
+    def hasReleaseFile(self, name):
         """See `IProductRelease`."""
         try:
             self.getProductReleaseFileByName(name)
