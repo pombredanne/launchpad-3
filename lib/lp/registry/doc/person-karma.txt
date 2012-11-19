@@ -94,7 +94,7 @@ active on, including the type of work the person does on each project. We only
 show the 5 most active projects.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
+    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo(None):
     ...     categories = sorted(cat.name for cat in contrib['categories'])
     ...     print contrib['project'].title, categories
     The Evolution Groupware Application [u'bugs', u'translations']

@@ -1101,7 +1101,7 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
     def test__getProjectsWithTheMostKarma_ordering(self):
         # Verify that pillars are ordered by karma.
         results = removeSecurityProxy(
-            self.person)._getProjectsWithTheMostKarma()
+            self.person)._getProjectsWithTheMostKarma(None)
         results = [((distro or product).name, karma)
                    for product, distro, karma in results]
         self.assertEqual(
@@ -1118,7 +1118,7 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         # Verify that a list of projects and contributed karma categories
         # is returned.
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa'], names)
@@ -1134,7 +1134,7 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         a_product = getUtility(IProductSet).getByName('cc')
         a_product.active = False
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['bb', 'aa'], names)
@@ -1151,7 +1151,33 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         self._makeKarmaCache(
             self.person, f_product, [('bugs', 3)])
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'dd', 'ee'], names)
+
+
+    def test_getProjectsAndCategoriesContributedTo_privacy(self):
+        # Verify privacy is honored.
+        d_owner = self.factory.makePerson()
+        d_product = self.factory.makeProduct(
+            name='dd', information_type=InformationType.PROPRIETARY,
+            owner=d_owner)
+        self._makeKarmaCache(
+            self.person, d_product, [('bugs', 5)])
+        e_product = self.factory.makeProduct(name='ee')
+        self._makeKarmaCache(
+            self.person, e_product, [('bugs', 4)])
+        f_product = self.factory.makeProduct(name='ff')
+        self._makeKarmaCache(
+            self.person, f_product, [('bugs', 3)])
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo(None)
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'ee', 'ff'], names)
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo(d_owner)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa', 'dd', 'ee'], names)

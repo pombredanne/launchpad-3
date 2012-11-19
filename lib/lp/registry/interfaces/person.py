@@ -1127,9 +1127,11 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     mailing_list = Attribute(
         _("The team's mailing list, if it has one, otherwise None."))
 
-    def getProjectsAndCategoriesContributedTo(limit=10):
+    def getProjectsAndCategoriesContributedTo(user, limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
+
+        Only entries visible to the specified user will be shown.
 
         The list is limited to the :limit: projects this person is most
         active.

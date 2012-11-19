@@ -989,10 +989,10 @@ class Person(
             return getUtility(IBugTaskSet).search(
                 search_params, *args, prejoins=prejoins)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=5):
+    def getProjectsAndCategoriesContributedTo(self, user, limit=5):
         """See `IPerson`."""
         contributions = []
-        results = self._getProjectsWithTheMostKarma(limit=limit)
+        results = self._getProjectsWithTheMostKarma(user, limit=limit)
         for product, distro, karma in results:
             pillar = (product or distro)
             contributions.append(
@@ -1000,7 +1000,7 @@ class Person(
                  'categories': self._getContributedCategories(pillar)})
         return contributions
 
-    def _getProjectsWithTheMostKarma(self, limit=10):
+    def _getProjectsWithTheMostKarma(self, user, limit=10):
         """Return the product/distribution and karma points of this person.
 
         Inactive products are ignored.
@@ -1011,7 +1011,7 @@ class Person(
         # We want this person's total karma on a given context (that is,
         # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
-        from lp.registry.model.product import Product
+        from lp.registry.model.product import Product, ProductSet
         from lp.registry.model.distribution import Distribution
         tableset = Store.of(self).using(
             KarmaCache, LeftJoin(Product, Product.id == KarmaCache.productID),
@@ -1023,7 +1023,8 @@ class Person(
              KarmaCache.category == None,
              KarmaCache.project == None,
              Or(
-                And(Product.id != None, Product.active == True),
+                And(Product.id != None, Product.active == True,
+                    ProductSet.getProductPrivacyFilter(user)),
                 Distribution.id != None))
         result.order_by(Desc(KarmaCache.karmavalue),
                         Coalesce(Product.name, Distribution.name))
