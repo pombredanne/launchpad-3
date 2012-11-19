@@ -337,7 +337,7 @@ class UnDeactivateable(Exception):
 bug_policy_default = {
     InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
     InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
-    InformationType.EMBARGOED: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
 }
 
 
