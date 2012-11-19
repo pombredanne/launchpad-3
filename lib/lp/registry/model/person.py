@@ -1231,11 +1231,6 @@ class Person(
                 Person.id == self.id)
         return not person.is_empty()
 
-    def iterTopProjectsContributedTo(self, limit=10):
-        getByName = getUtility(IPillarNameSet).getByName
-        for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):
-            yield getByName(name)
-
     def _getContributedCategories(self, pillar):
         """Return the KarmaCategories to which this person has karma on the
         given pillar.

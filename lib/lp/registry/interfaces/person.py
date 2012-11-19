@@ -1198,12 +1198,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         Return no more than the number given as quantity.
         """
 
-    def iterTopProjectsContributedTo(limit=10):
-        """Iterate over the top projects contributed to.
-
-        Iterate no more than the given limit.
-        """
-
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
