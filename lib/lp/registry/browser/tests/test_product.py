@@ -25,7 +25,6 @@ from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.registry.browser.product import (

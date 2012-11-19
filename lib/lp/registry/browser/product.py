@@ -105,7 +105,6 @@ from lp.app.enums import (
     InformationType,
     PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_PROPRIETARY_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -128,9 +127,6 @@ from lp.app.widgets.product import (
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
-    )
-from lp.blueprints.enums import (
-    SpecificationFilter,
     )
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
@@ -1450,7 +1446,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        old_info_type = self.context.information_type
         try:
             self.updateContextFromData(data)
         except CannotChangeInformationType as e:
