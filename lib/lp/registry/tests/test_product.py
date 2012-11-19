@@ -415,7 +415,8 @@ class TestProduct(TestCaseWithFactory):
                 BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.branch_sharing_policy)
             self.assertEqual(
-                BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.bug_sharing_policy)
             self.assertEqual(
                 SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.specification_sharing_policy)
