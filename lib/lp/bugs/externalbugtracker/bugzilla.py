@@ -390,7 +390,7 @@ class Bugzilla(ExternalBugTracker):
                 data['format'] = 'rdf'
             else:
                 data['ctype'] = 'rdf'
-            if self.version > (3, 6, 1):
+            if self.version >= (3, 6, 0):
                 data['bugidtype'] = 'include'
             else:
                 data['bug_id_type'] = 'include'
