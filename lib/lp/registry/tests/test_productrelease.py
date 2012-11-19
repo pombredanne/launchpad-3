@@ -75,12 +75,10 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
             release_file = release.addReleaseFile(
                 'pting.txt', 'test', 'text/plain', maintainer,
                 file_type=UpstreamFileType.README, description='desc')
-            self.assertEqual('desc', release_file.description)
-            self.assertEqual(UpstreamFileType.README, release_file.filetype)
-            #self.assertEqual(maintainer, release_file.uploader)
-            self.assertEqual('pting.txt', release_file.libraryfile.filename)
-            #self.assertEqual('text/plain', release_file.mimetype)
-            #self.assertEqual('test', release_file.libraryfile.read())
+        self.assertEqual('desc', release_file.description)
+        self.assertEqual(UpstreamFileType.README, release_file.filetype)
+        self.assertEqual('pting.txt', release_file.libraryfile.filename)
+        self.assertEqual('text/plain', release_file.libraryfile.mimetype)
 
     def test_addReleaseFile_duplicate(self):
         release_file = self.factory.makeProductReleaseFile()
