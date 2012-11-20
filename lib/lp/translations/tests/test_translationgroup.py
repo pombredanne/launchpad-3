@@ -27,8 +27,8 @@ class TestTranslationGroup(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_non_public_products_hidden(self):
-        """Non Public products are not returned via products attribute."""
+    def _setup_products(self):
+        """Helper to setup one public one non-public product."""
         user = self.factory.makePerson()
         private_owner = self.factory.makePerson()
         group = self.factory.makeTranslationGroup()
@@ -43,13 +43,19 @@ class TestTranslationGroup(TestCaseWithFactory):
                 owner=private_owner)
             private_product.translationgroup = group
 
-        with person_logged_in(user):
+        return user, private_owner
+
+    def test_non_public_products_hidden(self):
+        """Non Public products are not returned via products attribute."""
+        public_user, private_user = self._setup_products()
+
+        with person_logged_in(public_user):
             self.assertEqual(
                 1,
                 group.products.count(),
                 'There is only one public product for this user')
 
-        with person_logged_in(private_owner):
+        with person_logged_in(private_user):
             self.assertEqual(
                 2,
                 group.products.count(),
@@ -57,35 +63,23 @@ class TestTranslationGroup(TestCaseWithFactory):
 
     def test_non_public_products_hidden_for_display(self):
         """Non Public products are not returned via fetchProjectsForDisplay."""
-        user = self.factory.makePerson()
-        private_owner = self.factory.makePerson()
-        group = self.factory.makeTranslationGroup()
+        public_user, private_user = self._setup_products()
 
-        with person_logged_in(user):
-            public_product = self.factory.makeProduct()
-            public_product.translationgroup = group
-
-        with person_logged_in(private_owner):
-            private_product = self.factory.makeProduct(
-                information_type=InformationType.PROPRIETARY,
-                owner=private_owner)
-            private_product.translationgroup = group
-
-        # Magical transaction so our stuff shows up via ISlaveStore
+        # Magical transaction so our data shows up via ISlaveStore
         import transaction
         transaction.commit()
 
-        with person_logged_in(user):
+        with person_logged_in(public_user):
             self.assertEqual(
                 1,
                 len(group.fetchProjectsForDisplay()),
-                'There is only one public product for this user')
+                'There is only one public product for the public user')
 
-        with person_logged_in(private_owner):
+        with person_logged_in(private_user):
             self.assertEqual(
                 2,
                 len(group.fetchProjectsForDisplay()),
-                'There is still only one product that displays.')
+                'Both products show for the private user.')
 
 
 class TestTranslationGroupSet(TestCaseWithFactory):
