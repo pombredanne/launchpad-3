@@ -67,7 +67,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser, switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
