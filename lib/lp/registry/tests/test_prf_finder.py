@@ -6,6 +6,7 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -68,6 +69,23 @@ class FindReleasesDBTestCase(TestCaseWithFactory):
         prf = ProductReleaseFinder(self.layer.txn, logging.getLogger())
         # Test that this raises no exceptions.
         prf.findReleases()
+
+    def test_getReleaseFileNames(self):
+        product = self.factory.makeProduct()
+        series1 = self.factory.makeProductSeries(product=product)
+        series2 = self.factory.makeProductSeries(product=product)
+        self.factory.makeProductReleaseFile(
+            productseries=series1, filename='foo-1.0.tar.gz')
+        file2 = self.factory.makeProductReleaseFile(
+            productseries=series2, filename='foo-2.0.tar.gz')
+        self.factory.makeProductReleaseFile(
+            productseries=series2, release=file2.productrelease,
+            filename='foo-2.1.tar.gz')
+        expected = set(['foo-1.0.tar.gz', 'foo-2.0.tar.gz', 'foo-2.1.tar.gz'])
+        transaction.commit()
+        prf = ProductReleaseFinder(self.layer.txn, logging.getLogger())
+        found = prf.getReleaseFileNames(product.name)
+        self.assertEqual(expected, found)
 
 
 class GetFiltersTestCase(TestCaseWithFactory):

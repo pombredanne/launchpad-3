@@ -23,11 +23,18 @@ from lp.app.validators.name import invalid_name_pattern
 from lp.app.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.milestone import Milestone
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.productrelease import (
+    ProductRelease,
+    ProductReleaseFile,
+    )
 from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose
 from lp.services.database.lpstorm import IStore
+from lp.services.librarian.model import LibraryFileAlias
+
 
 processors = '|'.join([
     'all',
@@ -140,6 +147,22 @@ class ProductReleaseFinder:
             else:
                 self.log.debug("File in %s found that matched no glob: %s",
                                product_name, url)
+
+    def getReleaseFileNames(self, product_name):
+        """Return a set of all current release file names for the product."""
+        self.ztm.begin()
+        file_names = IStore(Product).find(
+            (LibraryFileAlias.filename),
+            Product.name == product_name,
+            Product.id == ProductSeries.productID,
+            Milestone.productseriesID == ProductSeries.id,
+            ProductRelease.milestoneID == Milestone.id,
+            ProductReleaseFile.productreleaseID == ProductRelease.id,
+            LibraryFileAlias.id == ProductReleaseFile.libraryfileID
+            )
+        found_names = set(name for name in file_names)
+        self.ztm.abort()
+        return found_names
 
     def hasReleaseFile(self, product_name, release_name, filename):
         """Return True if we have a tarball for the given product release."""
