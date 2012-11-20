@@ -748,11 +748,11 @@ class TestPersonStates(TestCaseWithFactory):
     def test_canDeactivateAccount_private_projects(self):
         """A user owning non-public products cannot be deactivated."""
         user = self.factory.makePerson()
-        public_product = self.factory.makeProduct(
+        self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
             name="public",
             owner=user)
-        public_product = self.factory.makeProduct(
+        self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY,
             name="private",
             owner=user)
@@ -1155,7 +1155,6 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa', 'dd', 'ee'], names)
-
 
     def test_getProjectsAndCategoriesContributedTo_privacy(self):
         # Verify privacy is honored.

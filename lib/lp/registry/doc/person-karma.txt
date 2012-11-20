@@ -23,7 +23,8 @@ what users are the top contributors for a given product/distribution.
     >>> from lp.registry.interfaces.karma import IKarma
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
