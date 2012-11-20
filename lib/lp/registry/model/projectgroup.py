@@ -430,10 +430,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL('MIN(Milestone.dateexpected)'),
             SQL('BOOL_OR(Milestone.active)'),
             )
+        privacy_filter = ProductSet.getProductPrivacyFilter(user)
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
                          Product.active == True,
-                         ProductSet.getProductPrivacyFilter(user))
+                         privacy_filter)
         result = store.find(columns, conditions)
         result.group_by(Milestone.name)
         if only_active:
@@ -452,6 +453,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 Product.project == self,
                 Milestone.product == Product.id,
                 Product.active == True,
+                privacy_filter,
                 In(Milestone.name, milestone_names))
             for product, name in (
                 store.find((Product, Milestone.name), product_conditions)):
