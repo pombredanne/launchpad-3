@@ -133,11 +133,13 @@ class ProductReleaseFinder:
     def handleProduct(self, product_name, filters):
         """Scan for tarballs and create ProductReleases for the given product.
         """
+        file_names = self.getReleaseFileNames(product_name)
         hose = Hose(filters, log_parent=self.log)
         for series_name, url in hose:
             if series_name is not None:
                 try:
-                    self.handleRelease(product_name, series_name, url)
+                    self.handleRelease(
+                        product_name, series_name, url, file_names)
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except:
@@ -151,7 +153,7 @@ class ProductReleaseFinder:
     def getReleaseFileNames(self, product_name):
         """Return a set of all current release file names for the product."""
         self.ztm.begin()
-        file_names = IStore(Product).find(
+        found_names = IStore(Product).find(
             (LibraryFileAlias.filename),
             Product.name == product_name,
             Product.id == ProductSeries.productID,
@@ -160,12 +162,14 @@ class ProductReleaseFinder:
             ProductReleaseFile.productreleaseID == ProductRelease.id,
             LibraryFileAlias.id == ProductReleaseFile.libraryfileID
             )
-        found_names = set(name for name in file_names)
+        file_names = set(name for name in found_names)
         self.ztm.abort()
-        return found_names
+        return file_names
 
-    def hasReleaseFile(self, product_name, release_name, filename):
+    def hasReleaseFile(self, product_name, release_name, filename, file_names):
         """Return True if we have a tarball for the given product release."""
+        if filename in file_names:
+            return True
         has_file = False
         self.ztm.begin()
         try:
@@ -214,7 +218,7 @@ class ProductReleaseFinder:
             self.ztm.abort()
             raise
 
-    def handleRelease(self, product_name, series_name, url):
+    def handleRelease(self, product_name, series_name, url, file_names):
         """If the given URL looks like a release tarball, download it
         and create a corresponding ProductRelease."""
         filename = urlparse.urlsplit(url)[2]
@@ -233,7 +237,7 @@ class ProductReleaseFinder:
                            version, url)
             return
 
-        if self.hasReleaseFile(product_name, version, filename):
+        if self.hasReleaseFile(product_name, version, filename, file_names):
             self.log.debug("Already have a tarball for release %s", version)
             return
 
@@ -257,3 +261,4 @@ class ProductReleaseFinder:
         os.unlink(local)
         self.addReleaseTarball(product_name, series_name, version,
                                filename, stat.st_size, fp, mimetype)
+        file_names.add(filename)

@@ -165,7 +165,11 @@ class HandleProductTestCase(unittest.TestCase):
                 ProductReleaseFinder.__init__(self, ztm, log)
                 self.seen_releases = []
 
-            def handleRelease(self, product_name, series_name, url):
+            def getReleaseFileNames(self, product_name):
+                return set()
+
+            def handleRelease(self, product_name, series_name, url,
+                              file_name):
                 self.seen_releases.append((product_name, series_name,
                                            os.path.basename(url)))
 
@@ -238,21 +242,22 @@ class HandleReleaseTestCase(unittest.TestCase):
         alt_file_name = 'evolution-42.0.orig.tar.bz2'
         file_path, file_name = self.create_tarball(
             'evolution-42.0.orig.tar.gz')
+        file_names = prf.getReleaseFileNames('evolution')
 
         self.assertEqual(
-            prf.hasReleaseFile('evolution', '42.0', file_name),
+            prf.hasReleaseFile('evolution', '42.0', file_name, file_names),
             False)
         self.assertEqual(
-            prf.hasReleaseFile('evolution', '42.0', alt_file_name),
+            prf.hasReleaseFile('evolution', '42.0', alt_file_name, file_names),
             False)
 
-        prf.handleRelease('evolution', 'trunk', file_path)
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
 
         self.assertEqual(
-            prf.hasReleaseFile('evolution', '42.0', file_name),
+            prf.hasReleaseFile('evolution', '42.0', file_name, file_names),
             True)
         self.assertEqual(
-            prf.hasReleaseFile('evolution', '42.0', alt_file_name),
+            prf.hasReleaseFile('evolution', '42.0', alt_file_name, file_names),
             False)
 
         # check to see that the release has been created
@@ -296,7 +301,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-2.1.6.tar.gz')
-        prf.handleRelease('evolution', 'trunk', file_path)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
 
         # verify that we now have files attached to the release:
         evo = getUtility(IProductSet).getByName('evolution')
@@ -312,8 +318,9 @@ class HandleReleaseTestCase(unittest.TestCase):
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-42.0.tar.gz')
-        prf.handleRelease('evolution', 'trunk', file_path)
-        prf.handleRelease('evolution', 'trunk', file_path)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('42.0')
@@ -327,9 +334,10 @@ class HandleReleaseTestCase(unittest.TestCase):
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
-        prf.handleRelease('evolution', 'trunk', file_path)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
         file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
-        prf.handleRelease('evolution', '1.0', file_path)
+        prf.handleRelease('evolution', '1.0', file_path, file_names)
         product = getUtility(IProductSet).getByName('evolution')
         release = product.getMilestone('1.2.3').product_release
         self.assertEqual(release.files.count(), 1)
@@ -342,8 +350,9 @@ class HandleReleaseTestCase(unittest.TestCase):
         file_path, file_name = self.create_tarball('evolution-45.0.tar.gz')
         alt_file_path, alt_file_name = self.create_tarball(
             'evolution-45.0.tar.bz2')
-        prf.handleRelease('evolution', 'trunk', file_path)
-        prf.handleRelease('evolution', 'trunk', alt_file_path)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        prf.handleRelease('evolution', 'trunk', alt_file_path, file_names)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('45.0')
@@ -370,7 +379,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         fp.close()
 
         url = self.release_url + '/evolution420.tar.gz'
-        prf.handleRelease('evolution', 'trunk', url)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', url, file_names)
         self.assertEqual(
             "Unable to parse version from %s\n" % url, output.getvalue())
 
