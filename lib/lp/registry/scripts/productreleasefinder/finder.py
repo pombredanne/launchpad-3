@@ -169,21 +169,10 @@ class ProductReleaseFinder:
     def hasReleaseFile(self, product_name, release_name, filename, file_names):
         """Return True if we have a tarball for the given product release."""
         if filename in file_names:
+            self.log.debug(
+                "Already have a tarball for release %s", release_name)
             return True
-        has_file = False
-        self.ztm.begin()
-        try:
-            product = getUtility(IProductSet).getByName(product_name)
-            if product is not None:
-                release = product.getRelease(release_name)
-                if release is not None:
-                    for fileinfo in release.files:
-                        if filename == fileinfo.libraryfile.filename:
-                            has_file = True
-                            break
-        finally:
-            self.ztm.abort()
-        return has_file
+        return False
 
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
@@ -238,7 +227,6 @@ class ProductReleaseFinder:
             return
 
         if self.hasReleaseFile(product_name, version, filename, file_names):
-            self.log.debug("Already have a tarball for release %s", version)
             return
 
         mimetype, encoding = mimetypes.guess_type(url)
