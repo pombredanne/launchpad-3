@@ -128,7 +128,6 @@ class TestTranslationGroupSet(TestCaseWithFactory):
 
 
 class TestWebService(WebServiceTestCase):
-    layer = ZopelessDatabaseLayer
 
     def test_getByName(self):
         """getByName returns the TranslationGroup for the specified name."""
