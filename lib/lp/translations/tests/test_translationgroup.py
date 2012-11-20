@@ -43,11 +43,11 @@ class TestTranslationGroup(TestCaseWithFactory):
                 owner=private_owner)
             private_product.translationgroup = group
 
-        return user, private_owner
+        return group, user, private_owner
 
     def test_non_public_products_hidden(self):
         """Non Public products are not returned via products attribute."""
-        public_user, private_user = self._setup_products()
+        group, public_user, private_user = self._setup_products()
 
         with person_logged_in(public_user):
             self.assertEqual(
@@ -63,7 +63,7 @@ class TestTranslationGroup(TestCaseWithFactory):
 
     def test_non_public_products_hidden_for_display(self):
         """Non Public products are not returned via fetchProjectsForDisplay."""
-        public_user, private_user = self._setup_products()
+        group, public_user, private_user = self._setup_products()
 
         # Magical transaction so our data shows up via ISlaveStore
         import transaction
