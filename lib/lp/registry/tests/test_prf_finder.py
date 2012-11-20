@@ -222,19 +222,19 @@ class HandleReleaseTestCase(unittest.TestCase):
             'evolution-42.0.orig.tar.gz')
 
         self.assertEqual(
-            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            prf.hasReleaseFile('evolution', '42.0', file_name),
             False)
         self.assertEqual(
-            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            prf.hasReleaseFile('evolution', '42.0', alt_file_name),
             False)
 
         prf.handleRelease('evolution', 'trunk', file_path)
 
         self.assertEqual(
-            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            prf.hasReleaseFile('evolution', '42.0', file_name),
             True)
         self.assertEqual(
-            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            prf.hasReleaseFile('evolution', '42.0', alt_file_name),
             False)
 
         # check to see that the release has been created

@@ -143,8 +143,7 @@ class ProductReleaseFinder:
                 self.log.debug("File in %s found that matched no glob: %s",
                                product_name, url)
 
-    def hasReleaseFile(self, product_name, series_name,
-                          release_name, filename):
+    def hasReleaseFile(self, product_name, release_name, filename):
         """Return True if we have a tarball for the given product release."""
         has_file = False
         self.ztm.begin()
@@ -213,7 +212,7 @@ class ProductReleaseFinder:
                            version, url)
             return
 
-        if self.hasReleaseFile(product_name, series_name, version, filename):
+        if self.hasReleaseFile(product_name, version, filename):
             self.log.debug("Already have a tarball for release %s", version)
             return
 
