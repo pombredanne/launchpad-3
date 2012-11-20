@@ -121,10 +121,10 @@ class TestProjectGroupView(BrowserTestCase):
         public_milestone = self.factory.makeMilestone(
             product=public, name='1.0')
         with person_logged_in(owner):
-            private_bug = self.factory.makeBug(
+            self.factory.makeBug(
                 target=private, owner=owner, milestone=private_milestone,
                 title='This is the private bug')
-            public_bug = self.factory.makeBug(
+            self.factory.makeBug(
                 target=public, owner=owner, milestone=public_milestone,
                 title='This is the public bug')
 
