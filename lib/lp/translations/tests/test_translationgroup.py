@@ -56,7 +56,7 @@ class TestTranslationGroup(TestCaseWithFactory):
                 'There are two for the private user.')
 
     def test_non_public_products_hidden_for_display(self):
-        """Non Public products are not returned via fetchProductsForDisplay."""
+        """Non Public products are not returned via fetchProjectsForDisplay."""
         user = self.factory.makePerson()
         private_owner = self.factory.makePerson()
         group = self.factory.makeTranslationGroup()
@@ -71,6 +71,10 @@ class TestTranslationGroup(TestCaseWithFactory):
                 owner=private_owner)
             private_product.translationgroup = group
 
+        # Magical transaction so our stuff shows up via ISlaveStore
+        import transaction
+        transaction.commit()
+
         with person_logged_in(user):
             self.assertEqual(
                 1,
@@ -80,10 +84,8 @@ class TestTranslationGroup(TestCaseWithFactory):
         with person_logged_in(private_owner):
             self.assertEqual(
                 2,
-                len(group.fetchProductsForDisplay()),
-                'There are two for the private user.')
-
-
+                len(group.fetchProjectsForDisplay()),
+                'There is still only one product that displays.')
 
 
 class TestTranslationGroupSet(TestCaseWithFactory):
