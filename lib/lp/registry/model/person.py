@@ -1009,7 +1009,10 @@ class Person(
         # We want this person's total karma on a given context (that is,
         # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
-        from lp.registry.model.product import Product, ProductSet
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+        )
         from lp.registry.model.distribution import Distribution
         tableset = Store.of(self).using(
             KarmaCache, LeftJoin(Product, Product.id == KarmaCache.productID),
