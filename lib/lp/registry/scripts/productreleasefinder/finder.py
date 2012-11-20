@@ -7,6 +7,7 @@ __all__ = [
     'ProductReleaseFinder'
     ]
 
+from collections import defaultdict
 from datetime import datetime
 import mimetypes
 import os
@@ -22,9 +23,11 @@ from lp.app.validators.name import invalid_name_pattern
 from lp.app.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
 from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose
-
+from lp.services.database.lpstorm import IStore
 
 processors = '|'.join([
     'all',
@@ -99,31 +102,26 @@ class ProductReleaseFinder:
         Returns a list of (product_name, filters) for each product in
         the database, where the filter keys are series names.
         """
-        todo = []
-
         self.ztm.begin()
-        products = getUtility(IProductSet)
-        for product in products.get_all_active(None, eager_load=False):
-            filters = []
-
-            for series in product.series:
-                if (series.status == SeriesStatus.OBSOLETE
-                    or not series.releasefileglob):
-                    continue
-
-                filters.append(FilterPattern(series.name,
-                                             series.releasefileglob))
-
-            if not len(filters):
-                continue
-
-            self.log.info("%s has %d series with information", product.name,
-                             len(filters))
-
-            todo.append((product.name, filters))
+        found_globs = IStore(Product).find(
+            (Product.name, ProductSeries.name, ProductSeries.releasefileglob),
+            Product.id == ProductSeries.productID,
+            Product.active == True,
+            ProductSeries.status != SeriesStatus.OBSOLETE,
+            ProductSeries.releasefileglob != None
+            )
+        products_with_filters = defaultdict(list)
+        last_product = None
+        for product_name, series_name, glob in found_globs:
+            if last_product and last_product != product_name:
+                self.log.info(
+                    "%s has %d series with information",
+                    last_product, len(products_with_filters[last_product]))
+            last_product = product_name
+            filter_pattern = FilterPattern(series_name, glob)
+            products_with_filters[product_name].append(filter_pattern)
         self.ztm.abort()
-
-        return todo
+        return products_with_filters.items()
 
     def handleProduct(self, product_name, filters):
         """Scan for tarballs and create ProductReleases for the given product.
