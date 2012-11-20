@@ -218,11 +218,12 @@ class TranslationGroup(SQLBase):
             LibraryFileContent,
             )
         product_data = ISlaveStore(Product).using(*using).find(
-                columns,
-                Product.translationgroup == self.id,
-                Product.active == True,
-                ProductSet.getProductPrivacyFilter(user))
+            columns,
+            Product.translationgroup == self.id,
+            Product.active == True,
+            ProductSet.getProductPrivacyFilter(user))
         product_data = product_data.order_by(Product.displayname)
+
         return [
             ProductWithLicenses(product, tuple(licenses))
             for product, licenses, icon_alias, icon_content in product_data]
