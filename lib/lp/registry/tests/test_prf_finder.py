@@ -301,6 +301,21 @@ class HandleReleaseTestCase(unittest.TestCase):
         release = trunk.getRelease('42.0')
         self.assertEqual(release.files.count(), 1)
 
+    def test_handleReleaseTwice_multiple_series(self):
+        # Series can have overlaping release file globs, but versions
+        # are unique to a project. A file is uploaded to a release only
+        # once, regardless of which series wants the upload.
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
+        prf.handleRelease('evolution', 'trunk', file_path)
+        file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
+        prf.handleRelease('evolution', '1.0', file_path)
+        product = getUtility(IProductSet).getByName('evolution')
+        release = product.getMilestone('1.2.3').product_release
+        self.assertEqual(release.files.count(), 1)
+
     def test_handleRelease_alternate_verstion(self):
         """Verify that tar.gz and tar.bz2 versions are both uploaded."""
         ztm = self.layer.txn
