@@ -1736,11 +1736,13 @@ class ProductSet:
     def people(self):
         return getUtility(IPersonSet)
 
-    def latest(self, quantity=5):
-        if quantity is None:
-            return self.all_active
-        else:
-            return self.all_active[:quantity]
+    @classmethod
+    def latest(cls, user, quantity=5):
+        """See `IProductSet`."""
+        result = cls.get_all_active(user)
+        if quantity is not None:
+            result = result[:quantity]
+        return result
 
     @property
     def all_active(self):

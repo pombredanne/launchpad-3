@@ -2154,3 +2154,19 @@ class TestProductSet(TestCaseWithFactory):
         with person_logged_in(user):
             translatables = getUtility(IProductSet).getTranslatables()
             self.assertIn(product, list(translatables))
+
+
+class TestProductSetWebService(WebServiceTestCase):
+
+    def test_latest_honours_privacy(self):
+        # Latest lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.latest()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.latest()])

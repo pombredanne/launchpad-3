@@ -1074,10 +1074,12 @@ class IProductSet(Interface):
         """
 
     @operation_returns_collection_of(IProduct)
-    @call_with(quantity=None)
+    @call_with(user=REQUEST_USER, quantity=None)
     @export_read_operation()
-    def latest(quantity=5):
+    def latest(user, quantity=5):
         """Return the latest projects registered in Launchpad.
+
+        The supplied user determines which objects are visible.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the
