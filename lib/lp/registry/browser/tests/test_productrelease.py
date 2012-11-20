@@ -18,16 +18,20 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_add_file(self):
-        release = self.factory.makeProductRelease()
-        maintainer = release.milestone.product.owner
-        upload = self.factory.makeFakeFileUpload(filename='pting.tar.gz')
+    def makeForm(self, file_name):
+        upload = self.factory.makeFakeFileUpload(filename=file_name)
         form = {
             'field.description': 'App 0.1 tarball',
             'field.contenttype': 'CODETARBALL',
             'field.filecontent': upload,
             'field.actions.add': 'Upload',
             }
+        return form
+
+    def test_add_file(self):
+        release = self.factory.makeProductRelease()
+        maintainer = release.milestone.product.owner
+        form = self.makeForm('pting.tar.gz')
         with person_logged_in(maintainer):
             view = create_initialized_view(
                 release, '+adddownloadfile', form=form)
@@ -42,13 +46,7 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
         maintainer = release.milestone.product.owner
         release_file = self.factory.makeProductReleaseFile(release=release)
         file_name = release_file.libraryfile.filename
-        upload = self.factory.makeFakeFileUpload(filename=file_name)
-        form = {
-            'field.description': 'App 0.1 tarball',
-            'field.contenttype': 'CODETARBALL',
-            'field.filecontent': upload,
-            'field.actions.add': 'Upload',
-            }
+        form = self.makeForm(file_name)
         with person_logged_in(maintainer):
             view = create_initialized_view(
                 release, '+adddownloadfile', form=form)
