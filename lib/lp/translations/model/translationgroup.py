@@ -192,7 +192,7 @@ class TranslationGroup(SQLBase):
         mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
-    def fetchProjectsForDisplay(self):
+    def fetchProjectsForDisplay(self, user):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
         from lp.registry.model.product import (
@@ -201,7 +201,6 @@ class TranslationGroup(SQLBase):
             ProductWithLicenses,
             )
 
-        user = getUtility(ILaunchBag).user
         using = [
             Product,
             LeftJoin(

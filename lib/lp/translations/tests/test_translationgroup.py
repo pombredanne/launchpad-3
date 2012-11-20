@@ -72,13 +72,13 @@ class TestTranslationGroup(TestCaseWithFactory):
         with person_logged_in(public_user):
             self.assertEqual(
                 1,
-                len(group.fetchProjectsForDisplay()),
+                len(group.fetchProjectsForDisplay(public_user)),
                 'There is only one public product for the public user')
 
         with person_logged_in(private_user):
             self.assertEqual(
                 2,
-                len(group.fetchProjectsForDisplay()),
+                len(group.fetchProjectsForDisplay(private_user)),
                 'Both products show for the private user.')
 
 
