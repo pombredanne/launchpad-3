@@ -67,7 +67,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -263,29 +266,22 @@ class TestPersonViewKarma(TestCaseWithFactory):
                          'Categories are not sorted correctly')
 
     def _makeKarmaCache(self, person, product, category, value=10):
-        """ Create and return a KarmaCache entry with the given arguments.
+        """Create and return a KarmaCache entry with the given arguments.
 
-        In order to create the KarmaCache record we must switch to the DB
-        user 'karma', so tests that need a different user after calling
-        this method should run switch_dbuser() themselves.
+        A commit is implicitly triggered because the 'karma' dbuser is used.
         """
+        with dbuser('karma'):
+            cache_manager = getUtility(IKarmaCacheManager)
+            karmacache = cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
 
-        switch_dbuser('karma')
+            try:
+                cache_manager.updateKarmaValue(
+                    value, person.id, category_id=None, product_id=product.id)
+            except NotFoundError:
+                cache_manager.new(
+                    value, person.id, category_id=None, product_id=product.id)
 
-        cache_manager = getUtility(IKarmaCacheManager)
-        karmacache = cache_manager.new(
-            value, person.id, category.id, product_id=product.id)
-
-        try:
-            cache_manager.updateKarmaValue(
-                value, person.id, category_id=None, product_id=product.id)
-        except NotFoundError:
-            cache_manager.new(
-                value, person.id, category_id=None, product_id=product.id)
-
-        # We must commit here so that the change is seen in other transactions
-        # (e.g. when the callsite issues a switch_dbuser() after we return).
-        transaction.commit()
         return karmacache
 
 
