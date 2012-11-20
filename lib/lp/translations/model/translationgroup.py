@@ -204,8 +204,12 @@ class TranslationGroup(SQLBase):
         user = getUtility(ILaunchBag).user
         using = [
             Product,
-            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
-            LeftJoin( LibraryFileContent, LibraryFileContent.id == LibraryFileAlias.contentID),
+            LeftJoin(
+                LibraryFileAlias,
+                LibraryFileAlias.id == Product.iconID),
+            LeftJoin(
+                LibraryFileContent,
+                LibraryFileContent.id == LibraryFileAlias.contentID),
             ]
         columns = (
             Product,
@@ -213,11 +217,15 @@ class TranslationGroup(SQLBase):
             LibraryFileAlias,
             LibraryFileContent,
             )
-        product_data = ISlaveStore(Product).using(*using).find(columns,
-                Product.translationgroup == self.id, Product.active == True, ProductSet.getProductPrivacyFilter(user))
+        product_data = ISlaveStore(Product).using(*using).find(
+                columns,
+                Product.translationgroup == self.id,
+                Product.active == True,
+                ProductSet.getProductPrivacyFilter(user))
         product_data = product_data.order_by(Product.displayname)
-        return [ ProductWithLicenses(product, tuple(licenses)) for product, licenses, icon_alias, icon_content in product_data]
-
+        return [
+            ProductWithLicenses(product, tuple(licenses))
+            for product, licenses, icon_alias, icon_content in product_data]
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
