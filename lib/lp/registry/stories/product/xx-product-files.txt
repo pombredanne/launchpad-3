@@ -298,7 +298,7 @@ Create a file to upload.
 
     >>> foo_file = StringIO('Foo installer package...')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
-    ...    'text/plain', 'foo.txt')
+    ...    'text/plain', 'foo1.txt')
     >>> firefox_owner.getControl(
     ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
@@ -316,7 +316,7 @@ Create a file to upload.
 
     >>> foo_file = StringIO('')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
-    ...    'text/plain', 'foo.txt')
+    ...    'text/plain', 'foo2.txt')
     >>> firefox_owner.getControl('Description').value="Foo installer"
     >>> firefox_owner.getControl(
     ...     name="field.contenttype").displayValue = ["Installer file"]
