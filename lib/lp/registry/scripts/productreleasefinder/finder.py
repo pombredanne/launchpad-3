@@ -242,8 +242,11 @@ class ProductReleaseFinder:
             self.log.error("Unable to stat downloaded file")
             raise
 
-        fp = open(local, 'r')
-        os.unlink(local)
-        self.addReleaseTarball(product_name, series_name, version,
-                               filename, stat.st_size, fp, mimetype)
-        file_names.add(filename)
+        try:
+            fp = open(local, 'r')
+            os.unlink(local)
+            self.addReleaseTarball(product_name, series_name, version,
+                                   filename, stat.st_size, fp, mimetype)
+            file_names.add(filename)
+        finally:
+            fp.close()
