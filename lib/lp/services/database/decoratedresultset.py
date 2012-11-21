@@ -75,7 +75,9 @@ class DecoratedResultSet(object):
             return [], []
         elif (zope_isinstance(self.result_set, DecoratedResultSet)
               and self.return_both):
-            assert self.result_set.return_both == self.return_both
+            assert (
+                removeSecurityProxy(self.result_set).return_both
+                    == self.return_both)
             return zip(*results)
         else:
             return results, results
