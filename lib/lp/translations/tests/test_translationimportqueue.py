@@ -584,7 +584,7 @@ class TestHelpers(TestCaseWithFactory):
             productseries=self.factory.makeProductSeries(product=product))
         self.assertEqual([], list_product_request_targets(True))
         self.assertEqual([product], list_product_request_targets(True, owner))
-    
+
     def test_list_product_request_targets_ignores_distro_uploads(self):
         self.clearQueue()
         self.useFixture(FakeLibrarian())
