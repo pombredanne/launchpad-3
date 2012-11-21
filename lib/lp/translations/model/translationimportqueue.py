@@ -858,7 +858,7 @@ def list_product_request_targets(status_condition, user=None):
     # Avoid circular imports.
     from lp.registry.model.product import Product, ProductSet
     from lp.registry.model.productseries import ProductSeries
-    
+
     privacy_filter = ProductSet.getProductPrivacyFilter(user)
 
     products = IStore(Product).find(
