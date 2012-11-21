@@ -166,7 +166,7 @@ class ProductReleaseFinder:
         self.ztm.abort()
         return file_names
 
-    def hasReleaseFile(self, product_name, release_name, filename, file_names):
+    def hasReleaseFile(self, release_name, filename, file_names):
         """Return True if we have a tarball for the given product release."""
         if filename in file_names:
             self.log.debug(
@@ -226,7 +226,7 @@ class ProductReleaseFinder:
                            version, url)
             return
 
-        if self.hasReleaseFile(product_name, version, filename, file_names):
+        if self.hasReleaseFile(version, filename, file_names):
             return
 
         mimetype, encoding = mimetypes.guess_type(url)
