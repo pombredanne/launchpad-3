@@ -98,10 +98,6 @@ class LaunchpadFormatter(Formatter):
         # Output should be UTC.
         self.converter = time.gmtime
 
-    def formatException(self, ei):
-        # We don't want the traceback, so do nothing.
-        pass
-
 
 class LogLevelNudger:
     """Callable to adjust the global log level.
