@@ -1998,9 +1998,15 @@ class ProductSet:
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
-    def search(self, text=None):
+    @classmethod
+    def _request_user_search(cls):
+        return cls.search(getUtility(ILaunchBag).user)
+
+    @classmethod
+    def search(cls, user=None, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        conditions = [Product.active]
+        conditions = [Product.active,
+                      cls.getProductPrivacyFilter(user)]
         if text:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))

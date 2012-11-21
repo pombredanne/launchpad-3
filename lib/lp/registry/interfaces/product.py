@@ -1054,11 +1054,16 @@ class IProductSet(Interface):
                   subscription_modified_before=None):
         """Return an iterator over products that need to be reviewed."""
 
+
     @collection_default_content()
+    def _request_user_search():
+        """Wrapper for search to use request user in default content."""
+
+    @call_with(user=REQUEST_USER)
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None):
+    def search(user, text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product.
