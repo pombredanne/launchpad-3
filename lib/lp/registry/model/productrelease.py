@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'ProductRelease',
@@ -81,46 +79,20 @@ class ProductRelease(SQLBase):
     def files(self):
         return self._files
 
-    # properties
-    @property
-    def codename(self):
-        """Backwards compatible codename attribute.
-
-        This attribute was moved to the Milestone."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.code_name
-
     @property
     def version(self):
-        """Backwards compatible version attribute.
-
-        This attribute was replaced by the Milestone.name."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.name
 
     @property
-    def summary(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.summary."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.summary
-
-    @property
     def productseries(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.productseries
 
     @property
     def product(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries.product."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.productseries.product
+        """See `IProductRelease`."""
+        return self.milestone.productseries.product
 
     @property
     def displayname(self):
