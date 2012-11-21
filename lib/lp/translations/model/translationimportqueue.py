@@ -848,7 +848,7 @@ class TranslationImportQueueEntry(SQLBase):
         return elapsedtime_text
 
 
-def list_product_request_targets(status_condition):
+def list_product_request_targets(status_condition, user=None):
     """Return list of Products with import queue entries.
 
     :param status_condition: Storm conditional restricting the
@@ -856,8 +856,10 @@ def list_product_request_targets(status_condition):
     :return: A list of `Product`, distinct and ordered by name.
     """
     # Avoid circular imports.
-    from lp.registry.model.product import Product
+    from lp.registry.model.product import Product, ProductSet
     from lp.registry.model.productseries import ProductSeries
+    
+    privacy_filter = ProductSet.getProductPrivacyFilter(user)
 
     products = IStore(Product).find(
         Product,
@@ -868,7 +870,8 @@ def list_product_request_targets(status_condition):
             And(
                 TranslationImportQueueEntry.productseries_id != None,
                 status_condition),
-            distinct=True)))
+            distinct=True)),
+        privacy_filter)
 
     # Products may occur multiple times due to the join with
     # ProductSeries.
@@ -1281,7 +1284,7 @@ class TranslationImportQueue:
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
 
-    def getRequestTargets(self, status=None):
+    def getRequestTargets(self, status=None, user=None):
         """See `ITranslationImportQueue`."""
 
         if status is None:
@@ -1290,7 +1293,7 @@ class TranslationImportQueue:
             status_clause = (TranslationImportQueueEntry.status == status)
 
         distroseries = list_distroseries_request_targets(status_clause)
-        products = list_product_request_targets(status_clause)
+        products = list_product_request_targets(status_clause, user)
 
         return distroseries + products
 

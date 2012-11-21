@@ -400,7 +400,8 @@ class ITranslationImportQueue(Interface):
     @operation_parameters(
         status=copy_field(ITranslationImportQueueEntry['status']))
     @operation_returns_collection_of(IHasTranslationImports)
-    def getRequestTargets(status=None):
+    @call_with(user=REQUEST_USER)
+    def getRequestTargets(status=None, user=None):
         """List `Product`s and `DistroSeries` with pending imports.
 
         :arg status: Filter by `RosettaImportStatus`.
