@@ -15,7 +15,10 @@ from zope.security.interfaces import Unauthorized
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import InformationType
 from lp.registry.browser.tests.test_product import make_product_form
-from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.features.testing import FeatureFixture
@@ -95,6 +98,41 @@ class TestProjectGroupView(BrowserTestCase):
         self.assertIn(public_product.displayname, owner_browser.contents)
         self.assertNotIn(product_name, browser.contents)
         self.assertIn(public_product.displayname, browser.contents)
+
+    def test_mixed_product_projectgroup_milestone(self):
+        # If a milestone is mixed between public and proprietary products,
+        # only the public is shown to people without access.
+        self.useFixture(
+            FeatureFixture({u'disclosure.private_projects.enabled': u'on'}))
+        owner = self.factory.makePerson()
+        teammember = self.factory.makePerson()
+        owning_team = self.factory.makeTeam(owner=owner,
+                membership_policy=TeamMembershipPolicy.RESTRICTED)
+        with person_logged_in(owner):
+            owning_team.addMember(teammember, owner)
+        group = self.factory.makeProject(owner=owning_team)
+        private = self.factory.makeProduct(
+            project=group, owner=owner,
+            information_type=InformationType.PROPRIETARY, name='private')
+        public = self.factory.makeProduct(
+            project=group, owner=owner, name='public')
+        private_milestone = self.factory.makeMilestone(
+            product=private, name='1.0')
+        public_milestone = self.factory.makeMilestone(
+            product=public, name='1.0')
+        with person_logged_in(owner):
+            self.factory.makeBug(
+                target=private, owner=owner, milestone=private_milestone,
+                title='This is the private bug')
+            self.factory.makeBug(
+                target=public, owner=owner, milestone=public_milestone,
+                title='This is the public bug')
+
+        group_milestone = group.milestones[0]
+        browser = self.getViewBrowser(
+            group_milestone, user=self.factory.makePerson())
+        self.assertTrue("This is the public bug" in browser.contents)
+        self.assertFalse("This is the private bug" in browser.contents)
 
 
 class TestProjectGroupEditView(TestCaseWithFactory):
