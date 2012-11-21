@@ -895,6 +895,16 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         reconcile_access_for_artifact(self, information_type, [self.target])
+        if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
+            # Grant the subscribers access if they do not have a
+            # policy grant.
+            service = getUtility(IService, 'sharing')
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, self.subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, specifications=[self],
+                    ignore_permissions=True)
         return True
 
     @cachedproperty
