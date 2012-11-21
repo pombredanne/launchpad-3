@@ -572,7 +572,7 @@ class TestHelpers(TestCaseWithFactory):
             sorted(names),
             [
                 product.name
-                for product in list_product_request_targets(True)])
+                for product in list_product_request_targets(None, True)])
 
     def test_list_product_request_filters_private_products(self):
         self.clearQueue()
@@ -582,15 +582,15 @@ class TestHelpers(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         self.factory.makeTranslationImportQueueEntry(
             productseries=self.factory.makeProductSeries(product=product))
-        self.assertEqual([], list_product_request_targets(True))
-        self.assertEqual([product], list_product_request_targets(True, owner))
+        self.assertEqual([], list_product_request_targets(None, True))
+        self.assertEqual([product], list_product_request_targets(owner, True))
 
     def test_list_product_request_targets_ignores_distro_uploads(self):
         self.clearQueue()
         self.useFixture(FakeLibrarian())
         self.factory.makeTranslationImportQueueEntry(
             distroseries=self.factory.makeDistroSeries())
-        self.assertEqual([], list_product_request_targets(True))
+        self.assertEqual([], list_product_request_targets(None, True))
 
     def test_list_product_request_targets_ignores_inactive_products(self):
         self.clearQueue()
@@ -599,7 +599,7 @@ class TestHelpers(TestCaseWithFactory):
         product.active = False
         self.factory.makeTranslationImportQueueEntry(
             productseries=self.factory.makeProductSeries(product=product))
-        self.assertEqual([], list_product_request_targets(False))
+        self.assertEqual([], list_product_request_targets(None, False))
 
     def test_list_product_request_targets_does_not_duplicate(self):
         # list_product_request_targets will list a product only once.
@@ -613,7 +613,7 @@ class TestHelpers(TestCaseWithFactory):
             for counter in range(2):
                 self.factory.makeTranslationImportQueueEntry(
                     productseries=series)
-        self.assertEqual([product], list_product_request_targets(True))
+        self.assertEqual([product], list_product_request_targets(None, True))
 
     def test_list_product_request_targets_filters_status(self):
         self.clearQueue()
@@ -626,10 +626,12 @@ class TestHelpers(TestCaseWithFactory):
         self.assertEqual(
             [],
             list_product_request_targets(
+                None,
                 TranslationImportQueueEntry.status == other_status))
         self.assertEqual(
             [entry.productseries.product],
             list_product_request_targets(
+                None,
                 TranslationImportQueueEntry.status == entry_status))
 
     def test_list_distroseries_request_targets_orders_by_names(self):

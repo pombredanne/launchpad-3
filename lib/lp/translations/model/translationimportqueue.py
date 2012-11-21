@@ -848,7 +848,7 @@ class TranslationImportQueueEntry(SQLBase):
         return elapsedtime_text
 
 
-def list_product_request_targets(status_condition, user=None):
+def list_product_request_targets(user, status_condition):
     """Return list of Products with import queue entries.
 
     :param status_condition: Storm conditional restricting the
@@ -1293,7 +1293,7 @@ class TranslationImportQueue:
             status_clause = (TranslationImportQueueEntry.status == status)
 
         distroseries = list_distroseries_request_targets(status_clause)
-        products = list_product_request_targets(status_clause, user)
+        products = list_product_request_targets(user, status_clause)
 
         return distroseries + products
 
