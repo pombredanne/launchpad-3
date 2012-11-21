@@ -358,7 +358,12 @@ def _logger(level, out_stream, name=None, log_file=None,
     # logs.
     root_logger.setLevel(0)
     hdlr.setLevel(level)
-    formatter = LaunchpadFormatter()
+    if milliseconds:
+        # Python default datefmt includes milliseconds.
+        formatter = LaunchpadFormatter(datefmt=None)
+    else:
+        # Launchpad default datefmt does not include milliseconds.
+        formatter = LaunchpadFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 
