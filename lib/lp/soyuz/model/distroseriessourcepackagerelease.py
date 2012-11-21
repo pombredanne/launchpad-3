@@ -221,4 +221,4 @@ class DistroSeriesSourcePackageRelease:
         """An internal property used by methods of this class to know where
         this release is or was published.
         """
-        self.publishing_history.first()
+        return self.publishing_history.first()
