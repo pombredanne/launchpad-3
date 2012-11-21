@@ -792,7 +792,7 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
             name_matches = removeSecurityProxy(
-                getUtility(IProductSet).search_sqlobject(
+                getUtility(IProductSet).search(self.user,
                 self.request.form.get('field.name')))
             products = bugtracker.products.intersect(name_matches)
             self.existing_products = list(

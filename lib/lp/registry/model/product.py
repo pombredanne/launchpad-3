@@ -2020,14 +2020,6 @@ class ProductSet:
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
-    def search_sqlobject(self, text):
-        """See `IProductSet`"""
-        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
-        queries.append('Product.active IS TRUE')
-        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
-            % sqlvalues(text)
-        return Product.select(query)
-
     def getTranslatables(self):
         """See `IProductSet`"""
         user = getUtility(ILaunchBag).user
