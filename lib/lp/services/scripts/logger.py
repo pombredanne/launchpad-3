@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=W0702
 
 """Logging setup for scripts.
 
@@ -10,7 +8,7 @@ Don't import from this module. Import it from lp.services.scripts.
 
 __metaclass__ = type
 
-# Don't import stuff from this module. Import it from canonical.scripts
+# Don't import stuff from this module. Import it from lp.services.scripts
 __all__ = [
     'DEBUG2',
     'DEBUG3',
@@ -30,9 +28,6 @@ __all__ = [
 
 
 from contextlib import contextmanager
-from cStringIO import StringIO
-from datetime import timedelta
-import hashlib
 import logging
 from logging.handlers import WatchedFileHandler
 from optparse import OptionParser
@@ -42,19 +37,10 @@ import sys
 import time
 from traceback import format_exception_only
 
-from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
 from lp.services.config import config
-from lp.services.librarian.interfaces.client import (
-    ILibrarianClient,
-    UploadFailed,
-    )
 from lp.services.log import loglevels
-from lp.services.utils import (
-    compress_hash,
-    utc_now,
-    )
 from lp.services.webapp.errorlog import (
     globalErrorUtility,
     ScriptRequest,
@@ -75,12 +61,13 @@ DEBUG9 = loglevels.DEBUG9
 class OopsHandler(logging.Handler):
     """Handler to log to the OOPS system."""
 
-    def __init__(self, script_name, level=logging.WARN):
+    def __init__(self, script_name, level=logging.WARN, logger=None):
         logging.Handler.__init__(self, level)
         # Context for OOPS reports.
         self.request = ScriptRequest(
             [('script_name', script_name), ('path', sys.argv[0])])
         self.setFormatter(LaunchpadFormatter())
+        self.logger = logger
 
     def emit(self, record):
         """Emit a record as an OOPS."""
@@ -91,6 +78,8 @@ class OopsHandler(logging.Handler):
             msg = record.getMessage()
             with globalErrorUtility.oopsMessage(msg):
                 globalErrorUtility.raising(info, self.request)
+                if self.logger:
+                    self.logger.info(self.request.oopsid)
         except Exception:
             self.handleError(record)
 
@@ -109,58 +98,9 @@ class LaunchpadFormatter(Formatter):
         # Output should be UTC.
         self.converter = time.gmtime
 
-
-class LibrarianFormatter(LaunchpadFormatter):
-    """A logging.Formatter that stores tracebacks in the Librarian and emits
-    a URL rather than emitting the traceback directly.
-
-    The traceback will be emitted as a fallback if the Librarian cannot be
-    contacted.
-
-    XXX bug=641103 StuartBishop -- This class should die. Remove it and
-    replace with LaunchpadFormatter, fixing the test fallout.
-    """
-
     def formatException(self, ei):
-        """Format the exception and store it in the Librian.
-
-        Returns the URL, or the formatted exception if the Librarian is
-        not available.
-        """
-        traceback = LaunchpadFormatter.formatException(self, ei)
-        # Uncomment this line to stop exception storage in the librarian.
-        # Useful for debugging tests.
-        # return traceback
-        try:
-            librarian = getUtility(ILibrarianClient)
-        except LookupError:
-            return traceback
-
-        exception_string = ''
-        try:
-            exception_string = str(ei[1]).encode('ascii')
-        except:
-            pass
-        if not exception_string:
-            exception_string = ei[0].__name__
-
-        expiry = utc_now() + timedelta(days=90)
-        try:
-            filename = compress_hash(hashlib.sha1(traceback)) + '.txt'
-            url = librarian.remoteAddFile(
-                    filename, len(traceback), StringIO(traceback),
-                    'text/plain;charset=%s' % sys.getdefaultencoding(),
-                    expires=expiry)
-            return ' -> %s (%s)' % (url, exception_string)
-        except UploadFailed:
-            return traceback
-        except Exception:
-            # Exceptions raised by the Formatter get swallowed, but we want
-            # to know about them. Since we are already spitting out exception
-            # information, we can stuff our own problems in there too.
-            return '%s\n\nException raised in formatter:\n%s\n' % (
-                    traceback,
-                    LaunchpadFormatter.formatException(self, sys.exc_info()))
+        # We don't want the traceback, so do nothing.
+        pass
 
 
 class LogLevelNudger:
@@ -393,9 +333,8 @@ def reset_root_logger():
         root_logger.removeHandler(hdlr)
 
 
-def _logger(
-    level, out_stream, name=None,
-    log_file=None, log_file_level=logging.DEBUG, milliseconds=False):
+def _logger(level, out_stream, name=None, log_file=None,
+            log_file_level=logging.DEBUG, milliseconds=False):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
@@ -423,12 +362,7 @@ def _logger(
     # logs.
     root_logger.setLevel(0)
     hdlr.setLevel(level)
-    if milliseconds:
-        # Python default datefmt includes milliseconds.
-        formatter = LibrarianFormatter(datefmt=None)
-    else:
-        # Launchpad default datefmt does not include milliseconds.
-        formatter = LibrarianFormatter()
+    formatter = LaunchpadFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
 
