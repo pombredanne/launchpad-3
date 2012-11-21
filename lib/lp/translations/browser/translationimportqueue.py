@@ -617,7 +617,11 @@ class TranslationImportTargetVocabularyFactory:
 
     def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
-        targets = import_queue.getRequestTargets(user=self.user)
+        if hasattr(self, 'view'):
+            user = self.view.user
+        else:
+            user = None
+        targets = import_queue.getRequestTargets(user)
         filtered_targets = set()
 
         # Read filter_status, in order to mark targets that have requests with
