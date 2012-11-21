@@ -406,7 +406,9 @@ class DistributionSourcePackage(BugTargetBase,
         res = IStore(SourcePackagePublishingHistory).find(
             (SourcePackagePublishingHistory, SourcePackageRelease),
             *conditions)
-        res.order_by(Desc(SourcePackagePublishingHistory.datecreated))
+        res.order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
         return DecoratedResultSet(res, operator.itemgetter(0))
 
     def getReleasesAndPublishingHistory(self):

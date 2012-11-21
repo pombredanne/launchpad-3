@@ -14,6 +14,7 @@ __all__ = [
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
     'DistributionSourcePackageView',
+    'PublishingHistoryViewMixin',
     ]
 
 import itertools
@@ -583,10 +584,8 @@ class DistributionSourcePackageChangelogView(
         return 'Change log for %s' % self.context.title
 
 
-class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
-    """View for presenting `DistributionSourcePackage` publishing history."""
-
-    page_title = 'Publishing history'
+class PublishingHistoryViewMixin:
+    """Mixin for presenting batches of `SourcePackagePublishingHistory`s."""
 
     def _preload_people(self, pubs):
         ids = set()
@@ -606,6 +605,13 @@ class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
                 self.context.publishing_history,
                 pre_iter_hook=self._preload_people),
             self.request)
+
+
+class DistributionSourcePackagePublishingHistoryView(
+        LaunchpadView, PublishingHistoryViewMixin):
+    """View for presenting `DistributionSourcePackage` publishing history."""
+
+    page_title = 'Publishing history'
 
     @property
     def label(self):
