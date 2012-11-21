@@ -173,7 +173,6 @@ class ProductReleaseFinder:
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
         """Create a ProductRelease (if needed), and attach tarball"""
-        # Get the series.
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
