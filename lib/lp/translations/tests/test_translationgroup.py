@@ -9,16 +9,77 @@ from lazr.restfulclient.errors import Unauthorized
 import transaction
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+
+
+class TestTranslationGroup(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def _setup_products(self):
+        """Helper to setup one public one non-public product."""
+        user = self.factory.makePerson()
+        private_owner = self.factory.makePerson()
+        group = self.factory.makeTranslationGroup()
+
+        with person_logged_in(user):
+            public_product = self.factory.makeProduct()
+            public_product.translationgroup = group
+
+        with person_logged_in(private_owner):
+            private_product = self.factory.makeProduct(
+                information_type=InformationType.PROPRIETARY,
+                owner=private_owner)
+            private_product.translationgroup = group
+
+        return group, user, private_owner
+
+    def test_non_public_products_hidden(self):
+        """Non Public products are not returned via products attribute."""
+        group, public_user, private_user = self._setup_products()
+
+        with person_logged_in(public_user):
+            self.assertEqual(
+                1,
+                group.products.count(),
+                'There is only one public product for this user')
+
+        with person_logged_in(private_user):
+            self.assertEqual(
+                2,
+                group.products.count(),
+                'There are two for the private user.')
+
+    def test_non_public_products_hidden_for_display(self):
+        """Non Public products are not returned via fetchProjectsForDisplay."""
+        group, public_user, private_user = self._setup_products()
+
+        # Magical transaction so our data shows up via ISlaveStore
+        import transaction
+        transaction.commit()
+
+        with person_logged_in(public_user):
+            self.assertEqual(
+                1,
+                len(group.fetchProjectsForDisplay(public_user)),
+                'There is only one public product for the public user')
+
+        with person_logged_in(private_user):
+            self.assertEqual(
+                2,
+                len(group.fetchProjectsForDisplay(private_user)),
+                'Both products show for the private user.')
 
 
 class TestTranslationGroupSet(TestCaseWithFactory):
