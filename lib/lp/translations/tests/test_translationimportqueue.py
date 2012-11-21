@@ -10,6 +10,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.database.lpstorm import (
     ISlaveStore,
@@ -573,6 +574,17 @@ class TestHelpers(TestCaseWithFactory):
                 product.name
                 for product in list_product_request_targets(True)])
 
+    def test_list_product_request_filters_private_products(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        self.factory.makeTranslationImportQueueEntry(
+            productseries=self.factory.makeProductSeries(product=product))
+        self.assertEqual([], list_product_request_targets(True))
+        self.assertEqual([product], list_product_request_targets(True, owner))
+    
     def test_list_product_request_targets_ignores_distro_uploads(self):
         self.clearQueue()
         self.useFixture(FakeLibrarian())
