@@ -242,17 +242,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         alt_file_name = 'evolution-42.0.orig.tar.bz2'
         file_path, file_name = self.create_tarball(
             'evolution-42.0.orig.tar.gz')
-        file_names = prf.getReleaseFileNames('evolution')
-
-        self.assertEqual(
-            prf.hasReleaseFile(file_name, file_names),
-            False)
-        self.assertEqual(
-            prf.hasReleaseFile(alt_file_name, file_names),
-            False)
-
+        file_names = set()
         prf.handleRelease('evolution', 'trunk', file_path, file_names)
-
         self.assertEqual(
             prf.hasReleaseFile(file_name, file_names),
             True)
