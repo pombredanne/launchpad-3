@@ -1276,7 +1276,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         """See `IVocabulary`."""
         productrelease = obj
-        productseries = productrelease.productseries
+        productseries = productrelease.milestone.productseries
         product = productseries.product
 
         # NB: We use '/' as the separator because '-' is valid in
