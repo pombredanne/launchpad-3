@@ -292,10 +292,10 @@ class IProductReleasePublic(Interface):
 
     owner = exported(
         PersonChoice(
-            title=u"The owner of this release.",
+            title=u"The regstrant of this release.",
             required=True,
             vocabulary='ValidOwner',
-            description=_("The person or team who owns  his product release.")
+            description=_("The person or team who registered this release.")
             )
         )
 
