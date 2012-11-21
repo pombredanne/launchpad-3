@@ -50,6 +50,7 @@ class SpecificationSubscription(SQLBase):
             user.inTeam(self.person) or
             user.in_admin):
             return True
+        # XXX Abel Deuring 2012-11-21, bug=1081677
         # People who subscribed users should be able to unsubscribe
         # them again, similar to branch subscriptions. This is
         # essential if somebody was erroneuosly subscribed to a

@@ -621,9 +621,9 @@ class TestSpecificationInformationType(TestCaseWithFactory):
 
     def test_transitionToInformationType(self):
         """Ensure transitionToInformationType works."""
+        public_private = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
-            specification_sharing_policy=
-                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            specification_sharing_policy=public_private)
         spec = self.factory.makeSpecification(product=product)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         removeSecurityProxy(spec.target)._ensurePolicies(
@@ -654,10 +654,10 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         # Subscribers are automatically granted access when the
         # new information type requires a grant.
         owner = self.factory.makePerson()
+        public_private = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
             owner=owner,
-            specification_sharing_policy=
-                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            specification_sharing_policy=public_private)
         spec = self.factory.makeSpecification(product=product)
         subscriber_with_policy_grant = self.factory.makePerson()
         subscriber_without_policy_grant = self.factory.makePerson()
