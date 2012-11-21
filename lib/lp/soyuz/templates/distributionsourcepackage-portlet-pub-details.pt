@@ -14,7 +14,7 @@
 
   <div tal:define="cr context/currentrelease">
 
-    <div tal:condition="context/current_publishing_records">
+    <div tal:condition="not: context/current_publishing_records/is_empty">
       <tal:block repeat="item view/all_published_in_active_distroseries">
         <b><tal:suite replace="item/suite"/></b>
         <tal:description replace="item/description"/>
@@ -22,7 +22,7 @@
       </tal:block>
     </div>
 
-    <div tal:condition="not: context/current_publishing_records">
+    <div tal:condition="context/current_publishing_records/is_empty">
       This source is not published in
       <tal:name replace="context/distribution/name/capitalize"/>
     </div>
