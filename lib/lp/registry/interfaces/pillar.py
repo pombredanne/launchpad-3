@@ -102,7 +102,7 @@ class IHasSharingPolicies(Interface):
         required=False, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
     specification_sharing_policy = exported(Choice(
-        title=_('Specification sharing policy'),
+        title=_('Blueprint sharing policy'),
         description=_("Sharing policy for this project's specifications."),
         required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
