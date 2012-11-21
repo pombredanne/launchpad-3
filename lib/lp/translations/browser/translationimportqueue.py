@@ -634,7 +634,8 @@ class TranslationImportTargetVocabularyFactory:
                 try:
                     status = RosettaImportStatus.items[status_filter]
                     filtered_targets = set(
-                        import_queue.getRequestTargets(status))
+                        import_queue.getRequestTargets(
+                            user=None, status=status))
                 except LookupError:
                     # Unknown status.  Ignore.
                     pass

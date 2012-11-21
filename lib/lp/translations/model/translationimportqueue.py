@@ -1284,7 +1284,7 @@ class TranslationImportQueue:
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
 
-    def getRequestTargets(self, status=None, user=None):
+    def getRequestTargets(self, user, status=None):
         """See `ITranslationImportQueue`."""
 
         if status is None:
