@@ -551,17 +551,6 @@ Entire publishing history:
     >>> pmount_srcrel.publishing_history.count()
     1
 
-Most recent published history row:
-
-    >>> pmount_srcrel.current_published is None
-    True
-
-    >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
-    >>> spph = netapplet_srcrel.current_published
-
-    >>> spph.section.name
-    u'web'
-
 The changesfile attribute contains the package changelog. It is provided as
 an ILibraryFileAlias:
 
@@ -575,6 +564,7 @@ an ILibraryFileAlias:
 
 If the package changelog is not available, that attribute is None:
 
+    >>> netapplet_srcrel = hoary.getSourcePackage('netapplet').currentrelease
     >>> netapplet_srcrel.changesfile is None
     True
 
@@ -582,7 +572,7 @@ Perform `post publication` override:
 
     >>> new_section = getUtility(ISectionSet)['base']
 
-    >>> override = netapplet_srcrel.current_published.changeOverride(
+    >>> override = netapplet_srcrel.publishing_history.first().changeOverride(
     ...     new_section=new_section)
 
     >>> override.section == new_section
@@ -596,10 +586,11 @@ Perform `post publication` override:
 
 Override information about 'pmount' is pending publication:
 
-    >>> print netapplet_srcrel.current_published.status.name
+    >>> overridden = netapplet_srcrel.publishing_history.first()
+    >>> print overridden.status.name
     PENDING
 
-    >>> print netapplet_srcrel.current_published.section.name
+    >>> print overridden.section.name
     base
 
 Supersede previous netapplet publication:

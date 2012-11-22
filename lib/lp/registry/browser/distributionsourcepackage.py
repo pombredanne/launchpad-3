@@ -14,6 +14,7 @@ __all__ = [
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
     'DistributionSourcePackageView',
+    'PublishingHistoryViewMixin',
     ]
 
 import itertools
@@ -55,6 +56,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -69,6 +71,7 @@ from lp.services.webapp import (
     redirection,
     StandardLaunchpadFacets,
     )
+from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import IBreadcrumb
 from lp.services.webapp.menu import (
@@ -581,20 +584,34 @@ class DistributionSourcePackageChangelogView(
         return 'Change log for %s' % self.context.title
 
 
-class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
-    """View for presenting `DistributionSourcePackage` publishing history."""
+class PublishingHistoryViewMixin:
+    """Mixin for presenting batches of `SourcePackagePublishingHistory`s."""
 
-    page_title = 'Publishing history'
-
-    def initialize(self):
-        """Preload relevant `IPerson` objects."""
+    def _preload_people(self, pubs):
         ids = set()
-        for spph in self.context.publishing_history:
+        for spph in pubs:
             ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
         ids.discard(None)
         if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 ids, need_validity=True))
+
+    @property
+    def batchnav(self):
+        # No point using StormRangeFactory right now, as the sorted
+        # lookup can't be fully indexed (it spans multiple archives).
+        return BatchNavigator(
+            DecoratedResultSet(
+                self.context.publishing_history,
+                pre_iter_hook=self._preload_people),
+            self.request)
+
+
+class DistributionSourcePackagePublishingHistoryView(
+        LaunchpadView, PublishingHistoryViewMixin):
+    """View for presenting `DistributionSourcePackage` publishing history."""
+
+    page_title = 'Publishing history'
 
     @property
     def label(self):
