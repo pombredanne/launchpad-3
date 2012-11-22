@@ -29,7 +29,8 @@
 
 <div metal:fill-slot="main">
 
-  <div class="top-portlet">
+  <div class="top-portlet" tal:define="publications view/batchnav">
+    <tal:navigation content="structure publications/@@+navigation-links-upper" />
     <table id="publishing-summary" class="listing">
        <thead>
          <tr>
@@ -44,11 +45,12 @@
          </tr>
        </thead>
        <tbody>
-         <tal:block repeat="publishing context/publishing_history"
+         <tal:block repeat="publishing publications/currentBatch"
                     replace="structure publishing/@@+listing-summary">
          </tal:block>
        </tbody>
     </table>
+    <tal:navigation content="structure publications/@@+navigation-links-lower" />
   </div>
 
   <p>
