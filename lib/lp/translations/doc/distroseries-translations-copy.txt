@@ -201,6 +201,7 @@ set.
             defer_translation_imports flags for distribution foobuntu, series
             darty; or use the --force option to make it happen
             automatically.
+    INFO    OOPS-...
     <BLANKLINE>
 
     >>> transaction.abort()
