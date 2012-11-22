@@ -50,8 +50,10 @@ from lp.app.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -86,6 +88,10 @@ from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -728,6 +734,15 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             property_cache.subscriptions.append(sub)
             property_cache.subscriptions.sort(
                 key=lambda sub: person_sort_key(sub.person))
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the
+            # specification.
+            service = getUtility(IService, 'sharing')
+            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+                person, specifications=[self], ignore_permissions=True)
+            if not shared_specs:
+                service.ensureAccessGrants(
+                    [person], subscribed_by, specifications=[self])
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
@@ -746,6 +761,10 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                             person.displayname))
                 get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def isSubscribed(self, person):
@@ -875,6 +894,16 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         reconcile_access_for_artifact(self, information_type, [self.target])
+        if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
+            # Grant the subscribers access if they do not have a
+            # policy grant.
+            service = getUtility(IService, 'sharing')
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, self.subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, specifications=[self],
+                    ignore_permissions=True)
         return True
 
     @cachedproperty

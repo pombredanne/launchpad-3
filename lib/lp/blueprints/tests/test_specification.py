@@ -442,6 +442,62 @@ class SpecificationTests(TestCaseWithFactory):
         self.assertContentEqual(
             [public_spec, proprietary_spec_1], specs_for_other_user)
 
+    def test_subscribe_to_proprietary_spec(self):
+        # If users are subscribed to a proprietary specification,
+        # they are automatically granted access to the specification.
+        owner = self.factory.makePerson()
+        spec_sharing_policy = SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=spec_sharing_policy)
+        with person_logged_in(owner):
+            user = self.factory.makePerson()
+            spec = self.factory.makeSpecification(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
+            spec.subscribe(user, subscribed_by=owner)
+            service = getUtility(IService, 'sharing')
+            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+                user, specifications=[spec])
+            self.assertEqual([spec], shared_specs)
+            # The spec is also returned by getSharedSpecifications(),
+            # which lists only specifications for which the use has
+            # an artifact grant.
+            self.assertEqual(
+                [spec], service.getSharedSpecifications(product, user, owner))
+            # Users which have a policy grants for the spec's target
+            # do not get an additional artifact grant...
+            user_2 = self.factory.makePerson()
+            permissions = {
+                InformationType.PROPRIETARY: SharingPermission.ALL,
+                }
+            service.sharePillarInformation(
+                product, user_2, owner, permissions)
+            spec.subscribe(user_2, subscribed_by=owner)
+            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+                user_2, specifications=[spec])
+            self.assertEqual([spec], shared_specs)
+            self.assertEqual(
+                [], service.getSharedSpecifications(product, user_2, owner))
+
+    def test_unsubscribe_from_proprietary_spec(self):
+        # If users are unsubscribed from a proprietary specification,
+        # a related artifact grant is deleted too.
+        owner = self.factory.makePerson()
+        spec_sharing_policy = SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=spec_sharing_policy)
+        with person_logged_in(owner):
+            user = self.factory.makePerson()
+            spec = self.factory.makeSpecification(
+                product=product,
+                information_type=InformationType.PROPRIETARY)
+            spec.subscribe(user, subscribed_by=owner)
+            spec.unsubscribe(user, unsubscribed_by=owner)
+            service = getUtility(IService, 'sharing')
+            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+                user, specifications=[spec])
+            self.assertEqual([], shared_specs)
+
 
 class TestSpecificationSet(TestCaseWithFactory):
 
