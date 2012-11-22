@@ -433,6 +433,22 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             product.information_type = info_type
 
+    def test_change_info_type_proprietary_check_translations(self):
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            for usage in ServiceUsage:
+                product.translations_usage = usage.value
+                for info_type in PROPRIETARY_INFORMATION_TYPES:
+                    if product.translations_usage == ServiceUsage.LAUNCHPAD:
+                        with ExpectedException(
+                            CannotChangeInformationType,
+                            'Translations are enabled.'):
+                            product.information_type = info_type
+                    else:
+                        product.information_type = info_type
+
+
     def test_change_info_type_proprietary_sets_policies(self):
         # Changing information type from public to proprietary sets the
         # appropriate policies

@@ -489,6 +489,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 'Some branches are neither proprietary nor embargoed.')
         if not self.packagings.is_empty():
             raise CannotChangeInformationType('Some series are packaged.')
+        if self.translations_usage == ServiceUsage.LAUNCHPAD:
+            raise CannotChangeInformationType('Translations are enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
