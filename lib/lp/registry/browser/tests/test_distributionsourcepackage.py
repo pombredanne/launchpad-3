@@ -134,8 +134,8 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
         section = self.factory.makeSection()
         dsp = archive.distribution.getSourcePackage(spn)
         statuses = (
-            [PackagePublishingStatus.PUBLISHED]
-            + ([PackagePublishingStatus.SUPERSEDED] * 5))
+            ([PackagePublishingStatus.SUPERSEDED] * 5)
+            + [PackagePublishingStatus.PUBLISHED])
         for status in statuses:
             self.factory.makeSourcePackagePublishingHistory(
                 archive=archive, sourcepackagename=spn, component=component,
