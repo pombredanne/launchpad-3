@@ -1730,7 +1730,7 @@ class ProductSet:
 
     def __iter__(self):
         """See `IProductSet`."""
-        return iter(self.all_active)
+        return iter(self.get_all_active(None))
 
     @property
     def people(self):
@@ -1743,10 +1743,6 @@ class ProductSet:
         if quantity is not None:
             result = result[:quantity]
         return result
-
-    @property
-    def all_active(self):
-        return self.get_all_active(None)
 
     @staticmethod
     def getProductPrivacyFilter(user):

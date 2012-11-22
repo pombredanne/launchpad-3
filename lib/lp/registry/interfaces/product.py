@@ -945,9 +945,6 @@ class IProductSet(Interface):
         "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /projects/ page.")
 
-    all_active = Attribute(
-        "All the active products, sorted newest first.")
-
     def get_users_private_products(user):
         """Get users non-public products.
 

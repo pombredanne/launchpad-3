@@ -1475,7 +1475,6 @@
             attributes="
                 title
                 people
-                all_active
                 get
                 get_all_active
                 getByName
