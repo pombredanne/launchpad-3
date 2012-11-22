@@ -1,9 +1,7 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=C0103,W0403
 
 """Expire all old, Incomplete bugs tasks that are unassigned in Malone.
 
@@ -47,16 +45,9 @@ class ExpireBugTasks(LaunchpadCronScript):
             # Avoid circular import.
             from lp.registry.interfaces.distribution import IDistributionSet
             target = getUtility(IDistributionSet).getByName('ubuntu')
-        try:
-            janitor = BugJanitor(
-                log=self.logger, target=target, limit=self.options.limit)
-            janitor.expireBugTasks(self.txn)
-        except Exception:
-            # We use a catchall here because we don't know (and don't care)
-            # about the particular error--we'll just log it to as an Oops.
-            self.logger.error(
-                'An error occured trying to expire bugtasks.', exc_info=1)
-            raise
+        janitor = BugJanitor(
+            log=self.logger, target=target, limit=self.options.limit)
+        janitor.expireBugTasks(self.txn)
 
 
 if __name__ == '__main__':
