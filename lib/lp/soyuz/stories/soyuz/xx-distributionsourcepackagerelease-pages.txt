@@ -172,6 +172,7 @@ of this source in the context distribution are listed.
     ...testing-dspr... package
     1.0
     Publishing history
+    ...
     Date  Status     Target     Pocket   Component  Section  Version
     ...   Published  Breezy...  release  main       base     1.0
     ...
