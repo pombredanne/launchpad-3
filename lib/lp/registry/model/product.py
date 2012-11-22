@@ -470,19 +470,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         public_specs = self.specifications(
             None, filter=[SpecificationFilter.ALL])
         if not public_specs.is_empty():
+            # Unlike bugs and branches, specifications cannot be USERDATA or a
+            # security type.
             raise CannotChangeInformationType(
                 'Some blueprints are public.')
-        public_bugs = self.searchTasks(None,
-            information_type=PUBLIC_INFORMATION_TYPES,
-            omit_duplicates=False, omit_targeted=False)
-        if not public_bugs.is_empty():
+        non_proprietary_bugs = Store.of(self).find(Bug,
+            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
+            BugTask.bug == Bug.id, BugTask.product == self.id)
+        if not non_proprietary_bugs.is_empty():
             raise CannotChangeInformationType(
-                'Some bugs are public.')
+                'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
-        public_branches = self.getBranches()
-        if not public_branches.is_empty():
+        non_proprietary_branches = Store.of(self).find(
+            Branch, Branch.product == self.id,
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        )
+        if not non_proprietary_branches.is_empty():
             raise CannotChangeInformationType(
-                'Some branches are public.')
+                'Some branches are neither proprietary nor embargoed.')
         if not self.packagings.is_empty():
             raise CannotChangeInformationType('Some series are packaged.')
         # Proprietary check works only after creation, because during

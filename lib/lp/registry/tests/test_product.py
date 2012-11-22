@@ -410,19 +410,24 @@ class TestProduct(TestCaseWithFactory):
         spec.transitionToInformationType(InformationType.PROPRIETARY,
                                          product.owner)
         bug = self.factory.makeBug(target=product)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CannotChangeInformationType,
-                'Some bugs are public.'):
-                product.information_type = info_type
+        for bug_info_type in FREE_INFORMATION_TYPES:
+            bug.transitionToInformationType(bug_info_type, product.owner)
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with ExpectedException(
+                    CannotChangeInformationType,
+                    'Some bugs are neither proprietary nor embargoed.'):
+                    product.information_type = info_type
         bug.transitionToInformationType(InformationType.PROPRIETARY,
                                         product.owner)
         branch = self.factory.makeBranch(product=product)
-        for info_type in PROPRIETARY_INFORMATION_TYPES:
-            with ExpectedException(
-                CannotChangeInformationType,
-                'Some branches are public.'):
-                product.information_type = info_type
+        for branch_info_type in FREE_INFORMATION_TYPES:
+            branch.transitionToInformationType(branch_info_type,
+                                               product.owner)
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with ExpectedException(
+                    CannotChangeInformationType,
+                    'Some branches are neither proprietary nor embargoed.'):
+                    product.information_type = info_type
         branch.transitionToInformationType(InformationType.PROPRIETARY,
                                            product.owner)
         for info_type in PROPRIETARY_INFORMATION_TYPES:
