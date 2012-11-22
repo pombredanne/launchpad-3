@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.registry.model.product import Product
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
@@ -791,7 +792,6 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # Use a local import as we don't want removeSecurityProxy used
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
-            from lp.registry.model.product import Product
             name_matches = removeSecurityProxy(
                 getUtility(IProductSet).search(self.user,
                 self.request.form.get('field.name')))
