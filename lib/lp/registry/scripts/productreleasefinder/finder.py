@@ -154,7 +154,7 @@ class ProductReleaseFinder:
         """Return a set of all current release file names for the product."""
         self.ztm.begin()
         found_names = IStore(Product).find(
-            (LibraryFileAlias.filename),
+            LibraryFileAlias.filename,
             Product.name == product_name,
             Product.id == ProductSeries.productID,
             Milestone.productseriesID == ProductSeries.id,
@@ -162,7 +162,7 @@ class ProductReleaseFinder:
             ProductReleaseFile.productreleaseID == ProductRelease.id,
             LibraryFileAlias.id == ProductReleaseFile.libraryfileID
             )
-        file_names = set(name for name in found_names)
+        file_names = set(found_names)
         self.ztm.abort()
         return file_names
 
