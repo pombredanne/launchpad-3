@@ -273,6 +273,7 @@ submissions are processed.
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission test_submission_id_1: syntax error:
     line 1, column 0
+    INFO    OOPS-...
     INFO    Processed 0 valid and 1 invalid HWDB submissions
     <BLANKLINE>
     >>> print out
@@ -308,7 +309,9 @@ data, the other submission is valid.
     >>> print err
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
+    INFO    OOPS-...
     INFO    Processed 1 valid and 1 invalid HWDB submissions
+    <BLANKLINE>
     >>> print out
     <BLANKLINE>
 
