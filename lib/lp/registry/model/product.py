@@ -37,7 +37,6 @@ from storm.expr import (
     )
 from storm.locals import (
     And,
-    ClassAlias,
     Desc,
     Join,
     Not,
