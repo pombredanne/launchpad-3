@@ -1578,7 +1578,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
         if self.is_commercial_admin:
-            projects = self.product_set.search(query)
+            projects = self.product_set.search(user, query)
         else:
             projects = user.getOwnedProjects(match_name=query)
         return projects
