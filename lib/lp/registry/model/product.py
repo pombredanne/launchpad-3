@@ -478,13 +478,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not public_bugs.is_empty():
             raise CannotChangeInformationType(
                 'Some bugs are public.')
-        OtherTask = ClassAlias(BugTask)
-        shared_bugs = Store.of(self).find(
-            Bug, Bug.id == BugTask.bugID, BugTask.productID == self.id,
-            Bug.id == OtherTask.bugID, OtherTask.productID != self.id)
-        if not shared_bugs.is_empty():
-            raise CannotChangeInformationType(
-                'Some private bugs are shared.')
         # Default returns all public branches.
         public_branches = self.getBranches()
         if not public_branches.is_empty():
