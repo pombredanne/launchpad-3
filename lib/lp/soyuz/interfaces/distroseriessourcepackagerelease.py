@@ -54,9 +54,6 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         "Return binaries resulted from this sourcepackagerelease and  "
         "published in this distroseries.")
 
-    current_published = Attribute("is last SourcePackagePublishing record "
-                                  "that is in PUBLISHED status.")
-
     version = Attribute("The version of the source package release.")
 
     changesfile = Object(

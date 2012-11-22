@@ -273,6 +273,17 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     page_title = label
 
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        file_name = None
+        filecontent = self.request.form.get(self.widgets['filecontent'].name)
+        if filecontent:
+            file_name = filecontent.filename
+        if file_name and self.context.hasReleaseFile(file_name):
+            self.setFieldError(
+                'filecontent',
+                u"The file '%s' is already uploaded." % file_name)
+
     @action('Upload', name='add')
     def add_action(self, action, data):
         form = self.request.form

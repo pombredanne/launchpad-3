@@ -93,7 +93,9 @@ Run gina without a powerpc processor for the powerpc family:
     >>> print proc.stderr.read()
     WARNING ...
     ERROR   Database setup required for run on powerpc
-    -> http://... (Unable to find a processor...dapper/powerpc)
+    Traceback (most recent call last):
+    ...
+    DataSetupError: Unable to find a processor from the processor family...
     <BLANKLINE>
     >>> proc.wait()
     1

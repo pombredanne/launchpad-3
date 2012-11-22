@@ -79,7 +79,7 @@
         <tr id="specification-sharing-policy-row"
            tal:condition="view/specification_sharing_policies">
            <td id="specification-sharing-policy">
-             Specification sharing policy:&nbsp;
+             Blueprint sharing policy:&nbsp;
              <strong><span class="value"
                  tal:content="context/specification_sharing_policy/title|string:Legacy policy"
                  ></span></strong>

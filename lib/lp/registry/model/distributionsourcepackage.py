@@ -54,6 +54,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.propertycache import cachedproperty
@@ -388,26 +389,27 @@ class DistributionSourcePackage(BugTargetBase,
         return self._getPublishingHistoryQuery(status)
 
     def _getPublishingHistoryQuery(self, status=None):
-        query = """
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            SourcePackagePublishingHistory.sourcepackagename = %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagename)
+        conditions = [
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            SourcePackagePublishingHistory.sourcepackagename ==
+                self.sourcepackagename,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            ]
 
         if status is not None:
-            query += ("AND SourcePackagePublishingHistory.status = %s"
-                      % sqlvalues(status))
+            conditions.append(SourcePackagePublishingHistory.status == status)
 
-        return SourcePackagePublishingHistory.select(query,
-            clauseTables=['DistroSeries', 'SourcePackageRelease'],
-            prejoinClauseTables=['SourcePackageRelease'],
-            orderBy='-datecreated')
+        res = IStore(SourcePackagePublishingHistory).find(
+            (SourcePackagePublishingHistory, SourcePackageRelease),
+            *conditions)
+        res.order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
+        return DecoratedResultSet(res, operator.itemgetter(0))
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""

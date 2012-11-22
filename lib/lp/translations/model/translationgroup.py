@@ -24,6 +24,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.interface import implements
+from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
@@ -41,6 +42,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup,
@@ -109,9 +111,17 @@ class TranslationGroup(SQLBase):
     def products(self):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
-        from lp.registry.model.product import Product
-
-        return Product.selectBy(translationgroup=self.id, active=True)
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+        )
+        user = getUtility(ILaunchBag).user
+        results = Store.of(self).find(
+            Product,
+            Product.active==True,
+            Product.translationgroup==self.id,
+            ProductSet.getProductPrivacyFilter(user))
+        return results
 
     @property
     def projects(self):
@@ -182,17 +192,20 @@ class TranslationGroup(SQLBase):
         mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
-    def fetchProjectsForDisplay(self):
+    def fetchProjectsForDisplay(self, user):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
         from lp.registry.model.product import (
             Product,
+            ProductSet,
             ProductWithLicenses,
             )
 
         using = [
             Product,
-            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
+            LeftJoin(
+                LibraryFileAlias,
+                LibraryFileAlias.id == Product.iconID),
             LeftJoin(
                 LibraryFileContent,
                 LibraryFileContent.id == LibraryFileAlias.contentID),
@@ -205,7 +218,9 @@ class TranslationGroup(SQLBase):
             )
         product_data = ISlaveStore(Product).using(*using).find(
             columns,
-            Product.translationgroupID == self.id, Product.active == True)
+            Product.translationgroup == self.id,
+            Product.active == True,
+            ProductSet.getProductPrivacyFilter(user))
         product_data = product_data.order_by(Product.displayname)
 
         return [

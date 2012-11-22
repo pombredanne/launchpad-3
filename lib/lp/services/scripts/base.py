@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -384,8 +384,7 @@ class LaunchpadScript:
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run(
-                use_web_security=use_web_security, isolation=isolation)
+            self.run(use_web_security=use_web_security, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
@@ -413,7 +412,8 @@ class LaunchpadCronScript(LaunchpadScript):
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by
         # overriding the name property.
-        logging.getLogger().addHandler(OopsHandler(self.name))
+        oops_hdlr = OopsHandler(self.name, logger=self.logger)
+        logging.getLogger().addHandler(oops_hdlr)
 
     def get_last_activity(self):
         """Return the last activity, if any."""
