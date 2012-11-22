@@ -1054,7 +1054,6 @@ class IProductSet(Interface):
                   subscription_modified_before=None):
         """Return an iterator over products that need to be reviewed."""
 
-
     @collection_default_content()
     def _request_user_search():
         """Wrapper for search to use request user in default content."""
