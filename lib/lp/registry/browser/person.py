@@ -1644,7 +1644,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
-            limit=5)
+            self.user, limit=5)
 
     @cachedproperty
     def contributed_categories(self):

@@ -12,6 +12,8 @@ from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
@@ -23,7 +25,10 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    IsConfiguredBatchNavigator,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -91,7 +96,7 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
         # This is a lot of extra queries per publication, and should be
         # ratcheted down over time; but it at least ensures that we don't
         # make matters any worse.
-        publishinghistory_browses_under_limit.query_limit += 10
+        publishinghistory_browses_under_limit.query_limit += 7
         self.assertThat(dsp, publishinghistory_browses_under_limit)
 
     def test_show_sponsor(self):
@@ -121,6 +126,32 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
                     }),
             )
         self.assertThat(html, record_matches)
+
+    def test_is_batched(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spn = self.factory.makeSourcePackageName()
+        component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        dsp = archive.distribution.getSourcePackage(spn)
+        statuses = (
+            ([PackagePublishingStatus.SUPERSEDED] * 5)
+            + [PackagePublishingStatus.PUBLISHED])
+        for status in statuses:
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=archive, sourcepackagename=spn, component=component,
+                distroseries=archive.distribution.currentseries,
+                section_name=section.name, status=status)
+        view = create_initialized_view(dsp, "+publishinghistory")
+        self.assertThat(
+            view.batchnav, IsConfiguredBatchNavigator('result', 'results'))
+
+        base_url = canonical_url(dsp) + '/+publishinghistory'
+        browser = self.getUserBrowser(base_url)
+        self.assertIn("<td>Published</td>", browser.contents)
+        self.assertIn("<td>Superseded</td>", browser.contents)
+        browser.getLink("Next").click()
+        self.assertNotIn("<td>Published</td>", browser.contents)
+        self.assertIn("<td>Superseded</td>", browser.contents)
 
 
 class TestDistributionSourceView(TestCaseWithFactory):

@@ -940,11 +940,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                product=None, productseries=None,
                                milestone=None,
                                release=None,
-                               description="test file"):
+                               description="test file",
+                               filename='test.txt'):
         signature_filename = None
         signature_content = None
         if signed:
-            signature_filename = 'test.txt.asc'
+            signature_filename = '%s.asc' % filename
             signature_content = '123'
         if release is None:
             release = self.makeProductRelease(product=product,
@@ -952,11 +953,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                               milestone=milestone)
         with person_logged_in(release.milestone.product.owner):
             release_file = release.addReleaseFile(
-                'test.txt', 'test', 'text/plain',
+                filename, 'test', 'text/plain',
                 uploader=release.milestone.product.owner,
                 signature_filename=signature_filename,
                 signature_content=signature_content,
                 description=description)
+        IStore(release).flush()
         return release_file
 
     def makeProduct(

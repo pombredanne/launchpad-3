@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'ProductRelease',
@@ -28,6 +26,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
+from lp.registry.errors import InvalidFilename
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -80,46 +79,20 @@ class ProductRelease(SQLBase):
     def files(self):
         return self._files
 
-    # properties
-    @property
-    def codename(self):
-        """Backwards compatible codename attribute.
-
-        This attribute was moved to the Milestone."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.code_name
-
     @property
     def version(self):
-        """Backwards compatible version attribute.
-
-        This attribute was replaced by the Milestone.name."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.name
 
     @property
-    def summary(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.summary."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.summary
-
-    @property
     def productseries(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.productseries
 
     @property
     def product(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries.product."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.productseries.product
+        """See `IProductRelease`."""
+        return self.milestone.productseries.product
 
     @property
     def displayname(self):
@@ -168,6 +141,8 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
+        if self.hasReleaseFile(filename):
+            raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
         file_obj, file_size = self._getFileObjectAndSize(file_content)
@@ -211,6 +186,14 @@ class ProductRelease(SQLBase):
             if file_.libraryfile.filename == name:
                 return file_
         raise NotFoundError(name)
+
+    def hasReleaseFile(self, name):
+        """See `IProductRelease`."""
+        try:
+            self.getProductReleaseFileByName(name)
+            return True
+        except NotFoundError:
+            return False
 
 
 class ProductReleaseFile(SQLBase):

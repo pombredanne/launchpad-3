@@ -352,7 +352,7 @@ class TestSpecificationSubscription(SpecificationWebserviceTestCase):
 
         result = webservice.named_get(
             subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
-        self.assertFalse(result)
+        self.assertTrue(result)
 
 
 class TestSpecificationBugLinks(SpecificationWebserviceTestCase):

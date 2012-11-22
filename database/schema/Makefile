@@ -160,9 +160,6 @@ doc:
 	postgresql_autodoc -d ${DBNAME_DEV} -f launchpad -t html
 	tidy -asxhtml launchpad.html > ,launchpad.html || mv ,launchpad.html launchpad.html
 
-diagram:
-	${PYTHON} diagram.py
-
 newsampledata_test:
 	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${SAMPLEDATA})
 
