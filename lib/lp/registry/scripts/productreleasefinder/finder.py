@@ -116,7 +116,7 @@ class ProductReleaseFinder:
             Product.active == True,
             ProductSeries.status != SeriesStatus.OBSOLETE,
             ProductSeries.releasefileglob != None
-            )
+            ).order_by(Product.name)
         products_with_filters = defaultdict(list)
         last_product = None
         for product_name, series_name, glob in found_globs:
