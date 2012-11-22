@@ -244,12 +244,8 @@ class HandleReleaseTestCase(unittest.TestCase):
             'evolution-42.0.orig.tar.gz')
         file_names = set()
         prf.handleRelease('evolution', 'trunk', file_path, file_names)
-        self.assertEqual(
-            prf.hasReleaseFile(file_name, file_names),
-            True)
-        self.assertEqual(
-            prf.hasReleaseFile(alt_file_name, file_names),
-            False)
+        self.assertTrue(file_name in file_names)
+        self.assertFalse(alt_file_name in file_names)
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')

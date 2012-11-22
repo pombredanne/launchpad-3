@@ -166,10 +166,6 @@ class ProductReleaseFinder:
         self.ztm.abort()
         return file_names
 
-    def hasReleaseFile(self, filename, file_names):
-        """Return True if we have a tarball for the given product release."""
-        return filename in file_names
-
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
         """Create a ProductRelease (if needed), and attach tarball"""
@@ -221,7 +217,7 @@ class ProductReleaseFinder:
                            version, url)
             return
 
-        if self.hasReleaseFile(filename, file_names):
+        if filename in file_names:
             self.log.debug("Already have a tarball for release %s", version)
             return
 
