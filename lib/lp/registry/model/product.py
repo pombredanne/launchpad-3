@@ -456,13 +456,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         pass
 
     def _valid_product_information_type(self, attr, value):
+        for exception in self.check_information_type(value):
+            raise exception
+        return value
+
+    def check_information_type(self, value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
         if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
-            raise CannotChangeInformationType('Not supported for Projects.')
+            yield CannotChangeInformationType('Not supported for Projects.')
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
-                raise CannotChangeInformationType('Answers is enabled.')
+                yield CannotChangeInformationType('Answers is enabled.')
         if self._SO_creating or value not in PROPRIETARY_INFORMATION_TYPES:
-            return value
+            return
         # Additional checks when transitioning an existing product to a
         # proprietary type
         # All specs located by an ALL search are public.
@@ -471,13 +482,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not public_specs.is_empty():
             # Unlike bugs and branches, specifications cannot be USERDATA or a
             # security type.
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some blueprints are public.')
         non_proprietary_bugs = Store.of(self).find(Bug,
             Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
             BugTask.bug == Bug.id, BugTask.product == self.id)
         if not non_proprietary_bugs.is_empty():
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
         non_proprietary_branches = Store.of(self).find(
@@ -485,12 +496,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
         )
         if not non_proprietary_branches.is_empty():
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')
         if not self.packagings.is_empty():
-            raise CannotChangeInformationType('Some series are packaged.')
+            yield CannotChangeInformationType('Some series are packaged.')
         if self.translations_usage == ServiceUsage.LAUNCHPAD:
-            raise CannotChangeInformationType('Translations are enabled.')
+            yield CannotChangeInformationType('Translations are enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
@@ -505,10 +516,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
         if not self.has_current_commercial_subscription:
-            raise CommercialSubscribersOnly(
+            yield CommercialSubscribersOnly(
                 'A valid commercial subscription is required for private'
                 ' Projects.')
-        return value
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
