@@ -136,6 +136,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
@@ -519,6 +520,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             yield CommercialSubscribersOnly(
                 'A valid commercial subscription is required for private'
                 ' Projects.')
+        if (self.bug_supervisor is not None and
+            self.bug_supervisor.membership_policy in INCLUSIVE_TEAM_POLICY):
+            yield CannotChangeInformationType(
+                'Bug supervisor has inclusive membership.')
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,

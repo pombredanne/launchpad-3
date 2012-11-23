@@ -63,6 +63,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     SharingPermission,
     SpecificationSharingPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -495,6 +496,25 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
+
+    def test_checkInformationType_bug_supervisor(self):
+        # Bug supervisors of proprietary products must not have inclusive
+        # membership policies.
+        team = self.factory.makeTeam()
+        product = self.factory.makeProduct(bug_supervisor=team)
+        for policy in (token.value for token in TeamMembershipPolicy):
+            with person_logged_in(team.teamowner):
+                team.membership_policy = policy
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with person_logged_in(product.owner):
+                    errors = list(product.checkInformationType(info_type))
+                if policy in EXCLUSIVE_TEAM_POLICY:
+                    self.assertEqual([], errors)
+                else:
+                    with ExpectedException(
+                        CannotChangeInformationType,
+                        'Bug supervisor has inclusive membership.'):
+                        raise errors[0]
 
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
