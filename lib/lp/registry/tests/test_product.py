@@ -448,7 +448,6 @@ class TestProduct(TestCaseWithFactory):
                     else:
                         product.information_type = info_type
 
-
     def test_change_info_type_proprietary_sets_policies(self):
         # Changing information type from public to proprietary sets the
         # appropriate policies
