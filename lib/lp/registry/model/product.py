@@ -456,11 +456,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         pass
 
     def _valid_product_information_type(self, attr, value):
-        for exception in self.check_information_type(value):
+        for exception in self.checkInformationType(value):
             raise exception
         return value
 
-    def check_information_type(self, value):
+    def checkInformationType(self, value):
         """Check whether the information type change should be permitted.
 
         Iterate through exceptions explaining why the type should not be

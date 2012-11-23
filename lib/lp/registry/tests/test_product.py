@@ -738,7 +738,7 @@ class TestProduct(TestCaseWithFactory):
         'launchpad.Edit': set((
             'addOfficialBugTag', 'removeOfficialBugTag',
             'setBranchSharingPolicy', 'setBugSharingPolicy',
-            'setSpecificationSharingPolicy')),
+            'setSpecificationSharingPolicy', 'checkInformationType')),
         'launchpad.Moderate': set((
             'is_permitted', 'license_approved', 'project_reviewed',
             'reviewer_whiteboard', 'setAliases')),

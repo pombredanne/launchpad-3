@@ -1446,7 +1446,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         info_type = data.get('information_type')
         if info_type is not None:
             errors = [str(e) for e in
-                      self.context.check_information_type(info_type)]
+                      self.context.checkInformationType(info_type)]
             if len(errors) > 0:
                 self.setFieldError('information_type', ' '.join(errors))
 

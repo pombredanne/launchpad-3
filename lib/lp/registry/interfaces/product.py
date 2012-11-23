@@ -915,7 +915,7 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
-    def check_information_type(value):
+    def checkInformationType(value):
         """Check whether the information type change should be permitted.
 
         Iterate through exceptions explaining why the type should not be
