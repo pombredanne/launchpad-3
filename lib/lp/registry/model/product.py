@@ -111,6 +111,7 @@ from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -460,27 +461,53 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
                 raise CannotChangeInformationType('Answers is enabled.')
+        if self._SO_creating or value not in PROPRIETARY_INFORMATION_TYPES:
+            return value
+        # Additional checks when transitioning an existing product to a
+        # proprietary type
+        # All specs located by an ALL search are public.
+        public_specs = self.specifications(
+            None, filter=[SpecificationFilter.ALL])
+        if not public_specs.is_empty():
+            # Unlike bugs and branches, specifications cannot be USERDATA or a
+            # security type.
+            raise CannotChangeInformationType(
+                'Some blueprints are public.')
+        non_proprietary_bugs = Store.of(self).find(Bug,
+            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
+            BugTask.bug == Bug.id, BugTask.product == self.id)
+        if not non_proprietary_bugs.is_empty():
+            raise CannotChangeInformationType(
+                'Some bugs are neither proprietary nor embargoed.')
+        # Default returns all public branches.
+        non_proprietary_branches = Store.of(self).find(
+            Branch, Branch.product == self.id,
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        )
+        if not non_proprietary_branches.is_empty():
+            raise CannotChangeInformationType(
+                'Some branches are neither proprietary nor embargoed.')
+        if not self.packagings.is_empty():
+            raise CannotChangeInformationType('Some series are packaged.')
+        if self.translations_usage == ServiceUsage.LAUNCHPAD:
+            raise CannotChangeInformationType('Translations are enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
 
         # If you're changing the license, and setting a PROPRIETARY
-        # information type, yet you don't have a subscription you get one when
-        # the license is set.
+        # information type, yet you don't have a subscription, you get one
+        # when the license is set.
+
+        # Create the complimentary commercial subscription for the product.
+        self._ensure_complimentary_subscription()
 
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
-        if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
-            if not self.packagings.is_empty():
-                raise CannotChangeInformationType('Some series are packaged.')
-            # Create the complimentary commercial subscription for the product.
-            self._ensure_complimentary_subscription()
-
-            if not self.has_current_commercial_subscription:
-                raise CommercialSubscribersOnly(
-                    'A valid commercial subscription is required for private'
-                    ' Projects.')
-
+        if not self.has_current_commercial_subscription:
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required for private'
+                ' Projects.')
         return value
 
     _information_type = EnumCol(
