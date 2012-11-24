@@ -945,9 +945,6 @@ class IProductSet(Interface):
         "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /projects/ page.")
 
-    all_active = Attribute(
-        "All the active products, sorted newest first.")
-
     def get_users_private_products(user):
         """Get users non-public products.
 
@@ -1055,10 +1052,14 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
+    def _request_user_search():
+        """Wrapper for search to use request user in default content."""
+
+    @call_with(user=REQUEST_USER)
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None):
+    def search(user, text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product.
@@ -1067,17 +1068,13 @@ class IProductSet(Interface):
         needed for other callers.
         """
 
-    def search_sqlobject(text):
-        """A compatible sqlobject search for bugalsoaffects.py.
-
-        DO NOT ADD USES.
-        """
-
     @operation_returns_collection_of(IProduct)
-    @call_with(quantity=None)
+    @call_with(user=REQUEST_USER, quantity=None)
     @export_read_operation()
-    def latest(quantity=5):
+    def latest(user, quantity=5):
         """Return the latest projects registered in Launchpad.
+
+        The supplied user determines which objects are visible.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the

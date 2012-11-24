@@ -520,27 +520,6 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.assertNotIn(
             specification, list(milestone.getSpecifications(None)))
 
-    def test_bugtasks_milestone_privacy(self):
-        # Ensure bugtasks respects milestone privacy.
-        # This looks wrong, because the bugtask is actually public, and we
-        # don't normally hide bugtasks based on the visibility of their
-        # products.  But we're not trying to hide the bugtask.  We're hiding
-        # the fact that this bugtask is associated with a proprietary Product
-        # milestone.  We create a proprietary product because that's the only
-        # way to get a proprietary milestone.
-        milestone, target_milestone, owner = self.makeMixedMilestone()
-        with person_logged_in(owner):
-            product = target_milestone.product
-            product.information_type = InformationType.PUBLIC
-            product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
-            bugtask = self.factory.makeBugTask(
-                target=target_milestone.product)
-            product.information_type = InformationType.PROPRIETARY
-        with person_logged_in(bugtask.owner):
-            bugtask.transitionToMilestone(target_milestone, owner)
-        self.assertContentEqual([], milestone.bugtasks(None))
-        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
-
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up
         # in the milestone page.
