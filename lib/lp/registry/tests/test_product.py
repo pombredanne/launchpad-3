@@ -2044,6 +2044,17 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
 
+    def test_search_respects_privacy(self):
+        # Proprietary products are filtered from the results for people who
+        # cannot see them.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.assertIn(product, ProductSet.search(None))
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertNotIn(product, ProductSet.search(None))
+        self.assertIn(product, ProductSet.search(owner))
+
     def test_getProductPrivacyFilterAnonymous(self):
         # Ignore proprietary products for anonymous users
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -2154,3 +2165,32 @@ class TestProductSet(TestCaseWithFactory):
         with person_logged_in(user):
             translatables = getUtility(IProductSet).getTranslatables()
             self.assertIn(product, list(translatables))
+
+
+class TestProductSetWebService(WebServiceTestCase):
+
+    def test_latest_honours_privacy(self):
+        # Latest lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.latest()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.latest()])
+
+    def test_search_honours_privacy(self):
+        # search lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.search()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.search()])
