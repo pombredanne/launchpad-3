@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'nuke_codeimport_sample_data'
+    'nuke_codeimport_sample_data',
     ]
 
 import os
