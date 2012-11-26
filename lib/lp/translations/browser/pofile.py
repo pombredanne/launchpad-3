@@ -42,8 +42,8 @@ from lp.services.webapp import (
     NavigationMenu,
     )
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (

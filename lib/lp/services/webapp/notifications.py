@@ -20,6 +20,10 @@ from zope.interface import implements
 from zope.session.interfaces import ISession
 
 from lp.services.config import config
+from lp.services.webapp.escaping import (
+    escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     INotification,
@@ -28,10 +32,6 @@ from lp.services.webapp.interfaces import (
     INotificationResponse,
     )
 from lp.services.webapp.login import allowUnauthenticatedSession
-from lp.services.webapp.menu import (
-    escape,
-    structured,
-    )
 from lp.services.webapp.publisher import LaunchpadView
 
 

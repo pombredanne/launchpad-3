@@ -27,7 +27,7 @@ from zope.app.form.browser.widget import renderElement
 from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary
 
-from lp.services.webapp.menu import escape
+from lp.services.webapp.escaping import escape
 
 
 class LaunchpadDropdownWidget(DropdownWidget):

@@ -21,11 +21,11 @@ from zope.session.interfaces import (
     ISessionData,
     )
 
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     INotificationRequest,
     INotificationResponse,
     )
-from lp.services.webapp.menu import structured
 from lp.services.webapp.notifications import NotificationResponse
 
 

@@ -22,7 +22,7 @@ from lp.services.mail.sendmail import (
     format_address_for_person,
     simple_sendmail,
     )
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import (
     canonical_url,
     get_current_browser_request,

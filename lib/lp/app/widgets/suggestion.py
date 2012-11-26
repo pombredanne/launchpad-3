@@ -33,11 +33,11 @@ from zope.schema.vocabulary import (
 
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import (
+from lp.services.webapp.escaping import (
     escape,
     structured,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class SuggestionWidget(LaunchpadRadioWidget):

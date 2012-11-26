@@ -37,8 +37,8 @@ from lp.services.webapp import (
     LaunchpadView,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 
 
 class BugWatchSetNavigation(GetitemNavigation):

@@ -43,11 +43,11 @@ from lp.services.webapp import (
     GetitemNavigation,
     Navigation,
     )
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from lp.services.webapp.menu import structured
 
 
 class BugAttachmentContentCheck:

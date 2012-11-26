@@ -23,7 +23,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import ValidationError
 
-from lp.services.webapp.menu import escape
+from lp.services.webapp.escaping import escape
 
 
 __all__ = ['LaunchpadValidationError']

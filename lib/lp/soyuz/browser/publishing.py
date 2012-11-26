@@ -24,8 +24,8 @@ from lp.services.librarian.browser import (
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import Navigation
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
-from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,

@@ -44,6 +44,7 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
+from lp.services.webapp.escaping import escape
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
@@ -51,7 +52,6 @@ from lp.services.webapp.interfaces import (
     INotificationResponse,
     UnsafeFormGetSubmissionError,
     )
-from lp.services.webapp.menu import escape
 from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,

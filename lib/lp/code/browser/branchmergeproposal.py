@@ -121,11 +121,9 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import IPrimaryContext
-from lp.services.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp.services.webapp.menu import NavigationMenu
 
 
 def latest_proposals_for_each_branch(proposals):
