@@ -516,6 +516,21 @@ class TestProduct(TestCaseWithFactory):
                         'Bug supervisor has inclusive membership.'):
                         raise errors[0]
 
+    def test_checkInformationType_questions(self):
+        # Proprietary products must not have questions
+        product = self.factory.makeProduct()
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        question = self.factory.makeQuestion(target=product)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has questions.'):
+                raise error
+
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
         # self.factory.makeProduct

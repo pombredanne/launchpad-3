@@ -65,6 +65,7 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import (
+    Question,
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
@@ -485,20 +486,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # security type.
             yield CannotChangeInformationType(
                 'Some blueprints are public.')
-        non_proprietary_bugs = Store.of(self).find(Bug,
+        store = Store.of(self)
+        non_proprietary_bugs = store.find(Bug,
             Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
             BugTask.bug == Bug.id, BugTask.product == self.id)
         if not non_proprietary_bugs.is_empty():
             yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
-        non_proprietary_branches = Store.of(self).find(
+        non_proprietary_branches = store.find(
             Branch, Branch.product == self.id,
             Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
         )
         if not non_proprietary_branches.is_empty():
             yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')
+        questions = store.find(Question, Question.product==self.id)
+        if not questions.is_empty():
+            yield CannotChangeInformationType('This project has questions.')
         if not self.packagings.is_empty():
             yield CannotChangeInformationType('Some series are packaged.')
         if self.translations_usage == ServiceUsage.LAUNCHPAD:
