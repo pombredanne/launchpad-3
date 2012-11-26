@@ -52,19 +52,21 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_contact_not_possible_reason(self):
-        sender = self.factory.makePerson(email='me@eg.dom')
+        # When the no recipients to send an email to, the view provides a
+        # reason to show the user.
+        user = self.factory.makePerson()
         # Contact inactive user.
-        user = self.factory.makePerson(
+        inactive_user = self.factory.makePerson(
             email_address_status=EmailAddressStatus.NEW)
-        with person_logged_in(sender):
-            view = create_initialized_view(user, '+contactuser')
+        with person_logged_in(user):
+            view = create_initialized_view(inactive_user, '+contactuser')
         self.assertEqual(
             "The user is not active.", view.contact_not_possible_reason)
         # Contact team without admins.
         team = self.factory.makeTeam()
         with person_logged_in(team.teamowner):
             team.teamowner.leave(team)
-        with person_logged_in(sender):
+        with person_logged_in(user):
             view = create_initialized_view(team, '+contactuser')
         self.assertEqual(
             "The team has no admins. Contact the team owner instead.",
