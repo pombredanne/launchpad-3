@@ -20,10 +20,10 @@ from lp.soyuz.interfaces.packageset import (
     )
 from lp.soyuz.model.packagesetgroup import PackagesetGroup
 from lp.testing import (
-    TestCaseWithFactory,
     admin_logged_in,
     celebrity_logged_in,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

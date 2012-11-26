@@ -66,8 +66,8 @@ from lp.registry.interfaces.person import (
     NoSuchPerson,
     )
 from lp.registry.interfaces.product import (
-    NoSuchProduct,
     InvalidProductName,
+    NoSuchProduct,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet

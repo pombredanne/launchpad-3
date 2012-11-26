@@ -603,7 +603,8 @@ class SourcePackageRelease(SQLBase):
         # only useful way of extracting info is to use the iterator on
         # Changelog and then compare versions.
         try:
-            for block in Changelog(changelog.read()):
+            changelog_text = changelog.read().decode("UTF-8", "replace")
+            for block in Changelog(changelog_text):
                 version = block._raw_version
                 if (since_version and
                     apt_pkg.version_compare(version, since_version) <= 0):

@@ -501,12 +501,12 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
 
 class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker,
+    IHasExternalBugTracker,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -528,11 +528,6 @@ class IProductView(
                 "and just appoint a team for each specific series, rather "
                 "than having one project team that does it all."),
             required=False, vocabulary='ValidPersonOrTeam'))
-
-    drivers = Attribute(
-        "Presents the drivers of this project as a list. A list is "
-        "required because there might be a project driver and also a "
-        "driver appointed in the overarching project group.")
 
     summary = exported(
         Summary(
@@ -917,10 +912,11 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 
 class IProduct(
-    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType, IPillar):
+    ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
+    IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -930,6 +926,12 @@ class IProduct(
     """
 
     export_as_webservice_entry('project')
+
+    drivers = Attribute(
+        "Presents the drivers of this project as a list. A list is "
+        "required because there might be a project driver and also a "
+        "driver appointed in the overarching project group.")
+
 
 # Fix cyclic references.
 IProjectGroup['products'].value_type = Reference(IProduct)
@@ -944,9 +946,6 @@ class IProductSet(Interface):
     people = Attribute(
         "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /projects/ page.")
-
-    all_active = Attribute(
-        "All the active products, sorted newest first.")
 
     def get_users_private_products(user):
         """Get users non-public products.
@@ -1055,10 +1054,14 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
+    def _request_user_search():
+        """Wrapper for search to use request user in default content."""
+
+    @call_with(user=REQUEST_USER)
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None):
+    def search(user, text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product.
@@ -1067,17 +1070,13 @@ class IProductSet(Interface):
         needed for other callers.
         """
 
-    def search_sqlobject(text):
-        """A compatible sqlobject search for bugalsoaffects.py.
-
-        DO NOT ADD USES.
-        """
-
     @operation_returns_collection_of(IProduct)
-    @call_with(quantity=None)
+    @call_with(user=REQUEST_USER, quantity=None)
     @export_read_operation()
-    def latest(quantity=5):
+    def latest(user, quantity=5):
         """Return the latest projects registered in Launchpad.
+
+        The supplied user determines which objects are visible.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the

@@ -54,10 +54,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -92,9 +88,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    )
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
     get_specification_filters,
     HasSpecificationsMixin,
@@ -166,6 +160,10 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -183,9 +181,9 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -1757,21 +1755,19 @@ class ProductSet:
 
     def __iter__(self):
         """See `IProductSet`."""
-        return iter(self.all_active)
+        return iter(self.get_all_active(None))
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
-    def latest(self, quantity=5):
-        if quantity is None:
-            return self.all_active
-        else:
-            return self.all_active[:quantity]
-
-    @property
-    def all_active(self):
-        return self.get_all_active(None)
+    @classmethod
+    def latest(cls, user, quantity=5):
+        """See `IProductSet`."""
+        result = cls.get_all_active(user)
+        if quantity is not None:
+            result = result[:quantity]
+        return result
 
     @staticmethod
     def getProductPrivacyFilter(user):
@@ -2023,9 +2019,15 @@ class ProductSet:
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
-    def search(self, text=None):
+    @classmethod
+    def _request_user_search(cls):
+        return cls.search(getUtility(ILaunchBag).user)
+
+    @classmethod
+    def search(cls, user=None, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        conditions = [Product.active]
+        conditions = [Product.active,
+                      cls.getProductPrivacyFilter(user)]
         if text:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
@@ -2038,14 +2040,6 @@ class ProductSet:
                     '_owner', 'registrant', 'bug_supervisor', 'driver'])
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
-
-    def search_sqlobject(self, text):
-        """See `IProductSet`"""
-        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
-        queries.append('Product.active IS TRUE')
-        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
-            % sqlvalues(text)
-        return Product.select(query)
 
     def getTranslatables(self):
         """See `IProductSet`"""

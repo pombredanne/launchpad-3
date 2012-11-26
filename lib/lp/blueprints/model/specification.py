@@ -33,8 +33,8 @@ from storm.expr import (
     In,
     Join,
     LeftJoin,
-    Or,
     Not,
+    Or,
     Select,
     )
 from storm.locals import (
@@ -48,9 +48,9 @@ from zope.interface import implements
 
 from lp.app.enums import (
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
@@ -105,6 +105,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -112,7 +113,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import fti_search
-from lp.services.database.lpstorm import IStore
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,

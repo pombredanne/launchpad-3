@@ -56,13 +56,13 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (

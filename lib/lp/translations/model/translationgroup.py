@@ -23,8 +23,8 @@ from storm.expr import (
     LeftJoin,
     )
 from storm.store import Store
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person

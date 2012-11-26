@@ -8,6 +8,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.locals import Store
 from testtools.matchers import MatchesAll
@@ -26,11 +27,12 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import ServiceUsageForbidden
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -39,7 +41,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -53,8 +54,8 @@ from lp.blueprints.model.specification import (
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -662,7 +663,8 @@ class TestProduct(TestCaseWithFactory):
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
         'launchpad.LimitedView': set((
-            'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
+            'bugtargetdisplayname', 'displayname', 'drivers',
+            'enable_bug_expiration', 'getSpecification',
             'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
@@ -683,7 +685,7 @@ class TestProduct(TestCaseWithFactory):
             'date_next_suggest_packaging', 'datecreated', 'description',
             'development_focus', 'development_focusID',
             'direct_answer_contacts', 'distrosourcepackages',
-            'downloadurl', 'driver', 'drivers',
+            'downloadurl', 'driver',
             'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
             'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',
             'getAllowedBugInformationTypes',
@@ -697,7 +699,7 @@ class TestProduct(TestCaseWithFactory):
             'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
             'getMergeProposals', 'getMilestone', 'getMilestonesAndReleases',
             'getQuestion', 'getQuestionLanguages', 'getPackage', 'getRelease',
-            'getSeries', 'getSpecification', 'getSubscription',
+            'getSeries', 'getSubscription',
             'getSubscriptions', 'getSupportedLanguages', 'getTimeline',
             'getTopContributors', 'getTopContributorsGroupedByCategory',
             'getTranslationGroups', 'getTranslationImportQueueEntries',
@@ -2101,6 +2103,17 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
 
+    def test_search_respects_privacy(self):
+        # Proprietary products are filtered from the results for people who
+        # cannot see them.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.assertIn(product, ProductSet.search(None))
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertNotIn(product, ProductSet.search(None))
+        self.assertIn(product, ProductSet.search(owner))
+
     def test_getProductPrivacyFilterAnonymous(self):
         # Ignore proprietary products for anonymous users
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -2211,3 +2224,32 @@ class TestProductSet(TestCaseWithFactory):
         with person_logged_in(user):
             translatables = getUtility(IProductSet).getTranslatables()
             self.assertIn(product, list(translatables))
+
+
+class TestProductSetWebService(WebServiceTestCase):
+
+    def test_latest_honours_privacy(self):
+        # Latest lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.latest()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.latest()])
+
+    def test_search_honours_privacy(self):
+        # search lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.search()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.search()])

@@ -406,6 +406,34 @@ Now we can simply change the primary archive components field.
     (*) Use the same components used for each source in the Ubuntu
         primary archive.
 
+If we set the primary dependency to just main, which can only be done via the
+API or the objects themselves, the form will show it to allow the user to
+change it.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.testing import login_celebrity
+    >>> ignored = login_celebrity('admin')
+    >>> archive = factory.makeArchive()
+    >>> main = getUtility(IComponentSet)['main']
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu').main_archive
+    >>> ignored = archive.addArchiveDependency(
+    ...     ubuntu, PackagePublishingPocket.RELEASE, component=main)
+    >>> url = canonical_url(archive)
+    >>> logout()
+    >>> admin_browser.open(url)
+    >>> admin_browser.getLink('Edit PPA dependencies').click()
+    >>> print_radio_button_field(
+    ...     admin_browser.contents, 'primary_components')
+    ( ) Use all Ubuntu components available.
+    ( ) Use the same components used for each source in the Ubuntu
+        primary archive.
+    (*) Unsupported component (main)
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> admin_browser.getLink('Edit PPA dependencies').click()
+
 
 == Everything in one click ==
 

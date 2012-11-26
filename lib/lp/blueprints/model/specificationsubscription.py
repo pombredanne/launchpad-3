@@ -21,8 +21,8 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.sqlbase import SQLBase
 
 
