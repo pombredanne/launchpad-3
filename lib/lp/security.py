@@ -32,12 +32,12 @@ from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
+from lp.app.interfaces.services import IService
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.app.interfaces.services import IService
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,

@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
-from lp.bugs.interfaces.bugtasksearch import IBugTaskSearchBase
 
 __metaclass__ = type
 
@@ -57,6 +56,7 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtasksearch import IBugTaskSearchBase
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )

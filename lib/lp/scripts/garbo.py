@@ -19,7 +19,6 @@ from datetime import (
 import logging
 import multiprocessing
 import os
-import simplejson
 import threading
 import time
 
@@ -30,6 +29,7 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
+import simplejson
 from storm.expr import (
     And,
     In,

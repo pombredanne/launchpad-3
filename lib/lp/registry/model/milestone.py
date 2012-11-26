@@ -40,7 +40,7 @@ from zope.interface import implements
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import (
     Specification,
-    visible_specification_query
+    visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension

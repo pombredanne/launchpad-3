@@ -60,8 +60,8 @@ from lp.app.validators.version import sane_version
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
-    IHasExpirableBugs,
     IHasBugs,
+    IHasExpirableBugs,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.structuralsubscription import (
