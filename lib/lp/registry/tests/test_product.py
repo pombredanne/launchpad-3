@@ -8,6 +8,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.locals import Store
 from testtools.matchers import MatchesAll
@@ -26,11 +27,12 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import ServiceUsageForbidden
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -39,7 +41,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -53,8 +54,8 @@ from lp.blueprints.model.specification import (
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.registry.enums import (
     BranchSharingPolicy,

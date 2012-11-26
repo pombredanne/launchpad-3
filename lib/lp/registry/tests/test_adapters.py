@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from lp.registry.adapters import (
     distroseries_to_distribution,
+    information_type_from_product,
     package_to_sourcepackagename,
     productseries_to_product,
     sourcepackage_to_distribution,
-    information_type_from_product,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct

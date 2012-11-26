@@ -35,7 +35,6 @@ from signal import (
     SIGHUP,
     signal,
     )
-from storm.exceptions import LostObjectError
 import sys
 from textwrap import dedent
 from uuid import uuid4
@@ -50,6 +49,7 @@ from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
     )
+from storm.exceptions import LostObjectError
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (

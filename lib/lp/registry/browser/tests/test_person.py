@@ -20,8 +20,8 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 
 from lp.app.browser.lazrjs import TextAreaEditorWidget
-from lp.app.errors import NotFoundError
 from lp.app.enums import InformationType
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.buildmaster.enums import BuildStatus
