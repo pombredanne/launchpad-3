@@ -4215,6 +4215,18 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
+    def contact_not_possible_reason(self):
+        """The reason the person cannot be contacted."""
+        if self.has_valid_email_address:
+            return None
+        elif self.recipients._primary_reason is self.recipients.TO_USER:
+            return "The user is not active."
+        elif self.recipients._primary_reason is self.recipients.TO_ADMINS:
+            return "The team has no admins. Contact the team owner instead."
+        else:
+            return "The team has no members."
+
+    @property
     def page_title(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
