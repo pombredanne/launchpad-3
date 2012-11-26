@@ -29,7 +29,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -1698,25 +1697,39 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         """Create the 'primary_components' field.
 
         'primary_components' widget is a choice, rendered as radio-buttons,
-        with two options that provides an IComponent as its value:
+        with five options that provides an IComponent as its value:
 
-         ||      Option    ||   Value    ||
-         || ALL_COMPONENTS || multiverse ||
-         || FOLLOW_PRIMARY ||    None    ||
+         ||      Option      ||   Value    ||
+         || ALL_COMPONENTS   || multiverse ||
+         || FOLLOW_PRIMARY   ||    None    ||
+         || OTHER_MAIN       ||    main    ||
+         || OTHER_RESTRICTED || restricted ||
+         || OTHER_UNIVERSE   ||  universe  ||
 
         When omitted in the form, this widget defaults to 'All ubuntu
-        components' option when rendered.
+        components' option when rendered. main, restricted, universe are
+        only added to the list of options if the dependency uses them.
         """
-        multiverse = getUtility(IComponentSet)['multiverse']
+        componentset = getUtility(IComponentSet)
 
         all_components = SimpleTerm(
-            multiverse, 'ALL_COMPONENTS',
+            componentset['multiverse'], 'ALL_COMPONENTS',
             _('Use all %s components available.' %
               self.context.distribution.displayname))
         follow_primary = SimpleTerm(
             None, 'FOLLOW_PRIMARY',
             _('Use the same components used for each source in the %s '
               'primary archive.' % self.context.distribution.displayname))
+        extra_components = {
+            'main': SimpleTerm(
+                componentset['main'], 'OTHER_MAIN',
+                _('Unsupported component (main)')),
+            'restricted': SimpleTerm(
+                componentset['restricted'], 'OTHER_RESTRICTED',
+                _('Unsupported component (restricted)')),
+            'universe': SimpleTerm(
+                componentset['universe'], 'OTHER_UNIVERSE',
+                _('Unsupported component (universe)'))}
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
@@ -1727,6 +1740,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
+        if default_value and default_value.name in extra_components:
+            terms.append(extra_components[default_value.name])
         primary_components_vocabulary = SimpleVocabulary(terms)
         current_term = primary_components_vocabulary.getTerm(default_value)
 
