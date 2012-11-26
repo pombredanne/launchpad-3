@@ -532,6 +532,22 @@ class TestProduct(TestCaseWithFactory):
                                    'This project has questions.'):
                 raise error
 
+    def test_checkInformationType_translations(self):
+        # Proprietary products must not have translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        potemplate = self.factory.makePOTemplate(productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has translations.'):
+                raise error
+
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
         # self.factory.makeProduct
