@@ -4068,7 +4068,7 @@ class ContactViaWebNotificationRecipientSet:
             elif recipient.is_valid_person_or_team:
                 self._count_recipients = 1
             else:
-                # The user or team owner is deactivated.
+                # The user is deactivated.
                 self._count_recipients = 0
         return self._count_recipients
 
