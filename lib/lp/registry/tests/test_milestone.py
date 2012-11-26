@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 from operator import attrgetter
-from storm.exceptions import NoneError
 import unittest
 
+from storm.exceptions import NoneError
 from zope.component import getUtility
 from zope.security.checker import (
     CheckerPublic,

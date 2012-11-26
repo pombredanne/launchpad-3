@@ -29,10 +29,10 @@ from lp.testing.layers import (
 from lp.testing.views import create_view
 from lp.translations.browser.translationmessage import (
     contains_translations,
+    convert_translationmessage_to_submission,
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     revert_unselected_translations,
-    convert_translationmessage_to_submission,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.side import ITranslationSideTraitsSet

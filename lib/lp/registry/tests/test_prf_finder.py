@@ -6,9 +6,9 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-import transaction
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields

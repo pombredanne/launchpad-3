@@ -10,8 +10,8 @@ from lazr.lifecycle.event import (
     ObjectDeletedEvent,
     )
 from storm.locals import Store
-import transaction
 from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.checker import canAccess
