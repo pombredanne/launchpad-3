@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'escape',
+    'html_escape',
     'structured',
     ]
 
@@ -19,7 +19,7 @@ from lp.services.webapp.interfaces import IStructuredString
 from lp.services.webapp.publisher import get_current_browser_request
 
 
-def escape(message):
+def html_escape(message):
     """Performs translation and sanitizes any HTML present in the message.
 
     A plain string message will be sanitized ("&", "<" and ">" are

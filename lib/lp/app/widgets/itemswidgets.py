@@ -27,7 +27,7 @@ from zope.app.form.browser.widget import renderElement
 from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary
 
-from lp.services.webapp.escaping import escape
+from lp.services.webapp.escaping import html_escape
 
 
 class LaunchpadDropdownWidget(DropdownWidget):
@@ -54,8 +54,8 @@ class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
-        value = escape(value)
-        text = escape(text)
+        value = html_escape(value)
+        text = html_escape(text)
         id = '%s.%s' % (name, index)
         element = renderElement(
             u'input', value=value, name=name, id=id,
@@ -76,8 +76,8 @@ class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
-        value = escape(value)
-        text = escape(text)
+        value = html_escape(value)
+        text = html_escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -102,8 +102,8 @@ class LaunchpadRadioWidget(RadioWidget):
         kw = {}
         if checked:
             kw['checked'] = 'checked'
-        value = escape(value)
-        text = escape(text)
+        value = html_escape(value)
+        text = html_escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -167,11 +167,11 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             return self._labelWithoutDescriptionTemplate % (elem, id, text)
         else:
             return self._labelWithDescriptionTemplate % (
-                elem, id, text, escape(description))
+                elem, id, text, html_escape(description))
 
     def renderItem(self, index, text, value, name, cssClass):
         """Render an item of the list."""
-        text = escape(text)
+        text = html_escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -183,7 +183,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
         """Render a selected item of the list."""
-        text = escape(text)
+        text = html_escape(text)
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -201,7 +201,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             extra_hint_class = ' class="%s"' % self.extra_hint_class
         if self.extra_hint:
             extra_hint_html = ('<div%s>%s</div>'
-                % (extra_hint_class, escape(self.extra_hint)))
+                % (extra_hint_class, html_escape(self.extra_hint)))
         return extra_hint_html
 
     def renderValue(self, value):

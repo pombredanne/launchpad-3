@@ -44,7 +44,7 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from lp.services.webapp.escaping import escape
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
@@ -260,7 +260,7 @@ class LaunchpadFormView(LaunchpadView):
         `INotificationResponse.addNotification()` API.  Please see it
         for details re: internationalized and markup text.
         """
-        cleanmsg = escape(message)
+        cleanmsg = html_escape(message)
         self.form_wide_errors.append(cleanmsg)
         self.errors.append(cleanmsg)
 
@@ -286,7 +286,7 @@ class LaunchpadFormView(LaunchpadView):
         `INotificationResponse.addNotification()` API.  Please see it
         for details re: internationalized and markup text.
         """
-        cleanmsg = escape(message)
+        cleanmsg = html_escape(message)
         self.widget_errors[field_name] = cleanmsg
         self.errors.append(cleanmsg)
 

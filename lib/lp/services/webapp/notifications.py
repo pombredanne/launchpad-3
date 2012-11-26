@@ -21,7 +21,7 @@ from zope.session.interfaces import ISession
 
 from lp.services.config import config
 from lp.services.webapp.escaping import (
-    escape,
+    html_escape,
     structured,
     )
 from lp.services.webapp.interfaces import (
@@ -36,6 +36,7 @@ from lp.services.webapp.publisher import LaunchpadView
 
 
 SESSION_KEY = 'launchpad'
+
 
 class NotificationRequest:
     """NotificationRequest extracts notifications to display to the user
@@ -171,8 +172,7 @@ class NotificationResponse:
 
     def addNotification(self, msg, level=BrowserNotificationLevel.INFO):
         """See `INotificationResponse`."""
-        self.notifications.append(
-            Notification(level, escape(msg)))
+        self.notifications.append(Notification(level, html_escape(msg)))
 
     @property
     def notifications(self):
