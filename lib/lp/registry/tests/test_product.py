@@ -524,7 +524,7 @@ class TestProduct(TestCaseWithFactory):
             with person_logged_in(product.owner):
                 self.assertEqual([],
                     list(product.checkInformationType(info_type)))
-        question = self.factory.makeQuestion(target=product)
+        self.factory.makeQuestion(target=product)
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
                 error, = list(product.checkInformationType(info_type))
@@ -540,7 +540,7 @@ class TestProduct(TestCaseWithFactory):
             with person_logged_in(product.owner):
                 self.assertEqual([],
                     list(product.checkInformationType(info_type)))
-        potemplate = self.factory.makePOTemplate(productseries=productseries)
+        self.factory.makePOTemplate(productseries=productseries)
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
                 error, = list(product.checkInformationType(info_type))

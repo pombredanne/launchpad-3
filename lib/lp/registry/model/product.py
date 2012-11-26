@@ -499,7 +499,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not non_proprietary_branches.is_empty():
             yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')
-        questions = store.find(Question, Question.product==self.id)
+        questions = store.find(Question, Question.product == self.id)
         if not questions.is_empty():
             yield CannotChangeInformationType('This project has questions.')
         templates = store.find(
