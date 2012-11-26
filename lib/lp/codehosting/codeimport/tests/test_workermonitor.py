@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'nuke_codeimport_sample_data']
-
+    'nuke_codeimport_sample_data',
+    ]
 
 import os
 import shutil
@@ -669,7 +669,7 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
 class TestWorkerMonitorIntegration(BzrTestCase):
 
     layer = ZopelessAppServerLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=60)
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -811,9 +811,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
         return deferred.addBoth(save_protocol_object)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_cvs(self):
+    def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
@@ -822,9 +820,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_subversion(self):
+    def test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -833,9 +829,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-09 gary, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_git(self):
+    def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
@@ -844,9 +838,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_bzr(self):
+    def test_import_bzr(self):
         # Create a Bazaar CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
@@ -855,9 +847,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2011-09-05 wgrant, bug=841556: This test fails
-    # frequently in buildbot.
-    def DISABLED_test_import_bzrsvn(self):
+    def test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id
