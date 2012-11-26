@@ -42,7 +42,7 @@ IStructuredString interface, then a string will be returned with the
 appropriate sections escaped and unescaped.
 
     >>> from lp.services.webapp.interfaces import IStructuredString
-    >>> from lp.services.webapp.menu import structured
+    >>> from lp.services.webapp.escaping import structured
     >>> msg = u'<b>%(escaped)s</b>'
     >>> structured_text = structured(msg, escaped=u'<br/>foo')
     >>> IStructuredString.providedBy(structured_text)
