@@ -501,12 +501,12 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
 
 class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker,
+    IHasExternalBugTracker,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -528,11 +528,6 @@ class IProductView(
                 "and just appoint a team for each specific series, rather "
                 "than having one project team that does it all."),
             required=False, vocabulary='ValidPersonOrTeam'))
-
-    drivers = Attribute(
-        "Presents the drivers of this project as a list. A list is "
-        "required because there might be a project driver and also a "
-        "driver appointed in the overarching project group.")
 
     summary = exported(
         Summary(
@@ -917,10 +912,11 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
 
 
 class IProduct(
-    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType, IPillar):
+    ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
+    IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -930,6 +926,12 @@ class IProduct(
     """
 
     export_as_webservice_entry('project')
+
+    drivers = Attribute(
+        "Presents the drivers of this project as a list. A list is "
+        "required because there might be a project driver and also a "
+        "driver appointed in the overarching project group.")
+
 
 # Fix cyclic references.
 IProjectGroup['products'].value_type = Reference(IProduct)
