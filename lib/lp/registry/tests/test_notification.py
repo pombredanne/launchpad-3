@@ -7,11 +7,11 @@ __metaclass__ = type
 
 from lp.registry.mail.notification import send_direct_contact_email
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.messages.interfaces.message import IDirectEmailAuthorization
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
+from lp.services.messages.interfaces.message import  (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
     )
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 
@@ -50,8 +50,22 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
                 'https://help.launchpad.net/YourAccount/ContactingPeople']),
             notification.get_payload())
 
+    def test_quota_reached_error(self):
+        # An error is raised if the user has reached the daily quota.
+        self.factory.makePerson(email='me@eg.dom', name='me')
+        user = self.factory.makePerson(email='him@eg.dom', name='him')
+        recipients_set = NotificationRecipientSet()
+        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
+        authorization = IDirectEmailAuthorization(user)
+        for action in xrange(authorization.message_quota):
+            authorization.record(old_message)
+        self.assertRaises(
+            QuotaReachedError, send_direct_contact_email,
+            'me@eg.dom', recipients_set, 'subject', 'body')
+
     def test_empty_recipient_set(self):
-        # The recipient set can be empty.
+        # The recipient set can be empty. No messages are sent and the
+        # action does not count toward the daily quota.
         self.factory.makePerson(email='me@eg.dom', name='me')
         user = self.factory.makePerson(email='him@eg.dom', name='him')
         recipients_set = NotificationRecipientSet()
@@ -59,10 +73,9 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         authorization = IDirectEmailAuthorization(user)
         for action in xrange(authorization.message_quota - 1):
             authorization.record(old_message)
-        subject = 'test subject'
-        body = 'test body'
         pop_notifications()
-        send_direct_contact_email('me@eg.dom', recipients_set, subject, body)
+        send_direct_contact_email(
+            'me@eg.dom', recipients_set, 'subject', 'body')
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
         self.assertTrue(authorization.is_allowed)
