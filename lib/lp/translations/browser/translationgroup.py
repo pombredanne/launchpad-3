@@ -25,7 +25,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
-from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     GetitemNavigation,
@@ -72,18 +71,6 @@ class TranslationGroupView(LaunchpadView):
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
         self.user_can_edit = check_permission('launchpad.Edit', self.context)
-
-    @cachedproperty
-    def distributions(self):
-        return self.context.fetchDistrosForDisplay()
-
-    @cachedproperty
-    def projectgroups(self):
-        return self.context.fetchProjectGroupsForDisplay()
-
-    @cachedproperty
-    def projects(self):
-        return self.context.fetchProjectsForDisplay(self.user)
 
     @property
     def label(self):
