@@ -299,7 +299,7 @@ class ProductWithLicenses:
     def composeLicensesColumn(cls, for_class=None):
         """Compose a Storm column specification for licences.
 
-        Use this to render a list of `Product` links without querying
+        Use this to render a list of `Product` linkes without querying
         licences for each one individually.
 
         It lets you prefetch the licensing information in the same
