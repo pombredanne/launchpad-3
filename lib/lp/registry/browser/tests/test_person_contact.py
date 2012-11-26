@@ -19,15 +19,21 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_len(self):
-        # The recipient set length is based on the number or recipient
-        # found by the selection rules.
-        sender = self.factory.makePerson(email='me@eg.dom')
-        # Contact user.
+    def test_len_to_user(self):
+        # The recipient set length is based on the user activity.
+        sender = self.factory.makePerson()
         user = self.factory.makePerson(email='him@eg.dom')
         self.assertEqual(
             1, len(ContactViaWebNotificationRecipientSet(sender, user)))
-        # Contact team admins.
+        inactive_user = self.factory.makePerson(
+            email_address_status=EmailAddressStatus.NEW)
+        self.assertEqual(
+            0, len(
+                ContactViaWebNotificationRecipientSet(sender, inactive_user)))
+
+    def test_len_to_admins(self):
+        # The recipient set length is based on the number of admins.
+        sender = self.factory.makePerson()
         team = self.factory.makeTeam()
         self.assertEqual(
             1, len(ContactViaWebNotificationRecipientSet(sender, team)))
@@ -35,7 +41,10 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
             team.teamowner.leave(team)
         self.assertEqual(
             0, len(ContactViaWebNotificationRecipientSet(sender, team)))
-        # Contact team members.
+
+    def test_len_to_members(self):
+        # The recipient set length is based on the number members.
+        sender = self.factory.makePerson()
         sender_team = self.factory.makeTeam(members=[sender])
         owner = sender_team.teamowner
         self.assertEqual(
@@ -51,27 +60,33 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_contact_not_possible_reason(self):
-        # When the no recipients to send an email to, the view provides a
-        # reason to show the user.
-        user = self.factory.makePerson()
-        # Contact inactive user.
+    def test_contact_not_possible_reason_to_user(self):
+        # The view explains that the user is inactive.
         inactive_user = self.factory.makePerson(
             email_address_status=EmailAddressStatus.NEW)
+        user = self.factory.makePerson()
         with person_logged_in(user):
             view = create_initialized_view(inactive_user, '+contactuser')
         self.assertEqual(
             "The user is not active.", view.contact_not_possible_reason)
-        # Contact team without admins.
+
+    def test_contact_not_possible_reason_to_admins(self):
+        # The view explains that the team has no admins.
         team = self.factory.makeTeam()
         with person_logged_in(team.teamowner):
             team.teamowner.leave(team)
+        user = self.factory.makePerson()
         with person_logged_in(user):
             view = create_initialized_view(team, '+contactuser')
         self.assertEqual(
             "The team has no admins. Contact the team owner instead.",
             view.contact_not_possible_reason)
-        # Contact team without members.
+
+    def test_contact_not_possible_reason_to_members(self):
+        # The view explains the team has no members..
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.teamowner.leave(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(team, '+contactuser')
         self.assertEqual(
