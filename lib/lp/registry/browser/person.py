@@ -1750,7 +1750,7 @@ class PersonView(LaunchpadView, FeedsMixin):
                 TO_MEMBERS
         """
         return ContactViaWebNotificationRecipientSet(
-            self.user, self.context)._primary_reason
+            self.user, self.context).primary_reason
 
     @property
     def contact_link_title(self):
@@ -3919,7 +3919,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         self.user = user
         self.description = None
-        self._primary_reason = None
+        self.primary_reason = None
         self._primary_recipient = None
         self._reason = None
         self._header = None
@@ -3955,12 +3955,12 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
+        if self.primary_reason is self.TO_USER:
             reason = (
                 'using the "Contact this user" link on your profile page\n'
                 '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             reason = (
                 'using the "Contact this team\'s admins" link on the '
                 '%s team page\n(%s)' % (
@@ -3968,7 +3968,7 @@ class ContactViaWebNotificationRecipientSet:
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         else:
-            # self._primary_reason is self.TO_MEMBERS.
+            # self.primary_reason is self.TO_MEMBERS.
             reason = (
                 'to each member of the %s team using the '
                 '"Contact this team" link on the %s team page\n(%s)' % (
@@ -3984,11 +3984,11 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
+        if self.primary_reason is self.TO_USER:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             return (
                 'You are contacting the %s (%s) team admins.' %
                 (person_or_team.displayname, person_or_team.name))
@@ -4008,12 +4008,12 @@ class ContactViaWebNotificationRecipientSet:
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}
-        if self._primary_reason is self.TO_MEMBERS:
+        if self.primary_reason is self.TO_MEMBERS:
             team = self._primary_recipient
             for recipient in team.getMembersWithPreferredEmails():
                 email = removeSecurityProxy(recipient).preferredemail.email
                 all_recipients[email] = recipient
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             team = self._primary_recipient
             for admin in team.adminmembers:
                 # This method is similar to getTeamAdminsEmailAddresses, but
@@ -4063,7 +4063,7 @@ class ContactViaWebNotificationRecipientSet:
         """The number of recipients in the set."""
         if self._count_recipients is None:
             recipient = self._primary_recipient
-            if self._primary_reason in (self.TO_MEMBERS, self.TO_ADMINS):
+            if self.primary_reason in (self.TO_MEMBERS, self.TO_ADMINS):
                 self._count_recipients = (len(self._all_recipients))
             elif recipient.is_valid_person_or_team:
                 self._count_recipients = 1
@@ -4093,7 +4093,7 @@ class ContactViaWebNotificationRecipientSet:
         recipients.
         """
         self._reset_state()
-        self._primary_reason = self._getPrimaryReason(person)
+        self.primary_reason = self._getPrimaryReason(person)
         self._primary_recipient = person
         if reason is None:
             reason, header = self._getReasonAndHeader(person)
@@ -4219,9 +4219,9 @@ class EmailToPersonView(LaunchpadFormView):
         """The reason the person cannot be contacted."""
         if self.has_valid_email_address:
             return None
-        elif self.recipients._primary_reason is self.recipients.TO_USER:
+        elif self.recipients.primary_reason is self.recipients.TO_USER:
             return "The user is not active."
-        elif self.recipients._primary_reason is self.recipients.TO_ADMINS:
+        elif self.recipients.primary_reason is self.recipients.TO_ADMINS:
             return "The team has no admins. Contact the team owner instead."
         else:
             return "The team has no members."
