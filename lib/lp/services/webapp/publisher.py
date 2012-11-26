@@ -293,6 +293,8 @@ class LaunchpadView(UserAttributeCache):
                        (i.e. context doesn't properly indicate privacy).
     """
 
+    REDIRECTED_STATUSES = [201, 301, 302, 303, 307]
+
     @property
     def private(self):
         """A view is private if its context is."""
@@ -431,7 +433,7 @@ class LaunchpadView(UserAttributeCache):
 
         Check if the response status is one of 301, 302, 303 or 307.
         """
-        return self.request.response.getStatus() in [201, 301, 302, 303, 307]
+        return self.request.response.getStatus() in self.REDIRECTED_STATUSES
 
     def __call__(self):
         self.initialize()

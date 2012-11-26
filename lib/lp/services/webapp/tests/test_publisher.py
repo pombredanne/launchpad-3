@@ -143,7 +143,7 @@ class TestLaunchpadView(TestCaseWithFactory):
     def test_isRedirected_status_codes(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
-        for code in [201, 301, 302, 303, 307]:
+        for code in view.REDIRECTED_STATUSES:
             request.response.setStatus(code)
             self.assertTrue(view._isRedirected())
         for code in [100, 200, 403, 404, 500]:
