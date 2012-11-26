@@ -14,8 +14,8 @@ __all__ = [
 from collections import deque
 from functools import partial
 import json
-import sys
 import socket
+import sys
 import threading
 import time
 

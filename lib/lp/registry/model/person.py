@@ -131,8 +131,8 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import (
     get_specification_filters,
     HasSpecificationsMixin,
-    Specification,
     spec_started_clause,
+    Specification,
     visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
@@ -326,8 +326,8 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
-from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,

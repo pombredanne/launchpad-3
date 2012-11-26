@@ -8,11 +8,11 @@ __metaclass__ = type
 from storm.exceptions import NoneError
 from testtools.testcase import ExpectedException
 import transaction
+from zope.component import getUtility
 from zope.security.checker import (
     CheckerPublic,
     getChecker,
     )
-from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 

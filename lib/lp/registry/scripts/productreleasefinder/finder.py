@@ -25,11 +25,11 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.product import Product
-from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.productrelease import (
     ProductRelease,
     ProductReleaseFile,
     )
+from lp.registry.model.productseries import ProductSeries
 from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose
 from lp.services.database import (

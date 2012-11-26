@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import (
@@ -15,6 +13,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException
 import transaction
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
