@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from lp.registry.mail.notification import send_direct_contact_email
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.messages.interfaces.message import IDirectEmailAuthorization
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -19,8 +20,8 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_send_success(self):
-        sender = self.factory.makePerson(email='me@eg.dom', name='me')
+    def test_send_message(self):
+        self.factory.makePerson(email='me@eg.dom', name='me')
         user = self.factory.makePerson(email='him@eg.dom', name='him')
         subject = 'test subject'
         body = 'test body'
@@ -36,4 +37,32 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         self.assertEqual(subject, notification['Subject'])
         self.assertEqual(
             'test rationale', notification['X-Launchpad-Message-Rationale'])
+        self.assertIs(None, notification['Precedence'])
         self.assertTrue('launchpad' in notification['Message-ID'])
+        self.assertEqual(
+            '\n'.join([
+                '%s' % body,
+                '-- ',
+                'This message was sent from Launchpad by',
+                'Me (http://launchpad.dev/~me)',
+                'test reason.',
+                'For more information see',
+                'https://help.launchpad.net/YourAccount/ContactingPeople']),
+            notification.get_payload())
+
+    def test_empty_recipient_set(self):
+        # The recipient set can be empty.
+        self.factory.makePerson(email='me@eg.dom', name='me')
+        user = self.factory.makePerson(email='him@eg.dom', name='him')
+        recipients_set = NotificationRecipientSet()
+        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
+        authorization = IDirectEmailAuthorization(user)
+        for action in xrange(authorization.message_quota - 1):
+            authorization.record(old_message)
+        subject = 'test subject'
+        body = 'test body'
+        pop_notifications()
+        send_direct_contact_email('me@eg.dom', recipients_set, subject, body)
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
+        self.assertTrue(authorization.is_allowed)

@@ -396,15 +396,7 @@ def send_direct_contact_email(
         message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
         sendmail(message, bulk=False)
-    # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
-    # the sender contacted the team.  This is not perfect though because we're
-    # really recording the fact that the person contacted the last member of
-    # the team.  There's little we can do better though because the team has
-    # no contact address, and so there isn't actually an address to record as
-    # the team's recipient.  It currently doesn't matter though because we
-    # don't actually do anything with the recipient information yet.  All we
-    # care about is the sender, for quota purposes.  We definitely want to
-    # record the contact outside the above loop though, because if there are
-    # 10 members of the team with no contact address, one message should not
-    # consume the sender's entire quota.
-    authorization.record(message)
+    # Use the information from the last message sent to record the the
+    # action taken. The record will be used for throttle user-to-user emails.
+    if message is not None:
+        authorization.record(message)
