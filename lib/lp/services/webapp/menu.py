@@ -6,10 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'enabled_with_permission',
-    'escape',
     'get_current_view',
     'get_facet',
-    'structured',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -35,10 +33,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.services.webapp.escaping import (
-    escape,
-    structured,
-    )
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
