@@ -157,7 +157,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
-class TestSpecificationView(TestCaseWithFactory):
+class TestSpecificationView(BrowserTestCase):
     """Test the SpecificationView."""
 
     layer = DatabaseFunctionalLayer
@@ -184,7 +184,7 @@ class TestSpecificationView(TestCaseWithFactory):
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
 
-    def test_view_for_user_with_artifact_grant(self):
+    def test_view_for_subscriber_with_artifact_grant(self):
         # Users with an artifact grant for a specification related to a
         # private  product can view the specification page.
         owner = self.factory.makePerson()
@@ -196,13 +196,11 @@ class TestSpecificationView(TestCaseWithFactory):
             spec = self.factory.makeSpecification(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)
-            getUtility(IService, 'sharing').ensureAccessGrants(
-                [user], owner, specifications=[spec])
-        with person_logged_in(user):
-            view = create_initialized_view(
-                spec, name='+index', principal=user, rootsite='blueprints')
-            # Calling render() does not raise any exceptions.
-            self.assertIn(spec.name, view.render())
+            spec.subscribe(user, subscribed_by=owner)
+            spec_name = spec.name
+        # Creating the view does not raise any exceptions.
+        view = self.getViewBrowser(spec, user=user)
+        self.assertIn(spec_name, view.contents)
 
 
 def set_blueprint_information_type(test_case, enabled):
