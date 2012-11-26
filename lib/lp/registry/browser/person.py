@@ -4063,9 +4063,8 @@ class ContactViaWebNotificationRecipientSet:
         """The number of recipients in the set."""
         if self._count_recipients is None:
             recipient = self._primary_recipient
-            if self._primary_reason is self.TO_MEMBERS:
-                self._count_recipients = (
-                    recipient.getMembersWithPreferredEmailsCount())
+            if self._primary_reason in (self.TO_MEMBERS, self.TO_ADMINS):
+                self._count_recipients = (len(self._all_recipients))
             elif recipient.is_valid_person_or_team:
                 self._count_recipients = 1
             else:
