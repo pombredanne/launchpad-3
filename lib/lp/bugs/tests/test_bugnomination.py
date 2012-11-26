@@ -9,8 +9,8 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugnomination import (
-    BugNominationStatusError,
     BugNominationStatus,
+    BugNominationStatusError,
     IBugNomination,
     IBugNominationSet,
     )

@@ -154,7 +154,7 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
 IProductSet can also retrieve the latest products registered.  By
 default the latest five are returned.
 
-    >>> latest = productset.latest()
+    >>> latest = productset.latest(None)
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
@@ -167,7 +167,7 @@ default the latest five are returned.
 The quantity can be specified and that many, if available, will be
 returned.
 
-    >>> latest = productset.latest(quantity=3)
+    >>> latest = productset.latest(None, quantity=3)
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project

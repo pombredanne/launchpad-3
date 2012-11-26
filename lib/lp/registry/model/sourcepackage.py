@@ -54,7 +54,10 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackageFactory,
     )
 from lp.registry.model.hasdrivers import HasDriversMixin
-from lp.registry.model.packaging import Packaging, PackagingUtil
+from lp.registry.model.packaging import (
+    Packaging,
+    PackagingUtil,
+    )
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (

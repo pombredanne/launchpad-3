@@ -1436,6 +1436,31 @@
         <require
             permission="launchpad.Edit"
             set_attributes="bug_supervisor"/>
+
+        <!-- ISpecificationTarget -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                getSpecification" />
+        <require
+            permission="launchpad.View"
+            attributes="
+                _all_specifications
+                _valid_specifications
+                getAllowedSpecificationInformationTypes
+                getDefaultSpecificationInformationType
+                specifications" />
+
+        <!-- IHasDrivers -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                drivers" />
+        <require
+            permission="launchpad.View"
+            attributes="
+                personHasDriverRights" />
+
     </class>
 
     <!-- ProductWithLicenses
@@ -1475,7 +1500,6 @@
             attributes="
                 title
                 people
-                all_active
                 get
                 get_all_active
                 getByName

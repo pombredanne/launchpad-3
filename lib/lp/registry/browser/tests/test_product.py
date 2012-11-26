@@ -18,8 +18,8 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
@@ -40,9 +40,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.model.product import (
-    Product,
-    )
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture

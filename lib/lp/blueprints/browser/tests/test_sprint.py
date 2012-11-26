@@ -10,9 +10,12 @@ from testtools.matchers import Equals
 
 from lp.app.enums import InformationType
 from lp.testing import BrowserTestCase
-from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import BrowsesWithQueryLimit, HasQueryCount
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 
 
 class TestSprintIndex(BrowserTestCase):

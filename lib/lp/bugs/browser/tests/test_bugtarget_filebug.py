@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from textwrap import dedent
+
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import transaction
@@ -33,7 +34,8 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.temporaryblobstorage.interfaces import (
-    ITemporaryStorageManager)
+    ITemporaryStorageManager,
+    )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     EventRecorder,

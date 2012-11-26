@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.registry.model.product import Product
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
@@ -792,9 +793,9 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
             name_matches = removeSecurityProxy(
-                getUtility(IProductSet).search_sqlobject(
+                getUtility(IProductSet).search(self.user,
                 self.request.form.get('field.name')))
-            products = bugtracker.products.intersect(name_matches)
+            products = name_matches.find(Product.bugtracker == bugtracker.id)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:
