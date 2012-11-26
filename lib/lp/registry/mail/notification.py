@@ -396,7 +396,7 @@ def send_direct_contact_email(
         message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
         sendmail(message, bulk=False)
-    # Use the information from the last message sent to record the the
-    # action taken. The record will be used for throttle user-to-user emails.
+    # Use the information from the last message sent to record the action
+    # taken. The record will be used to throttle user-to-user emails.
     if message is not None:
         authorization.record(message)
