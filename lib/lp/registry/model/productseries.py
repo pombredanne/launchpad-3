@@ -58,6 +58,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import PrivateProductViolation
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productrelease import IProductReleaseSet
@@ -147,11 +148,20 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+
+    def validate_autoimport_mode(self, attr, value):
+        if (self.product.private and
+            value != TranslationsBranchImportMode.NO_IMPORT):
+            raise PrivateProductViolation('Translations are disabled for'
+                                          ' private projects.')
+        return value
+
     translations_autoimport_mode = EnumCol(
         dbName='translations_autoimport_mode',
         notNull=True,
         schema=TranslationsBranchImportMode,
-        default=TranslationsBranchImportMode.NO_IMPORT)
+        default=TranslationsBranchImportMode.NO_IMPORT,
+        storm_validator=validate_autoimport_mode)
     translations_branch = ForeignKey(
         dbName='translations_branch', foreignKey='Branch', notNull=False,
         default=None)

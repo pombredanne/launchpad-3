@@ -16,11 +16,17 @@ from zope.security.checker import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.enums import InformationType
+from lp.app.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    )
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import SharingPermission
-from lp.registry.errors import CannotPackageProprietaryProduct
+from lp.registry.errors import (
+    CannotPackageProprietaryProduct,
+    PrivateProductViolation,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import (
@@ -63,6 +69,19 @@ class TestProductSeries(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertEqual(
                 IInformationType(series).information_type, information_type)
+
+    def test_private_forbids_autoimport(self):
+        # Autoimports are forbidden if products are proprietary/embargoed.
+        series = self.factory.makeProductSeries()
+        self.useContext(person_logged_in(series.product.owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            series.product.information_type = info_type
+            for mode in TranslationsBranchImportMode.items:
+                if mode == TranslationsBranchImportMode.NO_IMPORT:
+                    continue
+                with ExpectedException(PrivateProductViolation,
+                        'Translations are disabled for private projects.'):
+                    series.translations_autoimport_mode = mode
 
 
 class ProductSeriesReleasesTestCase(TestCaseWithFactory):
