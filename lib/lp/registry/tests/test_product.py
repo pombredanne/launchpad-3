@@ -122,12 +122,14 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_pillar_category(self):
         # Products are really called Projects
@@ -547,6 +549,44 @@ class TestProduct(TestCaseWithFactory):
             with ExpectedException(CannotChangeInformationType,
                                    'This project has translations.'):
                 raise error
+
+    def test_checkInformationType_queued_translations(self):
+        # Proprietary products must not have queued translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has queued translations.'):
+                raise error
+        removeSecurityProxy(entry).delete(entry.id)
+        with person_logged_in(product.owner):
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                self.assertContentEqual(
+                    [], product.checkInformationType(info_type))
+
+    def test_checkInformationType_auto_translation_imports(self):
+        # Proprietary products must not be at risk of creating translations.
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        self.useContext(person_logged_in(product.owner))
+        for mode in TranslationsBranchImportMode.items:
+            if mode == TranslationsBranchImportMode.NO_IMPORT:
+                continue
+            productseries.translations_autoimport_mode = mode
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                error, = list(product.checkInformationType(info_type))
+                with ExpectedException(CannotChangeInformationType,
+                    'Some product series have translation imports enabled.'):
+                    raise error
+        productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            self.assertContentEqual(
+                [], product.checkInformationType(info_type))
 
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than

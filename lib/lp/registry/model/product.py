@@ -212,6 +212,8 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -507,6 +509,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             POTemplate.productseries == ProductSeries.id)
         if not templates.is_empty():
             yield CannotChangeInformationType('This project has translations.')
+        if not self.getTranslationImportQueueEntries().is_empty():
+            yield CannotChangeInformationType(
+                'This project has queued translations.')
+        import_productseries = store.find(
+            ProductSeries,
+            ProductSeries.product == self.id,
+            ProductSeries.translations_autoimport_mode !=
+            TranslationsBranchImportMode.NO_IMPORT)
+        if not import_productseries.is_empty():
+            yield CannotChangeInformationType(
+                'Some product series have translation imports enabled.')
         if not self.packagings.is_empty():
             yield CannotChangeInformationType('Some series are packaged.')
         if self.translations_usage == ServiceUsage.LAUNCHPAD:
