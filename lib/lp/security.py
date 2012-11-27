@@ -490,9 +490,16 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
-class ViewTimelineProductSeries(AnonymousAuthorization):
-    """Anyone can view an ITimelineProductSeries."""
+class ViewTimelineProductSeries(DelegatedAuthorization):
+    """Anyone who can view the related product can also view an
+    ITimelineProductSeries.
+    """
+    permission = 'launchpad.View'
     usedfor = ITimelineProductSeries
+
+    def __init__(self, obj):
+        super(ViewTimelineProductSeries, self).__init__(
+            obj, obj.product, 'launchpad.View')
 
 
 class ViewProductReleaseFile(AnonymousAuthorization):
