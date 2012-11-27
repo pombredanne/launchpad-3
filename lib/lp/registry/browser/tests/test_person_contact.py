@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
-from lp.registry.browser.person import ContactViaWebNotificationRecipientSet
+from lp.registry.browser.person import (
+    ContactViaWebLinksMixin,
+    ContactViaWebNotificationRecipientSet,
+    )
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.messages.interfaces.message import IDirectEmailAuthorization
 from lp.testing import (
@@ -90,6 +93,73 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
         self.assertEqual(
             'You are contacting 2 members of the Pting (pting) team directly.',
             recipient_set.description)
+
+
+class ContactViaWebLinksMixinTestCase(TestCaseWithFactory):
+    """Tests the behaviour of ContactViaWebLinksMixin."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_PersonView_composition(self):
+        # PersonView uses the mixin.
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(name='pting')
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+index')
+        self.assertTrue(issubclass(view.__class__, ContactViaWebLinksMixin))
+
+    def test_contact_self(self):
+        sender = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(sender, '+index')
+            self.assertEqual(
+                'Send an email to yourself through Launchpad',
+                view.contact_link_title)
+        self.assertIs(
+            ContactViaWebNotificationRecipientSet.TO_USER,
+            view.group_to_contact)
+        self.assertEqual('Contact this user', view.specific_contact_text)
+
+    def test_contact_user(self):
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+index')
+        self.assertIs(
+            ContactViaWebNotificationRecipientSet.TO_USER,
+            view.group_to_contact)
+        self.assertEqual('Contact this user', view.specific_contact_text)
+        self.assertEqual(
+            'Send an email to this user through Launchpad',
+            view.contact_link_title)
+
+    def test_contact_admins(self):
+        sender = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+index')
+            self.assertIs(
+                ContactViaWebNotificationRecipientSet.TO_ADMINS,
+                view.group_to_contact)
+            self.assertEqual(
+                "Contact this team's admins", view.specific_contact_text)
+            self.assertEqual(
+                "Send an email to this team's admins through Launchpad",
+                view.contact_link_title)
+
+    def test_contact_members(self):
+        team = self.factory.makeTeam()
+        admin = team.teamowner
+        with person_logged_in(admin):
+            view = create_initialized_view(team, '+index')
+            self.assertIs(
+                ContactViaWebNotificationRecipientSet.TO_MEMBERS,
+                view.group_to_contact)
+            self.assertEqual(
+                "Contact this team's members", view.specific_contact_text)
+            self.assertEqual(
+                "Send an email to your team's members through Launchpad",
+                view.contact_link_title)
 
 
 class EmailToPersonViewTestCase(TestCaseWithFactory):

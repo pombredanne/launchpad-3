@@ -374,49 +374,6 @@ But duplicate bugs are never displayed.
     1
 
 
-Person contacting another person
---------------------------------
-
-The PersonView provides information to make the link to contact a user.
-No Privileges Person can send a message to Sample Person, even though
-Sample Person has hidden his email addresses.
-
-    >>> login('no-priv@canonical.com')
-    >>> sample_person.hide_email_addresses
-    True
-
-    >>> view = create_initialized_view(sample_person, '+index')
-    >>> print view.contact_link_title
-    Send an email to this user through Launchpad
-
-
-Person contacting himself
--------------------------
-
-For consistency and testing purposes, the "+contactuser" page is
-available even when someone is looking at his own profile page.  The
-wording on the tooltip is different though. No Privileges Person can
-send a message to himself.
-
-    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
-    >>> view = create_initialized_view(no_priv, '+index')
-    >>> print view.contact_link_title
-    Send an email to yourself through Launchpad
-
-
-Team admin contacting a Team
-----------------------------
-
-Team admins can contact their team to broadcast a message to all members.
-Sample Person can contact his team, Landscape developers, even though they do
-not have a contact address.
-
-    >>> team_admin = login_person(landscape_developers.adminmembers[0])
-    >>> view = create_initialized_view(landscape_developers, '+index')
-    >>> print view.contact_link_title
-    Send an email to your team's members through Launchpad
-
-
 Person +index "Personal package archives" section
 -------------------------------------------------
 

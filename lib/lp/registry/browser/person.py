@@ -1504,7 +1504,54 @@ class PersonKarmaView(LaunchpadView):
         return self.context.latestKarma().count() > 0
 
 
-class PersonView(LaunchpadView, FeedsMixin):
+class ContactViaWebLinksMixin:
+
+    @cachedproperty
+    def group_to_contact(self):
+        """Contacting a team may contact different email addresses.
+
+        :return: the recipients of the message.
+        :rtype: `ContactViaWebNotificationRecipientSet` constant:
+                TO_USER
+                TO_ADMINS
+                TO_MEMBERS
+        """
+        return ContactViaWebNotificationRecipientSet(
+            self.user, self.context).primary_reason
+
+    @property
+    def contact_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            if self.viewing_own_page:
+                return 'Send an email to yourself through Launchpad'
+            else:
+                return 'Send an email to this user through Launchpad'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Send an email to your team's members through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate link text."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            # Note that we explicitly do not change the text to "Contact
+            # yourself" when viewing your own page.
+            return 'Contact this user'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Contact this team's members"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+
+class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     """A View class used in almost all Person's pages."""
 
     @property
@@ -1738,50 +1785,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return (
             self.user is not None and self.context.is_valid_person_or_team)
-
-    @cachedproperty
-    def group_to_contact(self):
-        """Contacting a team may contact different email addresses.
-
-        :return: the recipients of the message.
-        :rtype: `ContactViaWebNotificationRecipientSet` constant:
-                TO_USER
-                TO_ADMINS
-                TO_MEMBERS
-        """
-        return ContactViaWebNotificationRecipientSet(
-            self.user, self.context).primary_reason
-
-    @property
-    def contact_link_title(self):
-        """Return the appropriate +contactuser link title for the tooltip."""
-        ContactViaWeb = ContactViaWebNotificationRecipientSet
-        if self.group_to_contact == ContactViaWeb.TO_USER:
-            if self.viewing_own_page:
-                return 'Send an email to yourself through Launchpad'
-            else:
-                return 'Send an email to this user through Launchpad'
-        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
-            return "Send an email to your team's members through Launchpad"
-        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
-            return "Send an email to this team's admins through Launchpad"
-        else:
-            raise AssertionError('Unknown group to contact.')
-
-    @property
-    def specific_contact_text(self):
-        """Return the appropriate link text."""
-        ContactViaWeb = ContactViaWebNotificationRecipientSet
-        if self.group_to_contact == ContactViaWeb.TO_USER:
-            # Note that we explicitly do not change the text to "Contact
-            # yourself" when viewing your own page.
-            return 'Contact this user'
-        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
-            return "Contact this team's members"
-        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
-            return "Contact this team's admins"
-        else:
-            raise AssertionError('Unknown group to contact.')
 
     @property
     def should_show_polls_portlet(self):
