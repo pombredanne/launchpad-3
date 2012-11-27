@@ -54,6 +54,17 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(ContactViaWebNotificationRecipientSet(owner, sender_team)))
 
+    def test_nonzero(self):
+        # The recipient set can be used in boolean conditions.
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(email='him@eg.dom')
+        self.assertTrue(
+            bool(ContactViaWebNotificationRecipientSet(sender, user)))
+        inactive_user = self.factory.makePerson(
+            email_address_status=EmailAddressStatus.NEW)
+        self.assertFalse(
+            bool(ContactViaWebNotificationRecipientSet(sender, inactive_user)))
+
 
 class EmailToPersonViewTestCase(TestCaseWithFactory):
     """Tests the behaviour of EmailToPersonView."""
@@ -72,6 +83,18 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         # Anonymous users cannot use the form.
         user = self.factory.makePerson(name='him')
         view = create_initialized_view(user, '+contactuser')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            'http://launchpad.dev/~him', response.getHeader('Location'))
+
+    def test_inactive_user_redirects(self):
+        # The view explains that the user is inactive.
+        sender = self.factory.makePerson()
+        inactive_user = self.factory.makePerson(
+            name='him', email_address_status=EmailAddressStatus.NEW)
+        with person_logged_in(sender):
+            view = create_initialized_view(inactive_user, '+contactuser')
         response = view.request.response
         self.assertEqual(302, response.getStatus())
         self.assertEqual(
