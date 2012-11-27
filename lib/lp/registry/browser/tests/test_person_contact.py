@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.browser.person import (
     ContactViaWebLinksMixin,
     ContactViaWebNotificationRecipientSet,
@@ -48,8 +49,8 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
 
     def test_len_to_members(self):
         # The recipient set length is based on the number members.
-        sender = self.factory.makePerson()
-        sender_team = self.factory.makeTeam(members=[sender])
+        member = self.factory.makePerson()
+        sender_team = self.factory.makeTeam(members=[member])
         owner = sender_team.teamowner
         self.assertEqual(
             2, len(ContactViaWebNotificationRecipientSet(owner, sender_team)))
@@ -68,6 +69,37 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
             email_address_status=EmailAddressStatus.NEW)
         self.assertFalse(
             bool(ContactViaWebNotificationRecipientSet(sender, inactive_user)))
+
+    def test_getRecipientPersons_to_user(self):
+        # The recipient set only contains the user.
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(email='him@eg.dom')
+        recipient_set = ContactViaWebNotificationRecipientSet(sender, user)
+        self.assertContentEqual(
+            [('him@eg.dom', user)],
+            list(recipient_set.getRecipientPersons()))
+
+    def test_getRecipientPersons_to_admins(self):
+        # The recipient set only contains the team admins when the user
+        # is not an admin of the team the user is contacting
+        admin = self.factory.makePerson(email='admin@eg.dom')
+        member = self.factory.makePerson(email='member@eg.dom')
+        team = self.factory.makeTeam(owner=admin, members=[member])
+        recipient_set = ContactViaWebNotificationRecipientSet(member, team)
+        self.assertContentEqual(
+            [('admin@eg.dom', admin)],
+            list(recipient_set.getRecipientPersons()))
+
+    def test_getRecipientPersons_to_members(self):
+        # The recipient set contains all the team members when the admin
+        # is contacting the team.
+        admin = self.factory.makePerson(email='admin@eg.dom')
+        member = self.factory.makePerson(email='member@eg.dom')
+        team = self.factory.makeTeam(owner=admin, members=[member])
+        recipient_set = ContactViaWebNotificationRecipientSet(admin, team)
+        self.assertContentEqual(
+            [('admin@eg.dom', admin), ('member@eg.dom', member)],
+            list(recipient_set.getRecipientPersons()))
 
     def test_description_to_user(self):
         sender = self.factory.makePerson()
@@ -265,7 +297,7 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             view.contact_not_possible_reason)
 
     def test_contact_not_possible_reason_to_members(self):
-        # The view explains the team has no members..
+        # The view explains the team has no members.
         team = self.factory.makeTeam()
         with person_logged_in(team.teamowner):
             team.teamowner.leave(team)
@@ -368,6 +400,17 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         self.assertEqual('Contact user', view.label)
         self.assertEqual('Contact your team', view.page_title)
 
+    def test_submit(self):
+        # The subject and message fields are required.
+        sender = self.factory.makePerson(email='me@eg.dom')
+        user = self.factory.makePerson(name='pting')
+        form = self.makeForm('me@eg.dom', 'subject', 'body')
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+contactuser', form=form)
+        self.assertEqual([], view.errors)
+        notes = [n.message for n in view.request.response.notifications]
+        self.assertEqual(['Message sent to Pting'], notes)
+
     def test_missing_subject_and_message(self):
         # The subject and message fields are required.
         sender = self.factory.makePerson(email='me@eg.dom')
@@ -377,3 +420,19 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(user, '+contactuser', form=form)
         self.assertEqual(
             [u'You must provide a subject and a message.'], view.errors)
+
+    def test_submitted_after_quota(self):
+        # The view explains when a message was not sent because the quota
+        # was exceeded.
+        user = self.factory.makePerson()
+        sender = self.makeThrottledSender()
+        form = self.makeForm('me@eg.dom')
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+contactuser', form=form)
+        notification = [
+            'Your message was not sent because you have exceeded your daily '
+            'quota of 3 messages to contact users. Try again %s.' %
+            DateTimeFormatterAPI(view.next_try).approximatedate()
+            ]
+        notes = [n.message for n in view.request.response.notifications]
+        self.assertContentEqual(notification, notes)
