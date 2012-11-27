@@ -184,6 +184,20 @@ class TestSpecificationView(BrowserTestCase):
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
 
+    def test_private_specification_without_authorization(self):
+        # Users without access get a 404 when trying to view private
+        # specifications.
+        owner = self.factory.makePerson()
+        policy = SpecificationSharingPolicy.PROPRIETARY
+        product = self.factory.makeProduct(owner=owner,
+            specification_sharing_policy=policy)
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            url = canonical_url(spec)
+        self.assertRaises(NotFound, self.getUserBrowser, url=url, user=None)
+
     def test_view_for_subscriber_with_artifact_grant(self):
         # Users with an artifact grant for a specification related to a
         # private  product can view the specification page.
