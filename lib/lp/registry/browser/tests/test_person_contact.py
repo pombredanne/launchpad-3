@@ -80,6 +80,14 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
                 'field.actions.send': 'Send',
                 }
 
+    def makeThrottledSender(self):
+        sender = self.factory.makePerson(email='me@eg.dom')
+        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
+        authorization = IDirectEmailAuthorization(sender)
+        for action in xrange(authorization.message_quota):
+            authorization.record(old_message)
+        return sender
+
     def test_anonymous_redirected(self):
         # Anonymous users cannot use the form.
         user = self.factory.makePerson(name='him')
@@ -156,11 +164,7 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(team, '+contactuser')
         self.assertTrue(view.contact_is_allowed)
 
-        other_sender = self.factory.makePerson(email='me@eg.dom')
-        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
-        authorization = IDirectEmailAuthorization(other_sender)
-        for action in xrange(authorization.message_quota):
-            authorization.record(old_message)
+        other_sender = self.makeThrottledSender()
         with person_logged_in(other_sender):
             view = create_initialized_view(team, '+contactuser')
         self.assertFalse(view.contact_is_allowed)
@@ -176,11 +180,7 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         self.assertTrue(view.contact_is_allowed)
         self.assertTrue(view.contact_is_possible)
 
-        other_sender = self.factory.makePerson(email='me@eg.dom')
-        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
-        authorization = IDirectEmailAuthorization(other_sender)
-        for action in xrange(authorization.message_quota):
-            authorization.record(old_message)
+        other_sender = self.makeThrottledSender()
         with person_logged_in(other_sender):
             view = create_initialized_view(team, '+contactuser')
         self.assertTrue(view.has_valid_email_address)

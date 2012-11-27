@@ -485,14 +485,6 @@ The EmailToPersonView can be used by admins to contact their team.
     >>> [recipient.name for recipient in view.recipients]
     [u'salgado', u'name12']
 
-There are 2 recipients, so the object is treats as True.
-
-    >>> recipients = view.recipients
-    >>> len(recipients)
-    2
-
-    >>> bool(recipients)
-    True
 
 If there is only one member of the team, who must therefore be the user
 sending the email, and also be the team owner, The view provides a
@@ -512,21 +504,6 @@ special message just for him.
 
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']
-
-
-Contact this user/team valid addresses and quotas
--------------------------------------------------
-
-The EmailToPersonView has_valid_email_address property is normally True.
-The is_possible property is True when contact_is_allowed and
-has_valid_email_address are both True.
-
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> view.has_valid_email_address
-    True
-
-    >>> view.contact_is_possible
-    True
 
 
 Person +index "Personal package archives" section
