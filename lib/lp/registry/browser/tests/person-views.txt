@@ -469,42 +469,6 @@ not have a contact address.
     >>> print view.contact_link_title
     Send an email to your team's members through Launchpad
 
-The EmailToPersonView can be used by admins to contact their team.
-
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> print view.label
-    Contact user
-
-    >>> print view.page_title
-    Contact your team
-
-    >>> print view.recipients.description
-    You are contacting 2 members of the Landscape Developers
-    (landscape-developers) team directly.
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'salgado', u'name12']
-
-
-If there is only one member of the team, who must therefore be the user
-sending the email, and also be the team owner, The view provides a
-special message just for him.
-
-    >>> vanity_team = factory.makeTeam(
-    ...     sample_person, displayname='Vanity', name='vanity')
-    >>> view = create_initialized_view(vanity_team, '+contactuser')
-    >>> print view.label
-    Contact user
-
-    >>> print view.page_title
-    Contact your team
-
-    >>> print view.recipients.description
-    You are contacting 1 member of the Vanity (vanity) team directly.
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'name12']
-
 
 Person +index "Personal package archives" section
 -------------------------------------------------

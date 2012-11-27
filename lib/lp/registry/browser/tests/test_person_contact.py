@@ -66,6 +66,15 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
         self.assertFalse(
             bool(ContactViaWebNotificationRecipientSet(sender, inactive_user)))
 
+    def test_description_to_members(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting', members=[member])
+        admin = team.teamowner
+        recipient_set = ContactViaWebNotificationRecipientSet(admin, team)
+        self.assertEqual(
+            'You are contacting 2 members of the Pting (pting) team directly.',
+            recipient_set.description)
+
 
 class EmailToPersonViewTestCase(TestCaseWithFactory):
     """Tests the behaviour of EmailToPersonView."""
@@ -194,6 +203,15 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         self.assertTrue(view.contact_is_allowed)
         self.assertFalse(view.has_valid_email_address)
         self.assertFalse(view.contact_is_possible)
+
+    def test_admin_contacting_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting', members=[member])
+        admin = team.teamowner
+        with person_logged_in(admin):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertEqual('Contact user', view.label)
+        self.assertEqual('Contact your team', view.page_title)
 
     def test_missing_subject_and_message(self):
         # The subject and message fields are required.
