@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from lp.registry.browser.person import ContactViaWebNotificationRecipientSet
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.messages.interfaces.message import IDirectEmailAuthorization
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -131,6 +132,68 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(team, '+contactuser')
         self.assertEqual(
             "The team has no members.", view.contact_not_possible_reason)
+
+    def test_has_valid_email_address(self):
+        # The has_valid_email_address property checks the len of the
+        # recipient set.
+        team = self.factory.makeTeam()
+        sender = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertTrue(view.has_valid_email_address)
+        with person_logged_in(team.teamowner):
+            team.teamowner.leave(team)
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertFalse(view.has_valid_email_address)
+
+    def test_contact_is_allowed(self):
+        # The contact_is_allowed property checks if the user has not exceeded
+        # the quota..
+        team = self.factory.makeTeam()
+        sender = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertTrue(view.contact_is_allowed)
+
+        other_sender = self.factory.makePerson(email='me@eg.dom')
+        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
+        authorization = IDirectEmailAuthorization(other_sender)
+        for action in xrange(authorization.message_quota):
+            authorization.record(old_message)
+        with person_logged_in(other_sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertFalse(view.contact_is_allowed)
+
+    def test_contact_is_possible(self):
+        # The contact_is_possible property checks has_valid_email_address
+        # and contact_is_allowed.
+        team = self.factory.makeTeam()
+        sender = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertTrue(view.has_valid_email_address)
+        self.assertTrue(view.contact_is_allowed)
+        self.assertTrue(view.contact_is_possible)
+
+        other_sender = self.factory.makePerson(email='me@eg.dom')
+        old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
+        authorization = IDirectEmailAuthorization(other_sender)
+        for action in xrange(authorization.message_quota):
+            authorization.record(old_message)
+        with person_logged_in(other_sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertTrue(view.has_valid_email_address)
+        self.assertFalse(view.contact_is_allowed)
+        self.assertFalse(view.contact_is_possible)
+
+        with person_logged_in(team.teamowner):
+            team.teamowner.leave(team)
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertTrue(view.contact_is_allowed)
+        self.assertFalse(view.has_valid_email_address)
+        self.assertFalse(view.contact_is_possible)
 
     def test_missing_subject_and_message(self):
         # The subject and message fields are required.
