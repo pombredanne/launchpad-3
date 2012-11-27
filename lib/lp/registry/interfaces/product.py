@@ -910,6 +910,14 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
+    def checkInformationType(value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
+
 
 class IProduct(
     IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
