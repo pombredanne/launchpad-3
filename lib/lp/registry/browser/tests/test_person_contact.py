@@ -66,6 +66,22 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
         self.assertFalse(
             bool(ContactViaWebNotificationRecipientSet(sender, inactive_user)))
 
+    def test_description_to_user(self):
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(name='pting')
+        recipient_set = ContactViaWebNotificationRecipientSet(sender, user)
+        self.assertEqual(
+            'You are contacting Pting (pting).',
+            recipient_set.description)
+
+    def test_description_to_admin(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting', members=[member])
+        recipient_set = ContactViaWebNotificationRecipientSet(member, team)
+        self.assertEqual(
+            'You are contacting the Pting (pting) team admins.',
+            recipient_set.description)
+
     def test_description_to_members(self):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(name='pting', members=[member])
@@ -203,6 +219,37 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         self.assertTrue(view.contact_is_allowed)
         self.assertFalse(view.has_valid_email_address)
         self.assertFalse(view.contact_is_possible)
+
+    def test_user_contacting_user(self):
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(name='pting')
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+contactuser')
+        self.assertEqual('Contact user', view.label)
+        self.assertEqual('Contact this user', view.page_title)
+
+    def test_user_contacting_self(self):
+        sender = self.factory.makePerson()
+        with person_logged_in(sender):
+            view = create_initialized_view(sender, '+contactuser')
+        self.assertEqual('Contact user', view.label)
+        self.assertEqual('Contact yourself', view.page_title)
+
+    def test_user_contacting_team(self):
+        sender = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting')
+        with person_logged_in(sender):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertEqual('Contact user', view.label)
+        self.assertEqual('Contact this team', view.page_title)
+
+    def test_member_contacting_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting', members=[member])
+        with person_logged_in(member):
+            view = create_initialized_view(team, '+contactuser')
+        self.assertEqual('Contact user', view.label)
+        self.assertEqual('Contact your team', view.page_title)
 
     def test_admin_contacting_team(self):
         member = self.factory.makePerson()

@@ -389,22 +389,6 @@ Sample Person has hidden his email addresses.
     >>> print view.contact_link_title
     Send an email to this user through Launchpad
 
-The EmailToPersonView provides many properties to the page template to
-explain exactly who is being contacted.
-
-    >>> view = create_initialized_view(sample_person, '+contactuser')
-    >>> print view.label
-    Contact user
-
-    >>> print view.page_title
-    Contact this user
-
-    >>> print view.recipients.description
-    You are contacting Sample Person (name12).
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'name12']
-
 
 Person contacting himself
 -------------------------
@@ -418,43 +402,6 @@ send a message to himself.
     >>> view = create_initialized_view(no_priv, '+index')
     >>> print view.contact_link_title
     Send an email to yourself through Launchpad
-
-The EmailToPersonView provides the explanation about who is being
-contacted.
-
-    >>> view = create_initialized_view(no_priv, '+contactuser')
-    >>> print view.label
-    Contact user
-
-    >>> print view.page_title
-    Contact yourself
-
-    >>> print view.recipients.description
-    You are contacting No Privileges Person (no-priv).
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'no-priv']
-
-
-Non-team-admin contacting a Team
---------------------------------
-
-The EmailToPersonView can be used by non-team-admins to contact the team
-admins.
-
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> print view.label
-    Contact user
-
-    >>> print view.page_title
-    Contact this team
-
-    >>> print view.recipients.description
-    You are contacting the Landscape Developers (landscape-developers) team
-    admins.
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'name12']
 
 
 Team admin contacting a Team
