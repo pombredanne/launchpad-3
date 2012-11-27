@@ -573,24 +573,6 @@ person or team's contact page.
     http://launchpad.dev/~landscape-developers
 
 
-Messages and subjects cannot be empty
--------------------------------------
-
-Messages or subjects that contain only whitespace are treated as an
-error that the user must fix.
-
-    >>> login('test@canonical.com')
-    >>> view = create_initialized_view(
-    ...     landscape_developers, '+contactuser', form={
-    ...         'field.field.from_': 'test@canonical.com',
-    ...         'field.subject': ' ',
-    ...         'field.message': ' ',
-    ...         'field.actions.send': 'Send',
-    ...         })
-    >>> view.errors
-    [u'You must provide a subject and a message.']
-
-
 Person +index "Personal package archives" section
 -------------------------------------------------
 
@@ -685,5 +667,3 @@ lp.edit.
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     False
-
-

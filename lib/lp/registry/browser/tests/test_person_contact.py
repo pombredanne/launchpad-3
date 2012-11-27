@@ -60,6 +60,14 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def makeForm(self, email, subject='subject', message='body'):
+        return {
+                'field.field.from_': email,
+                'field.subject': subject,
+                'field.message': message,
+                'field.actions.send': 'Send',
+                }
+
     def test_contact_not_possible_reason_to_user(self):
         # The view explains that the user is inactive.
         inactive_user = self.factory.makePerson(
@@ -91,3 +99,12 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(team, '+contactuser')
         self.assertEqual(
             "The team has no members.", view.contact_not_possible_reason)
+
+    def test_missing_subject_and_message(self):
+        sender = self.factory.makePerson(email='me@eg.dom')
+        user = self.factory.makePerson()
+        form = self.makeForm('me@eg.dom', ' ', ' ')
+        with person_logged_in(sender):
+            view = create_initialized_view(user, '+contactuser', form=form)
+        self.assertEqual(
+            [u'You must provide a subject and a message.'], view.errors)
