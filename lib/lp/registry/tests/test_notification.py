@@ -79,3 +79,20 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
         self.assertTrue(authorization.is_allowed)
+
+    def test_wrapping(self):
+        self.factory.makePerson(email='me@eg.dom')
+        user = self.factory.makePerson()
+        recipients_set = NotificationRecipientSet()
+        recipients_set.add(user, 'test reason', 'test rationale')
+        pop_notifications()
+        body = 'Can you help me? ' * 8
+        send_direct_contact_email('me@eg.dom', recipients_set, 'subject', body)
+        notifications = pop_notifications()
+        body, footer = notifications[0].get_payload().split('-- ')
+        self.assertEqual(
+            'Can you help me? Can you help me? Can you help me? '
+            'Can you help me? Can\n'
+            'you help me? Can you help me? Can you help me? '
+            'Can you help me?\n',
+            body)

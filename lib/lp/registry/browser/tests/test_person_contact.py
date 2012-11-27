@@ -94,6 +94,44 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
             'You are contacting 2 members of the Pting (pting) team directly.',
             recipient_set.description)
 
+    def test_rationale_and_reason_user(self):
+        sender = self.factory.makePerson()
+        user = self.factory.makePerson(name='pting')
+        recipient_set = ContactViaWebNotificationRecipientSet(sender, user)
+        for email, recipient in recipient_set.getRecipientPersons():
+            reason, rationale = recipient_set.getReason(email)
+        self.assertEqual(
+            'using the "Contact this user" link on your profile page\n'
+            '(http://launchpad.dev/~pting)',
+            reason)
+        self.assertEqual('ContactViaWeb user', rationale)
+
+    def test_rationale_and_reason_admin(self):
+        sender = self.factory.makePerson()
+        team = self.factory.makeTeam(name='pting')
+        recipient_set = ContactViaWebNotificationRecipientSet(sender, team)
+        for email, recipient in recipient_set.getRecipientPersons():
+            reason, rationale = recipient_set.getReason(email)
+        self.assertEqual(
+            'using the "Contact this team\'s admins" link '
+            'on the Pting team page\n'
+            '(http://launchpad.dev/~pting)',
+            reason)
+        self.assertEqual('ContactViaWeb owner (pting team)', rationale)
+
+    def test_rationale_and_reason_members(self):
+        team = self.factory.makeTeam(name='pting')
+        sender = team.teamowner
+        recipient_set = ContactViaWebNotificationRecipientSet(sender, team)
+        for email, recipient in recipient_set.getRecipientPersons():
+            reason, rationale = recipient_set.getReason(email)
+        self.assertEqual(
+            'to each member of the Pting team using the '
+            '"Contact this team" link on the Pting team page\n'
+            '(http://launchpad.dev/~pting)',
+            reason)
+        self.assertEqual('ContactViaWeb member (pting team)', rationale)
+
 
 class ContactViaWebLinksMixinTestCase(TestCaseWithFactory):
     """Tests the behaviour of ContactViaWebLinksMixin."""
