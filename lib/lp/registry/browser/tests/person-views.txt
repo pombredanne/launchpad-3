@@ -560,18 +560,6 @@ and cannot be contacted.
     >>> bool(recipients)
     False
 
-Anonymous users cannot contact anyone, they are redirected to the person
-or team's profile page. This can happen when off-site links point to a
-person or team's contact page.
-
-    >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> view.request.response.getStatus()
-    302
-
-    >>> print view.request.response.getHeader('Location')
-    http://launchpad.dev/~landscape-developers
-
 
 Person +index "Personal package archives" section
 -------------------------------------------------

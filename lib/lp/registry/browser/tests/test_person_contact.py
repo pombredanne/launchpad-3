@@ -68,6 +68,15 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
                 'field.actions.send': 'Send',
                 }
 
+    def test_anonymous_redirected(self):
+        # Anonymous users cannot use the form.
+        user = self.factory.makePerson(name='him')
+        view = create_initialized_view(user, '+contactuser')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            'http://launchpad.dev/~him', response.getHeader('Location'))
+
     def test_contact_not_possible_reason_to_user(self):
         # The view explains that the user is inactive.
         inactive_user = self.factory.makePerson(
@@ -101,6 +110,7 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
             "The team has no members.", view.contact_not_possible_reason)
 
     def test_missing_subject_and_message(self):
+        # The subject and message fields are required.
         sender = self.factory.makePerson(email='me@eg.dom')
         user = self.factory.makePerson()
         form = self.makeForm('me@eg.dom', ' ', ' ')
