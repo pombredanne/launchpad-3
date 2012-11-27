@@ -96,3 +96,19 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
             'you help me? Can you help me? Can you help me? '
             'Can you help me?\n',
             body)
+
+    def test_name_utf8_encoding(self):
+        # Names are encoded in the From and To headers.
+        self.factory.makePerson(email='me@eg.dom', displayname=u'sn\xefrf')
+        user = self.factory.makePerson(
+            email='him@eg.dom', displayname=u'pti\xedng')
+        recipients_set = NotificationRecipientSet()
+        recipients_set.add(user, 'test reason', 'test rationale')
+        pop_notifications()
+        send_direct_contact_email('me@eg.dom', recipients_set, 'test', 'test')
+        notifications = pop_notifications()
+        notification = notifications[0]
+        self.assertEqual(
+            '=?utf-8?b?c27Dr3Jm?= <me@eg.dom>', notification['From'])
+        self.assertEqual(
+            '=?utf-8?q?pti=C3=ADng?= <him@eg.dom>', notification['To'])
