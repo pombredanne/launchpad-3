@@ -64,6 +64,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     SharingPermission,
     SpecificationSharingPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -497,6 +498,56 @@ class TestProduct(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
 
+    def test_checkInformationType_bug_supervisor(self):
+        # Bug supervisors of proprietary products must not have inclusive
+        # membership policies.
+        team = self.factory.makeTeam()
+        product = self.factory.makeProduct(bug_supervisor=team)
+        for policy in (token.value for token in TeamMembershipPolicy):
+            with person_logged_in(team.teamowner):
+                team.membership_policy = policy
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with person_logged_in(product.owner):
+                    errors = list(product.checkInformationType(info_type))
+                if policy in EXCLUSIVE_TEAM_POLICY:
+                    self.assertEqual([], errors)
+                else:
+                    with ExpectedException(
+                        CannotChangeInformationType,
+                        'Bug supervisor has inclusive membership.'):
+                        raise errors[0]
+
+    def test_checkInformationType_questions(self):
+        # Proprietary products must not have questions
+        product = self.factory.makeProduct()
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makeQuestion(target=product)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has questions.'):
+                raise error
+
+    def test_checkInformationType_translations(self):
+        # Proprietary products must not have translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makePOTemplate(productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has translations.'):
+                raise error
+
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
         # self.factory.makeProduct
@@ -740,7 +791,7 @@ class TestProduct(TestCaseWithFactory):
         'launchpad.Edit': set((
             'addOfficialBugTag', 'removeOfficialBugTag',
             'setBranchSharingPolicy', 'setBugSharingPolicy',
-            'setSpecificationSharingPolicy')),
+            'setSpecificationSharingPolicy', 'checkInformationType')),
         'launchpad.Moderate': set((
             'is_permitted', 'license_approved', 'project_reviewed',
             'reviewer_whiteboard', 'setAliases')),
