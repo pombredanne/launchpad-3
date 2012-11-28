@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AlreadyConvertedException',
+    'get_person_visibility_terms',
     'get_recipients',
     'generate_nick',
     'IrcID',
@@ -392,6 +393,33 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+def get_person_visibility_terms(user):
+    """Generate the query needed for person privacy filtering.
+
+    If the visibility is not PUBLIC ensure the logged in user is a member
+    of the team.
+    """
+    if user is not None:
+        private_query = And(
+            Person.id.is_in(
+                Select(
+                    TeamParticipation.teamID, tables=[TeamParticipation],
+                    where=(TeamParticipation.person == user))),
+            Person.teamowner != None,
+            Person.visibility != PersonVisibility.PUBLIC)
+    else:
+        private_query = None
+
+    base_query = (Person.visibility == PersonVisibility.PUBLIC)
+
+    if private_query is None:
+        query = base_query
+    else:
+        query = Or(base_query, private_query)
+
+    return query
 
 
 _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
@@ -3535,41 +3563,11 @@ class PersonSet:
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
-    def _teamPrivacyQuery(self):
-        """Generate the query needed for privacy filtering.
-
-        If the visibility is not PUBLIC ensure the logged in user is a member
-        of the team.
-        """
-        logged_in_user = getUtility(ILaunchBag).user
-        if logged_in_user is not None:
-            private_query = And(
-                Person.id.is_in(
-                    Select(
-                        TeamParticipation.teamID, tables=[TeamParticipation],
-                        where=(TeamParticipation.person == logged_in_user))),
-                Person.teamowner != None,
-                Person.visibility != PersonVisibility.PUBLIC)
-        else:
-            private_query = None
-
-        base_query = (Person.visibility == PersonVisibility.PUBLIC)
-
-        if private_query is None:
-            query = base_query
-        else:
-            query = Or(base_query, private_query)
-
-        return query
-
     def _teamEmailQuery(self, text):
         """Product the query for team email addresses."""
-        privacy_query = self._teamPrivacyQuery()
-        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
-        # instead of Bar.foo != None.
         team_email_query = And(
-            privacy_query,
-            Not(Person.teamowner == None),
+            get_person_visibility_terms(getUtility(ILaunchBag).user),
+            Person.teamowner != None,
             Person.merged == None,
             EmailAddress.person == Person.id,
             EmailAddress.email.lower().startswith(ensure_unicode(text)))
@@ -3577,12 +3575,9 @@ class PersonSet:
 
     def _teamNameQuery(self, text):
         """Produce the query for team names."""
-        privacy_query = self._teamPrivacyQuery()
-        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
-        # instead of Bar.foo != None.
         team_name_query = And(
-            privacy_query,
-            Not(Person.teamowner == None),
+            get_person_visibility_terms(getUtility(ILaunchBag).user),
+            Person.teamowner != None,
             Person.merged == None,
             SQL("Person.fti @@ ftq(?)", (text, )))
         return team_name_query
