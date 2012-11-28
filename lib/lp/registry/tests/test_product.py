@@ -588,6 +588,21 @@ class TestProduct(TestCaseWithFactory):
             self.assertContentEqual(
                 [], product.checkInformationType(info_type))
 
+    def test_private_forbids_translations(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.useContext(person_logged_in(owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product.information_type = info_type
+            with ExpectedException(
+                ProprietaryProduct,
+                "Translations are not supported for proprietary products."):
+                product.translations_usage = ServiceUsage.LAUNCHPAD
+            for usage in ServiceUsage.items:
+                if usage == ServiceUsage.LAUNCHPAD:
+                    continue
+                product.translations_usage = usage
+
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
         # self.factory.makeProduct

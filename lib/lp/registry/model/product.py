@@ -605,10 +605,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+
+    def validate_translations_usage(self, attr, value):
+        if value == ServiceUsage.LAUNCHPAD and self.private:
+            raise ProprietaryProduct(
+                "Translations are not supported for proprietary products.")
+        return value
+
     translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        default=ServiceUsage.UNKNOWN,
+        storm_validator=validate_translations_usage)
 
     @property
     def codehosting_usage(self):
