@@ -25,7 +25,7 @@ from lp.app.interfaces.services import IService
 from lp.registry.enums import SharingPermission
 from lp.registry.errors import (
     CannotPackageProprietaryProduct,
-    PrivateProductViolation,
+    ProprietaryProduct,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -79,7 +79,7 @@ class TestProductSeries(TestCaseWithFactory):
             for mode in TranslationsBranchImportMode.items:
                 if mode == TranslationsBranchImportMode.NO_IMPORT:
                     continue
-                with ExpectedException(PrivateProductViolation,
+                with ExpectedException(ProprietaryProduct,
                         'Translations are disabled for private projects.'):
                     series.translations_autoimport_mode = mode
 

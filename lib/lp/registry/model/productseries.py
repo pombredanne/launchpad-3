@@ -58,7 +58,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.registry.errors import PrivateProductViolation
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productrelease import IProductReleaseSet
@@ -152,8 +152,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def validate_autoimport_mode(self, attr, value):
         if (self.product.private and
             value != TranslationsBranchImportMode.NO_IMPORT):
-            raise PrivateProductViolation('Translations are disabled for'
-                                          ' private projects.')
+            raise ProprietaryProduct('Translations are disabled for'
+                                     ' private projects.')
         return value
 
     translations_autoimport_mode = EnumCol(

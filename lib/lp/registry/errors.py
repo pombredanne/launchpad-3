@@ -217,6 +217,3 @@ class CannotPackageProprietaryProduct(Exception):
 
 class VoucherAlreadyRedeemed(Exception):
     """Raised when a voucher is redeemed more than once."""
-
-class PrivateProductViolation(Exception):
-    """Operation is forbidden because the product is private."""
