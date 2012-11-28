@@ -69,12 +69,10 @@ from sqlobject import (
     OR,
     )
 from storm.expr import (
-    Alias,
     And,
     Desc,
     Join,
     LeftJoin,
-    Not,
     Or,
     Select,
     SQL,
