@@ -402,6 +402,10 @@ def get_person_visibility_terms(user):
     of the team.
     """
     if user is not None:
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_commercial_admin:
+            return True
+
         private_query = And(
             Person.id.is_in(
                 Select(
