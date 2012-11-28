@@ -1094,21 +1094,8 @@ class SpecificationSet(HasSpecificationsMixin):
         from lp.registry.model.product import Product
         store = IStore(Specification)
 
-        # filter out specs on inactive products
-        clauses = [
-            Or(
-                Specification.product == None,
-                Not(
-                    Specification.productID.is_in(
-                        Select(Product.id, Product.active == False)
-                    )
-                )
-            ),
-        ]
-
         # Take the visibility due to privacy into account.
-        privacy_tables, privacy_clauses = visible_specification_query(user)
-        clauses.extend(privacy_clauses)
+        privacy_tables, clauses = visible_specification_query(user)
 
         if not filter:
             # Default to showing incomplete specs
