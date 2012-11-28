@@ -1089,9 +1089,7 @@ class SpecificationSet(HasSpecificationsMixin):
         return iter(self.all_specifications)
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                            prejoin_people=True):
-
-        from lp.registry.model.product import Product
+                       prejoin_people=True):
         store = IStore(Specification)
 
         # Take the visibility due to privacy into account.
