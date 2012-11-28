@@ -1006,7 +1006,6 @@ class HasSpecificationsMixin:
                 index += 1
                 decorator(person, column)
 
-
     def _specification_sort(self, sort):
         """Return the storm sort order for 'specifications'.
 

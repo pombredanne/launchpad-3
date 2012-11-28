@@ -558,5 +558,3 @@ class TestSpecificationSet(TestCaseWithFactory):
         specs = context.specifications(private_user)
         self.assertIn(public_spec, specs)
         self.assertIn(private_spec, specs)
-
-
