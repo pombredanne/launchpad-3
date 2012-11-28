@@ -108,7 +108,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -1101,7 +1100,7 @@ class SpecificationSet(HasSpecificationsMixin):
             Or(
                 Specification.product == None,
                 Not(
-                    Specification.product.is_in(
+                    Specification.productID.is_in(
                         Select(Product.id, Product.active == False)
                     )
                 )
@@ -1135,9 +1134,9 @@ class SpecificationSet(HasSpecificationsMixin):
                 # registered
                 order = [Desc(Specification.datecreated), Specification.id]
 
-        results = store.using(privacy_tables).find(
+        results = store.using(*privacy_tables).find(
                       Specification,
-                      *clauses).order_by(*order).limit(quantity)
+                      *clauses).order_by(*order)[:quantity]
 
         if prejoin_people:
             return DecoratedResultSet(
