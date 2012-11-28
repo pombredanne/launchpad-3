@@ -520,9 +520,17 @@ class BranchMergeProposalStatusMixin:
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
 
+    @property
+    def diff_available(self):
+        """Is the preview diff available from the librarian?"""
+        if getattr(self, '_diff_available', None) is None:
+            self.preview_diff_text
+        return self._diff_available
+
     @cachedproperty
     def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        self._diff_available = True
         preview_diff = self.preview_diff
         if preview_diff is None:
             return None
@@ -531,6 +539,7 @@ class DiffRenderingMixin:
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
         except LibrarianServerError:
+            self._diff_available = False
             diff = ''
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')

@@ -894,6 +894,24 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             view = create_initialized_view(self.bmp, '+index')
             self.assertEqual('', view.preview_diff_text)
 
+    def test_diff_available(self):
+        # The diff_available property tests that the preview_diff can be
+        # retrived from the librarian.
+        text = ''.join(chr(x) for x in range(255))
+        diff_bytes = ''.join(unified_diff('', text))
+        self.setPreviewDiff(diff_bytes)
+        transaction.commit()
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertTrue(view.diff_available)
+
+        def fake_open(*args):
+            raise LibrarianServerError
+
+        lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
+        with monkey_patch(lfa, open=fake_open):
+            view = create_initialized_view(self.bmp, '+index')
+            self.assertFalse(view.diff_available)
+
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
