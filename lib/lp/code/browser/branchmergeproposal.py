@@ -107,6 +107,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -529,6 +530,8 @@ class DiffRenderingMixin:
             diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
+        except LibrarianServerError:
+            diff = ''
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 
