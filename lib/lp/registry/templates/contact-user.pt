@@ -31,7 +31,7 @@
         </p>
       </tal:disallowed>
       <tal:disallowed tal:condition="not:view/has_valid_email_address">
-        <p tal:content="view/recipients/description"/>
+        <p tal:content="view/contact_not_possible_reason"/>
       </tal:disallowed>
     </div>
   </body>
