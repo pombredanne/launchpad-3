@@ -740,7 +740,7 @@ class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
     displayname = 'Select a Person'
     # The extra_clause for a valid person is that it not be a team, so
     # teamowner IS NULL.
-    extra_clause = 'Person.teamowner IS NULL'
+    extra_clause = Person.teamowner == None
     # Search with empty string returns all valid people.
     allow_null_search = True
     # Cache table to use for checking validity.
