@@ -396,34 +396,29 @@ def validate_person_visibility(person, attr, value):
 
 
 def get_person_visibility_terms(user):
-    """Generate the query needed for person privacy filtering.
+    """Generate the query needed for person privacy filtering."""
+    public_filter = (Person.visibility == PersonVisibility.PUBLIC)
 
-    If the visibility is not PUBLIC ensure the logged in user is a member
-    of the team.
-    """
-    if user is not None:
-        roles = IPersonRoles(user)
-        if roles.in_admin or roles.in_commercial_admin:
-            return True
+    # Anonymous users can only see public people.
+    if user is None:
+        return public_filter
 
-        private_query = And(
+    # Admins and commercial admins can see everyone.
+    roles = IPersonRoles(user)
+    if roles.in_admin or roles.in_commercial_admin:
+        return True
+
+    # Otherwise only public people and private teams of which the user
+    # is a member are visible.
+    return Or(
+        public_filter,
+        And(
             Person.id.is_in(
                 Select(
                     TeamParticipation.teamID, tables=[TeamParticipation],
                     where=(TeamParticipation.person == user))),
             Person.teamowner != None,
-            Person.visibility != PersonVisibility.PUBLIC)
-    else:
-        private_query = None
-
-    base_query = (Person.visibility == PersonVisibility.PUBLIC)
-
-    if private_query is None:
-        query = base_query
-    else:
-        query = Or(base_query, private_query)
-
-    return query
+            Person.visibility != PersonVisibility.PUBLIC))
 
 
 _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
