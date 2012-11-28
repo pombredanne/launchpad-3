@@ -654,20 +654,23 @@ class ValidPersonOrTeamVocabulary(
                   EmailAddressStatus.VALIDATED.value,
                   EmailAddressStatus.PREFERRED.value))
 
-            # The tables for public persons and teams that match the text.
-            public_tables = [
+            # The tables for persons and teams that match the text.
+            tables = [
                 SQL("MatchingPerson"),
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, Account.id == Person.accountID),
                 ]
-            public_tables.extend(self.extra_tables)
+            tables.extend(self.extra_tables)
 
+            # Find all the matching unmerged persons and teams. Persons
+            # must additionally have an active account and a preferred
+            # email address.
             # We just select the required ids since we will use
             # IPersonSet.getPrecachedPersonsFromIDs to load the results
             matching_with = With("MatchingPerson", matching_person_sql)
             result = self.store.with_(
-                matching_with).using(*public_tables).find(
+                matching_with).using(*tables).find(
                 Person,
                 And(
                     SQL("Person.id = MatchingPerson.id"),
