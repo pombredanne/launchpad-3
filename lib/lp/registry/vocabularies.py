@@ -655,18 +655,16 @@ class ValidPersonOrTeamVocabulary(
             result = self.store.with_(
                 matching_with).using(*tables).find(
                 Person,
-                And(
-                    SQL("Person.id = MatchingPerson.id"),
-                    Person.merged == None,
-                    Or(
-                        And(
-                            Account.status == AccountStatus.ACTIVE,
-                            EmailAddress.status ==
-                                EmailAddressStatus.PREFERRED),
-                        Person.teamowner != None),
-                    get_person_visibility_terms(getUtility(ILaunchBag).user),
-                    *extra_clauses),
-                )
+                SQL("Person.id = MatchingPerson.id"),
+                Person.merged == None,
+                Or(
+                    And(
+                        Account.status == AccountStatus.ACTIVE,
+                        EmailAddress.status ==
+                            EmailAddressStatus.PREFERRED),
+                    Person.teamowner != None),
+                get_person_visibility_terms(getUtility(ILaunchBag).user),
+                *extra_clauses)
             # Better ranked matches go first.
             if self._karma_context_constraint:
                 rank_order = SQL("""
@@ -684,13 +682,10 @@ class ValidPersonOrTeamVocabulary(
         # We will be displaying the person's irc nick(s) and emails in the
         # description so we need to bulk load them for performance, otherwise
         # we get one query per person per attribute.
-        def pre_iter_hook(rows):
-            persons = set(obj for obj in rows)
-            # The emails.
-            emails = bulk.load_referencing(
-                EmailAddress, persons, ['personID'])
-            email_by_person = dict((email.personID, email)
-                for email in emails
+        def pre_iter_hook(persons):
+            emails = bulk.load_referencing(EmailAddress, persons, ['personID'])
+            email_by_person = dict(
+                (email.personID, email) for email in emails
                 if email.status == EmailAddressStatus.PREFERRED)
 
             for person in persons:
@@ -698,9 +693,7 @@ class ValidPersonOrTeamVocabulary(
                 cache.preferredemail = email_by_person.get(person.id, None)
                 cache.ircnicknames = []
 
-            # The irc nicks.
-            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
-            for nick in nicks:
+            for nick in bulk.load_referencing(IrcID, persons, ['personID']):
                 get_property_cache(nick.person).ircnicknames.append(nick)
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
