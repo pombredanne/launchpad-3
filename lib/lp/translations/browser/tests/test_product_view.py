@@ -3,12 +3,16 @@
 
 __metaclass__ = type
 
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -16,6 +20,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_view
+from lp.testing.views import create_initialized_view
 from lp.translations.browser.product import ProductView
 from lp.translations.publisher import TranslationsLayer
 
@@ -114,3 +119,20 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
             view = create_view(product, '+translations',
                                layer=TranslationsLayer)
             self.assertEqual(True, view.can_configure_translations())
+
+    def test_launchpad_not_listed_for_proprietary(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            for info_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+                product.information_type = info_type
+                view = create_initialized_view(
+                    product, '+configure-translations',
+                    layer=TranslationsLayer)
+                if product.private:
+                    self.assertNotIn(
+                        ServiceUsage.LAUNCHPAD,
+                        view.widgets['translations_usage'].vocabulary)
+                else:
+                    self.assertIn(
+                        ServiceUsage.LAUNCHPAD,
+                        view.widgets['translations_usage'].vocabulary)
