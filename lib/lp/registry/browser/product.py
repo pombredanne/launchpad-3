@@ -229,7 +229,10 @@ class ProductNavigation(
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
-        return self.context.getSpecification(name)
+        spec = self.context.getSpecification(name)
+        if not check_permission('launchpad.LimitedView', spec):
+            return None
+        return spec
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
