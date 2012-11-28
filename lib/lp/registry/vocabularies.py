@@ -567,18 +567,8 @@ class ValidPersonOrTeamVocabulary(
             return None
         return '%s = %d' % (karma_context_column, context.id)
 
-    def _privateTeamQueryAndTables(self):
-        """Return query tables for private teams.
-
-        The teams are based on membership by the user.
-        Returns a tuple of (query, tables).
-        """
-        return (get_person_visibility_terms(getUtility(ILaunchBag).user), [])
-
     def _doSearch(self, text="", vocab_filter=None):
         """Return the people/teams whose fti or email address match :text:"""
-
-        private_query, private_tables = self._privateTeamQueryAndTables()
         extra_clauses = [self.extra_clause]
         if vocab_filter:
             extra_clauses.extend(vocab_filter.filter_terms)
@@ -591,19 +581,12 @@ class ValidPersonOrTeamVocabulary(
                 Join(self.cache_table_name,
                      SQL("%s.id = Person.id" % self.cache_table_name)),
                 ]
-            tables.extend(private_tables)
             tables.extend(self.extra_tables)
             result = self.store.using(*tables).find(
                 Person,
-                And(
-                    Or(Person.visibility == PersonVisibility.PUBLIC,
-                       private_query,
-                       ),
-                    Person.merged == None,
-                    *extra_clauses
-                    )
-                )
-            result.config(distinct=True)
+                get_person_visibility_terms(getUtility(ILaunchBag).user),
+                Person.merged == None,
+                *extra_clauses)
             result.order_by(Person.displayname, Person.name)
         else:
             # Do a full search based on the text given.
@@ -681,7 +664,7 @@ class ValidPersonOrTeamVocabulary(
                             EmailAddress.status ==
                                 EmailAddressStatus.PREFERRED),
                         Person.teamowner != None),
-                    self._privateTeamQueryAndTables()[0],
+                    get_person_visibility_terms(getUtility(ILaunchBag).user),
                     *extra_clauses),
                 )
             # Better ranked matches go first.
@@ -751,59 +734,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
-    extra_clause = Not(Person.teamowner == None)
+    extra_clause = Person.teamowner != None
     # Search with empty string returns all teams.
     allow_null_search = True
-
-    def _doSearch(self, text="", vocab_filter=None):
-        """Return the teams whose fti, IRC, or email address match :text:"""
-
-        private_query, private_tables = self._privateTeamQueryAndTables()
-        base_query = And(
-            Or(
-                Person.visibility == PersonVisibility.PUBLIC,
-                private_query,
-                ),
-            Person.merged == None
-            )
-
-        tables = [Person] + private_tables + list(self.extra_tables)
-
-        if not text:
-            query = And(base_query,
-                        Person.merged == None,
-                        self.extra_clause)
-            result = self.store.using(*tables).find(Person, query)
-        else:
-            name_match_query = SQL("""
-                Person.name LIKE lower(?) || '%%'
-                OR lower(Person.displayname) LIKE lower(?) || '%%'
-                OR Person.fti @@ ftq(?)
-                """, [text, text, text]),
-
-            email_storm_query = self.store.find(
-                EmailAddress.personID,
-                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
-                EmailAddress.email.lower().startswith(text))
-            email_subquery = Alias(email_storm_query._get_select(),
-                                   'EmailAddress')
-            tables += [
-                LeftJoin(email_subquery, EmailAddress.person == Person.id),
-                ]
-
-            result = self.store.using(*tables).find(
-                Person,
-                And(base_query,
-                    self.extra_clause,
-                    Or(name_match_query,
-                       EmailAddress.person != None)))
-
-        # To get the correct results we need to do distinct first, then order
-        # by, then limit.
-        result.config(distinct=True)
-        result.order_by(Person.displayname, Person.name)
-        result.config(limit=self.LIMIT)
-        return result
 
     def supportedFilters(self):
         return []
