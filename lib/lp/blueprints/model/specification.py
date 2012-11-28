@@ -974,38 +974,6 @@ class HasSpecificationsMixin:
         # this should be implemented by the actual context class
         raise NotImplementedError
 
-    @staticmethod
-    def _cache_people(rows):
-        """DecoratedResultSet pre_iter_hook to eager load Person attributes."""
-        from lp.registry.model.person import Person
-        # Find the people we need:
-        person_ids = set()
-        for spec in rows:
-            person_ids.add(spec.assigneeID)
-            person_ids.add(spec.approverID)
-            person_ids.add(spec.drafterID)
-        person_ids.discard(None)
-        if not person_ids:
-            return
-        # Query those people
-        origin = [Person]
-        columns = [Person]
-        validity_info = Person._validity_queries()
-        origin.extend(validity_info["joins"])
-        columns.extend(validity_info["tables"])
-        decorators = validity_info["decorators"]
-        personset = IStore(Specification).using(*origin).find(
-            tuple(columns),
-            Person.id.is_in(person_ids),
-            )
-        for row in personset:
-            person = row[0]
-            index = 1
-            for decorator in decorators:
-                column = row[index]
-                index += 1
-                decorator(person, column)
-
     def _specification_sort(self, sort):
         """Return the storm sort order for 'specifications'.
 
@@ -1030,8 +998,38 @@ class HasSpecificationsMixin:
         if isinstance(clauses, basestring):
             clauses = [SQL(clauses)]
 
-        cache_people = SpecificationSet._cache_people
-        results = Store.of(self).using(*tables).find(Specification, *clauses)
+        def cache_people(rows):
+            """DecoratedResultSet pre_iter_hook to eager load Person attributes."""
+            from lp.registry.model.person import Person
+            # Find the people we need:
+            person_ids = set()
+            for spec in rows:
+                person_ids.add(spec.assigneeID)
+                person_ids.add(spec.approverID)
+                person_ids.add(spec.drafterID)
+            person_ids.discard(None)
+            if not person_ids:
+                return
+            # Query those people
+            origin = [Person]
+            columns = [Person]
+            validity_info = Person._validity_queries()
+            origin.extend(validity_info["joins"])
+            columns.extend(validity_info["tables"])
+            decorators = validity_info["decorators"]
+            personset = IStore(Specification).using(*origin).find(
+                tuple(columns),
+                Person.id.is_in(person_ids),
+                )
+            for row in personset:
+                person = row[0]
+                index = 1
+                for decorator in decorators:
+                    column = row[index]
+                    index += 1
+                    decorator(person, column)
+
+        results = IStore(Specification).using(*tables).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1118,16 +1116,12 @@ class SpecificationSet(HasSpecificationsMixin):
                 # registered
                 order = [Desc(Specification.datecreated), Specification.id]
 
-        results = store.using(*privacy_tables).find(
-                      Specification,
-                      *clauses).order_by(*order)[:quantity]
-
         if prejoin_people:
-            return DecoratedResultSet(
-                results,
-                pre_iter_hook=SpecificationSet._cache_people)
+            results = self._preload_specifications_people(privacy_tables, clauses)
         else:
-            return results
+            results = store.using(*privacy_tables).find(
+                Specification, *clauses)
+        return results.order_by(*order)[:quantity]
 
     def getByURL(self, url):
         """See ISpecificationSet."""

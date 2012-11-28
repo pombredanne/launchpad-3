@@ -5,7 +5,8 @@
 
 __metaclass__ = type
 
-
+from datetime import datetime
+import pytz
 from storm.store import Store
 from zope.component import (
     getUtility,
@@ -38,6 +39,7 @@ from lp.blueprints.model.specification import (
     )
 from lp.registry.enums import (
     SharingPermission,
+    SpecificationImplementationStatus,
     SpecificationSharingPolicy,
     )
 from lp.security import (
@@ -558,3 +560,215 @@ class TestSpecificationSet(TestCaseWithFactory):
         specs = context.specifications(private_user)
         self.assertIn(public_spec, specs)
         self.assertIn(private_spec, specs)
+
+
+def list_result(context, filter=None, user=None):
+    result = context.specifications(
+        user, SpecificationSort.DATE, filter=filter)
+    return list(result)
+
+
+class TestSpecifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecifications, self).setUp()
+        self.date_created = datetime.now(pytz.utc)
+
+    def makeSpec(self, product=None, date_created=0, title=None,
+                 status=NewSpecificationDefinitionStatus.NEW,
+                 name=None, priority=None, information_type=None):
+        blueprint = self.factory.makeSpecification(
+            title=title, status=status, name=name, priority=priority,
+            information_type=information_type, product=product,
+            )
+        removeSecurityProxy(blueprint).datecreated = (
+            self.date_created + timedelta(date_created))
+        return blueprint
+
+    def test_specifications_quantity(self):
+        # Ensure the quantity controls the maximum number of entries.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        for count in range(10):
+            self.factory.makeSpecification(product=product)
+        self.assertEqual(10, context.specifications(None).count())
+        result = context.specifications(None, quantity=None).count()
+        self.assertEqual(10, result)
+        self.assertEqual(8, context.specifications(None, quantity=8).count())
+        self.assertEqual(10, context.specifications(None, quantity=11).count())
+
+    def test_date_sort(self):
+        # Sort on date_created.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        blueprint1 = self.makeSpec(context, date_created=0)
+        blueprint2 = self.makeSpec(context, date_created=-1)
+        blueprint3 = self.makeSpec(context, date_created=1)
+        result = list_result(context)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+
+    def test_date_sort_id(self):
+        # date-sorting when no date varies uses object id.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        blueprint1 = self.makeSpec(product)
+        blueprint2 = self.makeSpec(product)
+        blueprint3 = self.makeSpec(product)
+        result = list_result(context)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_priority_sort(self):
+        # Sorting by priority works and is the default.
+        # When priority is supplied, status is ignored.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(priority=SpecificationPriority.UNDEFINED,
+                                   status=SpecificationDefinitionStatus.NEW)
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(
+            product, priority=SpecificationPriority.NOTFORUS,
+            status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(
+            product, priority=SpecificationPriority.LOW,
+            status=SpecificationDefinitionStatus.NEW)
+        result = context.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_priority_sort_fallback_status(self):
+        # Sorting by priority falls back to defintion_status.
+        # When status is supplied, name is ignored.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            status=SpecificationDefinitionStatus.NEW, name='a')
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(
+            product, status=SpecificationDefinitionStatus.APPROVED, name='c')
+        blueprint3 = self.makeSpec(
+            product, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
+        result = context.specifications(None)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+
+    def test_priority_sort_fallback_name(self):
+        # Sorting by priority falls back to name.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(name='b')
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(product, name='c')
+        blueprint3 = self.makeSpec(product, name='a')
+        result = context.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_informational(self):
+        # INFORMATIONAL causes only informational specs to be shown.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        informational = self.factory.makeSpecification(
+            implementation_status=enum.INFORMATIONAL)
+        product = informational.product
+        plain = self.factory.makeSpecification(product=product)
+        result = context.specifications(None)
+        self.assertIn(informational, result)
+        self.assertIn(plain, result)
+        result = context.specifications(
+            None, filter=[SpecificationFilter.INFORMATIONAL])
+        self.assertIn(informational, result)
+        self.assertNotIn(plain, result)
+
+    def test_completeness(self):
+        # If COMPLETE is specified, completed specs are listed.  If INCOMPLETE
+        # is specified or neither is specified, only incomplete specs are
+        # listed.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        product = implemented.product
+        non_implemented = self.factory.makeSpecification(product=product)
+        result = context.specifications(
+            None, filter=[SpecificationFilter.COMPLETE])
+        self.assertIn(implemented, result)
+        self.assertNotIn(non_implemented, result)
+
+        result = context.specifications(
+            None, filter=[SpecificationFilter.INCOMPLETE])
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+        result = context.specifications(None)
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
+    def test_all(self):
+        # ALL causes both complete and incomplete to be listed.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        product = implemented.product
+        non_implemented = self.factory.makeSpecification(product=product)
+        result = context.specifications(None, filter=[SpecificationFilter.ALL])
+        self.assertContentEqual([implemented, non_implemented], result)
+
+    def test_valid(self):
+        # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
+        # (INCOMPLETE already excludes OBSOLETE and SUPERSEDED.)
+        context = getUtility(ISpecificationSet)
+        i_enum = SpecificationImplementationStatus
+        d_enum = SpecificationDefinitionStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=i_enum.IMPLEMENTED)
+        product = implemented.product
+        self.factory.makeSpecification(product=product,
+                                       status=d_enum.SUPERSEDED)
+        self.factory.makeSpecification(product=product, status=d_enum.OBSOLETE)
+        filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
+        results = context.specifications(None, filter=filter)
+        self.assertContentEqual([implemented], results)
+
+    def test_text_search(self):
+        # Text searches work.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(title='abc')
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(product, title='def')
+        result = list_result(context, ['abc'])
+        self.assertEqual([blueprint1], result)
+        result = list_result(product, ['def'])
+        self.assertEqual([blueprint2], result)
+
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertEqual([], list_result(context.specifications(None)))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertEqual(
+            [blueprint1],
+            list_result(context.specifications(grant.grantee)))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertEqual(
+            [blueprint1],
+            list_result(context.specifications(user=grant.grantee)))
