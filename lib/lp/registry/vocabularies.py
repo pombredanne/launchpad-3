@@ -133,7 +133,6 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -144,6 +143,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.person import (
+    get_person_visibility_terms,
     IrcID,
     Person,
     )
@@ -573,26 +573,7 @@ class ValidPersonOrTeamVocabulary(
         The teams are based on membership by the user.
         Returns a tuple of (query, tables).
         """
-        tables = []
-        logged_in_user = getUtility(ILaunchBag).user
-        if logged_in_user is not None:
-            roles = IPersonRoles(logged_in_user)
-            if roles.in_admin or roles.in_commercial_admin:
-                # If the user is a LP admin or commercial admin we allow
-                # all private teams to be visible.
-                private_query = AND(
-                    Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE)
-            else:
-                private_query = AND(
-                    TeamParticipation.person == logged_in_user.id,
-                    Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE)
-                tables = [Join(TeamParticipation,
-                               TeamParticipation.teamID == Person.id)]
-        else:
-            private_query = False
-        return (private_query, tables)
+        return (get_person_visibility_terms(getUtility(ILaunchBag).user), [])
 
     def _doSearch(self, text="", vocab_filter=None):
         """Return the people/teams whose fti or email address match :text:"""
@@ -627,16 +608,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             # Do a full search based on the text given.
 
-            # The queries are broken up into several steps for efficiency.
-            # The public person and team searches do not need to join with the
-            # TeamParticipation table, which is very expensive.  The search
-            # for private teams does need that table but the number of private
-            # teams is very small so the cost is not great. However, if the
-            # person is a logged in administrator, we don't need to join to
-            # the TeamParticipation table and can construct a more efficient
-            # query (since in this case we are searching all private teams).
-
-            # Create a query that will match public persons and teams that
+            # Create a query that will match persons and teams that
             # have the search text in the fti, at the start of their email
             # address, as their full IRC nickname, or at the start of their
             # displayname.
@@ -651,7 +623,7 @@ class ValidPersonOrTeamVocabulary(
             # This is the SQL that will give us the IDs of the people we want
             # in the result.
             matching_person_sql = SQL("""
-                SELECT id, MAX(rank) AS rank, false as is_private_team
+                SELECT id, MAX(rank) AS rank
                 FROM (
                     SELECT Person.id,
                     (case
@@ -677,40 +649,10 @@ class ValidPersonOrTeamVocabulary(
                         AND LOWER(EmailAddress.email) LIKE lower(?) || '%%'
                         AND status IN (?, ?)
                 ) AS person_match
-                GROUP BY id, is_private_team
+                GROUP BY id
             """, (text, text, text, text, text, text, text, text, text,
                   EmailAddressStatus.VALIDATED.value,
                   EmailAddressStatus.PREFERRED.value))
-
-            # Do we need to search for private teams.
-            if private_tables:
-                private_tables = [Person] + private_tables
-                private_ranking_sql = SQL("""
-                    (case
-                        when person.name=lower(?) then 100
-                        when person.name like lower(?) || '%%' then 0.6
-                        when lower(person.displayname) like lower(?)
-                            || '%%' then 0.5
-                        else rank(fti, ftq(?))
-                    end) as rank
-                """, (text, text, text, text))
-
-                # Searching for private teams that match can be easier since
-                # we are only interested in teams.  Teams can have email
-                # addresses but we're electing to ignore them here.
-                private_result_select = Select(
-                    tables=private_tables,
-                    columns=(Person.id, private_ranking_sql,
-                                SQL("true as is_private_team")),
-                    where=And(
-                        SQL("""
-                            Person.name LIKE lower(?) || '%%'
-                            OR lower(Person.displayname) LIKE lower(?) || '%%'
-                            OR Person.fti @@ ftq(?)
-                            """, [text, text, text]),
-                        private_query))
-                matching_person_sql = Union(matching_person_sql,
-                          private_result_select, all=True)
 
             # The tables for public persons and teams that match the text.
             public_tables = [
@@ -721,15 +663,6 @@ class ValidPersonOrTeamVocabulary(
                 ]
             public_tables.extend(self.extra_tables)
 
-            # If private_tables is empty, we are searching for all private
-            # teams. We can simply append the private query component to the
-            # public query. Otherwise, for efficiency as stated earlier, we
-            # need to do a separate query to join to the TeamParticipation
-            # table.
-            private_teams_query = private_query
-            if private_tables:
-                private_teams_query = SQL("is_private_team")
-
             # We just select the required ids since we will use
             # IPersonSet.getPrecachedPersonsFromIDs to load the results
             matching_with = With("MatchingPerson", matching_person_sql)
@@ -738,21 +671,14 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     SQL("Person.id = MatchingPerson.id"),
+                    Person.merged == None,
                     Or(
-                        Account.status == AccountStatus.ACTIVE,
+                        And(
+                            Account.status == AccountStatus.ACTIVE,
+                            EmailAddress.status ==
+                                EmailAddressStatus.PREFERRED),
                         Person.teamowner != None),
-                    Or(
-                        And(  # A public person or team
-                            Person.visibility == PersonVisibility.PUBLIC,
-                            Person.merged == None,
-                            Or(  # A valid person-or-team is either a team...
-                                # Note: 'Not' due to Bug 244768.
-                                Not(Person.teamowner == None),
-                                # Or a person who has preferred email address.
-                                EmailAddress.status ==
-                                    EmailAddressStatus.PREFERRED)),
-                        # Or a private team
-                        private_teams_query),
+                    self._privateTeamQueryAndTables()[0],
                     *extra_clauses),
                 )
             # Better ranked matches go first.
