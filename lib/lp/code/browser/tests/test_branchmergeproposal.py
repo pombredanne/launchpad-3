@@ -867,6 +867,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('utf-8'),
                          view.preview_diff_text)
+        self.assertTrue(view.diff_available)
 
     def test_preview_diff_all_chars(self):
         """preview_diff should work on diffs containing all possible bytes."""
@@ -877,6 +878,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
+        self.assertTrue(view.diff_available)
 
     def test_preview_diff_timeout(self):
         # The preview_diff will recover from a timeout set to get the
@@ -891,26 +893,12 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
         lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
         with monkey_patch(lfa, open=fake_open):
-            view = create_initialized_view(self.bmp, '+index')
+            view = view = create_initialized_view(
+                self.bmp.preview_diff, '+diff')
             self.assertEqual('', view.preview_diff_text)
-
-    def test_diff_available(self):
-        # The diff_available property tests that the preview_diff can be
-        # retrived from the librarian.
-        text = ''.join(chr(x) for x in range(255))
-        diff_bytes = ''.join(unified_diff('', text))
-        self.setPreviewDiff(diff_bytes)
-        transaction.commit()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertTrue(view.diff_available)
-
-        def fake_open(*args):
-            raise LibrarianServerError
-
-        lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
-        with monkey_patch(lfa, open=fake_open):
-            view = create_initialized_view(self.bmp, '+index')
             self.assertFalse(view.diff_available)
+            markup = view()
+            self.assertIn('The diff is not available at this time.', markup)
 
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
