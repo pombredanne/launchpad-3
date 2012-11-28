@@ -3543,17 +3543,17 @@ class PersonSet:
         """
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            private_query = SQL("""
-                TeamParticipation.person = ?
-                AND Person.teamowner IS NOT NULL
-                AND Person.visibility != ?
-                """, (logged_in_user.id, PersonVisibility.PUBLIC.value))
+            private_query = And(
+                Person.id.is_in(
+                    Select(
+                        TeamParticipation.teamID, tables=[TeamParticipation],
+                        where=(TeamParticipation.person == logged_in_user))),
+                Person.teamowner != None,
+                Person.visibility != PersonVisibility.PUBLIC)
         else:
             private_query = None
 
-        base_query = SQL("Person.visibility = ?",
-                         (PersonVisibility.PUBLIC.value, ),
-                         tables=['Person'])
+        base_query = (Person.visibility == PersonVisibility.PUBLIC)
 
         if private_query is None:
             query = base_query
@@ -3569,7 +3569,6 @@ class PersonSet:
         # instead of Bar.foo != None.
         team_email_query = And(
             privacy_query,
-            TeamParticipation.team == Person.id,
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
@@ -3583,7 +3582,6 @@ class PersonSet:
         # instead of Bar.foo != None.
         team_name_query = And(
             privacy_query,
-            TeamParticipation.team == Person.id,
             Not(Person.teamowner == None),
             Person.merged == None,
             SQL("Person.fti @@ ftq(?)", (text, )))
