@@ -17,8 +17,6 @@ __all__ = [
     "UbuntuSourcePackageNameWidget",
     ]
 
-from xml.sax.saxutils import escape
-
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import (
     CustomWidgetFactory,
@@ -73,6 +71,7 @@ from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -577,7 +576,8 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.displayname)))
+                contents="%s %s" % (
+                    person_img, html_escape(assignee.displayname)))
         else:
             if bugtask.pillar.official_malone:
                 return renderElement('i', contents='not assigned')

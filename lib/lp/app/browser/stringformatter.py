@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'add_word_breaks',
     'break_long_words',
-    'escape',
     'extract_bug_numbers',
     'extract_email_addresses',
     'FormattersAPI',
@@ -43,10 +42,6 @@ from lp.services.webapp.escaping import (
     structured,
     )
 from lp.services.webapp.interfaces import ILaunchBag
-
-
-# XXX wgrant: this is temporary
-escape = html_escape
 
 
 def split_paragraphs(text):
