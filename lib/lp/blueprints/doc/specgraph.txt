@@ -29,10 +29,10 @@ SpecGraph to keep track of the nodes that have been added.
     ...         self.assignee = assignee
     ...         # Use lists here to ensure that the code converts them
     ...         # to sets explicitly, like it has to do for SelectResults.
-    ...         self.dependencies = []
+    ...         self.all_deps = []
     ...         # This is a hack for testing: we can set up dependencies,
     ...         # and simply use their "mirror image" for blocked specs.
-    ...         self.blocked_specs = self.dependencies
+    ...         self.all_blocked = self.all_deps
 
     >>> foo = Spec('foo', title='something with " and \n in it')
     >>> root = g.newNode(foo, root=True)
@@ -70,13 +70,13 @@ don't want a link to the spec we're currently looking at.
     <fnord-foo>:
 
     >>> foo1 = Spec('foo1')
-    >>> foo.dependencies.append(foo1)
+    >>> foo.all_deps.append(foo1)
     >>> foo2 = Spec('foo2')
-    >>> foo.dependencies.append(foo2)
+    >>> foo.all_deps.append(foo2)
     >>> foo11 = Spec('foo11')
-    >>> foo1.dependencies.append(foo11)
+    >>> foo1.all_deps.append(foo11)
     >>> foo111 = Spec('foo111')
-    >>> foo11.dependencies.append(foo111)
+    >>> foo11.all_deps.append(foo111)
 
     >>> def make_graph(dependency, blocked):
     ...     g = SpecGraph()
@@ -175,11 +175,11 @@ don't want a link to the spec we're currently looking at.
 
 The graph grows when specifications gain more dependencies.
 
-    >>> foo1.dependencies.append(foo)
-    >>> foo111.dependencies.append(foo1)
-    >>> foo111.dependencies.append(foo)
-    >>> foo2.dependencies.append(foo1)
-    >>> foo1.dependencies.append(foo2)
+    >>> foo1.all_deps.append(foo)
+    >>> foo111.all_deps.append(foo1)
+    >>> foo111.all_deps.append(foo)
+    >>> foo2.all_deps.append(foo1)
+    >>> foo1.all_deps.append(foo2)
     >>> print_graph()
     Root is <fnord-foo>
     <fnord-foo>:

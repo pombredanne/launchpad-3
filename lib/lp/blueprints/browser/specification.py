@@ -1166,7 +1166,7 @@ class SpecGraph:
         """Add nodes for the specs that the given spec depends on,
         transitively.
         """
-        get_related_specs_fn = attrgetter('dependencies')
+        get_related_specs_fn = attrgetter('all_deps')
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -1174,7 +1174,7 @@ class SpecGraph:
 
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
-        get_related_specs_fn = attrgetter('blocked_specs')
+        get_related_specs_fn = attrgetter('all_blocked')
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
@@ -1197,7 +1197,10 @@ class SpecGraph:
             current_spec = to_search.pop()
             visited.add(current_spec)
             node = self.newOrExistingNode(current_spec)
-            related_specs = set(get_related_specs_fn(current_spec))
+            try:
+                related_specs = set(get_related_specs_fn(current_spec))
+            except AttributeError:
+                import pdb; pdb.set_trace()
             for related_spec in related_specs:
                 link_nodes_fn(node, self.newOrExistingNode(related_spec))
             to_search.update(related_specs.difference(visited))
