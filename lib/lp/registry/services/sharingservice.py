@@ -31,10 +31,7 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.tales import ObjectImageDisplayAPI
-from lp.app.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -449,20 +446,15 @@ class SharingService:
 
             if pillar.private:
                 allowed_policies = [
-                    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
-                    BugSharingPolicy.PROPRIETARY,
+                    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                    BranchSharingPolicy.PROPRIETARY,
                 ]
             else:
                 allowed_policies = [
-                    BugSharingPolicy.PUBLIC,
-                    BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                    BugSharingPolicy.PROPRIETARY_OR_PUBLIC
-                ]
-
-                allowed_policies.extend([
+                    BranchSharingPolicy.PUBLIC,
                     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                    BranchSharingPolicy.PROPRIETARY])
+                ]
 
         if (pillar.branch_sharing_policy and
             not pillar.branch_sharing_policy in allowed_policies):
@@ -488,7 +480,7 @@ class SharingService:
                 allowed_policies = [
                     BugSharingPolicy.PUBLIC,
                     BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                    BugSharingPolicy.PROPRIETARY_OR_PUBLIC
+                    BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 ]
 
         if (pillar.bug_sharing_policy and
@@ -515,7 +507,7 @@ class SharingService:
                 allowed_policies = [
                     SpecificationSharingPolicy.PUBLIC,
                     SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC
+                    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 ]
 
         if (pillar.specification_sharing_policy and
