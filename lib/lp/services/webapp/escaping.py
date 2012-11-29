@@ -7,8 +7,6 @@ __all__ = [
     'structured',
     ]
 
-import cgi
-
 from zope.i18n import (
     Message,
     translate,
@@ -38,9 +36,13 @@ def html_escape(message):
         # It is possible that the message is wrapped in an
         # internationalized object, so we need to translate it
         # first. See bug #54987.
-        return cgi.escape(
-            unicode(
-                translate_if_i18n(message)))
+        raw = unicode(translate_if_i18n(message))
+        raw = raw.replace('&', '&amp;')
+        raw = raw.replace('<', '&lt;')
+        raw = raw.replace('>', '&gt;')
+        raw = raw.replace('"', '&quot;')
+        raw = raw.replace("'", '&#x27;')
+        return raw
 
 
 def translate_if_i18n(obj_or_msgid):
@@ -49,9 +51,7 @@ def translate_if_i18n(obj_or_msgid):
     Returns any other type of object untouched.
     """
     if isinstance(obj_or_msgid, Message):
-        return translate(
-            obj_or_msgid,
-            context=get_current_browser_request())
+        return translate(obj_or_msgid, context=get_current_browser_request())
     else:
         # Just text (or something unknown).
         return obj_or_msgid
@@ -61,31 +61,20 @@ class structured:
 
     implements(IStructuredString)
 
-    def __init__(self, text, *replacements, **kwreplacements):
-        text = translate_if_i18n(text)
+    def __init__(self, text, *reps, **kwreps):
+        text = unicode(translate_if_i18n(text))
         self.text = text
-        if replacements and kwreplacements:
+        if reps and kwreps:
             raise TypeError(
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
-        if replacements:
-            escaped = []
-            for replacement in replacements:
-                if isinstance(replacement, structured):
-                    escaped.append(unicode(replacement.escapedtext))
-                else:
-                    escaped.append(cgi.escape(unicode(replacement)))
-            self.escapedtext = text % tuple(escaped)
-        elif kwreplacements:
-            escaped = {}
-            for key, value in kwreplacements.iteritems():
-                if isinstance(value, structured):
-                    escaped[key] = unicode(value.escapedtext)
-                else:
-                    escaped[key] = cgi.escape(unicode(value))
-            self.escapedtext = text % escaped
+        if reps:
+            escaped = tuple(html_escape(rep) for rep in reps)
+        elif kwreps:
+            escaped = dict((k, html_escape(v)) for k, v in kwreps.iteritems())
         else:
-            self.escapedtext = unicode(text)
+            escaped = ()
+        self.escapedtext = text % escaped
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
