@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import pytz
 from storm.store import Store
 from zope.component import (
@@ -29,7 +32,11 @@ from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationFilter,
     SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -39,9 +46,9 @@ from lp.blueprints.model.specification import (
     )
 from lp.registry.enums import (
     SharingPermission,
-    SpecificationImplementationStatus,
     SpecificationSharingPolicy,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -593,21 +600,21 @@ class TestSpecifications(TestCaseWithFactory):
         product = self.factory.makeProduct()
         for count in range(10):
             self.factory.makeSpecification(product=product)
-        self.assertEqual(10, context.specifications(None).count())
+        self.assertEqual(20, context.specifications(None).count())
         result = context.specifications(None, quantity=None).count()
-        self.assertEqual(10, result)
+        self.assertEqual(20, result)
         self.assertEqual(8, context.specifications(None, quantity=8).count())
-        self.assertEqual(10, context.specifications(None, quantity=11).count())
+        self.assertEqual(11, context.specifications(None, quantity=11).count())
 
     def test_date_sort(self):
         # Sort on date_created.
         context = getUtility(ISpecificationSet)
         product = self.factory.makeProduct()
-        blueprint1 = self.makeSpec(context, date_created=0)
-        blueprint2 = self.makeSpec(context, date_created=-1)
-        blueprint3 = self.makeSpec(context, date_created=1)
+        blueprint1 = self.makeSpec(product, date_created=0)
+        blueprint2 = self.makeSpec(product, date_created=-1)
+        blueprint3 = self.makeSpec(product, date_created=1)
         result = list_result(context)
-        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result[0:3])
 
     def test_date_sort_id(self):
         # date-sorting when no date varies uses object id.
@@ -617,7 +624,7 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint2 = self.makeSpec(product)
         blueprint3 = self.makeSpec(product)
         result = list_result(context)
-        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result[0:3])
 
     def test_priority_sort(self):
         # Sorting by priority works and is the default.
@@ -632,38 +639,24 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint3 = self.makeSpec(
             product, priority=SpecificationPriority.LOW,
             status=SpecificationDefinitionStatus.NEW)
-        result = context.specifications(None)
-        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
-        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = list(context.specifications(
+            None, sort=SpecificationSort.PRIORITY))
+        self.assertTrue(
+            result.index(blueprint3) <
+            result.index(blueprint1) <
+            result.index(blueprint2))
 
-    def test_priority_sort_fallback_status(self):
-        # Sorting by priority falls back to defintion_status.
-        # When status is supplied, name is ignored.
-        context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
-            status=SpecificationDefinitionStatus.NEW, name='a')
-        product = blueprint1.product
-        blueprint2 = self.makeSpec(
-            product, status=SpecificationDefinitionStatus.APPROVED, name='c')
-        blueprint3 = self.makeSpec(
-            product, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
-        result = context.specifications(None)
-        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
-        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
-        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
-
-    def test_priority_sort_fallback_name(self):
-        # Sorting by priority falls back to name.
+    def test_priority_sort_fallback_is_priority(self):
+        # Sorting by default falls back to Priority
         context = getUtility(ISpecificationSet)
         blueprint1 = self.makeSpec(name='b')
         product = blueprint1.product
-        blueprint2 = self.makeSpec(product, name='c')
-        blueprint3 = self.makeSpec(product, name='a')
-        result = context.specifications(None)
-        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
-        result = context.specifications(None, sort=SpecificationSort.PRIORITY)
-        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        self.makeSpec(product, name='c')
+        self.makeSpec(product, name='a')
+        base_result = context.specifications(None)
+        priority_result = context.specifications(
+            None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual(list(base_result), list(priority_result))
 
     def test_informational(self):
         # INFORMATIONAL causes only informational specs to be shown.
@@ -713,7 +706,8 @@ class TestSpecifications(TestCaseWithFactory):
         product = implemented.product
         non_implemented = self.factory.makeSpecification(product=product)
         result = context.specifications(None, filter=[SpecificationFilter.ALL])
-        self.assertContentEqual([implemented, non_implemented], result)
+        self.assertIn(implemented, result)
+        self.assertIn(non_implemented, result)
 
     def test_valid(self):
         # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
@@ -724,12 +718,13 @@ class TestSpecifications(TestCaseWithFactory):
         implemented = self.factory.makeSpecification(
             implementation_status=i_enum.IMPLEMENTED)
         product = implemented.product
-        self.factory.makeSpecification(product=product,
-                                       status=d_enum.SUPERSEDED)
+        superseded = self.factory.makeSpecification(product=product,
+                                                    status=d_enum.SUPERSEDED)
         self.factory.makeSpecification(product=product, status=d_enum.OBSOLETE)
         filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
         results = context.specifications(None, filter=filter)
-        self.assertContentEqual([implemented], results)
+        self.assertIn(implemented, results)
+        self.assertNotIn(superseded, results)
 
     def test_text_search(self):
         # Text searches work.
@@ -745,9 +740,9 @@ class TestSpecifications(TestCaseWithFactory):
     def test_proprietary_not_listed(self):
         # Proprietary blueprints are not listed for random users
         context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
+        private_spec = self.makeSpec(
             information_type=InformationType.PROPRIETARY)
-        self.assertEqual([], list_result(context.specifications(None)))
+        self.assertNotIn(private_spec, list(context.specifications(None)))
 
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
@@ -756,9 +751,9 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         grant = self.factory.makeAccessArtifactGrant(
             concrete_artifact=blueprint1)
-        self.assertEqual(
-            [blueprint1],
-            list_result(context.specifications(grant.grantee)))
+        self.assertIn(
+            blueprint1,
+            list(context.specifications(grant.grantee)))
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
@@ -769,6 +764,6 @@ class TestSpecifications(TestCaseWithFactory):
         (policy,) = policy_source.find(
             [(blueprint1.product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
-        self.assertEqual(
-            [blueprint1],
-            list_result(context.specifications(user=grant.grantee)))
+        self.assertIn(
+            blueprint1,
+            list(context.specifications(user=grant.grantee)))
