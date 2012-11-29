@@ -34,6 +34,7 @@ from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login,
     login_person,
+    monkey_patch,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -171,6 +172,24 @@ class TestDiff(DiffTestCase):
         content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
+
+    def test_getDiffTimeout(self):
+        content = ''.join(unified_diff('', "1234567890" * 10))
+        diff = self._create_diff(content)
+        value = None
+
+        def fake():
+            return value
+
+        from lp.code.model import diff as diff_module
+        with monkey_patch(diff_module, get_request_remaining_seconds=fake):
+            self.assertIs(None, diff._getDiffTimeout())
+            value = 3.1
+            self.assertEqual(2, diff._getDiffTimeout())
+            value = 1.1
+            self.assertEqual(1, diff._getDiffTimeout())
+            value = 0.1
+            self.assertEqual(0, diff._getDiffTimeout())
 
 
 class TestDiffInScripts(DiffTestCase):

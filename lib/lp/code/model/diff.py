@@ -55,6 +55,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
 class Diff(SQLBase):
@@ -94,11 +95,21 @@ class Diff(SQLBase):
         if self.diff_text is None:
             return ''
         else:
-            self.diff_text.open()
+            self.diff_text.open(self._getDiffTimeout())
             try:
                 return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
+
+    def _getDiffTimeout(self):
+        """Return the time allocated to get the diff from the librarian."""
+        remaining = get_request_remaining_seconds()
+        if remaining is None:
+            return None
+        elif remaining > 2:
+            return 2
+        else:
+            return int(remaining)
 
     @property
     def oversized(self):
