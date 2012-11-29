@@ -562,7 +562,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     branch_sharing_policy = EnumCol(
         enum=BranchSharingPolicy, notNull=False, default=None)
     specification_sharing_policy = EnumCol(
-        enum=SpecificationSharingPolicy, notNull=False, default=None)
+        enum=SpecificationSharingPolicy, notNull=False,
+        default=SpecificationSharingPolicy.PUBLIC)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
