@@ -23,29 +23,26 @@ def text_lines_to_set(text):
 
 
 permitted_database_imports = text_lines_to_set("""
-    lp.codehosting.inmemory
-    lp.code.browser.branchlisting
-    lp.services.librarian.browser
+    doctest
+    lp.archiveuploader.nascentuploadfile
     lp.code.feed.branch
-    lp.scripts.garbo
-    lp.bugs.vocabularies
+    lp.codehosting.inmemory
+    lp.codehosting.scanner.bzrsync
     lp.registry.interfaces.person
-    lp.registry.vocabularies
-    lp.services.worlddata.vocabularies
-    lp.soyuz.vocabularies
-    lp.translations.vocabularies
+    lp.scripts.garbo
+    lp.services.librarian.browser
     lp.services.librarian.client
     lp.services.librarianserver.db
-    doctest
+    lp.systemhomes
+    lp.translations.translationmerger
     """)
 
-
 warned_database_imports = text_lines_to_set("""
-    lp.soyuz.scripts.obsolete_distroseries
-    lp.soyuz.scripts.gina.handlers
     lp.registry.browser.distroseries
-    lp.translations.scripts.po_import
+    lp.soyuz.scripts.gina.handlers
+    lp.soyuz.scripts.obsolete_distroseries
     lp.systemhomes
+    lp.translations.scripts.po_import
     """)
 
 
@@ -70,22 +67,51 @@ valid_imports_not_in_all = {
     }
 
 
-def database_import_allowed_into(module_path):
-    """Return True if database code is allowed to be imported into the given
-    module path.  Otherwise, returns False.
+def database_import_allowed_into(module_path, name):
+    """Return True if model code can be imported into the module path.
 
     It is allowed if:
         - The import was made with the __import__ hook.
         - The importer is a 'test' module.
         - The importer is in the set of permitted_database_imports.
         - The importer is within a model module or package.
-
-    Note that being in the set of warned_database_imports does not make
-    the import allowed.
-
+        - The import is recognised to be dubious, but not a priority to fix.
     """
+    if name == 'lp.registry.model.personroles':
+        return True
+    dubious = [
+        'lp.blueprints.browser.sprint',
+        'lp.bugs.browser.bug',
+        'lp.bugs.browser.bugalsoaffects',
+        'lp.bugs.browser.bugsubscription',
+        'lp.bugs.browser.bugtarget',
+        'lp.bugs.browser.bugtask',
+        'lp.bugs.browser.person',
+        'lp.code.browser.branchlisting',
+        'lp.code.browser.sourcepackagerecipe',
+        'lp.registry.browser.distroseries',
+        'lp.registry.browser.distroseriesdifference',
+        'lp.registry.browser.milestone',
+        'lp.registry.browser.pillar',
+        'lp.registry.browser.person',
+        'lp.registry.browser.project',
+        'lp.registry.browser.sourcepackage',
+        'lp.soyuz.browser.archive',
+        'lp.soyuz.browser.builder',
+        'lp.soyuz.browser.queue',
+        'lp.translations.browser.potemplate',
+        'lp.translations.browser.serieslanguage',
+        'lp.translations.browser.sourcepackage',
+        'lp.translations.browser.translationlinksaggregator',
+        'lp.translations.browser.translationtemplatesbuild',
+        ]
+    safe_parts = set(
+        ['model', 'scripts', 'adapters', 'vocabularies', 'vocabulary',
+         'security', 'services', 'subscribers', 'utilities'])
+    module_parts = set(module_path.split('.'))
     if (module_path == '__import__ hook' or
-        '.model' in module_path or
+        safe_parts & module_parts or
+        module_path in dubious or
         is_test_module(module_path)):
         return True
     return module_path in permitted_database_imports
@@ -216,8 +242,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
             raise NotFoundPolicyViolation(import_into)
 
     # Check the database import policy.
-    if (name.startswith(database_root) and
-        not database_import_allowed_into(import_into)):
+    if ('.model.' in name
+        and not database_import_allowed_into(import_into, name)):
         error = DatabaseImportPolicyViolation(import_into, name)
         naughty_imports.add(error)
         # Raise an error except in the case of browser.traversers.
