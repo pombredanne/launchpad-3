@@ -102,8 +102,8 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ITableBatchNavigator
-from lp.services.webapp.menu import structured
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (

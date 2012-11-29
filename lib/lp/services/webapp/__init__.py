@@ -37,6 +37,7 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.menu import (
     ApplicationMenu,
     ContextMenu,
@@ -44,7 +45,6 @@ from lp.services.webapp.menu import (
     FacetMenu,
     Link,
     NavigationMenu,
-    structured,
     )
 from lp.services.webapp.preferredcharsets import Utf8PreferredCharsets
 from lp.services.webapp.publisher import (

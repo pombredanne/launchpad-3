@@ -30,7 +30,7 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode,
     IHasCustomLanguageCodes,

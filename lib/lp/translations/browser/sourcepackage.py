@@ -24,7 +24,7 @@ from lp.services.webapp import (
     NavigationMenu,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.product import ProductTranslationsMenu

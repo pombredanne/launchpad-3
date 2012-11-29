@@ -11,7 +11,7 @@ from textwrap import dedent
 
 from lp import _
 from lp.app.validators import LaunchpadValidationError
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 
 
 valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")

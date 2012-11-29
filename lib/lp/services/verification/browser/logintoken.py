@@ -63,12 +63,12 @@ from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadView,
     )
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IPlacelessLoginSource,
     )
 from lp.services.webapp.login import logInPrincipal
-from lp.services.webapp.menu import structured
 from lp.services.webapp.vhosts import allvhosts
 
 
