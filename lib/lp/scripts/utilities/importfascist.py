@@ -23,15 +23,9 @@ def text_lines_to_set(text):
 
 
 permitted_database_imports = text_lines_to_set("""
-    canonical.archivepublisher.deathrow
-    canonical.archivepublisher.domination
-    canonical.archivepublisher.ftparchive
-    canonical.archivepublisher.publishing
     lp.codehosting.inmemory
-    canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
     lp.services.librarian.browser
-    canonical.launchpad.feed.branch
     lp.code.feed.branch
     lp.scripts.garbo
     lp.bugs.vocabularies
@@ -82,7 +76,6 @@ def database_import_allowed_into(module_path):
 
     It is allowed if:
         - The import was made with the __import__ hook.
-        - The importer is from within canonical.launchpad.database.
         - The importer is a 'test' module.
         - The importer is in the set of permitted_database_imports.
         - The importer is within a model module or package.
@@ -92,7 +85,6 @@ def database_import_allowed_into(module_path):
 
     """
     if (module_path == '__import__ hook' or
-        module_path.startswith('canonical.launchpad.database') or
         '.model' in module_path or
         is_test_module(module_path)):
         return True
@@ -105,9 +97,7 @@ def is_test_module(module_path):
     Otherwise returns False.
     """
     name_splitted = module_path.split('.')
-    return ('tests' in name_splitted or
-            'ftests' in name_splitted or
-            'testing' in name_splitted)
+    return ('tests' in name_splitted or 'testing' in name_splitted)
 
 
 class attrsgetter:
@@ -166,9 +156,7 @@ class NotInModuleAllPolicyViolation(JackbootError):
 
 
 class NotFoundPolicyViolation(JackbootError):
-    """import of zope.exceptions.NotFoundError into
-    canonical.launchpad.database.
-    """
+    """import of zope.exceptions.NotFoundError into lp models modules."""
 
     def __init__(self, import_into):
         JackbootError.__init__(self, import_into, '')
@@ -223,8 +211,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
         import_into = '__import__ hook'
 
     # Check the "NotFoundError" policy.
-    if (import_into.startswith('canonical.launchpad.database') and
-        name == 'zope.exceptions'):
+    if ('.model.' in import_into and name == 'zope.exceptions'):
         if fromlist and 'NotFoundError' in fromlist:
             raise NotFoundPolicyViolation(import_into)
 
@@ -240,8 +227,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
             raise error
 
     # Check the import from __all__ policy.
-    if fromlist is not None and (
-        import_into.startswith('canonical') or import_into.startswith('lp')):
+    if fromlist is not None and import_into.startswith('lp'):
         # We only want to warn about "from foo import bar" violations in our
         # own code.
         fromlist = list(fromlist)
