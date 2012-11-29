@@ -17,7 +17,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import canonical_url
 
 

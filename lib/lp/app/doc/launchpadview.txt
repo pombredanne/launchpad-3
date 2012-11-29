@@ -78,7 +78,7 @@ an IStructuredString implementation.
     >>> print view.info_message
     None
 
-    >>> from lp.services.webapp.menu import structured
+    >>> from lp.services.webapp.escaping import structured
     >>> view.error_message = structured(
     ...    'A structure is just "%s".', 'smoke & mirrors')
     >>> view.error_message.escapedtext

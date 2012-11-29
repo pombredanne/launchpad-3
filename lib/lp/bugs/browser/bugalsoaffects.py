@@ -85,8 +85,8 @@ from lp.registry.model.product import Product
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
