@@ -259,7 +259,7 @@ class FormattersAPI:
         return html_escape(self._stringtoformat).replace('\n', '<br />\n')
 
     def escape(self):
-        return escape(self._stringtoformat)
+        return html_escape(self._stringtoformat)
 
     def break_long_words(self):
         """Add manual word breaks to long words."""
