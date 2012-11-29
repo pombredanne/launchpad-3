@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+from testtools.matchers import LessThan
+
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.browser.person import (
     ContactViaWebLinksMixin,
@@ -13,9 +15,11 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.messages.interfaces.message import IDirectEmailAuthorization
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -52,8 +56,11 @@ class ContactViaWebNotificationRecipientSetTestCase(TestCaseWithFactory):
         member = self.factory.makePerson()
         sender_team = self.factory.makeTeam(members=[member])
         owner = sender_team.teamowner
-        self.assertEqual(
-            2, len(ContactViaWebNotificationRecipientSet(owner, sender_team)))
+        with StormStatementRecorder() as recorder:
+            total = len(
+                ContactViaWebNotificationRecipientSet(owner, sender_team))
+            self.assertThat(recorder, HasQueryCount(LessThan(3)))
+        self.assertEqual(2, total)
         with person_logged_in(owner):
             owner.leave(sender_team)
         self.assertEqual(
