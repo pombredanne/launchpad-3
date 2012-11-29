@@ -454,6 +454,7 @@ class SharingService:
                     BranchSharingPolicy.PUBLIC,
                     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    BranchSharingPolicy.PROPRIETARY,
                 ]
 
         if (pillar.branch_sharing_policy and
@@ -481,6 +482,7 @@ class SharingService:
                     BugSharingPolicy.PUBLIC,
                     BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                     BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    BugSharingPolicy.PROPRIETARY,
                 ]
 
         if (pillar.bug_sharing_policy and
@@ -508,6 +510,7 @@ class SharingService:
                     SpecificationSharingPolicy.PUBLIC,
                     SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
                     SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    SpecificationSharingPolicy.PROPRIETARY,
                 ]
 
         if (pillar.specification_sharing_policy and
