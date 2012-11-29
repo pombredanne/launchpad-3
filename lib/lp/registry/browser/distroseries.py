@@ -89,12 +89,12 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
     NavigationMenu,
-    structured,
     )
 from lp.services.webapp.publisher import (
     canonical_url,

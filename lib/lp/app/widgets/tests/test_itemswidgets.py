@@ -31,7 +31,7 @@ from lp.app.widgets.itemswidgets import (
     PlainMultiCheckBoxWidget,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     ANONYMOUS,

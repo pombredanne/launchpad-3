@@ -23,7 +23,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import ValidationError
 
-from lp.services.webapp.menu import escape
+from lp.services.webapp.escaping import html_escape
 
 
 __all__ = ['LaunchpadValidationError']
@@ -59,7 +59,7 @@ class LaunchpadValidationError(ValidationError):
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
         """
-        message = escape(message)
+        message = html_escape(message)
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).
@@ -119,5 +119,4 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         if (hasattr(self.context, 'errors') and
                 ILaunchpadValidationError.providedBy(self.context.errors)):
             return self.context.errors.snippet()
-        return escape(self.context.doc())
-
+        return html_escape(self.context.doc())
