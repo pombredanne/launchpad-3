@@ -893,8 +893,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
         lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
         with monkey_patch(lfa, open=fake_open):
-            view = view = create_initialized_view(
-                self.bmp.preview_diff, '+diff')
+            view = create_initialized_view(self.bmp.preview_diff, '+diff')
             self.assertEqual('', view.preview_diff_text)
             self.assertFalse(view.diff_available)
             markup = view()
