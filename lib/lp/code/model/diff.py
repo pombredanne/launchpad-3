@@ -102,14 +102,24 @@ class Diff(SQLBase):
                 self.diff_text.close()
 
     def _getDiffTimeout(self):
-        """Return the time allocated to get the diff from the librarian."""
+        """Return the seconds allocated to get the diff from the librarian.
+
+         the value will be Non for scripts, 2 for the webapp, or if thre is
+         little request time left, the number will be smaller or equal to
+         the remaining request time.
+        """
         remaining = get_request_remaining_seconds()
         if remaining is None:
             return None
-        elif remaining > 2:
-            return 2
+        elif remaining > 2.0:
+            # The maximum permitted time for webapp requests.
+            return 2.0
+        elif remaining > 0.01:
+            # Shave off 1 hundreth of a second off so that the call site
+            # has a chance to recover.
+            return remaining - 0.01
         else:
-            return int(remaining)
+            return remaining
 
     @property
     def oversized(self):

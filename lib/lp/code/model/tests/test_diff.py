@@ -174,6 +174,9 @@ class TestDiff(DiffTestCase):
         self.assertTrue(diff.oversized)
 
     def test_getDiffTimeout(self):
+        # The time permitted to get the diff from the librarian may be None,
+        # or 2. If there is not 2 seconds left in the request, the number will
+        # will 0.01 smaller or the actual remaining time.
         content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         value = None
@@ -185,11 +188,13 @@ class TestDiff(DiffTestCase):
         with monkey_patch(diff_module, get_request_remaining_seconds=fake):
             self.assertIs(None, diff._getDiffTimeout())
             value = 3.1
-            self.assertEqual(2, diff._getDiffTimeout())
-            value = 1.1
-            self.assertEqual(1, diff._getDiffTimeout())
-            value = 0.1
-            self.assertEqual(0, diff._getDiffTimeout())
+            self.assertEqual(2.0, diff._getDiffTimeout())
+            value = 1.11
+            self.assertEqual(1.1, diff._getDiffTimeout())
+            value = 0.11
+            self.assertEqual(0.1, diff._getDiffTimeout())
+            value = 0.01
+            self.assertEqual(0.01, diff._getDiffTimeout())
 
 
 class TestDiffInScripts(DiffTestCase):
