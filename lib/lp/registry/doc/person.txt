@@ -690,10 +690,11 @@ Private teams can be subscribed to bugs.
     >>> bug = bug_set.get(1)
     >>> guadamen = person_set.getByName('guadamen')
     >>> salgado = personset.getByName('salgado')
-    >>> private_team = factory.makeTeam(salgado, name='private-team',
+    >>> private_team_owner = factory.makePerson()
+    >>> private_team = factory.makeTeam(
+    ...     private_team_owner, name='private-team',
     ...     displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
-    >>> private_team_owner = private_team.teamowner
     >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
     ...     subscribed_by=guadamen)
 

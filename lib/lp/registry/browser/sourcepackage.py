@@ -93,8 +93,8 @@ from lp.services.webapp import (
     stepto,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import IBreadcrumb
-from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry

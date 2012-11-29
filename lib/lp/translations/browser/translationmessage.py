@@ -50,8 +50,8 @@ from lp.services.webapp import (
     urlparse,
     )
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import RedirectionView
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,

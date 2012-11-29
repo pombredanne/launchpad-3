@@ -532,6 +532,23 @@ class TestProductEditView(BrowserTestCase):
                   attrs={'class': 'message'})
         self.assertThat(browser.contents, HTMLContains(tag))
 
+    def test_multiple_info_type_errors(self):
+        # Multiple information type errors are presented at once.
+        product = self.factory.makeProduct()
+        self.factory.makeBranch(product=product)
+        self.factory.makeSpecification(product=product)
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        browser = self.getViewBrowser(product, '+edit', user=product.owner)
+        info_type = browser.getControl(name='field.information_type')
+        info_type.value = ['PROPRIETARY']
+        browser.getControl('Change').click()
+        tag = Tag(
+            'error', 'div', attrs={'class': 'message'},
+            text='Some blueprints are public. '
+                'Some branches are neither proprietary nor embargoed.')
+        self.assertThat(browser.contents, HTMLContains(tag))
+
     def test_change_information_type_public(self):
         owner = self.factory.makePerson(name='pting')
         product = self.factory.makeProduct(

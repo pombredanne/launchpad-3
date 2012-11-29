@@ -106,14 +106,12 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IStructuredString,
     )
-from lp.services.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp.services.webapp.menu import NavigationMenu
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,

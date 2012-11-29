@@ -80,6 +80,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -92,7 +93,6 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.menu import (
     get_current_view,
     get_facet,
-    structured,
     )
 from lp.services.webapp.publisher import (
     get_current_browser_request,

@@ -83,7 +83,7 @@ from lp.services.fields import (
     WorkItemsText,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 
 
 class SpecNameField(ContentNameField):

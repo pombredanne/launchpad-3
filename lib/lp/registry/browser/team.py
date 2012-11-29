@@ -172,8 +172,8 @@ from lp.services.webapp.batching import (
     InactiveBatchNavigator,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.menu import structured
 
 
 class TeamPrivacyAdapter:

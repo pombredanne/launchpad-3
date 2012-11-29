@@ -14,7 +14,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
