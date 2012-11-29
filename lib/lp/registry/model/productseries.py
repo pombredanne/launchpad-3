@@ -150,6 +150,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                              default=None)
 
     def validate_autoimport_mode(self, attr, value):
+        # Perform the normal validation for None
+        if value is None:
+            return value
         if (self.product.private and
             value != TranslationsBranchImportMode.NO_IMPORT):
             raise ProprietaryProduct('Translations are disabled for'

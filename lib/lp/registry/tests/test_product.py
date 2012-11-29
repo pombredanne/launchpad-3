@@ -442,6 +442,7 @@ class TestProduct(TestCaseWithFactory):
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(product.owner):
             for usage in ServiceUsage:
+                product.information_type = InformationType.PUBLIC
                 product.translations_usage = usage.value
                 for info_type in PROPRIETARY_INFORMATION_TYPES:
                     if product.translations_usage == ServiceUsage.LAUNCHPAD:
