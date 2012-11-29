@@ -522,6 +522,7 @@ class DiffRenderingMixin:
     def diff_available(self):
         """Is the preview diff available from the librarian?"""
         if getattr(self, '_diff_available', None) is None:
+            # Load the cache so that the answer is known.
             self.preview_diff_text
         return self._diff_available
 
