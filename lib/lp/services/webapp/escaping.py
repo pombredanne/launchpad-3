@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'html_escape',
+    'html_unescape',
     'structured',
     ]
 
@@ -43,6 +44,22 @@ def html_escape(message):
         raw = raw.replace('"', '&quot;')
         raw = raw.replace("'", '&#x27;')
         return raw
+
+
+def html_unescape(message):
+    """Reverses the transformation performed by html_escape.
+
+    Converts the 5 entities references produced by html_escape into their
+    original form. There is almost no reason to ever do this.
+
+    DO NOT USE THIS EXCEPT IN LEGACY CODE.
+    """
+    s = message.replace('&lt;', '<')
+    s = s.replace('&gt;', '>')
+    s = s.replace('&quot;', '"')
+    s = s.replace('&#x27;', "'")
+    s = s.replace('&amp;', '&')
+    return s
 
 
 def translate_if_i18n(obj_or_msgid):
