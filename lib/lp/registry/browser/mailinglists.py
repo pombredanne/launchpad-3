@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from textwrap import TextWrapper
 from urllib import quote
 
@@ -23,6 +22,7 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import ITeam
 from lp.services.webapp import LaunchpadView
+from lp.services.webapp.escaping import html_escape
 
 
 class HeldMessageView(LaunchpadView):
@@ -93,7 +93,7 @@ class HeldMessageView(LaunchpadView):
         """
         # Escape the text so that there's no chance of cross-site scripting,
         # then split into lines.
-        text_lines = escape(self.details.body).splitlines()
+        text_lines = html_escape(self.details.body).splitlines()
         # Strip off any whitespace only lines from the start of the message.
         text_lines.reverse()
         while len(text_lines) > 0:
