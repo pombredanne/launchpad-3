@@ -543,31 +543,6 @@ class TestSpecificationSet(TestCaseWithFactory):
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
 
-    def test_specifications_for_privacy(self):
-        """Specifications are limited to those allowed to the user"""
-        private_user = self.factory.makePerson()
-        public_user = self.factory.makePerson()
-
-        specs = getUtility(ISpecificationSet)
-        policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
-        product = self.factory.makeProduct(
-            specification_sharing_policy=policy,
-            owner=private_user)
-        private_spec = self.factory.makeSpecification(
-                product=product,
-                information_type=InformationType.PROPRIETARY)
-        public_spec = self.factory.makeSpecification(product=product)
-
-        context = getUtility(ISpecificationSet)
-        specs = context.specifications(public_user)
-
-        self.assertIn(public_spec, specs)
-        self.assertNotIn(private_spec, specs)
-
-        specs = context.specifications(private_user)
-        self.assertIn(public_spec, specs)
-        self.assertIn(private_spec, specs)
-
 
 def list_result(context, filter=None, user=None):
     result = context.specifications(
