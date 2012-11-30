@@ -14,6 +14,7 @@ from lp.app.enums import InformationType
 from lp.testing import BrowserTestCase
 from lp.testing.layers import DatabaseFunctionalLayer
 
+
 class TestProductSeries(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -21,8 +22,8 @@ class TestProductSeries(BrowserTestCase):
     @staticmethod
     def hasAutoImport(value):
         tag = Tag('importall', 'input',
-                attrs={'name':'field.translations_autoimport_mode',
-                       'value': value})
+                  attrs={'name': 'field.translations_autoimport_mode',
+                         'value': value})
         return HTMLContains(tag)
 
     def test_private_disables_imports(self):
