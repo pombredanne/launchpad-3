@@ -25,7 +25,7 @@
 
   <div class="portlet">
   <h2>Blueprints that must be implemented first</h2>
-    <div tal:repeat="spec context/all_deps"
+    <div tal:repeat="spec view/all_deps"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/dependencies">
       <i>None - this blueprint does not depend on any others.</i>
@@ -39,7 +39,7 @@
 
   <div class="portlet">
   <h2>Blueprints that can then be implemented</h2>
-    <div tal:repeat="spec context/all_blocked"
+    <div tal:repeat="spec view/all_blocked"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/blocked_specs">
       No blueprints depend on this one.

@@ -97,3 +97,9 @@ class SpecificationDependencyTreeView(LaunchpadView):
     @property
     def page_title(self):
         return self.label
+
+    def all_blocked(self):
+        return self.context.all_blocked(self.user)
+
+    def all_deps(self):
+        return self.context.all_deps(self.user)
