@@ -839,14 +839,20 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def all_blocked(self, user=None):
         """See `ISpecification`."""
-        privacy_filter = True
-        return Store.of(self).with_(
+        results = Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
-            privacy_filter,
             SQL('Specification.id in (select id from blocked)')
             ).order_by(Specification.name, Specification.id)
+
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
 
     # branches
     def getBranchLink(self, branch):
