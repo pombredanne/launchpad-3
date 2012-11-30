@@ -111,6 +111,7 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -156,6 +157,7 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1391,12 +1393,18 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget(
+        'information_type',
+        LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
 
     @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         if self.context.active:
+            if len(self.errors) > 0:
+                return None
             return canonical_url(self.context)
         else:
             return canonical_url(getUtility(IProductSet))
@@ -1438,7 +1446,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except CannotChangeInformationType as e:
+            self.setFieldError('information_type', str(e))
 
 
 class ProductValidationMixin:
@@ -1694,7 +1705,8 @@ class ProductSetView(LaunchpadView):
 
     @cachedproperty
     def all_batched(self):
-        return BatchNavigator(self.context.all_active, self.request)
+        return BatchNavigator(self.context.get_all_active(self.user),
+                              self.request)
 
     @cachedproperty
     def matches(self):
@@ -1711,6 +1723,9 @@ class ProductSetView(LaunchpadView):
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
+
+    def latest(self):
+        return self.context.get_all_active(self.user)[:5]
 
 
 class ProductSetReviewLicensesView(LaunchpadFormView):
@@ -1787,8 +1802,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
-        return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=50)
+        result = self.context.forReview(self.user, **search_params)
+        return BatchNavigator(result, self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
@@ -1907,7 +1922,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget(
+        'information_type',
+        LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
 
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
@@ -1965,14 +1984,18 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             'information_type': InformationType.PUBLIC,
         }
 
+    @property
+    def enable_information_type(self):
+        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
+        return private_projects and not self.source_package_name
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
         hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if not private_projects:
+        if not self.enable_information_type:
             hidden_names.extend([
                 'information_type', 'bug_supervisor', 'driver'])
 
@@ -2014,9 +2037,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-
-        if private_projects and IProductSet.providedBy(self.context):
+        if (self.enable_information_type and
+            IProductSet.providedBy(self.context)):
             self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
@@ -2086,8 +2108,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             for error in errors:
                 self.errors.remove(error)
 
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        if private_projects:
+        if self.enable_information_type:
             if data.get('information_type') != InformationType.PUBLIC:
                 for required_field in ('bug_supervisor', 'driver'):
                     if data.get(required_field) is None:
@@ -2156,6 +2177,7 @@ class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
+    related_features = (PRIVATE_PROJECTS_FLAG,)
     total_steps = 2
 
     @property

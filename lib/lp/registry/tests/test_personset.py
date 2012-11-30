@@ -16,12 +16,16 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.errors import (
     InvalidName,
     NameAlreadyTaken,
     )
-from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantSource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessPolicyGrantSource,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -617,6 +621,23 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # See comments in assertConflictingSubscriptionDeletes.
         dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp)
+
+    def test_merge_accessartifactgrant(self):
+        # AccessArtifactGrants are transferred; DB triggers complete.
+        dupe = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
+        self.factory.makeAccessArtifactGrant(artifact, dupe)
+        person = self.factory.makePerson()
+        self._do_premerge(dupe, person)
+        with person_logged_in(person):
+            self._do_merge(dupe, person)
+        source = getUtility(IAccessArtifactGrantSource)
+        grantees = [
+            grant.grantee for grant in source.findByArtifact([artifact])
+            if grant.grantee == person]
+        self.assertContentEqual([person], grantees)
 
     def test_merge_accesspolicygrants(self):
         # AccessPolicyGrants are transferred from the duplicate.

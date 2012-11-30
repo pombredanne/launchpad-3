@@ -167,16 +167,6 @@
           </tal:not_failed>
       </tal:built>
     </td>
-    <td style="text-align: right">
-      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
-         tal:content="spr/open_bugs">
-      </a>
-    </td>
-    <td style="text-align: right">
-      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+questions"
-         tal:content="spr/open_questions">
-      </a>
-    </td>
   </tal:define>
   </tr>
 </metal:macro>
@@ -227,16 +217,6 @@
              None
           </tal:not_failed>
       </tal:built>
-    </td>
-    <td style="text-align: right">
-      <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+bugs"
-         tal:content="spph/open_bugs">
-      </a>
-    </td>
-    <td style="text-align: right">
-      <a tal:attributes="href string:${spph/meta_sourcepackage/distribution_sourcepackage/fmt:url}/+questions"
-         tal:content="spph/open_questions">
-      </a>
     </td>
   </tal:define>
   </tr>

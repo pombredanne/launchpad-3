@@ -25,9 +25,10 @@ __all__ = [
     'BugTaskNavigation',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
-    'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
+    'BugTasksNominationsView',
+    'BugTasksTableView',
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
@@ -94,7 +95,6 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import Choice
-from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
@@ -217,6 +217,7 @@ from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.bugs.vocabularies import BugTaskMilestoneVocabulary
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
 from lp.registry.interfaces.distribution import (
@@ -239,7 +240,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -1553,7 +1553,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         new_target = data.get('target')
         if new_target and new_target != self.context.target:
             try:
-                self.context.validateTransitionToTarget(new_target)
+                # The validity of the source package has already been checked
+                # by the bug target widget.
+                self.context.validateTransitionToTarget(
+                    new_target, check_source_package=False)
             except IllegalTarget as e:
                 self.setFieldError(error_field, e[0])
 
@@ -1634,9 +1637,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # guaranteed to pass all the values. For example: bugtasks linked to a
         # bug watch don't allow editing the form, and the value is missing
         # from the form.
+        # The new target has already been validated so don't do it again.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target, self.user)
+            bugtask.transitionToTarget(new_target, self.user, validate=False)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
@@ -3421,42 +3425,154 @@ def _by_targetname(bugtask):
     return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
 
 
-class CachedMilestoneSourceFactory:
-    """A factory for milestone vocabularies.
+class BugTasksNominationsView(LaunchpadView):
+    """Browser class for rendering the bug nominations portlet."""
 
-    When rendering a page with many bug tasks, this factory is useful,
-    in order to avoid the number of db queries issues. For each bug task
-    target, we cache the milestone vocabulary, so we don't have to
-    create a new one for each target.
+    def __init__(self, context, request):
+        """Ensure we always have a bug context."""
+        LaunchpadView.__init__(self, IBug(context), request)
+
+    def displayAlsoAffectsLinks(self):
+        """Return True if the Also Affects links should be displayed."""
+        # Hide the links when the bug is viewed in a CVE context
+        return self.request.getNearest(ICveSet) == (None, None)
+
+    @cachedproperty
+    def current_user_affected_status(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.isUserAffected(self.user)
+
+    @property
+    def current_user_affected_js_status(self):
+        """A javascript literal indicating if the user is affected."""
+        affected = self.current_user_affected_status
+        if affected is None:
+            return 'null'
+        elif affected:
+            return 'true'
+        else:
+            return 'false'
+
+    @cachedproperty
+    def other_users_affected_count(self):
+        """The number of other users affected by this bug.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            if self.current_user_affected_status:
+                return self.context.users_affected_count - 1
+            else:
+                return self.context.users_affected_count
+        else:
+            return self.context.other_users_affected_count_with_dupes
+
+    @cachedproperty
+    def total_users_affected_count(self):
+        """The number of affected users, typically across all users.
+
+        Counting across duplicates may be disabled at run time.
+        """
+        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
+            return self.context.users_affected_count
+        else:
+            return self.context.users_affected_count_with_dupes
+
+    @cachedproperty
+    def affected_statement(self):
+        """The default "this bug affects" statement to show.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        me_affected = self.current_user_affected_status
+        other_affected = self.other_users_affected_count
+        if me_affected is None:
+            if other_affected == 1:
+                return "This bug affects 1 person. Does this bug affect you?"
+            elif other_affected > 1:
+                return (
+                    "This bug affects %d people. Does this bug "
+                    "affect you?" % other_affected)
+            else:
+                return "Does this bug affect you?"
+        elif me_affected is True:
+            if other_affected == 0:
+                return "This bug affects you"
+            elif other_affected == 1:
+                return "This bug affects you and 1 other person"
+            else:
+                return "This bug affects you and %d other people" % (
+                    other_affected)
+        else:
+            if other_affected == 0:
+                return "This bug doesn't affect you"
+            elif other_affected == 1:
+                return "This bug affects 1 person, but not you"
+            elif other_affected > 1:
+                return "This bug affects %d people, but not you" % (
+                    other_affected)
+
+    @cachedproperty
+    def anon_affected_statement(self):
+        """The "this bug affects" statement to show to anonymous users.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        affected = self.total_users_affected_count
+        if affected == 1:
+            return "This bug affects 1 person"
+        elif affected > 1:
+            return "This bug affects %d people" % affected
+        else:
+            return None
+
+    def canAddProjectTask(self):
+        return can_add_project_task_to_bug(self.context)
+
+    def canAddPackageTask(self):
+        return can_add_package_task_to_bug(self.context)
+
+    @property
+    def current_bugtask(self):
+        """Return the current `IBugTask`.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+
+def can_add_project_task_to_bug(bug):
+    """Can a new bug task on a project be added to this bug?
+
+    If a bug has any bug tasks already, were it to be Proprietary or
+    Embargoed, it cannot be marked as also affecting any other
+    project, so return False.
     """
-
-    implements(IContextSourceBinder)
-
-    def __init__(self):
-        self.vocabularies = {}
-        self.contexts = set()
-
-    def __call__(self, context):
-        assert context in self.contexts, ("context %r not added to "
-            "self.contexts (%r)." % (context, self.contexts))
-        self._load()
-        target = MilestoneVocabulary.getMilestoneTarget(context)
-        return self.vocabularies[target]
-
-    def _load(self):
-        """Load all the vocabularies, once only."""
-        if self.vocabularies:
-            return
-        targets = set(
-            map(MilestoneVocabulary.getMilestoneTarget, self.contexts))
-        # TODO: instantiate for all targets at once.
-        for target in targets:
-            milestone_vocabulary = MilestoneVocabulary(target)
-            self.vocabularies[target] = milestone_vocabulary
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
+        return True
+    return len(bug.bugtasks) == 0
 
 
-class BugTasksAndNominationsView(LaunchpadView):
-    """Browser class for rendering the bugtasks and nominations table."""
+def can_add_package_task_to_bug(bug):
+    """Can a new bug task on a src pkg be added to this bug?
+
+    If a bug has any existing bug tasks on a project, were it to
+    be Proprietary or Embargoed, then it cannot be marked as
+    affecting a package, so return False.
+
+    A task on a given package may still be illegal to add, but
+    this will be caught when bug.addTask() is attempted.
+    """
+    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
+        return True
+    for pillar in bug.affected_pillars:
+        if IProduct.providedBy(pillar):
+            return False
+    return True
+
+
+class BugTasksTableView(LaunchpadView):
+    """Browser class for rendering the bugtasks table."""
 
     target_releases = None
 
@@ -3477,7 +3593,6 @@ class BugTasksAndNominationsView(LaunchpadView):
         search_params = BugTaskSearchParams(user=self.user, bug=self.context)
         self.bugtasks = list(bugtask_set.search(search_params))
         self.many_bugtasks = len(self.bugtasks) >= 10
-        self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
         # If we have made it to here then the logged in user can see the
@@ -3489,13 +3604,6 @@ class BugTasksAndNominationsView(LaunchpadView):
         precache_permission_for_objects(
             self.request, 'launchpad.LimitedView', authorised_people)
 
-        # Pull all of the related milestones, if any, into the storm cache,
-        # since they'll be needed for the vocabulary used in this view.
-        if self.bugtasks:
-            self.milestones = list(
-                bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
-        else:
-            self.milestones = []
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
@@ -3520,6 +3628,19 @@ class BugTasksAndNominationsView(LaunchpadView):
         ids.discard(None)
         if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
+
+    @cachedproperty
+    def caching_milestone_vocabulary(self):
+        return BugTaskMilestoneVocabulary(milestones=self.milestones)
+
+    @cachedproperty
+    def milestones(self):
+        if self.bugtasks:
+            bugtask_set = getUtility(IBugTaskSet)
+            return list(
+                bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
+        else:
+            return []
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
@@ -3550,19 +3671,19 @@ class BugTasksAndNominationsView(LaunchpadView):
         The view's is_conjoined_slave and is_converted_to_question
         attributes are set, as well as the edit view.
         """
-        self.cached_milestone_source.contexts.add(context)
         view = getMultiAdapter(
             (context, self.request),
             name='+bugtasks-and-nominations-table-row')
         view.is_converted_to_question = is_converted_to_question
         view.is_conjoined_slave = is_conjoined_slave
-        if IBugTask.providedBy(context):
-            view.target_link_title = self.getTargetLinkTitle(context.target)
 
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
-        view.milestone_source = self.cached_milestone_source
-        view.edit_view.milestone_source = self.cached_milestone_source
+        view.milestone_source = self.caching_milestone_vocabulary
+        if IBugTask.providedBy(context):
+            view.target_link_title = self.getTargetLinkTitle(context.target)
+            view.edit_view.milestone_source = (
+                BugTaskMilestoneVocabulary(context, self.milestones))
         view.edit_view.user_is_subscribed = self.user_is_subscribed
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
@@ -3654,144 +3775,6 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtask_and_nomination_views
 
-    @property
-    def current_bugtask(self):
-        """Return the current `IBugTask`.
-
-        'current' is determined by simply looking in the ILaunchBag utility.
-        """
-        return getUtility(ILaunchBag).bugtask
-
-    def displayAlsoAffectsLinks(self):
-        """Return True if the Also Affects links should be displayed."""
-        # Hide the links when the bug is viewed in a CVE context
-        return self.request.getNearest(ICveSet) == (None, None)
-
-    @cachedproperty
-    def current_user_affected_status(self):
-        """Is the current user marked as affected by this bug?"""
-        return self.context.isUserAffected(self.user)
-
-    @property
-    def current_user_affected_js_status(self):
-        """A javascript literal indicating if the user is affected."""
-        affected = self.current_user_affected_status
-        if affected is None:
-            return 'null'
-        elif affected:
-            return 'true'
-        else:
-            return 'false'
-
-    @cachedproperty
-    def other_users_affected_count(self):
-        """The number of other users affected by this bug.
-        """
-        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
-            if self.current_user_affected_status:
-                return self.context.users_affected_count - 1
-            else:
-                return self.context.users_affected_count
-        else:
-            return self.context.other_users_affected_count_with_dupes
-
-    @cachedproperty
-    def total_users_affected_count(self):
-        """The number of affected users, typically across all users.
-
-        Counting across duplicates may be disabled at run time.
-        """
-        if getFeatureFlag('bugs.affected_count_includes_dupes.disabled'):
-            return self.context.users_affected_count
-        else:
-            return self.context.users_affected_count_with_dupes
-
-    @cachedproperty
-    def affected_statement(self):
-        """The default "this bug affects" statement to show.
-
-        The outputs of this method should be mirrored in
-        MeTooChoiceSource._getSourceNames() (Javascript).
-        """
-        me_affected = self.current_user_affected_status
-        other_affected = self.other_users_affected_count
-        if me_affected is None:
-            if other_affected == 1:
-                return "This bug affects 1 person. Does this bug affect you?"
-            elif other_affected > 1:
-                return (
-                    "This bug affects %d people. Does this bug "
-                    "affect you?" % (other_affected))
-            else:
-                return "Does this bug affect you?"
-        elif me_affected is True:
-            if other_affected == 0:
-                return "This bug affects you"
-            elif other_affected == 1:
-                return "This bug affects you and 1 other person"
-            else:
-                return "This bug affects you and %d other people" % (
-                    other_affected)
-        else:
-            if other_affected == 0:
-                return "This bug doesn't affect you"
-            elif other_affected == 1:
-                return "This bug affects 1 person, but not you"
-            elif other_affected > 1:
-                return "This bug affects %d people, but not you" % (
-                    other_affected)
-
-    @cachedproperty
-    def anon_affected_statement(self):
-        """The "this bug affects" statement to show to anonymous users.
-
-        The outputs of this method should be mirrored in
-        MeTooChoiceSource._getSourceNames() (Javascript).
-        """
-        affected = self.total_users_affected_count
-        if affected == 1:
-            return "This bug affects 1 person"
-        elif affected > 1:
-            return "This bug affects %d people" % affected
-        else:
-            return None
-
-    def canAddProjectTask(self):
-        return can_add_project_task_to_bug(self.context)
-
-    def canAddPackageTask(self):
-        return can_add_package_task_to_bug(self.context)
-
-
-def can_add_project_task_to_bug(bug):
-    """Can a new bug task on a project be added to this bug?
-
-    If a bug has any bug tasks already, were it to be Proprietary or
-    Embargoed, it cannot be marked as also affecting any other
-    project, so return False.
-    """
-    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-        return True
-    return len(bug.bugtasks) == 0
-
-
-def can_add_package_task_to_bug(bug):
-    """Can a new bug task on a src pkg be added to this bug?
-
-    If a bug has any existing bug tasks on a project, were it to
-    be Proprietary or Embargoed, then it cannot be marked as
-    affecting a package, so return False.
-
-    A task on a given package may still be illegal to add, but
-    this will be caught when bug.addTask() is attempted.
-    """
-    if bug.information_type not in PROPRIETARY_INFORMATION_TYPES:
-        return True
-    for pillar in bug.affected_pillars:
-        if IProduct.providedBy(pillar):
-            return False
-    return True
-
 
 class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
                           BugTaskPrivilegeMixin):
@@ -3807,7 +3790,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
     def __init__(self, context, request):
         super(BugTaskTableRowView, self).__init__(context, request)
-        self.milestone_source = MilestoneVocabulary
+        self.milestone_source = BugTaskMilestoneVocabulary
 
     @cachedproperty
     def api_request(self):
@@ -3954,7 +3937,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
     @cachedproperty
     def _visible_milestones(self):
         """The visible milestones for this context."""
-        return self.milestone_source(self.context).visible_milestones
+        return self.milestone_source.visible_milestones(self.context)
 
     @property
     def milestone_widget_items(self):

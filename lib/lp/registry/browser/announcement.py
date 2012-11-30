@@ -304,12 +304,16 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def latest_announcements(self):
         published_only = not check_permission('launchpad.Edit', self.context)
-        return self.context.getAnnouncements(
-                    limit=5, published_only=published_only)
+        return list(self.context.getAnnouncements(
+                    limit=5, published_only=published_only))
+
+    @cachedproperty
+    def has_announcements(self):
+        return len(self.latest_announcements) > 0
 
     @cachedproperty
     def show_announcements(self):
-        return (self.latest_announcements.count() > 0
+        return (len(self.latest_announcements) > 0
             or check_permission('launchpad.Edit', self.context))
 
     @cachedproperty

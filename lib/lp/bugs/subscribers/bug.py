@@ -30,7 +30,6 @@ from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
-from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.mail.sendmail import (
     format_address,
@@ -110,13 +109,8 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    fields = ["title", "description", "name"]
-    if bool(getFeatureFlag(
-        'disclosure.information_type_notifications.enabled')):
-        fields.append('information_type')
-    else:
-        fields.extend(('private', 'security_related'))
-    fields.extend(("duplicateof", "tags"))
+    fields = ["title", "description", "name", "information_type",
+        "duplicateof", "tags"]
     for field_name in fields:
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
@@ -141,7 +135,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
         level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
@@ -153,7 +146,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         bug = bug_delta.bug
         if isinstance(change, BugDuplicateChange):
             no_dupe_master_recipients = bug.getBugNotificationRecipients(
-                old_bug=bug_delta.bug_before_modification,
                 level=change.change_level)
             bug_delta.bug.addChange(
                 change, recipients=no_dupe_master_recipients)
@@ -175,7 +167,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
                 change_recipients = bug.getBugNotificationRecipients(
-                    old_bug=bug_delta.bug_before_modification,
                     level=change.change_level)
                 recipients.update(change_recipients)
             bug_delta.bug.addChange(change, recipients=recipients)

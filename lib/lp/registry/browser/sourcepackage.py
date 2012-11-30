@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -67,7 +67,7 @@ from lp.app.browser.multistep import (
     StepView,
     )
 from lp.app.browser.tales import CustomizableFormatter
-from lp.app.enums import ServiceUsage
+from lp.app.enums import InformationType, ServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
@@ -80,6 +80,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.product import Product
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -301,6 +302,16 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         """See `MultiStepView`."""
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
+
+    def validateStep(self, data):
+        super(SourcePackageChangeUpstreamStepOne, self).validateStep(data)
+        product = data.get('product')
+        if product is None:
+            return
+        if product.private:
+            self.setFieldError('product',
+                'Only Public projects can be packaged, not %s.' %
+                data['product'].information_type.title)
 
     @property
     def register_upstream_url(self):
@@ -567,7 +578,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # Find registered products that are similarly named to the source
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
-        matches = product_vocab.searchForTerms(self.context.name)
+        matches = product_vocab.searchForTerms(self.context.name,
+            vocab_filter=[Product._information_type ==
+                          InformationType.PUBLIC])
         # Based upon the matching products, create a new vocabulary with
         # term descriptions that include a link to the product.
         self.product_suggestions = []

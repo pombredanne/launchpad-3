@@ -651,6 +651,8 @@ class FakeCodehosting:
         if data['product'] == '+junk':
             product = None
         elif data['product'] is not None:
+            if not valid_name(data['product']):
+                raise faults.InvalidProductName(escape(data['product']))
             product = self._product_set.getByName(data['product'])
             if product is None:
                 raise faults.NotFound(

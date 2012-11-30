@@ -35,6 +35,7 @@ from signal import (
     SIGHUP,
     signal,
     )
+from storm.exceptions import LostObjectError
 import sys
 from textwrap import dedent
 from uuid import uuid4
@@ -177,9 +178,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     def notifyOops(self, oops):
         """Report this oops."""
         ctrl = self.getOopsMailController(oops['id'])
-        if ctrl is None:
-            return
-        ctrl.send()
+        if ctrl is not None:
+            ctrl.send()
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -188,9 +188,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     def notifyUserError(self, e):
         """See `IRunnableJob`."""
         ctrl = self.getUserErrorMailController(e)
-        if ctrl is None:
-            return
-        ctrl.send()
+        if ctrl is not None:
+            ctrl.send()
 
     def makeOopsReport(self, oops_config, info):
         """Generate an OOPS report using the given OOPS configuration."""
@@ -293,6 +292,9 @@ class BaseJobRunner(LazrJobRunner):
 
     def runJob(self, job, fallback):
         super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
+
+    def userErrorTypes(self, job):
+        return removeSecurityProxy(job).user_error_types
 
     def retryErrorTypes(self, job):
         return removeSecurityProxy(job).retry_error_types
@@ -490,17 +492,22 @@ class TwistedJobRunner(BaseJobRunner):
                 self._logOopsId(response['oops_id'])
 
         def job_raised(failure):
-            self.incomplete_jobs.append(job)
-            exit_code = getattr(failure.value, 'exitCode', None)
-            if exit_code == self.TIMEOUT_CODE:
-                # The process ended with the error code that we have
-                # arbitrarily chosen to indicate a timeout. Rather than log
-                # that error (ProcessDone), we log a TimeoutError instead.
-                self._logTimeout(job)
+            try:
+                exit_code = getattr(failure.value, 'exitCode', None)
+                if exit_code == self.TIMEOUT_CODE:
+                    # The process ended with the error code that we have
+                    # arbitrarily chosen to indicate a timeout. Rather than log
+                    # that error (ProcessDone), we log a TimeoutError instead.
+                    self._logTimeout(job)
+                else:
+                    info = (failure.type, failure.value, failure.tb)
+                    oops = self._doOops(job, info)
+                    self._logOopsId(oops['id'])
+            except LostObjectError:
+                # The job may have been deleted, so we can ignore this error.
+                pass
             else:
-                info = (failure.type, failure.value, failure.tb)
-                oops = self._doOops(job, info)
-                self._logOopsId(oops['id'])
+                self.incomplete_jobs.append(job)
         deferred.addCallbacks(update, job_raised)
         return deferred
 

@@ -40,6 +40,7 @@ from lp.registry.interfaces.product import (
     IProductSeries,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -255,7 +256,7 @@ class TestSpecificationInformationType(BrowserTestCase):
         with person_logged_in(owner):
             browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
-                attrs={'class': 'banner-text'})
+                attrs={'class': 'private_banner_container'})
         self.assertThat(browser.contents,
                         soupmatchers.HTMLContains(privacy_banner))
 
@@ -311,7 +312,7 @@ class TestSpecificationInformationType(BrowserTestCase):
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
     def test_view_banner(self):
-        """The privacy banner should reflect the information_type."""
+        """The privacy banner should contain a noscript message"""
         owner = self.factory.makePerson()
         policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
@@ -322,8 +323,7 @@ class TestSpecificationInformationType(BrowserTestCase):
             product=product)
 
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
-                attrs={'class': 'banner-text'},
-                text=re.compile('This page contains Proprietary information'))
+                text=re.compile('The information on this page is private'))
 
         getUtility(IService, 'sharing').ensureAccessGrants(
               [owner], owner, specifications=[spec],
@@ -344,6 +344,24 @@ NEW_SPEC_FROM_ROOT_URL = 'http://blueprints.launchpad.dev/specs/+new'
 class NewSpecificationTests:
 
     expected_keys = set(['PROPRIETARY', 'PUBLIC', 'EMBARGOED'])
+
+    def _create_form_data(self, context):
+        return {
+            'field.actions.register': 'Register Blueprint',
+            'field.definition_status': 'NEW',
+            'field.target': context,
+            'field.name': 'TestBlueprint',
+            'field.title': 'Test Blueprint',
+            'field.summary': 'Test Blueprint Summary',
+        }
+
+    def _assert_information_type_validation_error(self, context, form, owner):
+        """Helper to check for invalid information type on submit."""
+        with person_logged_in(owner):
+            view = create_initialized_view(context, '+addspec', form=form)
+            expected = (u'This information type is not permitted for'
+                        u' this product')
+            self.assertIn(expected, view.errors)
 
     def test_cache_contains_information_type(self):
         view = self.createInitializedView()
@@ -367,8 +385,19 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
     layer = DatabaseFunctionalLayer
 
     def createInitializedView(self):
-        specs = getUtility(ISpecificationSet)
-        return create_initialized_view(specs, '+new')
+        context = getUtility(ISpecificationSet)
+        return create_initialized_view(context, '+new')
+
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        view = create_initialized_view(context, '+new', form=form)
+        expected = u'This information type is not permitted for this product'
+        self.assertIn(expected, view.errors)
 
 
 class TestNewSpecificationFromSprintView(TestCaseWithFactory,
@@ -380,6 +409,18 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
         sprint = self.factory.makeSprint()
         return create_initialized_view(sprint, '+addspec')
 
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        sprint = self.factory.makeSprint()
+        product = self.factory.makeProduct(owner=sprint.owner)
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        self._assert_information_type_validation_error(
+            sprint,
+            form,
+            sprint.owner)
+
 
 class TestNewSpecificationFromProjectView(TestCaseWithFactory,
                                           NewSpecificationTests):
@@ -389,6 +430,18 @@ class TestNewSpecificationFromProjectView(TestCaseWithFactory,
     def createInitializedView(self):
         project = self.factory.makeProject()
         return create_initialized_view(project, '+addspec')
+
+    def test_allowed_info_type_validated(self):
+        """information_type must be validated against context"""
+        set_blueprint_information_type(self, True)
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project)
+        form = self._create_form_data(product.name)
+        form['field.information_type'] = 'PROPRIETARY'
+        self._assert_information_type_validation_error(
+            project,
+            form,
+            project.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,
@@ -480,7 +533,11 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             control = browser.getControl(information_type.title)
             if not control.selected:
                 control.click()
-            return product.getSpecification(self.submitSpec(browser))
+            specification_name = self.submitSpec(browser)
+            # Using the browser terminated the interaction, but we need
+            # an interaction in order to access a product.
+            with person_logged_in(ANONYMOUS):
+                return product.getSpecification(specification_name)
 
     def test_supplied_information_types(self):
         """Creating honours information types."""
@@ -564,9 +621,11 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         Useful because we need to follow to product from a
         ProductSeries.
         """
-        if IProductSeries.providedBy(target):
-            return target.product.getSpecification(name)
-        return target.getSpecification(name)
+        # We need an interaction in order to access a product.
+        with person_logged_in(ANONYMOUS):
+            if IProductSeries.providedBy(target):
+                return target.product.getSpecification(name)
+            return target.getSpecification(name)
 
     def submitSpec(self, browser):
         """Submit a Specification via a browser."""

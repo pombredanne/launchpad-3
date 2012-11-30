@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugWatch-related browser views."""
@@ -8,8 +8,8 @@ __all__ = [
     'BugWatchSetNavigation',
     'BugWatchActivityPortletView',
     'BugWatchEditView',
-    'BugWatchView']
-
+    'BugWatchView'
+    ]
 
 from zope.component import getUtility
 from zope.interface import Interface
@@ -133,7 +133,7 @@ class BugWatchEditView(LaunchpadFormView):
         """Return whether the bug watch is unlinked."""
         return (
             len(self.context.bugtasks) == 0 and
-            self.context.getImportedBugMessages().is_empty())
+            self.context.getBugMessages().is_empty())
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):

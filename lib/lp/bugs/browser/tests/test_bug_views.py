@@ -28,6 +28,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.bugs.adapters.bugchange import BugAttachmentChange
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.accesspolicy import (
@@ -269,8 +270,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             self.assertFalse(self.bug.isSubscribed(person))
             self.assertFalse(self.bug.isMuted(person))
             self.assertFalse(
-                self.bug.personIsAlsoNotifiedSubscriber(
-                    person))
+                self.bug.personIsAlsoNotifiedSubscriber(person))
             view = create_initialized_view(
                 self.bug, name="+portlet-subscription")
             self.assertFalse(view.user_should_see_mute_link)
@@ -305,14 +305,31 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(person))
             view = create_initialized_view(
                 self.bug, name="+portlet-subscription")
-            self.assertTrue(view.user_should_see_mute_link,
-                            "User should see mute link.")
+            self.assertTrue(
+                view.user_should_see_mute_link, "User should see mute link.")
             contents = view.render()
-            self.assertTrue('mute_subscription' in contents,
-                            "'mute_subscription' not in contents.")
+            self.assertTrue(
+                'mute_subscription' in contents,
+                "'mute_subscription' not in contents.")
             self.assertFalse(
-                self._hasCSSClass(
-                    contents, 'mute-link-container', 'hidden'))
+                self._hasCSSClass(contents, 'mute-link-container', 'hidden'))
+
+    def test_bug_portlet_subscription_query_count(self):
+        # Bug:+portlet-subscription doesn't make O(n) queries based on the
+        # number of duplicate bugs.
+        user = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        for n in range(20):
+            dupe = self.factory.makeBug()
+            removeSecurityProxy(dupe)._markAsDuplicate(bug, set())
+            removeSecurityProxy(dupe).subscribe(user, dupe.owner)
+        Store.of(bug).invalidate()
+        with person_logged_in(user):
+            with StormStatementRecorder() as recorder:
+                view = create_initialized_view(
+                    bug, name='+portlet-subscription', principal=user)
+                view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(21)))
 
 
 class TestBugSecrecyViews(TestCaseWithFactory):
@@ -328,12 +345,11 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         if bug is None:
             bug = self.factory.makeBug()
         with person_logged_in(person):
-            view = create_initialized_view(
+            return create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
                     'field.information_type': 'USERDATA',
                     'field.actions.change': 'Change',
                     }, request=request)
-            return view
 
     def test_notification_shown_if_marking_private_and_not_subscribed(self):
         # If a user who is not subscribed to a bug marks that bug as
@@ -483,6 +499,28 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             soup = BeautifulSoup(html)
         self.assertEqual(
             u'Private', soup.find('label', text="Private"))
+
+    def test_bugtask_view_user_with_grant_on_bug_for_private_product(self):
+        # The regular bug view is properly rendered even if the user
+        # does not have permissions to view every detail of a product.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        user = self.factory.makePerson()
+        with person_logged_in(owner):
+            bug = self.factory.makeBug(
+                target=product, information_type=InformationType.PROPRIETARY)
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [user], owner, bugs=[bug])
+            launchbag = getUtility(IOpenLaunchBag)
+            launchbag.add(bug)
+            launchbag.add(bug.default_bugtask)
+        with person_logged_in(user):
+            view = create_initialized_view(
+                bug.default_bugtask, name=u'+index', principal=user)
+            contents = view.render()
+            self.assertTrue(bug.title in contents)
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):

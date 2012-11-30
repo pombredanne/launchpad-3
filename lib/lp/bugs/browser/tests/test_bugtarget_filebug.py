@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-
 from textwrap import dedent
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -368,11 +367,7 @@ class TestFileBugViewBase(FileBugViewMixin, TestCaseWithFactory):
 
     def filebug_via_view(self, information_type=None,
                          bug_sharing_policy=None, extra_data_token=None):
-        form = {
-            'field.title': 'A bug',
-            'field.comment': 'A comment',
-            'field.actions.submit_bug': 'Submit Bug Request',
-        }
+        form = self.get_form()
         if information_type:
             form['field.information_type'] = information_type
         product = self.factory.makeProduct(official_malone=True)
@@ -695,6 +690,40 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
              'The file "attachment2" was attached to the bug report.'],
             notifications)
 
+    def test_submit_comment_with_large_extra_description(self):
+        # Submitting a large blob will set a sensible error.
+        string = 'y' * 50001
+        token = self.process_extra_data("""\
+            MIME-Version: 1.0
+            Content-type: multipart/mixed; boundary=boundary
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            %s
+
+            --boundary
+            Content-disposition: inline
+            Content-type: text/plain; charset=utf-8
+
+            A bug comment.
+
+            --boundary--
+            """ % string)
+        form = {
+            'field.title': 'Test title',
+            'field.comment': 'Test comment',
+            'field.actions.submit_bug': 'Submit Bug Report'}
+        view = self.create_initialized_view(form)
+        view.publishTraverse(view.request, token)
+        view.validate(self.get_form())
+        expected = [
+            u'The description and the additional information is too long. '
+            'If you have lots of text to add, attach a file to the bug '
+            'instead.']
+        self.assertContentEqual(expected, view.errors)
+
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
 
@@ -784,6 +813,49 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
         self.assertIn("Thank you for your bug report.", msg)
 
 
+class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProjectGroupFileBugView(self, product_name, bug_title, tags=''):
+        project_group = self.factory.makeProject()
+        owner = project_group.owner
+        product = self.factory.makeProduct(
+            owner=owner, name=product_name, project=project_group)
+        with person_logged_in(owner):
+            product.official_malone = True
+        form = {
+            'field.product': product_name,
+            'field.title': bug_title,
+            'field.tags': tags,
+            'field.actions.projectgroupsearch': 'Continue',
+            }
+        view = create_initialized_view(
+            project_group, name='+filebug', form=form, rootsite='bugs')
+        return view
+
+    def test_redirect_to_project(self):
+        # The view redirects to the select sub project.
+        view = self.makeProjectGroupFileBugView('fnord', 'A bug', u'is os')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(
+            'http://bugs.launchpad.dev/fnord/+filebug?'
+            'field.title=A+bug&'
+            'field.tags=is+os',
+            response.getHeader('Location'))
+
+    def test_redirect_to_project_unicode_summary(self):
+        # The summary is reencoded properly when it contains unicode.
+        view = self.makeProjectGroupFileBugView('fnord', u'caf\xe9', '')
+        response = view.request.response
+        self.assertEqual(
+            'http://bugs.launchpad.dev/fnord/+filebug?'
+            'field.title=caf%C3%A9&'
+            'field.tags=',
+            response.getHeader('Location'))
+
+
 class TestFileBugRequestCache(TestCaseWithFactory):
     # Tests to ensure the request cache contains the expected values for
     # file bug views.
@@ -816,10 +888,8 @@ class TestFileBugRequestCache(TestCaseWithFactory):
                         'help': '', 'disabled': False,
                         'css_class': 'status' + item.name}
             bugtask_status_data.append(new_item)
-        self.assertEqual(
-            bugtask_status_data, cache['bugtask_status_data'])
-        excluded_importances = [
-            BugTaskImportance.UNKNOWN]
+        self.assertEqual(bugtask_status_data, cache['bugtask_status_data'])
+        excluded_importances = [BugTaskImportance.UNKNOWN]
         bugtask_importance_data = []
         for item in BugTaskImportance:
             item = item.value

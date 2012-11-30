@@ -1,10 +1,9 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
+    'get_specification_filters',
     'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
@@ -13,6 +12,8 @@ __all__ = [
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
+    'spec_started_clause',
+    'visible_specification_query',
     ]
 
 from lazr.lifecycle.event import (
@@ -34,6 +35,7 @@ from storm.expr import (
     Join,
     LeftJoin,
     Or,
+    Not,
     Select,
     )
 from storm.locals import (
@@ -104,6 +106,8 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
+from lp.services.database.lpstorm import IStore
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -573,28 +577,10 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         else:
             return False
 
-    # NB NB If you change this definition, please update the equivalent
-    # DB constraint Specification.specification_start_recorded_chk
-    # We choose to define "started" as the set of delivery states NOT
-    # in the values we select. Another option would be to say "anything less
-    # than a threshold" and to comment the dbschema that "anything not
-    # started should be less than the threshold". We'll see how maintainable
-    # this is.
-    started_clause = """
-        Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
-        (Specification.implementation_status = %s AND
-         Specification.definition_status = %s)
-        """ % sqlvalues(SpecificationImplementationStatus.UNKNOWN.value,
-                        SpecificationImplementationStatus.NOTSTARTED.value,
-                        SpecificationImplementationStatus.DEFERRED.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationDefinitionStatus.APPROVED.value)
-
     @property
     def is_started(self):
         """See ISpecification. This is a code implementation of the
-        SQL in self.started_clause
+        SQL in spec_started_clause
         """
         return (self.implementation_status not in [
                     SpecificationImplementationStatus.UNKNOWN,
@@ -974,7 +960,7 @@ class HasSpecificationsMixin:
         elif sort == SpecificationSort.DATE:
             return (Desc(Specification.datecreated), Specification.id)
 
-    def _preload_specifications_people(self, query):
+    def _preload_specifications_people(self, clauses):
         """Perform eager loading of people and their validity for query.
 
         :param query: a string query generated in the 'specifications'
@@ -983,6 +969,8 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
+        if isinstance(clauses, basestring):
+            clauses = [SQL(clauses)]
 
         def cache_people(rows):
             # Find the people we need:
@@ -1013,10 +1001,7 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).find(
-            Specification,
-            SQL(query),
-            )
+        results = Store.of(self).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1033,8 +1018,8 @@ class HasSpecificationsMixin:
 
     def specificationCount(self, user):
         """See IHasSpecifications."""
-        return self.specifications(user,
-                                   filter=[SpecificationFilter.ALL]).count()
+        return self.specifications(
+            user, filter=[SpecificationFilter.ALL]).count()
 
 
 class SpecificationSet(HasSpecificationsMixin):
@@ -1172,10 +1157,16 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getByURL(self, url):
         """See ISpecificationSet."""
-        specification = Specification.selectOneBy(specurl=url)
-        if specification is None:
-            return None
-        return specification
+        return Specification.selectOneBy(specurl=url)
+
+    def getByName(self, pillar, name):
+        """See ISpecificationSet."""
+        clauses = [Specification.name == name]
+        if IDistribution.providedBy(pillar):
+            clauses.append(Specification.distributionID == pillar.id)
+        elif IProduct.providedBy(pillar):
+            clauses.append(Specification.productID == pillar.id)
+        return IStore(Specification).find(Specification, *clauses).one()
 
     @property
     def coming_sprints(self):
@@ -1289,3 +1280,109 @@ def get_specification_privacy_filter(user):
                 where=Or(
                     AccessPolicyGrantFlat.abstract_artifact_id == None,
                     AccessArtifact.specification_id == Specification.id))))
+
+
+def visible_specification_query(user):
+    """Return a Storm expression and list of tables for filtering
+    specifications by privacy.
+
+    :param user: A Person ID or a column reference.
+    :return: A tuple of tables, clauses to filter out specifications that the
+        user cannot see.
+    """
+    from lp.registry.model.product import Product
+    from lp.registry.model.accesspolicy import (
+        AccessArtifact,
+        AccessPolicy,
+        AccessPolicyGrantFlat,
+        )
+    tables = [
+        Specification,
+        LeftJoin(Product, Specification.productID == Product.id),
+        LeftJoin(AccessPolicy, And(
+            Or(Specification.productID == AccessPolicy.product_id,
+               Specification.distributionID ==
+               AccessPolicy.distribution_id),
+            Specification.information_type == AccessPolicy.type)),
+        LeftJoin(AccessPolicyGrantFlat,
+                 AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
+        LeftJoin(
+            TeamParticipation,
+            And(AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
+                TeamParticipation.person == user)),
+        LeftJoin(AccessArtifact,
+                 AccessPolicyGrantFlat.abstract_artifact_id ==
+                 AccessArtifact.id)
+        ]
+    clauses = [
+        Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
+           And(AccessPolicyGrantFlat.id != None,
+               TeamParticipation.personID != None,
+               Or(AccessPolicyGrantFlat.abstract_artifact == None,
+                  AccessArtifact.specification_id == Specification.id))),
+        Or(Specification.product == None, Product.active == True)]
+    return tables, clauses
+
+
+def get_specification_filters(filter, assume_product_active=False):
+    """Return a list of Storm expressions for filtering Specifications.
+
+    :param filters: A collection of SpecificationFilter and/or strings.
+        Strings are used for text searches.
+    :param assume_product_active: If True, assume the Product is active,
+        instead of ensuring it is active.
+    """
+    from lp.registry.model.product import Product
+    clauses = []
+    # If Product is used, it must be active.
+    if not assume_product_active:
+        clauses.extend([Or(Specification.product == None,
+                        Not(Specification.productID.is_in(Select(Product.id,
+                        Product.active == False))))])
+    # ALL is the trump card.
+    if SpecificationFilter.ALL in filter:
+        return clauses
+    # Look for informational specs.
+    if SpecificationFilter.INFORMATIONAL in filter:
+        clauses.append(Specification.implementation_status ==
+                       SpecificationImplementationStatus.INFORMATIONAL)
+    # Filter based on completion.  See the implementation of
+    # Specification.is_complete() for more details.
+    if SpecificationFilter.COMPLETE in filter:
+        clauses.append(Specification.storm_completeness())
+    if SpecificationFilter.INCOMPLETE in filter:
+        clauses.append(Not(Specification.storm_completeness()))
+
+    # Filter for validity. If we want valid specs only, then we should exclude
+    # all OBSOLETE or SUPERSEDED specs.
+    if SpecificationFilter.VALID in filter:
+        clauses.append(Not(Specification.definition_status.is_in([
+            SpecificationDefinitionStatus.OBSOLETE,
+            SpecificationDefinitionStatus.SUPERSEDED,
+        ])))
+    # Filter for specification text.
+    for constraint in filter:
+        if isinstance(constraint, basestring):
+            # A string in the filter is a text search filter.
+            clauses.append(fti_search(Specification, constraint))
+    return clauses
+
+
+# NB NB If you change this definition, please update the equivalent
+# DB constraint Specification.specification_start_recorded_chk
+# We choose to define "started" as the set of delivery states NOT
+# in the values we select. Another option would be to say "anything less
+# than a threshold" and to comment the dbschema that "anything not
+# started should be less than the threshold". We'll see how maintainable
+# this is.
+spec_started_clause = Or(Not(Specification.implementation_status.is_in([
+    SpecificationImplementationStatus.UNKNOWN,
+    SpecificationImplementationStatus.NOTSTARTED,
+    SpecificationImplementationStatus.DEFERRED,
+    SpecificationImplementationStatus.INFORMATIONAL,
+    ])),
+    And(Specification.implementation_status ==
+            SpecificationImplementationStatus.INFORMATIONAL,
+        Specification.definition_status ==
+            SpecificationDefinitionStatus.APPROVED
+    ))

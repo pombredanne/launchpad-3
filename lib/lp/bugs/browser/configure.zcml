@@ -345,12 +345,6 @@
         template="../templates/product-cvereport.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        name="+upstreamreport"
-        class="lp.bugs.browser.distribution_upstream_report.DistributionUpstreamReport"
-        permission="zope.Public"
-        template="../templates/distribution-upstream-report.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.cvereport.CVEReportView"
         permission="zope.Public"
         name="+cve"
@@ -947,13 +941,13 @@
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            class="lp.bugs.browser.bugtask.BugTasksNominationsView"
             permission="launchpad.View"
             name="+bugtasks-and-nominations-portal"
             template="../templates/bugtasks-and-nominations-portal.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
+            class="lp.bugs.browser.bugtask.BugTasksTableView"
             permission="launchpad.View"
             name="+bugtasks-and-nominations-table"
             template="../templates/bugtasks-and-nominations-table.pt"/>

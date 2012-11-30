@@ -340,6 +340,7 @@
 
     <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/milestone/@@+global-actions" />
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
     </tal:side>
   </body>
 </html>

@@ -154,7 +154,8 @@
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
 
-          <div tal:content="structure context/@@+portlet-packages" />
+          <div tal:content="structure context/@@+portlet-packages"
+               tal:condition="not: context/product/private" />
         </div>
 
         <div class="yui-u">
@@ -213,6 +214,8 @@
           </li>
         </ul>
       </div>
+
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
 
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">

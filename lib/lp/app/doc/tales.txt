@@ -1551,7 +1551,7 @@ If the private attribute is True, the class is 'private'.
     True
 
     >>> print test_tales('context/fmt:global-css', context=bug)
-    global-notification-visible private
+    private
 
     >>> login(ANONYMOUS)
 

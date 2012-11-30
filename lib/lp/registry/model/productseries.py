@@ -71,7 +71,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.packaging import PackagingUtil
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
 from lp.services.database.constants import UTC_NOW
@@ -504,7 +504,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(
+        pkg = PackagingUtil.createPackaging(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=self,
@@ -678,6 +678,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def userCanView(self, user):
+        """See `IproductSeriesPublic`."""
+        # Deleate the permission check to the parent product.
+        return self.product.userCanView(user)
 
 
 class TimelineProductSeries:

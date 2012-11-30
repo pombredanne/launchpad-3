@@ -350,4 +350,21 @@ div.package-details {
   </tal:latest_updates>
 </metal:latest_updates_portlet>
 
+<metal:ppas-list define-macro="ppas-list">
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      visible_ppas - the ppas for which the user has view permission.
+  </tal:comment>
+
+  <div tal:define="ppas visible_ppas" tal:condition="ppas">
+    <table>
+      <tal:ppa_line tal:repeat="ppa ppas">
+        <tr>
+          <td tal:content="structure ppa/fmt:link"></td>
+        </tr>
+      </tal:ppa_line>
+    </table>
+  </div>
+</metal:ppas-list>
+
 </tal:root>

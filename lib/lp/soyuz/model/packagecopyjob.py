@@ -13,9 +13,9 @@ import logging
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.locals import (
-    And,
     Int,
     JSON,
+    Not,
     Reference,
     Unicode,
     )
@@ -187,6 +187,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
+        self.logger = logging.getLogger()
 
     @classmethod
     def get(cls, job_id):
@@ -206,13 +207,25 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready PackageCopyJobs."""
-        jobs = IStore(PackageCopyJob).find(
-            PackageCopyJob,
-            And(PackageCopyJob.job_type == cls.class_job_type,
+        """Iterate through all ready PackageCopyJobs.
+
+        Even though it's slower, we repeat the query each time in order that
+        very long queues of mass syncs can be pre-empted by other jobs.
+        """
+        seen = set()
+        while True:
+            jobs = IStore(PackageCopyJob).find(
+                PackageCopyJob,
+                PackageCopyJob.job_type == cls.class_job_type,
                 PackageCopyJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (cls(job) for job in jobs)
+                Job.id.is_in(Job.ready_jobs),
+                Not(Job.id.is_in(seen)))
+            jobs.order_by(PackageCopyJob.copy_policy)
+            job = jobs.first()
+            if job is None:
+                break
+            seen.add(job.job_id)
+            yield cls(job)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -258,19 +271,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
                       include_binaries, sponsored=None, unembargo=False,
-                      auto_approve=False):
+                      auto_approve=False, source_distroseries=None,
+                      source_pocket=None):
         """Produce a metadata dict for this job."""
-        if sponsored:
-            sponsored_name = sponsored.name
-        else:
-            sponsored_name = None
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
             'include_binaries': bool(include_binaries),
-            'sponsored': sponsored_name,
+            'sponsored': sponsored.name if sponsored else None,
             'unembargo': unembargo,
             'auto_approve': auto_approve,
+            'source_distroseries':
+                source_distroseries.name if source_distroseries else None,
+            'source_pocket': source_pocket.value if source_pocket else None,
         }
 
     @classmethod
@@ -278,13 +291,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None, unembargo=False, auto_approve=False):
+               sponsored=None, unembargo=False, auto_approve=False,
+               source_distroseries=None, source_pocket=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve)
+            unembargo, auto_approve, source_distroseries, source_pocket)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -423,6 +437,20 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def auto_approve(self):
         return self.metadata.get('auto_approve', False)
 
+    @property
+    def source_distroseries(self):
+        name = self.metadata.get('source_distroseries')
+        if name is None:
+            return None
+        return self.source_archive.distribution[name]
+
+    @property
+    def source_pocket(self):
+        name = self.metadata.get('source_pocket')
+        if name is None:
+            return None
+        return PackagePublishingPocket.items[name]
+
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
             pocket=self.target_pocket, archive=self.target_archive,
@@ -459,6 +487,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             section = None
 
         return SourceOverride(source_package_name, component, section)
+
+    def findSourcePublication(self):
+        """Find the appropriate origin `ISourcePackagePublishingHistory`."""
+        name = self.package_name
+        version = self.package_version
+        source_package = self.source_archive.getPublishedSources(
+            name=name, version=version, exact_match=True,
+            distroseries=self.source_distroseries,
+            pocket=self.source_pocket).first()
+        if source_package is None:
+            raise CannotCopy("Package %r %r not found." % (name, version))
+        return source_package
 
     def _checkPolicies(self, source_name, source_component=None,
                        auto_approve=False):
@@ -535,8 +575,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # Remember the target archive purpose, as otherwise aborting the
             # transaction will forget it.
             target_archive_purpose = self.target_archive.purpose
-            logger = logging.getLogger()
-            logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
+            self.logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
             self.reportFailure(unicode(e))
 
@@ -572,18 +611,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         :raise CannotCopy: If the copy fails for a reason that the user
             can deal with.
         """
-        if self.target_archive.is_ppa:
-            if self.target_pocket != PackagePublishingPocket.RELEASE:
-                raise CannotCopy(
-                    "Destination pocket must be 'release' for a PPA.")
+        reason = self.target_archive.checkUploadToPocket(
+            self.target_distroseries, self.target_pocket,
+            person=self.requester)
+        if reason:
+            # Wrap any forbidden-pocket error in CannotCopy.
+            raise CannotCopy(unicode(reason))
 
-        name = self.package_name
-        version = self.package_version
-        source_package = self.source_archive.getPublishedSources(
-            name=name, version=version, exact_match=True).first()
-        if source_package is None:
-            raise CannotCopy("Package %r %r not found." % (name, version))
-        source_name = getUtility(ISourcePackageNameSet)[name]
+        source_package = self.findSourcePublication()
 
         # If there's a PackageUpload associated with this job then this
         # job has just been released by an archive admin from the queue.
@@ -592,13 +627,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [self.context.id]).any()
         if pu is None:
+            source_name = getUtility(ISourcePackageNameSet)[self.package_name]
             self._checkPolicies(
                 source_name, source_package.sourcepackagerelease.component,
                 self.auto_approve)
 
         # The package is free to go right in, so just copy it now.
         ancestry = self.target_archive.getPublishedSources(
-            name=name, distroseries=self.target_distroseries,
+            name=self.package_name, distroseries=self.target_distroseries,
             pocket=self.target_pocket, exact_match=True)
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
@@ -634,6 +670,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # held in the queue because of policy/ancestry checks.  If one
             # does exist we need to make sure it gets moved to DONE.
             pu.setDone()
+
+        if copied_publications:
+            self.logger.debug(
+                "Packages copied to %s:" % self.target_archive.displayname)
+            for copy in copied_publications:
+                self.logger.debug(copy.displayname)
 
     def abort(self):
         """Abort work."""
@@ -686,12 +728,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             " from %s/%s" % (
                 self.source_archive.distribution.name,
                 self.source_archive.name))
+        if self.source_pocket is not None:
+            parts.append(", %s pocket," % self.source_pocket.name)
+        if self.source_distroseries is not None:
+            parts.append(" in %s" % self.source_distroseries)
         parts.append(
             " to %s/%s" % (
                 self.target_archive.distribution.name,
                 self.target_archive.name))
-        parts.append(
-            ", %s pocket," % self.target_pocket.name)
+        parts.append(", %s pocket," % self.target_pocket.name)
         if self.target_distroseries is not None:
             parts.append(" in %s" % self.target_distroseries)
         if self.include_binaries:

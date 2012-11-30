@@ -296,7 +296,7 @@ the Gnome project has yet any specifications.
     netapplet []
     gnomebaker []
 
-    >>> print list(gnome.getMilestone('1.1').specifications)
+    >>> print list(gnome.getMilestone('1.1').getSpecifications(None))
     []
 
 When a specification for a product is created and assigned to a product
@@ -306,7 +306,8 @@ milestone, it is "inheritied" by the project milestone.
     >>> [spec.name for spec in applets._all_specifications]
     [u'applets-specification']
 
-    >>> [spec.name for spec in gnome.getMilestone('1.1').specifications]
+    >>> specs = gnome.getMilestone('1.1').getSpecifications(None)
+    >>> [spec.name for spec in specs]
     [u'applets-specification']
 
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -8,10 +8,17 @@ __metaclass__ = type
 import cgi
 import urllib
 
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
+from testtools.matchers import Not
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.registry.browser.sourcepackage import (
     get_register_upstream_url,
     PackageUpstreamTracking,
@@ -23,8 +30,10 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -148,6 +157,60 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         url = get_register_upstream_url(source_package)
         self.assertInQueryString(
             url, 'field.homepageurl', 'http://eg.dom/bonkers')
+
+
+class TestSourcePackageView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_register_upstream_forbids_proprietary(self):
+        # Cannot specify information_type if registering for sourcepackage.
+        self.useFixture(FeatureFixture({'disclosure.private_projects.enabled':
+            'on'}))
+        sourcepackage = self.factory.makeSourcePackage()
+        browser = self.getViewBrowser(sourcepackage)
+        browser.getControl("Register the upstream project").click()
+        browser.getControl("Link to Upstream Project").click()
+        browser.getControl("Summary").value = "summary"
+        browser.getControl("Continue").click()
+        t = Tag('info_type', 'input', attrs={'name': 'field.information_type'})
+        self.assertThat(browser.contents, Not(HTMLContains(t)))
+
+    def test_link_upstream_handles_initial_proprietary(self):
+        # Proprietary product is not listed as an option.
+        owner = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        product_name = sourcepackage.name
+        product_displayname = self.factory.getUniqueString()
+        self.factory.makeProduct(
+            name=product_name, owner=owner,
+            information_type=InformationType.PROPRIETARY,
+            displayname=product_displayname)
+        browser = self.getViewBrowser(sourcepackage, user=owner)
+        with ExpectedException(LookupError):
+            browser.getControl(product_displayname)
+
+    def test_link_upstream_handles_proprietary(self):
+        # Proprietary products produce an 'invalid value' error.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        product_name = product.name
+        product_displayname = product.displayname
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=product_name)
+        with person_logged_in(None):
+            browser = self.getViewBrowser(sourcepackage, user=owner)
+            with person_logged_in(owner):
+                product.information_type = InformationType.PROPRIETARY
+            browser.getControl(product_displayname).click()
+            browser.getControl("Link to Upstream Project").click()
+        error = Tag(
+            'error', 'div', attrs={'class': 'message'},
+            text='Invalid value')
+        self.assertThat(browser.contents, HTMLContains(error))
+        self.assertNotIn(
+            'The project %s was linked to this source package.' %
+            str(product_displayname), browser.contents)
 
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
@@ -287,3 +350,47 @@ class TestSourcePackagePackagingLinks(TestCaseWithFactory):
         menu, user = self.makeSourcePackageOverviewMenu(True, None)
         with person_logged_in(user):
             self.assertFalse(menu.remove_packaging().enabled)
+
+
+class TestSourcePackageChangeUpstreamView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_error_on_proprietary_product(self):
+        """Packaging cannot be created for PROPRIETARY products"""
+        product_owner = self.factory.makePerson()
+        product_name = 'proprietary-product'
+        self.factory.makeProduct(
+            name=product_name, owner=product_owner,
+            information_type=InformationType.PROPRIETARY)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        browser = self.getViewBrowser(
+            sp, '+edit-packaging', user=product_owner)
+        browser.getControl('Project').value = product_name
+        browser.getControl('Continue').click()
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)
+
+    def test_error_on_proprietary_productseries(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product_owner = self.factory.makePerson()
+        product_name = 'proprietary-product'
+        product = self.factory.makeProduct(
+            name=product_name, owner=product_owner)
+        series = self.factory.makeProductSeries(product=product)
+        series_displayname = series.displayname
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        browser = self.getViewBrowser(
+            sp, '+edit-packaging', user=product_owner)
+        browser.getControl('Project').value = product_name
+        browser.getControl('Continue').click()
+        with person_logged_in(product_owner):
+            product.information_type = InformationType.PROPRIETARY
+        browser.getControl(series_displayname).selected = True
+        browser.getControl('Change').click()
+        self.assertIn(
+            'Only Public projects can be packaged, not Proprietary.',
+            browser.contents)

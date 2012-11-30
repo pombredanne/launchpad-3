@@ -81,10 +81,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    DB_UNRESOLVED_BUGTASK_STATUSES,
-    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -116,7 +112,6 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorStatus,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
     validate_person,
     validate_person_or_closed_team,
@@ -152,7 +147,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    cursor,
     quote,
     SQLBase,
     sqlvalues,
@@ -257,6 +251,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
     package_derivatives_email = StringCol(notNull=False, default=None)
+    redirect_release_uploads = BoolCol(notNull=True, default=False)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -338,8 +333,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     _answers_usage = EnumCol(
         dbName="answers_usage", notNull=True,
-        schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        schema=ServiceUsage, default=ServiceUsage.UNKNOWN)
 
     def _get_answers_usage(self):
         if self._answers_usage != ServiceUsage.UNKNOWN:
@@ -388,8 +382,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
-        schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        schema=ServiceUsage, default=ServiceUsage.UNKNOWN)
 
     @property
     def codehosting_usage(self):
@@ -1422,170 +1415,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         except KeyError:
             # Otherwise we defer to the caller.
             return None
-
-    @property
-    def upstream_report_excluded_packages(self):
-        """See `IDistribution`."""
-        # If the current distribution is Ubuntu, return a specific set
-        # of excluded packages. Otherwise return an empty list.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if self == ubuntu:
-            #XXX gmb 2009-02-02: bug 324298
-            #    This needs to be managed in a nicer, non-hardcoded
-            #    fashion.
-            excluded_packages = [
-                'apport',
-                'casper',
-                'displayconfig-gtk',
-                'flashplugin-nonfree',
-                'gnome-app-install',
-                'nvidia-graphics-drivers-177',
-                'software-properties',
-                'sun-java6',
-                'synaptic',
-                'ubiquity',
-                'ubuntu-meta',
-                'update-manager',
-                'update-notifier',
-                'usb-creator',
-                'usplash',
-                ]
-        else:
-            excluded_packages = []
-
-        return excluded_packages
-
-    def getPackagesAndPublicUpstreamBugCounts(self, limit=50,
-                                              exclude_packages=None):
-        """See `IDistribution`."""
-        from lp.registry.model.product import Product
-
-        if exclude_packages is None or len(exclude_packages) == 0:
-            # If exclude_packages is None or an empty list we set it to
-            # be a list containing a single empty string. This is so
-            # that we can quote() it properly for the query below ('NOT
-            # IN ()' is not valid SQL).
-            exclude_packages = ['']
-        else:
-            # Otherwise, listify exclude_packages so that we're not
-            # trying to quote() a security proxy object.
-            exclude_packages = list(exclude_packages)
-
-        # This method collects three open bug counts for
-        # sourcepackagenames in this distribution first, and then caches
-        # product information before rendering everything into a list of
-        # tuples.
-        cur = cursor()
-        cur.execute("""
-            SELECT SPN.id, SPN.name,
-            COUNT(DISTINCT Bugtask.bug) AS open_bugs,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
-                  Bugtask.bug END) AS bugs_triaged,
-            COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
-                  RelatedBugTask.bug END) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
-                  (RelatedBugTask.bugwatch IS NOT NULL OR
-                  RelatedProduct.official_malone IS TRUE) THEN
-                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch,
-            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
-                  RelatedBugTask.bugwatch IS NULL AND
-                  RelatedProduct.official_malone IS FALSE AND
-                  Bug.latest_patch_uploaded IS NOT NULL
-                  THEN
-                  RelatedBugTask.bug END)
-                  AS bugs_with_upstream_patches
-            FROM
-                SourcePackageName AS SPN
-                JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
-                JOIN Bug ON Bug.id = Bugtask.bug
-                LEFT OUTER JOIN Bugtask AS RelatedBugtask ON (
-                    RelatedBugtask.bug = Bugtask.bug
-                    AND RelatedBugtask.id != Bugtask.id
-                    AND RelatedBugtask.product IS NOT NULL
-                    AND RelatedBugtask.status != %(invalid)s
-                    )
-                LEFT OUTER JOIN Product AS RelatedProduct ON (
-                    RelatedBugtask.product = RelatedProduct.id
-                )
-            WHERE
-                Bugtask.distribution = %(distro)s
-                AND Bugtask.sourcepackagename = spn.id
-                AND Bugtask.distroseries IS NULL
-                AND Bugtask.status IN %(unresolved)s
-                AND Bug.information_type IN %(public_types)s
-                AND Bug.duplicateof IS NULL
-                AND spn.name NOT IN %(excluded_packages)s
-            GROUP BY SPN.id, SPN.name
-            HAVING COUNT(DISTINCT Bugtask.bug) > 0
-            ORDER BY open_bugs DESC, SPN.name LIMIT %(limit)s
-        """ % {'invalid': quote(BugTaskStatus.INVALID),
-               'triaged': quote(BugTaskStatus.TRIAGED),
-               'limit': limit,
-               'distro': self.id,
-               'unresolved': quote(DB_UNRESOLVED_BUGTASK_STATUSES),
-               'excluded_packages': quote(exclude_packages),
-               'public_types': quote(PUBLIC_INFORMATION_TYPES),
-                })
-        counts = cur.fetchall()
-        cur.close()
-        if not counts:
-            # If no counts are returned it means that there are no
-            # source package names in the database -- because the counts
-            # would just return zero if no bugs existed. And if there
-            # are no packages are in the database, all bets are off.
-            return []
-
-        # Next step is to extract which IDs actually show up in the
-        # output we generate, and cache them.
-        spn_ids = [item[0] for item in counts]
-        list(SourcePackageName.select("SourcePackageName.id IN %s"
-             % sqlvalues(spn_ids)))
-
-        # Finally find out what products are attached to these source
-        # packages (if any) and cache them too. The ordering of the
-        # query by Packaging.id ensures that the dictionary holds the
-        # latest entries for situations where we have multiple entries.
-        cur = cursor()
-        cur.execute("""
-            SELECT Packaging.sourcepackagename, Product.id
-              FROM Product, Packaging, ProductSeries, DistroSeries
-             WHERE ProductSeries.product = Product.id AND
-                   DistroSeries.distribution = %s AND
-                   Packaging.distroseries = DistroSeries.id AND
-                   Packaging.productseries = ProductSeries.id AND
-                   Packaging.sourcepackagename IN %s AND
-                   Packaging.packaging = %s AND
-                   Product.active IS TRUE
-                   ORDER BY Packaging.id
-        """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
-        sources_to_products = dict(cur.fetchall())
-        cur.close()
-        if sources_to_products:
-            # Cache some more information to avoid us having to hit the
-            # database hard for each product rendered.
-            list(Product.select("Product.id IN %s" %
-                 sqlvalues(sources_to_products.values()),
-                 prejoins=["bug_supervisor", "bugtracker", "project",
-                           "development_focus.branch"]))
-
-        # Okay, we have all the information good to go, so assemble it
-        # in a reasonable data structure.
-        results = []
-        for (spn_id, spn_name, open_bugs, bugs_triaged,
-             bugs_affecting_upstream, bugs_with_upstream_bugwatch,
-             bugs_with_upstream_patches) in counts:
-            sourcepackagename = SourcePackageName.get(spn_id)
-            dsp = self.getSourcePackage(sourcepackagename)
-            if spn_id in sources_to_products:
-                product_id = sources_to_products[spn_id]
-                product = Product.get(product_id)
-            else:
-                product = None
-            results.append(
-                (dsp, product, open_bugs, bugs_triaged,
-                 bugs_affecting_upstream, bugs_with_upstream_bugwatch,
-                 bugs_with_upstream_patches))
-        return results
 
     def getAllowedBugInformationTypes(self):
         """See `IDistribution.`"""

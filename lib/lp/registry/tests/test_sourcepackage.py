@@ -11,16 +11,19 @@ from lazr.lifecycle.event import (
     )
 from storm.locals import Store
 import transaction
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.checker import canAccess
 from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -321,6 +324,22 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertIsInstance(event1, ObjectCreatedEvent)
         self.assertIsInstance(event2, ObjectDeletedEvent)
         self.assertIsInstance(event3, ObjectCreatedEvent)
+
+    def test_refuses_PROPRIETARY(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        ubuntu_series = self.factory.makeUbuntuDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series)
+        with person_logged_in(owner):
+            with ExpectedException(
+                CannotPackageProprietaryProduct,
+                'Only Public project series can be packaged, not '
+                'Proprietary.'):
+                sp.setPackaging(series, owner)
 
     def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
         """An ordinary user can create a packaging link but he cannot

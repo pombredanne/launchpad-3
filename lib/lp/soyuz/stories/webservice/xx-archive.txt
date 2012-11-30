@@ -1374,7 +1374,7 @@ error is returned.
     HTTP/1.1 400 Bad Request
     ...
     foocomm 1.0-2 in hoary
-    (same version already uploaded and waiting in ACCEPTED queue)
+    (same version already building in the destination archive for Hoary)
 
 Suppressing notifications
 -------------------------

@@ -750,9 +750,6 @@
             <browser:page
                 name="+portlet-ppas"
                 template="../templates/person-portlet-ppas.pt"/>
-            <browser:page
-                name="+ppas-list"
-                template="../templates/person-ppas.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"

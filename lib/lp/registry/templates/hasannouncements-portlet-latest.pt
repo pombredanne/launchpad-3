@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 <tal:news define="announcements view/latest_announcements;
-                  has_announcements announcements/count;
+                  has_announcements view/has_announcements;
                   overview_menu context/menu:overview">
 <div id="portlet-latest-announcements" class="portlet announcements"
   tal:condition="view/show_announcements">

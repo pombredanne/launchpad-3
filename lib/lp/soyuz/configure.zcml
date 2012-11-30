@@ -1002,6 +1002,12 @@
       <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
     </class>
 
+    <class
+        class="lp.soyuz.model.reporting.LatestPersonSourcePackageReleaseCache">
+        <allow
+            interface="lp.soyuz.interfaces.reporting.ILatestPersonSourcePackageReleaseCache"/>
+    </class>
+
     <!-- ProcessAcceptedBugsJobSource -->
     <securedutility
 	component=".model.processacceptedbugsjob.ProcessAcceptedBugsJob"

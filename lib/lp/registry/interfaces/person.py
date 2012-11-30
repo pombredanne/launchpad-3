@@ -848,11 +848,17 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
-    assigned_specs = Attribute(
-        "Specifications assigned to this person, sorted newest first.")
-    assigned_specs_in_progress = Attribute(
-        "Specifications assigned to this person whose implementation is "
-        "started but not yet completed, sorted newest first.")
+
+    def findVisibleAssignedInProgressSpecs(user):
+        """List specifications in progress assigned to this person.
+
+        In progress means their implementation is started but not yet
+        completed.  They are sorted newest first.  No more than 5
+        specifications are returned.
+
+        :param user: The use to use for determining visibility.
+        """
+
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
@@ -1045,6 +1051,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         It will create a new IArchiveAuthToken if one doesn't already exist.
         """
 
+    def getVisiblePPAs(user):
+        """Return the PPAs for which user has launchpad.View permission."""
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
@@ -1132,7 +1141,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                           the icons which represent that category.
         """
 
-    def getAffiliatedPillars():
+    def getAffiliatedPillars(user):
         """Return the pillars that this person directly has a role with.
 
         Returns distributions, project groups, and projects that this person
@@ -1220,19 +1229,19 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         used between TeamMembership and Person objects.
         """
 
-    def getLatestMaintainedPackages():
-        """Return `SourcePackageRelease`s maintained by this person.
-
-        This method will only include the latest source package release
-        for each source package name, distribution series combination.
-        """
-
     def getLatestSynchronisedPublishings():
         """Return `SourcePackagePublishingHistory`s synchronised by this
         person.
 
         This method will only include the latest publishings for each source
         package name, distribution series combination.
+        """
+
+    def getLatestMaintainedPackages():
+        """Return `SourcePackageRelease`s maintained by this person.
+
+        This method will only include the latest source package release
+        for each source package name, distribution series combination.
         """
 
     def getLatestUploadedButNotMaintainedPackages():
@@ -1248,6 +1257,24 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
+        """
+
+    def hasSynchronisedPublishings():
+        """Are there `SourcePackagePublishingHistory`s synchronised by this
+        person.
+        """
+
+    def hasMaintainedPackages():
+        """Are there `SourcePackageRelease`s maintained by this person."""
+
+    def hasUploadedButNotMaintainedPackages():
+        """Are there `SourcePackageRelease`s created by this person but
+        not maintained by him.
+        """
+
+    def hasUploadedPPAPackages():
+        """Are there `SourcePackageRelease`s uploaded by this person to any
+        PPA.
         """
 
     def isUploader(distribution):
@@ -1390,10 +1417,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: a boolean.
         """
 
-    def getAssignedSpecificationWorkItemsDueBefore(date):
+    def getAssignedSpecificationWorkItemsDueBefore(date, user):
         """Return SpecificationWorkItems assigned to this person (or members
         of this team) and whose milestone is due between today and the given
         date (inclusive).
+
+        user specifies the user who is viewing the list; items they cannot see
+        are filtered out.  None indicates the anonymous user who can only see
+        public items.
         """
 
     def getAssignedBugTasksDueBefore(date, user):
@@ -1725,7 +1756,20 @@ class IPersonEditRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def deactivateAccount(comment):
+    def canDeactivateAccount():
+        """Verify we safely deactivate this user account.
+
+        :return: True if the person can be deactivated, False otherwise.
+        """
+
+    def canDeactivateAccountWithErrors():
+        """See canDeactivateAccount with the addition of error messages for
+        why the account cannot be deactivated.
+
+        :return tuple: boolean, list of error messages.
+        """
+
+    def deactivateAccount(comment, can_deactivate=None):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
@@ -1736,6 +1780,9 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
+        :param can_deactivate: Override the check if we can deactivate by
+            supplying a known value. If None, then the method will run the
+            checks.
         """
 
     def reactivate(comment, preferred_email):
