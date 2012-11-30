@@ -23,7 +23,8 @@ what users are the top contributors for a given product/distribution.
     >>> from lp.registry.interfaces.karma import IKarma
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -94,7 +95,7 @@ active on, including the type of work the person does on each project. We only
 show the 5 most active projects.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
+    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo(None):
     ...     categories = sorted(cat.name for cat in contrib['categories'])
     ...     print contrib['project'].title, categories
     The Evolution Groupware Application [u'bugs', u'translations']

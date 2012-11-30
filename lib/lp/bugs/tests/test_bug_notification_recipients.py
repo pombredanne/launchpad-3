@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
 from testtools.matchers import (
     Equals,
     GreaterThan,
     )
+from zope.component import getUtility
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel

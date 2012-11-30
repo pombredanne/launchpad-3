@@ -15,9 +15,11 @@ from lp.registry.enums import (
     )
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing import person_logged_in
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,

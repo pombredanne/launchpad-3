@@ -51,25 +51,6 @@ A new view should have the new user.
     >>> print view.user.name
     name16
 
-When the initialize method does a redirection, the render method should
-not be called.
-
-    >>> class MyRedirectView(LaunchpadView):
-    ...
-    ...     def initialize(self):
-    ...         print "Redirecting..."
-    ...         self.request.response.redirect('http://localhost/')
-    ...
-    ...     def render(self):
-    ...         return "Should not be called."
-    ...
-    >>> request = LaunchpadTestRequest()
-    >>> view = MyRedirectView(context, request)
-    >>> result = view()
-    Redirecting...
-    >>> result
-    u''
-
 A view can have `error_message` or `info_message` set for display in
 the template (each template is responsible for including the messages,
 using a `structure` directive). The supplied value must be None or
@@ -97,7 +78,7 @@ an IStructuredString implementation.
     >>> print view.info_message
     None
 
-    >>> from lp.services.webapp.menu import structured
+    >>> from lp.services.webapp.escaping import structured
     >>> view.error_message = structured(
     ...    'A structure is just "%s".', 'smoke & mirrors')
     >>> view.error_message.escapedtext

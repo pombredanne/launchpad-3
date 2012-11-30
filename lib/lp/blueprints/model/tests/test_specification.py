@@ -13,19 +13,24 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException
 import transaction
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationworkitem import (
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
-from lp.registry.enums import SpecificationSharingPolicy
+from lp.registry.enums import (
+    SharingPermission,
+    SpecificationSharingPolicy,
+    )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
 from lp.services.mail import stub
@@ -615,9 +620,9 @@ class TestSpecificationInformationType(TestCaseWithFactory):
 
     def test_transitionToInformationType(self):
         """Ensure transitionToInformationType works."""
+        public_private = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         product = self.factory.makeProduct(
-            specification_sharing_policy=
-                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            specification_sharing_policy=public_private)
         spec = self.factory.makeSpecification(product=product)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         removeSecurityProxy(spec.target)._ensurePolicies(
@@ -643,3 +648,45 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         with person_logged_in(spec.owner):
             with ExpectedException(CannotChangeInformationType, '.*'):
                 spec.transitionToInformationType(None, spec.owner)
+
+    def test_transitionToInformationType_adds_grants_for_subscribers(self):
+        # Subscribers are automatically granted access when the
+        # new information type requires a grant.
+        owner = self.factory.makePerson()
+        public_private = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner,
+            specification_sharing_policy=public_private)
+        spec = self.factory.makeSpecification(product=product)
+        subscriber_with_policy_grant = self.factory.makePerson()
+        subscriber_without_policy_grant = self.factory.makePerson()
+        service = getUtility(IService, 'sharing')
+        with person_logged_in(owner):
+            service.sharePillarInformation(
+                product, subscriber_with_policy_grant, owner,
+                permissions={
+            InformationType.PROPRIETARY: SharingPermission.ALL,
+            })
+            spec.subscribe(subscriber_with_policy_grant, owner)
+            spec.subscribe(subscriber_without_policy_grant, owner)
+
+            # The specification is public, hence subscribers do not need
+            #  and do not have access grants.
+            self.assertEqual(
+                [], service.getSharedSpecifications(
+                    product, subscriber_without_policy_grant, owner))
+            self.assertEqual(
+                [], service.getSharedSpecifications(
+                    product, subscriber_with_policy_grant, owner))
+
+            spec.transitionToInformationType(
+                InformationType.PROPRIETARY, owner)
+            # transitionToInformationType() added an artifact grant for
+            # subscriber_without_policy_grant.
+            self.assertEqual(
+                [spec], service.getSharedSpecifications(
+                    product, subscriber_without_policy_grant, owner))
+            # No access grant was created for subscriber_with_policy_grant.
+            self.assertEqual(
+                [], service.getSharedSpecifications(
+                    product, subscriber_with_policy_grant, owner))

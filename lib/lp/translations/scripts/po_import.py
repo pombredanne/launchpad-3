@@ -163,7 +163,7 @@ class TranslationsImport(LaunchpadCronScript):
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
         importqueues = translation_import_queue.getRequestTargets(
-            RosettaImportStatus.APPROVED)
+            user=None, status=RosettaImportStatus.APPROVED)
 
         if not importqueues:
             self.logger.info("No requests pending.")

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AlreadyConvertedException',
+    'get_person_visibility_terms',
     'get_recipients',
     'generate_nick',
     'IrcID',
@@ -130,10 +131,10 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
-    Specification,
     spec_started_clause,
+    Specification,
+    visible_specification_query,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -205,7 +206,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
-from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -264,7 +264,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -328,8 +327,8 @@ from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
     )
-from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -394,6 +393,32 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
+
+
+def get_person_visibility_terms(user):
+    """Generate the query needed for person privacy filtering."""
+    public_filter = (Person.visibility == PersonVisibility.PUBLIC)
+
+    # Anonymous users can only see public people.
+    if user is None:
+        return public_filter
+
+    # Admins and commercial admins can see everyone.
+    roles = IPersonRoles(user)
+    if roles.in_admin or roles.in_commercial_admin:
+        return True
+
+    # Otherwise only public people and private teams of which the user
+    # is a member are visible.
+    return Or(
+        public_filter,
+        And(
+            Person.id.is_in(
+                Select(
+                    TeamParticipation.teamID, tables=[TeamParticipation],
+                    where=(TeamParticipation.person == user))),
+            Person.teamowner != None,
+            Person.visibility != PersonVisibility.PUBLIC))
 
 
 _person_sort_re = re.compile("(?:[^\w\s]|[\d_])", re.U)
@@ -857,7 +882,8 @@ class Person(
                     Select(SpecificationSubscription.specificationID,
                         [SpecificationSubscription.person == self]
                     )))
-        clauses = [Or(*role_clauses), get_specification_privacy_filter(user)]
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Or(*role_clauses))
         # Defaults for completeness: if nothing is said about completeness
         # then we want to show INCOMPLETE.
         if SpecificationFilter.COMPLETE not in filter:
@@ -867,7 +893,7 @@ class Person(
             filter.add(SpecificationFilter.INCOMPLETE)
 
         clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).find(Specification, *clauses)
+        results = Store.of(self).using(*tables).find(Specification, *clauses)
         # The default sort is priority descending, so only explictly sort for
         # DATE.
         if sort == SpecificationSort.DATE:
@@ -876,6 +902,7 @@ class Person(
             sort = None
         if sort is not None:
             results = results.order_by(sort)
+        results.config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -987,27 +1014,21 @@ class Person(
             return getUtility(IBugTaskSet).search(
                 search_params, *args, prejoins=prejoins)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=5):
+    def getProjectsAndCategoriesContributedTo(self, user, limit=5):
         """See `IPerson`."""
         contributions = []
-        # Pillars names have no concept of active. Extra pillars names are
-        # requested because deactivated pillars will be filtered out.
-        extra_limit = limit + 5
-        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
-        for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(
-                pillar_name, ignore_inactive=True)
-            if pillar is not None:
-                contributions.append(
-                    {'project': pillar,
-                     'categories': self._getContributedCategories(pillar)})
-            if len(contributions) == limit:
-                break
+        results = self._getProjectsWithTheMostKarma(user, limit=limit)
+        for product, distro, karma in results:
+            pillar = (product or distro)
+            contributions.append(
+                {'project': pillar,
+                 'categories': self._getContributedCategories(pillar)})
         return contributions
 
-    def _getProjectsWithTheMostKarma(self, limit=10):
-        """Return the names and karma points of this person on the
-        product/distribution with that name.
+    def _getProjectsWithTheMostKarma(self, user, limit=10):
+        """Return the product/distribution and karma points of this person.
+
+        Inactive products are ignored.
 
         The results are ordered descending by the karma points and limited to
         the given limit.
@@ -1015,24 +1036,27 @@ class Person(
         # We want this person's total karma on a given context (that is,
         # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
-        query = """
-            SELECT PillarName.name, KarmaCache.karmavalue
-            FROM KarmaCache
-            JOIN PillarName ON
-                COALESCE(KarmaCache.distribution, -1) =
-                COALESCE(PillarName.distribution, -1)
-                AND
-                COALESCE(KarmaCache.product, -1) =
-                COALESCE(PillarName.product, -1)
-            WHERE person = %(person)s
-                AND KarmaCache.category IS NULL
-                AND KarmaCache.project IS NULL
-            ORDER BY karmavalue DESC, name
-            LIMIT %(limit)s;
-            """ % sqlvalues(person=self, limit=limit)
-        cur = cursor()
-        cur.execute(query)
-        return cur.fetchall()
+        from lp.registry.model.product import (
+            Product,
+            ProductSet,
+        )
+        from lp.registry.model.distribution import Distribution
+        tableset = Store.of(self).using(
+            KarmaCache, LeftJoin(Product, Product.id == KarmaCache.productID),
+            LeftJoin(Distribution, Distribution.id ==
+                     KarmaCache.distributionID))
+        result = tableset.find(
+            (Product, Distribution, KarmaCache.karmavalue),
+             KarmaCache.personID == self.id,
+             KarmaCache.category == None,
+             KarmaCache.project == None,
+             Or(
+                And(Product.id != None, Product.active == True,
+                    ProductSet.getProductPrivacyFilter(user)),
+                Distribution.id != None))
+        result.order_by(Desc(KarmaCache.karmavalue),
+                        Coalesce(Product.name, Distribution.name))
+        return result[:limit]
 
     def _genAffiliatedProductSql(self, user=None):
         """Helper to generate the product sql for getAffiliatePillars"""
@@ -1235,11 +1259,6 @@ class Person(
                     pytz.UTC),
                 Person.id == self.id)
         return not person.is_empty()
-
-    def iterTopProjectsContributedTo(self, limit=10):
-        getByName = getUtility(IPillarNameSet).getByName
-        for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):
-            yield getByName(name)
 
     def _getContributedCategories(self, pillar):
         """Return the KarmaCategories to which this person has karma on the
@@ -1466,23 +1485,23 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin = [
-            WorkItem,
-            Join(Specification, WorkItem.specification == Specification.id),
+        origin, query = visible_specification_query(user)
+        origin.extend([
+            Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            ]
+            ])
         today = datetime.today().date()
-        query = And(
-            get_specification_privacy_filter(user),
+        query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification.assigneeID.is_in(self.participant_ids)))
-        result = store.using(*origin).find(WorkItem, query)
+               Specification.assigneeID.is_in(self.participant_ids))])
+        result = store.using(*origin).find(WorkItem, *query)
+        result.config(distinct=True)
 
         def eager_load(workitems):
             specs = bulk.load_related(
@@ -2844,6 +2863,8 @@ class Person(
             pass
         elif uploader_only:
             lpspr = ClassAlias(LatestPersonSourcePackageReleaseCache, 'lpspr')
+            upload_distroseries_id = (
+                LatestPersonSourcePackageReleaseCache.upload_distroseries_id)
             clauses.append(Not(Exists(Select(1,
             where=And(
                 lpspr.sourcepackagename_id ==
@@ -2851,7 +2872,7 @@ class Person(
                 lpspr.upload_archive_id ==
                     LatestPersonSourcePackageReleaseCache.upload_archive_id,
                 lpspr.upload_distroseries_id ==
-                    LatestPersonSourcePackageReleaseCache.upload_distroseries_id,
+                    upload_distroseries_id,
                 lpspr.archive_purpose != ArchivePurpose.PPA,
                 lpspr.maintainer_id == self.id),
             tables=lpspr))))
@@ -2872,9 +2893,6 @@ class Person(
         """Are there sourcepackagereleases (SPRs) related to this person.
         See `_releasesQueryFilter` for details on the criteria used.
         """
-        if not getFeatureFlag('registry.fast_related_software.enabled'):
-            return self._legacy_hasReleasesQuery(uploader_only, ppa_only)
-
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).using(LatestPersonSourcePackageReleaseCache).find(
             LatestPersonSourcePackageReleaseCache.publication_id, *clauses)
@@ -2883,9 +2901,6 @@ class Person(
     def _latestReleasesQuery(self, uploader_only=False, ppa_only=False):
         """Return the sourcepackagereleases records related to this person.
         See `_releasesQueryFilter` for details on the criteria used."""
-
-        if not getFeatureFlag('registry.fast_related_software.enabled'):
-            return self._legacy_latestReleasesQuery(uploader_only, ppa_only)
 
         clauses = self._releasesQueryFilter(uploader_only, ppa_only)
         rs = Store.of(self).find(
@@ -2901,96 +2916,6 @@ class Person(
             bulk.load_related(
                 SourcePackageRelease, rows, ['sourcepackagerelease_id'])
             bulk.load_related(Archive, rows, ['upload_archive_id'])
-
-        return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
-
-    def _legacy_releasesQueryFilter(self, uploader_only=False, ppa_only=False):
-        """Return the filter used to find sourcepackagereleases (SPRs)
-        related to this person.
-
-        :param uploader_only: controls if we are interested in SPRs where
-            the person in question is only the uploader (creator) and not the
-            maintainer (debian-syncs) if the `ppa_only` parameter is also
-            False, or, if the flag is False, it returns all SPR maintained
-            by this person.
-
-        :param ppa_only: controls if we are interested only in source
-            package releases targeted to any PPAs or, if False, sources
-            targeted to primary archives.
-
-        Active 'ppa_only' flag is usually associated with active
-        'uploader_only' because there shouldn't be any sense of maintainership
-        for packages uploaded to PPAs by someone else than the user himself.
-        """
-        clauses = [SourcePackageRelease.upload_archive == Archive.id]
-
-        if uploader_only:
-            clauses.append(SourcePackageRelease.creator == self)
-
-        if ppa_only:
-            # Source maintainer is irrelevant for PPA uploads.
-            pass
-        elif uploader_only:
-            clauses.append(SourcePackageRelease.maintainer != self)
-        else:
-            clauses.append(SourcePackageRelease.maintainer == self)
-
-        if ppa_only:
-            clauses.append(Archive.purpose == ArchivePurpose.PPA)
-        else:
-            clauses.append(Archive.purpose != ArchivePurpose.PPA)
-
-        return clauses
-
-    def _legacy_hasReleasesQuery(self, uploader_only=False, ppa_only=False):
-        """Are there sourcepackagereleases (SPRs) related to this person.
-        See `_legacy_releasesQueryFilter` for details on the criteria used.
-        """
-        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
-        tables = (
-            SourcePackageRelease,
-            Join(
-                spph, spph.sourcepackagereleaseID == SourcePackageRelease.id),
-            Join(Archive, Archive.id == spph.archiveID))
-        rs = Store.of(self).using(*tables).find(
-            SourcePackageRelease.id, clauses)
-        return not rs.is_empty()
-
-    def _legacy_latestReleasesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
-        See `_legacy_releasesQueryFilter` for details on the criteria used."""
-        clauses = self._legacy_releasesQueryFilter(uploader_only, ppa_only)
-        spph = ClassAlias(SourcePackagePublishingHistory, "spph")
-        rs = Store.of(self).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(
-                Select(
-                    SourcePackageRelease.id,
-                    tables=[
-                        SourcePackageRelease,
-                        Join(
-                            spph,
-                            spph.sourcepackagereleaseID ==
-                            SourcePackageRelease.id),
-                        Join(Archive, Archive.id == spph.archiveID)],
-                    where=And(*clauses),
-                    order_by=[SourcePackageRelease.upload_distroseriesID,
-                              SourcePackageRelease.sourcepackagenameID,
-                              SourcePackageRelease.upload_archiveID,
-                              Desc(SourcePackageRelease.dateuploaded)],
-                    distinct=(
-                        SourcePackageRelease.upload_distroseriesID,
-                        SourcePackageRelease.sourcepackagenameID,
-                        SourcePackageRelease.upload_archiveID)))
-        ).order_by(
-            Desc(SourcePackageRelease.dateuploaded), SourcePackageRelease.id)
-
-        def load_related_objects(rows):
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                set(map(attrgetter("maintainerID"), rows))))
-            bulk.load_related(SourcePackageName, rows, ['sourcepackagenameID'])
-            bulk.load_related(Archive, rows, ['upload_archiveID'])
 
         return DecoratedResultSet(rs, pre_iter_hook=load_related_objects)
 
@@ -3637,42 +3562,11 @@ class PersonSet:
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
-    def _teamPrivacyQuery(self):
-        """Generate the query needed for privacy filtering.
-
-        If the visibility is not PUBLIC ensure the logged in user is a member
-        of the team.
-        """
-        logged_in_user = getUtility(ILaunchBag).user
-        if logged_in_user is not None:
-            private_query = SQL("""
-                TeamParticipation.person = ?
-                AND Person.teamowner IS NOT NULL
-                AND Person.visibility != ?
-                """, (logged_in_user.id, PersonVisibility.PUBLIC.value))
-        else:
-            private_query = None
-
-        base_query = SQL("Person.visibility = ?",
-                         (PersonVisibility.PUBLIC.value, ),
-                         tables=['Person'])
-
-        if private_query is None:
-            query = base_query
-        else:
-            query = Or(base_query, private_query)
-
-        return query
-
     def _teamEmailQuery(self, text):
         """Product the query for team email addresses."""
-        privacy_query = self._teamPrivacyQuery()
-        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
-        # instead of Bar.foo != None.
         team_email_query = And(
-            privacy_query,
-            TeamParticipation.team == Person.id,
-            Not(Person.teamowner == None),
+            get_person_visibility_terms(getUtility(ILaunchBag).user),
+            Person.teamowner != None,
             Person.merged == None,
             EmailAddress.person == Person.id,
             EmailAddress.email.lower().startswith(ensure_unicode(text)))
@@ -3680,13 +3574,9 @@ class PersonSet:
 
     def _teamNameQuery(self, text):
         """Produce the query for team names."""
-        privacy_query = self._teamPrivacyQuery()
-        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
-        # instead of Bar.foo != None.
         team_name_query = And(
-            privacy_query,
-            TeamParticipation.team == Person.id,
-            Not(Person.teamowner == None),
+            get_person_visibility_terms(getUtility(ILaunchBag).user),
+            Person.teamowner != None,
             Person.merged == None,
             SQL("Person.fti @@ ftq(?)", (text, )))
         return team_name_query

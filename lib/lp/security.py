@@ -32,12 +32,12 @@ from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
+from lp.app.interfaces.services import IService
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.app.interfaces.services import IService
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -490,9 +490,16 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
-class ViewTimelineProductSeries(AnonymousAuthorization):
-    """Anyone can view an ITimelineProductSeries."""
+class ViewTimelineProductSeries(DelegatedAuthorization):
+    """Anyone who can view the related product can also view an
+    ITimelineProductSeries.
+    """
+    permission = 'launchpad.View'
     usedfor = ITimelineProductSeries
+
+    def __init__(self, obj):
+        super(ViewTimelineProductSeries, self).__init__(
+            obj, obj.product, 'launchpad.View')
 
 
 class ViewProductReleaseFile(AnonymousAuthorization):
@@ -1833,17 +1840,9 @@ class EditPackageUpload(AdminByAdminsTeam):
     usedfor = IPackageUpload
 
     def checkAuthenticated(self, user):
-        """Return True if user has an ArchivePermission or is an admin.
-
-        If it's a delayed-copy, check if the user can upload to its targeted
-        archive.
-        """
+        """Return True if user has an ArchivePermission or is an admin."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
-
-        if self.obj.is_delayed_copy:
-            archive_append = AppendArchive(self.obj.archive)
-            return archive_append.checkAuthenticated(user)
 
         return self.obj.archive.canAdministerQueue(
             user.person, self.obj.components, self.obj.pocket,

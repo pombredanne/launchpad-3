@@ -9,7 +9,6 @@ __all__ = [
     'CopyChecker',
     'check_copy_permissions',
     'do_copy',
-    '_do_delayed_copy',
     '_do_direct_copy',
     'update_files_privacy',
     ]
@@ -22,8 +21,6 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
-from lp.buildmaster.enums import BuildStatus
 from lp.services.database.bulk import load_related
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.enums import (
@@ -38,11 +35,7 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
     )
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload,
-    IPackageUploadCustom,
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.queue import IPackageUploadCustom
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 
 # XXX cprov 2009-06-12: this function should be incorporated in
@@ -134,17 +127,12 @@ class CheckedCopy:
     Decorates `ISourcePackagePublishingHistory`, tweaking
     `getStatusSummaryForBuilds` to return `BuildSetStatus.NEEDSBUILD`
     for source-only copies.
-
-    It also store the 'delayed' boolean, which controls the way this source
-    should be copied to the destionation archive (see `_do_delayed_copy` and
-    `_do_direct_copy`)
     """
     delegates(ISourcePackagePublishingHistory)
 
-    def __init__(self, context, include_binaries, delayed):
+    def __init__(self, context, include_binaries):
         self.context = context
         self.include_binaries = include_binaries
-        self.delayed = delayed
 
     def getStatusSummaryForBuilds(self):
         """Always `BuildSetStatus.NEEDSBUILD` for source-only copies."""
@@ -230,16 +218,14 @@ class CopyChecker:
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries, allow_delayed_copies=False,
-                 strict_binaries=True, unembargo=False):
+    def __init__(self, archive, include_binaries, strict_binaries=True,
+                 unembargo=False):
         """Initialize a copy checker.
 
         :param archive: the target `IArchive`.
         :param include_binaries: controls whether or not the published
             binaries for each given source should be also copied along
             with the source.
-        :param allow_delayed_copies: boolean indicating whether or not private
-            sources can be copied to public archives using delayed_copies.
         :param strict_binaries: If 'include_binaries' is True then setting
             this to True will make the copy fail if binaries cannot be also
             copied.
@@ -249,7 +235,6 @@ class CopyChecker:
         self.archive = archive
         self.include_binaries = include_binaries
         self.strict_binaries = strict_binaries
-        self.allow_delayed_copies = allow_delayed_copies
         self.unembargo = unembargo
         self._inventory = {}
 
@@ -262,10 +247,10 @@ class CopyChecker:
         return (
             candidate.source_package_name, candidate.source_package_version)
 
-    def addCopy(self, source, delayed):
-        """Story a copy in the inventory as a `CheckedCopy` instance."""
+    def addCopy(self, source):
+        """Store a copy in the inventory as a `CheckedCopy` instance."""
         inventory_key = self._getInventoryKey(source)
-        checked_copy = CheckedCopy(source, self.include_binaries, delayed)
+        checked_copy = CheckedCopy(source, self.include_binaries)
         candidates = self._inventory.setdefault(inventory_key, [])
         candidates.append(checked_copy)
 
@@ -504,31 +489,21 @@ class CopyChecker:
 
         requires_unembargo = (
             not self.archive.private and has_restricted_files(source))
-        delayed = self.allow_delayed_copies and requires_unembargo
 
-        if delayed:
-            upload_conflict = getUtility(IPackageUploadSet).findSourceUpload(
-                name=source.sourcepackagerelease.name,
-                version=source.sourcepackagerelease.version,
-                archive=self.archive, distribution=series.distribution)
-            if upload_conflict is not None:
-                raise CannotCopy(
-                    'same version already uploaded and waiting in '
-                    'ACCEPTED queue')
-        elif requires_unembargo and not self.unembargo:
+        if requires_unembargo and not self.unembargo:
             raise CannotCopy(
                 "Cannot copy restricted files to a public archive without "
                 "explicit unembargo option.")
 
         # Copy is approved, update the copy inventory.
-        self.addCopy(source, delayed)
+        self.addCopy(source)
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=False, person=None, check_permissions=True,
-            overrides=None, send_email=False, strict_binaries=True,
-            close_bugs=True, create_dsd_job=True,  announce_from_person=None,
-            sponsored=None, packageupload=None, unembargo=False, logger=None):
+            person=None, check_permissions=True, overrides=None,
+            send_email=False, strict_binaries=True, close_bugs=True,
+            create_dsd_job=True, announce_from_person=None, sponsored=None,
+            packageupload=None, unembargo=False, logger=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -547,9 +522,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
-    :param allow_delayed_copies: boolean indicating whether or not private
-        sources can be copied to public archives using delayed_copies.
-        Defaults to False.
     :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
         requester's permissions to copy should be checked.
@@ -558,7 +530,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         default override returned by IArchive.getOverridePolicy().  There
         must be the same number of overrides as there are sources and each
         override must be for the corresponding source in the sources list.
-        Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
         NOTE: If running in zopeless mode, the email is sent even if the
         transaction is later aborted. (See bug 29744)
@@ -591,8 +562,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     copies = []
     errors = []
     copy_checker = CopyChecker(
-        archive, include_binaries, allow_delayed_copies,
-        strict_binaries=strict_binaries, unembargo=unembargo)
+        archive, include_binaries, strict_binaries=strict_binaries,
+        unembargo=unembargo)
 
     for source in sources:
         if series is None:
@@ -630,57 +601,48 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             destination_series = source.distroseries
         else:
             destination_series = series
-        if source.delayed:
-            delayed_copy = _do_delayed_copy(
-                source, archive, destination_series, pocket,
-                include_binaries)
-            sub_copies = [delayed_copy]
+        override = None
+        if overrides:
+            override = overrides[overrides_index]
+        # Make a note of the destination source's version for use in sending
+        # the email notification and closing bugs.
+        existing = archive.getPublishedSources(
+            name=source.sourcepackagerelease.name, exact_match=True,
+            status=active_publishing_status, distroseries=series,
+            pocket=pocket).first()
+        if existing:
+            old_version = existing.sourcepackagerelease.version
         else:
-            override = None
-            if overrides:
-                override = overrides[overrides_index]
-            # Make a note of the destination source's version for use
-            # in sending the email notification and closing bugs.
-            existing = archive.getPublishedSources(
-                name=source.sourcepackagerelease.name, exact_match=True,
-                status=active_publishing_status,
-                distroseries=series, pocket=pocket).first()
-            if existing:
-                old_version = existing.sourcepackagerelease.version
-            else:
-                old_version = None
-            if sponsored is not None:
-                announce_from_person = sponsored
-                creator = sponsored
-                sponsor = person
-            else:
-                creator = person
-                sponsor = None
-            sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket,
-                include_binaries, override, close_bugs=close_bugs,
-                create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=creator,
-                sponsor=sponsor, packageupload=packageupload)
-            if send_email:
-                notify(
-                    person, source.sourcepackagerelease, [], [], archive,
-                    destination_series, pocket, action='accepted',
-                    announce_from_person=announce_from_person,
-                    previous_version=old_version)
-            if not archive.private and has_restricted_files(source):
-                # Fix copies by overriding them according to the current
-                # ancestry and unrestrict files with privacy mismatch.  We
-                # must do this *after* calling notify (which only actually
-                # sends mail on commit), because otherwise the new changelog
-                # LFA won't be visible without a commit, which may not be
-                # safe here.
-                for pub_record in sub_copies:
-                    pub_record.overrideFromAncestry()
-                    for changed_file in update_files_privacy(pub_record):
-                        if logger is not None:
-                            logger.info(
-                                "Made %s public" % changed_file.filename)
+            old_version = None
+        if sponsored is not None:
+            announce_from_person = sponsored
+            creator = sponsored
+            sponsor = person
+        else:
+            creator = person
+            sponsor = None
+        sub_copies = _do_direct_copy(
+            source, archive, destination_series, pocket, include_binaries,
+            override, close_bugs=close_bugs, create_dsd_job=create_dsd_job,
+            close_bugs_since_version=old_version, creator=creator,
+            sponsor=sponsor, packageupload=packageupload)
+        if send_email:
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                destination_series, pocket, action='accepted',
+                announce_from_person=announce_from_person,
+                previous_version=old_version)
+        if not archive.private and has_restricted_files(source):
+            # Fix copies by overriding them according to the current
+            # ancestry and unrestrict files with privacy mismatch.  We must
+            # do this *after* calling notify (which only actually sends mail
+            # on commit), because otherwise the new changelog LFA won't be
+            # visible without a commit, which may not be safe here.
+            for pub_record in sub_copies:
+                pub_record.overrideFromAncestry()
+                for changed_file in update_files_privacy(pub_record):
+                    if logger is not None:
+                        logger.info("Made %s public" % changed_file.filename)
 
         overrides_index += 1
         copies.extend(sub_copies)
@@ -798,82 +760,3 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     source_copy.createMissingBuilds()
 
     return copies
-
-
-class DelayedCopy:
-    """Decorates `IPackageUpload` with a more descriptive 'displayname'."""
-
-    delegates(IPackageUpload)
-
-    def __init__(self, context):
-        self.context = context
-
-    @property
-    def displayname(self):
-        return 'Delayed copy of %s (%s)' % (
-            self.context.sourcepackagerelease.title,
-            self.context.displayarchs)
-
-
-def _do_delayed_copy(source, archive, series, pocket, include_binaries):
-    """Schedule the given source for copy.
-
-    Schedule the copy of each item of the given list of
-    `SourcePackagePublishingHistory` to the given destination.
-
-    Also include published builds for each source if requested to.
-
-    :param source: an `ISourcePackagePublishingHistory`.
-    :param archive: the target `IArchive`.
-    :param series: the target `IDistroSeries`.
-    :param pocket: the target `PackagePublishingPocket`.
-    :param include_binaries: optional boolean, controls whether or
-        not the published binaries for each given source should be also
-        copied along with the source.
-
-    :return: a list of `IPackageUpload` corresponding to the publications
-        scheduled for copy.
-    """
-    # XXX cprov 2009-06-22 bug=385503: At some point we will change
-    # the copy signature to allow a user to be passed in, so will
-    # be able to annotate that information in delayed copied as well,
-    # by using the right key. For now it's undefined.
-    # See also the comment on acceptFromCopy()
-    delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-        archive, series, pocket, None)
-
-    # Include the source and any custom upload.
-    delayed_copy.addSource(source.sourcepackagerelease)
-    original_source_upload = source.sourcepackagerelease.package_upload
-    for custom in original_source_upload.customfiles:
-        delayed_copy.addCustom(
-            custom.libraryfilealias, custom.customformat)
-
-    # If binaries are included in the copy we include binary custom files.
-    if include_binaries:
-        for build in source.getBuilds():
-            # Don't copy builds that aren't yet done, or those without a
-            # corresponding enabled architecture in the new series.
-            try:
-                target_arch = series[build.arch_tag]
-            except NotFoundError:
-                continue
-            if (not target_arch.enabled or
-                build.status != BuildStatus.FULLYBUILT):
-                continue
-            delayed_copy.addBuild(build)
-            original_build_upload = build.package_upload
-            for custom in original_build_upload.customfiles:
-                delayed_copy.addCustom(
-                    custom.libraryfilealias, custom.customformat)
-
-    # XXX cprov 2009-06-22 bug=385503: when we have a 'user' responsible
-    # for the copy we can also decide whether a copy should be immediately
-    # accepted or moved to the UNAPPROVED queue, based on the user's
-    # permission to the destination context.
-
-    # Accept the delayed-copy, which implicitly verifies if it fits
-    # the destination context.
-    delayed_copy.acceptFromCopy()
-
-    return DelayedCopy(delayed_copy)

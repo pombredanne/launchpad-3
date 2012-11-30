@@ -56,6 +56,7 @@ from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
     NON_EMBARGOED_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtasksearch import (
@@ -207,6 +208,7 @@ BUG_POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
     BugSharingPolicy.FORBIDDEN: [],
+    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY: PROPRIETARY_INFORMATION_TYPES,
     }
 
 BUG_POLICY_DEFAULT_TYPES = {
@@ -215,6 +217,7 @@ BUG_POLICY_DEFAULT_TYPES = {
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     BugSharingPolicy.FORBIDDEN: None,
+    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
     }
 
 

@@ -57,7 +57,7 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):

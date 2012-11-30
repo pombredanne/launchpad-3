@@ -67,7 +67,10 @@ from lp.app.browser.multistep import (
     StepView,
     )
 from lp.app.browser.tales import CustomizableFormatter
-from lp.app.enums import InformationType, ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
@@ -90,8 +93,8 @@ from lp.services.webapp import (
     stepto,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import IBreadcrumb
-from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry

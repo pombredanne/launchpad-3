@@ -81,7 +81,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 
 
 class CodeImportSetNavigation(Navigation):

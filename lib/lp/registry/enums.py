@@ -130,51 +130,58 @@ class BugSharingPolicy(DBEnumeratedType):
         No new bugs may be reported, but existing bugs may still be updated.
         """)
 
+    EMBARGOED_OR_PROPRIETARY = DBItem(6, """
+        Embargoed, can be proprietary
+
+        New bugs are embargoed, but can be made proprietary later.
+        Only people who can see the project's proprietary information can
+        create new bugs.
+        """)
+
 
 class SpecificationSharingPolicy(DBEnumeratedType):
 
     PUBLIC = DBItem(1, """
         Public
 
-        Specifications are public.
+        Blueprints are public.
         """)
 
     PUBLIC_OR_PROPRIETARY = DBItem(2, """
         Public, can be proprietary
 
-        New specifications are public, but can be made proprietary later.
+        New blueprints are public, but can be made proprietary later.
         """)
 
     PROPRIETARY_OR_PUBLIC = DBItem(3, """
         Proprietary, can be public
 
-        New specifications are proprietary, but can be made public later. Only
+        New blueprints are proprietary, but can be made public later. Only
         people who can see the project's proprietary information can create
-        new specifications.
+        new blueprints.
         """)
 
     PROPRIETARY = DBItem(4, """
         Proprietary
 
-        Specifications are always proprietary. Only people who can see the
-        project's proprietary information can create new specifications.
+        Blueprints are always proprietary. Only people who can see the
+        project's proprietary information can create new blueprints.
         """)
 
     EMBARGOED_OR_PROPRIETARY = DBItem(5, """
         Embargoed, can be proprietary
 
-        New specifications are embargoed, but can be made proprietary later.
+        New blueprints are embargoed, but can be made proprietary later.
         Only people who can see the project's proprietary information can
-        create new specifications.
+        create new blueprints.
         """)
 
     FORBIDDEN = DBItem(6, """
         Forbidden
 
-        No new specifications may be created, but existing specifications may
+        No new blueprints may be created, but existing blueprints may
         still be updated.
         """)
-
 
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):

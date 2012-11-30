@@ -32,7 +32,6 @@ from storm.expr import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 from zope.schema.interfaces import (
     IVocabulary,
     IVocabularyTokenized,
@@ -41,6 +40,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage

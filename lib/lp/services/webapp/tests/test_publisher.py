@@ -140,6 +140,27 @@ class TestLaunchpadView(TestCaseWithFactory):
         self.assertIsCanada(json_dict['context'])
         self.assertIn('my_bool', json_dict)
 
+    def test_isRedirected_status_codes(self):
+        request = LaunchpadTestRequest()
+        view = LaunchpadView(object(), request)
+        for code in view.REDIRECTED_STATUSES:
+            request.response.setStatus(code)
+            self.assertTrue(view._isRedirected())
+        for code in [100, 200, 403, 404, 500]:
+            request.response.setStatus(code)
+            self.assertFalse(view._isRedirected())
+
+    def test_call_render_with_isRedirected(self):
+        class TestView(LaunchpadView):
+            def render(self):
+                return u'rendered'
+        request = LaunchpadTestRequest()
+        view = TestView(object(), request)
+        request.response.setStatus(200)
+        self.assertEqual(u'rendered', view())
+        request.response.setStatus(301)
+        self.assertEqual(u'', view())
+
     def test_related_feature_info__default(self):
         # By default, LaunchpadView.related_feature_info is empty.
         request = LaunchpadTestRequest()

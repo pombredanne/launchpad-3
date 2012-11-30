@@ -428,7 +428,7 @@ class IProductPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
+class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
     on bugs, branches or specifications for the product.
     """
@@ -439,6 +439,16 @@ class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("""The name of the project as it would appear in a
                 paragraph.""")),
         exported_as='display_name')
+
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
 
     logo = exported(
         LogoImageUpload(
@@ -491,12 +501,12 @@ class IProductLimitedView(IHasLogo, IHasOwner, ILaunchpadUsage):
 
 class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasExternalBugTracker,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -518,11 +528,6 @@ class IProductView(
                 "and just appoint a team for each specific series, rather "
                 "than having one project team that does it all."),
             required=False, vocabulary='ValidPersonOrTeam'))
-
-    drivers = Attribute(
-        "Presents the drivers of this project as a list. A list is "
-        "required because there might be a project driver and also a "
-        "driver appointed in the overarching project group.")
 
     summary = exported(
         Summary(
@@ -613,16 +618,6 @@ class IProductView(
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    icon = exported(
-        IconImageUpload(
-            title=_("Icon"), required=False,
-            default_image_resource='/@@/product',
-            description=_(
-                "A small image of exactly 14x14 pixels and at most 5kb in "
-                "size, that can be used to identify this project. The icon "
-                "will be displayed next to the project name everywhere in "
-                "Launchpad that we refer to the project and link to it.")))
-
     mugshot = exported(
         MugshotImageUpload(
             title=_("Brand"), required=False,
@@ -655,7 +650,7 @@ class IProductView(
         required=True, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
     specification_sharing_policy = exported(Choice(
-        title=_('Specification sharing policy'),
+        title=_('Blueprint sharing policy'),
         description=_("Sharing policy for this project's specifications."),
         required=True, readonly=True, vocabulary=SpecificationSharingPolicy),
         as_of='devel')
@@ -915,12 +910,21 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
+    def checkInformationType(value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
+
 
 class IProduct(
-    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType, IPillar):
+    ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
+    IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -930,6 +934,12 @@ class IProduct(
     """
 
     export_as_webservice_entry('project')
+
+    drivers = Attribute(
+        "Presents the drivers of this project as a list. A list is "
+        "required because there might be a project driver and also a "
+        "driver appointed in the overarching project group.")
+
 
 # Fix cyclic references.
 IProjectGroup['products'].value_type = Reference(IProduct)
@@ -944,9 +954,6 @@ class IProductSet(Interface):
     people = Attribute(
         "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /projects/ page.")
-
-    all_active = Attribute(
-        "All the active products, sorted newest first.")
 
     def get_users_private_products(user):
         """Get users non-public products.
@@ -1055,10 +1062,14 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
+    def _request_user_search():
+        """Wrapper for search to use request user in default content."""
+
+    @call_with(user=REQUEST_USER)
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None):
+    def search(user, text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product.
@@ -1067,17 +1078,13 @@ class IProductSet(Interface):
         needed for other callers.
         """
 
-    def search_sqlobject(text):
-        """A compatible sqlobject search for bugalsoaffects.py.
-
-        DO NOT ADD USES.
-        """
-
     @operation_returns_collection_of(IProduct)
-    @call_with(quantity=None)
+    @call_with(user=REQUEST_USER, quantity=None)
     @export_read_operation()
-    def latest(quantity=5):
+    def latest(user, quantity=5):
         """Return the latest projects registered in Launchpad.
+
+        The supplied user determines which objects are visible.
 
         If the quantity is not specified or is a value that is not 'None'
         then the set of projects returned is limited to that value (the

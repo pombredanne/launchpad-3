@@ -18,8 +18,8 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import (
@@ -40,9 +40,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.model.product import (
-    Product,
-    )
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -532,6 +530,23 @@ class TestProductEditView(BrowserTestCase):
         self.assertEqual(old_url, browser.url)
         tag = Tag('error', 'div', text='Some series are packaged.',
                   attrs={'class': 'message'})
+        self.assertThat(browser.contents, HTMLContains(tag))
+
+    def test_multiple_info_type_errors(self):
+        # Multiple information type errors are presented at once.
+        product = self.factory.makeProduct()
+        self.factory.makeBranch(product=product)
+        self.factory.makeSpecification(product=product)
+        self.useFixture(FeatureFixture(
+            {u'disclosure.private_projects.enabled': u'on'}))
+        browser = self.getViewBrowser(product, '+edit', user=product.owner)
+        info_type = browser.getControl(name='field.information_type')
+        info_type.value = ['PROPRIETARY']
+        browser.getControl('Change').click()
+        tag = Tag(
+            'error', 'div', attrs={'class': 'message'},
+            text='Some blueprints are public. '
+                'Some branches are neither proprietary nor embargoed.')
         self.assertThat(browser.contents, HTMLContains(tag))
 
     def test_change_information_type_public(self):

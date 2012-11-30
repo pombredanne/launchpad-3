@@ -29,7 +29,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -107,14 +106,12 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     IStructuredString,
     )
-from lp.services.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp.services.webapp.menu import NavigationMenu
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -1705,7 +1702,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
          || FOLLOW_PRIMARY ||    None    ||
 
         When omitted in the form, this widget defaults to 'All ubuntu
-        components' option when rendered.
+        components' option when rendered. Other components, such as 'main',
+        or 'contrib' will be added to the list of options if they are used.
         """
         multiverse = getUtility(IComponentSet)['multiverse']
 
@@ -1727,6 +1725,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             default_value = primary_dependency.component
 
         terms = [all_components, follow_primary]
+        if default_value and default_value != multiverse:
+            current_component = SimpleTerm(
+                default_value, 'OTHER_COMPONENT',
+                _('Unsupported component (%s)' % default_value.name))
+            terms.append(current_component)
         primary_components_vocabulary = SimpleVocabulary(terms)
         current_term = primary_components_vocabulary.getTerm(default_value)
 

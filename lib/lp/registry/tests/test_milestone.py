@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 from operator import attrgetter
-from storm.exceptions import NoneError
 import unittest
 
+from storm.exceptions import NoneError
 from zope.component import getUtility
 from zope.security.checker import (
     CheckerPublic,
@@ -483,7 +483,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         public_milestone = self.factory.makeMilestone(product=public_product)
         product = self.factory.makeProduct(
             owner=owner, information_type=InformationType.PROPRIETARY,
-            project=projectgroup, bug_sharing_policy=BugSharingPolicy.PUBLIC)
+            project=projectgroup)
         target_milestone = self.factory.makeMilestone(
             product=product, name=public_milestone.name)
         milestone = projectgroup.getMilestone(name=public_milestone.name)
@@ -519,23 +519,6 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             specification, list(milestone.getSpecifications(owner)))
         self.assertNotIn(
             specification, list(milestone.getSpecifications(None)))
-
-    def test_bugtasks_milestone_privacy(self):
-        # Ensure bugtasks respects milestone privacy.
-        # This looks wrong, because the bugtask is actually public, and we
-        # don't normally hide bugtasks based on the visibility of their
-        # products.  But we're not trying to hide the bugtask.  We're hiding
-        # the fact that this bugtask is associated with a proprietary Product
-        # milestone.  We create a proprietary product because that's the only
-        # way to get a proprietary milestone.
-        milestone, target_milestone, owner = self.makeMixedMilestone()
-        with person_logged_in(owner):
-            bugtask = self.factory.makeBugTask(
-                target=target_milestone.product)
-        with person_logged_in(bugtask.owner):
-            bugtask.transitionToMilestone(target_milestone, owner)
-        self.assertContentEqual([], milestone.bugtasks(None))
-        self.assertContentEqual([bugtask], milestone.bugtasks(owner))
 
     def test_milestones_with_deleted_workitems(self):
         # Deleted work items do not cause the specification to show up

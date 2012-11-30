@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'get_specification_filters',
-    'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
     'recursive_dependent_query',
@@ -34,8 +33,8 @@ from storm.expr import (
     In,
     Join,
     LeftJoin,
-    Or,
     Not,
+    Or,
     Select,
     )
 from storm.locals import (
@@ -49,10 +48,12 @@ from zope.interface import implements
 
 from lp.app.enums import (
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -87,6 +88,10 @@ from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -100,6 +105,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -107,7 +113,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormexpr import fti_search
-from lp.services.database.lpstorm import IStore
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -729,6 +734,15 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             property_cache.subscriptions.append(sub)
             property_cache.subscriptions.sort(
                 key=lambda sub: person_sort_key(sub.person))
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the
+            # specification.
+            service = getUtility(IService, 'sharing')
+            ignored, ignored, shared_specs = service.getVisibleArtifacts(
+                person, specifications=[self], ignore_permissions=True)
+            if not shared_specs:
+                service.ensureAccessGrants(
+                    [person], subscribed_by, specifications=[self])
         notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
@@ -747,6 +761,10 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                             person.displayname))
                 get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def isSubscribed(self, person):
@@ -876,6 +894,16 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         reconcile_access_for_artifact(self, information_type, [self.target])
+        if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
+            # Grant the subscribers access if they do not have a
+            # policy grant.
+            service = getUtility(IService, 'sharing')
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, self.subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, specifications=[self],
+                    ignore_permissions=True)
         return True
 
     @cachedproperty
@@ -960,7 +988,7 @@ class HasSpecificationsMixin:
         elif sort == SpecificationSort.DATE:
             return (Desc(Specification.datecreated), Specification.id)
 
-    def _preload_specifications_people(self, clauses):
+    def _preload_specifications_people(self, tables, clauses):
         """Perform eager loading of people and their validity for query.
 
         :param query: a string query generated in the 'specifications'
@@ -1001,7 +1029,7 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).find(Specification, *clauses)
+        results = Store.of(self).using(*tables).find(Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1230,58 +1258,6 @@ class SpecificationSet(HasSpecificationsMixin):
         return Specification.get(spec_id)
 
 
-def get_specification_privacy_filter(user):
-    """Return a Storm expression for filtering specifications by privacy.
-
-    :param user: A Person ID or a column reference.
-    :return: A Storm expression to check if a peron has access grants
-         for a specification.
-    """
-    # Avoid circular imports.
-    from lp.registry.model.accesspolicy import (
-        AccessArtifact,
-        AccessPolicy,
-        AccessPolicyGrantFlat,
-        )
-    public_specification_filter = (
-        Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
-    if user is None:
-        return public_specification_filter
-    return Or(
-        public_specification_filter,
-        Specification.id.is_in(
-            Select(
-                Specification.id,
-                tables=(
-                    Specification,
-                    Join(
-                        AccessPolicy,
-                        And(
-                            Or(
-                                Specification.productID ==
-                                    AccessPolicy.product_id,
-                                Specification.distributionID ==
-                                    AccessPolicy.distribution_id),
-                            Specification.information_type ==
-                                AccessPolicy.type)),
-                    Join(
-                        AccessPolicyGrantFlat,
-                        AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
-                    LeftJoin(
-                        AccessArtifact,
-                        AccessPolicyGrantFlat.abstract_artifact_id ==
-                            AccessArtifact.id),
-                    Join(
-                        TeamParticipation,
-                        And(
-                            TeamParticipation.team ==
-                                AccessPolicyGrantFlat.grantee_id,
-                            TeamParticipation.person == user))),
-                where=Or(
-                    AccessPolicyGrantFlat.abstract_artifact_id == None,
-                    AccessArtifact.specification_id == Specification.id))))
-
-
 def visible_specification_query(user):
     """Return a Storm expression and list of tables for filtering
     specifications by privacy.
@@ -1324,21 +1300,13 @@ def visible_specification_query(user):
     return tables, clauses
 
 
-def get_specification_filters(filter, assume_product_active=False):
+def get_specification_filters(filter):
     """Return a list of Storm expressions for filtering Specifications.
 
     :param filters: A collection of SpecificationFilter and/or strings.
         Strings are used for text searches.
-    :param assume_product_active: If True, assume the Product is active,
-        instead of ensuring it is active.
     """
-    from lp.registry.model.product import Product
     clauses = []
-    # If Product is used, it must be active.
-    if not assume_product_active:
-        clauses.extend([Or(Specification.product == None,
-                        Not(Specification.productID.is_in(Select(Product.id,
-                        Product.active == False))))])
     # ALL is the trump card.
     if SpecificationFilter.ALL in filter:
         return clauses

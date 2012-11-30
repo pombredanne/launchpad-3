@@ -495,11 +495,9 @@ class SourcePackageRelease(SQLBase):
     def package_upload(self):
         """See `ISourcepackageRelease`."""
         store = Store.of(self)
-        # The join on 'changesfile' is not only used only for
-        # pre-fetching the corresponding library file, so callsites
-        # don't have to issue an extra query. It is also important
-        # for excluding delayed-copies, because they might match
-        # the publication context but will not contain as changesfile.
+        # The join on 'changesfile' is used for pre-fetching the
+        # corresponding library file, so callsites don't have to issue an
+        # extra query.
         origin = [
             PackageUploadSource,
             Join(PackageUpload,
@@ -605,7 +603,8 @@ class SourcePackageRelease(SQLBase):
         # only useful way of extracting info is to use the iterator on
         # Changelog and then compare versions.
         try:
-            for block in Changelog(changelog.read()):
+            changelog_text = changelog.read().decode("UTF-8", "replace")
+            for block in Changelog(changelog_text):
                 version = block._raw_version
                 if (since_version and
                     apt_pkg.version_compare(version, since_version) <= 0):

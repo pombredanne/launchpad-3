@@ -13,14 +13,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
-    )
-from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet,
-    TeamMembershipStatus,
     )
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (

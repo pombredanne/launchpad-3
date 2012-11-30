@@ -157,7 +157,6 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -230,7 +229,10 @@ class ProductNavigation(
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
-        return self.context.getSpecification(name)
+        spec = self.context.getSpecification(name)
+        if not check_permission('launchpad.LimitedView', spec):
+            return None
+        return spec
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
@@ -1434,6 +1436,23 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if not private_projects:
             self.form_fields = self.form_fields.omit('information_type')
 
+    def validate(self, data):
+        """Validate 'licenses' and 'license_info'.
+
+        'licenses' must not be empty unless the product already
+        exists and never has had a licence set.
+
+        'license_info' must not be empty if "Other/Proprietary"
+        or "Other/Open Source" is checked.
+        """
+        super(ProductEditView, self).validate(data)
+        info_type = data.get('information_type')
+        if info_type is not None:
+            errors = [str(e) for e in
+                      self.context.checkInformationType(info_type)]
+            if len(errors) > 0:
+                self.setFieldError('information_type', ' '.join(errors))
+
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
         # This has the effect of suppressing the ": (Optional)" stuff for the
@@ -1446,10 +1465,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        try:
-            self.updateContextFromData(data)
-        except CannotChangeInformationType as e:
-            self.setFieldError('information_type', str(e))
+        self.updateContextFromData(data)
 
 
 class ProductValidationMixin:

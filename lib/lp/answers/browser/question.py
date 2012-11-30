@@ -110,8 +110,8 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
-from lp.services.webapp.menu import structured
 from lp.services.worlddata.helpers import (
     is_english_variant,
     preferred_or_request_languages,

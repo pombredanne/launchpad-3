@@ -940,11 +940,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                product=None, productseries=None,
                                milestone=None,
                                release=None,
-                               description="test file"):
+                               description="test file",
+                               filename='test.txt'):
         signature_filename = None
         signature_content = None
         if signed:
-            signature_filename = 'test.txt.asc'
+            signature_filename = '%s.asc' % filename
             signature_content = '123'
         if release is None:
             release = self.makeProductRelease(product=product,
@@ -952,11 +953,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                               milestone=milestone)
         with person_logged_in(release.milestone.product.owner):
             release_file = release.addReleaseFile(
-                'test.txt', 'test', 'text/plain',
+                filename, 'test', 'text/plain',
                 uploader=release.milestone.product.owner,
                 signature_filename=signature_filename,
                 signature_content=signature_content,
                 description=description)
+        IStore(release).flush()
         return release_file
 
     def makeProduct(
@@ -977,7 +979,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 displayname = name.capitalize()
         if licenses is None:
-            if information_type in PROPRIETARY_INFORMATION_TYPES:
+            if (information_type in PROPRIETARY_INFORMATION_TYPES or
+                (bug_sharing_policy is not None and
+                 bug_sharing_policy != BugSharingPolicy.PUBLIC) or
+                (branch_sharing_policy is not None and
+                 branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
+                (specification_sharing_policy is not None and
+                 specification_sharing_policy !=
+                 SpecificationSharingPolicy.PUBLIC)
+                ):
                 licenses = [License.OTHER_PROPRIETARY]
             else:
                 licenses = [License.GNU_GPL_V2]
@@ -1008,14 +1018,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if ((branch_sharing_policy and
-            branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
-            (bug_sharing_policy and
-            bug_sharing_policy != BugSharingPolicy.PUBLIC) or
-            (specification_sharing_policy and
-            specification_sharing_policy !=
-                SpecificationSharingPolicy.PUBLIC)):
-            self.makeCommercialSubscription(product)
         if branch_sharing_policy:
             naked_product.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
@@ -1023,8 +1025,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if specification_sharing_policy:
             naked_product.setSpecificationSharingPolicy(
                 specification_sharing_policy)
-        if information_type is not None:
-            naked_product.information_type = information_type
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,

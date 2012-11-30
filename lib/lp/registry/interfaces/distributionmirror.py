@@ -63,7 +63,7 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
-from lp.services.webapp.menu import structured
+from lp.services.webapp.escaping import structured
 from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again

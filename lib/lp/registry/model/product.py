@@ -54,10 +54,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.model.accesspolicy import (
-    AccessPolicy,
-    AccessPolicyGrantFlat,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -65,6 +61,7 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import (
+    Question,
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
@@ -92,16 +89,14 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    )
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
     get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     SPECIFICATION_POLICY_DEFAULT_TYPES,
+    visible_specification_query,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -111,6 +106,7 @@ from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -123,6 +119,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branch import Branch
 from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -134,11 +131,13 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
+    ProprietaryProduct,
     VoucherAlreadyRedeemed,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -163,6 +162,10 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
+    )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -180,9 +183,9 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -332,6 +335,27 @@ class UnDeactivateable(Exception):
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
 
+bug_policy_default = {
+    InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
+    InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+}
+
+
+branch_policy_default = {
+    InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
+}
+
+
+specification_policy_default = {
+    InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED:
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
+}
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
@@ -432,33 +456,82 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         pass
 
     def _valid_product_information_type(self, attr, value):
+        for exception in self.checkInformationType(value):
+            raise exception
+        return value
+
+    def checkInformationType(self, value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
         if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
-            raise CannotChangeInformationType('Not supported for Projects.')
+            yield CannotChangeInformationType('Not supported for Projects.')
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
-                raise CannotChangeInformationType('Answers is enabled.')
+                yield CannotChangeInformationType('Answers is enabled.')
+        if self._SO_creating or value not in PROPRIETARY_INFORMATION_TYPES:
+            return
+        # Additional checks when transitioning an existing product to a
+        # proprietary type
+        # All specs located by an ALL search are public.
+        public_specs = self.specifications(
+            None, filter=[SpecificationFilter.ALL])
+        if not public_specs.is_empty():
+            # Unlike bugs and branches, specifications cannot be USERDATA or a
+            # security type.
+            yield CannotChangeInformationType(
+                'Some blueprints are public.')
+        store = Store.of(self)
+        non_proprietary_bugs = store.find(Bug,
+            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
+            BugTask.bug == Bug.id, BugTask.product == self.id)
+        if not non_proprietary_bugs.is_empty():
+            yield CannotChangeInformationType(
+                'Some bugs are neither proprietary nor embargoed.')
+        # Default returns all public branches.
+        non_proprietary_branches = store.find(
+            Branch, Branch.product == self.id,
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        )
+        if not non_proprietary_branches.is_empty():
+            yield CannotChangeInformationType(
+                'Some branches are neither proprietary nor embargoed.')
+        questions = store.find(Question, Question.product == self.id)
+        if not questions.is_empty():
+            yield CannotChangeInformationType('This project has questions.')
+        templates = store.find(
+            POTemplate, ProductSeries.product == self.id,
+            POTemplate.productseries == ProductSeries.id)
+        if not templates.is_empty():
+            yield CannotChangeInformationType('This project has translations.')
+        if not self.packagings.is_empty():
+            yield CannotChangeInformationType('Some series are packaged.')
+        if self.translations_usage == ServiceUsage.LAUNCHPAD:
+            yield CannotChangeInformationType('Translations are enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
 
         # If you're changing the license, and setting a PROPRIETARY
-        # information type, yet you don't have a subscription you get one when
-        # the license is set.
+        # information type, yet you don't have a subscription, you get one
+        # when the license is set.
+
+        # Create the complimentary commercial subscription for the product.
+        self._ensure_complimentary_subscription()
 
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
-        if not self._SO_creating and value in PROPRIETARY_INFORMATION_TYPES:
-            if not self.packagings.is_empty():
-                raise CannotChangeInformationType('Some series are packaged.')
-            # Create the complimentary commercial subscription for the product.
-            self._ensure_complimentary_subscription()
-
-            if not self.has_current_commercial_subscription:
-                raise CommercialSubscribersOnly(
-                    'A valid commercial subscription is required for private'
-                    ' Projects.')
-
-        return value
+        if not self.has_current_commercial_subscription:
+            yield CommercialSubscribersOnly(
+                'A valid commercial subscription is required for private'
+                ' Projects.')
+        if (self.bug_supervisor is not None and
+            self.bug_supervisor.membership_policy in INCLUSIVE_TEAM_POLICY):
+            yield CannotChangeInformationType(
+                'Bug supervisor has inclusive membership.')
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
@@ -469,12 +542,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._information_type or InformationType.PUBLIC
 
     def _set_information_type(self, value):
+        old_info_type = self._information_type
         self._information_type = value
         # Make sure that policies are updated to grant permission to the
         # maintainer as required for the Product.
         # However, only on edits. If this is a new Product it's handled
         # already.
         if not self._SO_creating:
+            if (old_info_type == InformationType.PUBLIC and
+                value != InformationType.PUBLIC):
+                self.setBranchSharingPolicy(branch_policy_default[value])
+                self.setBugSharingPolicy(bug_policy_default[value])
+                self.setSpecificationSharingPolicy(
+                    specification_policy_default[value])
             self._ensurePolicies([value])
 
     information_type = property(_get_information_type, _set_information_type)
@@ -623,6 +703,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             raise CommercialSubscribersOnly(
                 "A current commercial subscription is required to use "
                 "proprietary %s." % kind)
+        if self.information_type != InformationType.PUBLIC:
+            if InformationType.PUBLIC in allowed_types[var]:
+                raise ProprietaryProduct(
+                    "The project is %s." % self.information_type.title)
         required_policies = set(allowed_types[var]).intersection(
             set(PRIVATE_INFORMATION_TYPES))
         self._ensurePolicies(required_policies)
@@ -1374,14 +1458,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        clauses = [Specification.product == self,
-                   get_specification_privacy_filter(user)]
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Specification.product == self)
         clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(clauses)
+            results = self._preload_specifications_people(tables, clauses)
         else:
-            results = Store.of(self).find(Specification, *clauses)
-        results.order_by(order)
+            tableset = Store.of(self).using(*tables)
+            results = tableset.find(Specification, *clauses)
+        results.order_by(order).config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1482,7 +1567,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.branch import Branch
         store = Store.of(self)
         return store.find(
             SourcePackageRecipe,
@@ -1696,21 +1780,19 @@ class ProductSet:
 
     def __iter__(self):
         """See `IProductSet`."""
-        return iter(self.all_active)
+        return iter(self.get_all_active(None))
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
-    def latest(self, quantity=5):
-        if quantity is None:
-            return self.all_active
-        else:
-            return self.all_active[:quantity]
-
-    @property
-    def all_active(self):
-        return self.get_all_active(None)
+    @classmethod
+    def latest(cls, user, quantity=5):
+        """See `IProductSet`."""
+        result = cls.get_all_active(user)
+        if quantity is not None:
+            result = result[:quantity]
+        return result
 
     @staticmethod
     def getProductPrivacyFilter(user):
@@ -1819,28 +1901,14 @@ class ProductSet:
             bug_supervisor=bug_supervisor, driver=driver,
             information_type=information_type)
 
-        # Set up the sharing policies and product licence.
-        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
-        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
-        specification_sharing_policy_to_use = (
-            SpecificationSharingPolicy.PUBLIC)
+        # Set up the product licence.
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
-        if information_type == InformationType.PROPRIETARY:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.PROPRIETARY)
-        if information_type == InformationType.EMBARGOED:
-            bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
-            branch_sharing_policy_to_use = (
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-            specification_sharing_policy_to_use = (
-                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        product.setBugSharingPolicy(bug_sharing_policy_to_use)
-        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
+        product.setBugSharingPolicy(bug_policy_default[information_type])
+        product.setBranchSharingPolicy(
+            branch_policy_default[information_type])
         product.setSpecificationSharingPolicy(
-            specification_sharing_policy_to_use)
+            specification_policy_default[information_type])
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1976,9 +2044,15 @@ class ProductSet:
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
-    def search(self, text=None):
+    @classmethod
+    def _request_user_search(cls):
+        return cls.search(getUtility(ILaunchBag).user)
+
+    @classmethod
+    def search(cls, user=None, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        conditions = [Product.active]
+        conditions = [Product.active,
+                      cls.getProductPrivacyFilter(user)]
         if text:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
@@ -1991,14 +2065,6 @@ class ProductSet:
                     '_owner', 'registrant', 'bug_supervisor', 'driver'])
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
-
-    def search_sqlobject(self, text):
-        """See `IProductSet`"""
-        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
-        queries.append('Product.active IS TRUE')
-        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
-            % sqlvalues(text)
-        return Product.select(query)
 
     def getTranslatables(self):
         """See `IProductSet`"""

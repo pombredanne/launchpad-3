@@ -946,5 +946,5 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
             superteams = find_tag_by_id(html, 'subteam-of')
         self.assertFalse('&lt;hidden&gt;' in superteams)
         self.assertEqual(
-            '<a href="/~private-team" class="sprite team">Private Team</a>',
+            '<a href="/~private-team" class="sprite team private">Private Team</a>',
             str(superteams.findNext('a')))

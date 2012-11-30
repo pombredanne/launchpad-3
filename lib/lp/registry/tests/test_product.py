@@ -8,6 +8,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.locals import Store
 from testtools.matchers import MatchesAll
@@ -26,11 +27,12 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
-    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import ServiceUsageForbidden
+from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -39,7 +41,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -49,9 +50,13 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationSort,
     )
-
+from lp.blueprints.model.specification import (
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -59,11 +64,13 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     SharingPermission,
     SpecificationSharingPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
     CommercialSubscribersOnly,
     InclusiveTeamLinkageError,
+    ProprietaryProduct,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
@@ -358,7 +365,7 @@ class TestProduct(TestCaseWithFactory):
                 licenses=[License.OTHER_PROPRIETARY],
                 information_type=InformationType.EMBARGOED)
             self.assertEqual(
-                BugSharingPolicy.PROPRIETARY,
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
                 product.bug_sharing_policy)
             self.assertEqual(
                 BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
@@ -385,6 +392,161 @@ class TestProduct(TestCaseWithFactory):
         aps = getUtility(IAccessPolicySource).findByPillar([product])
         expected = [InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_change_info_type_proprietary_check_artifacts(self):
+        # Cannot change product information_type if any artifacts are public.
+        spec_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY],
+            specification_sharing_policy=spec_policy,
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        )
+        self.useContext(person_logged_in(product.owner))
+        spec = self.factory.makeSpecification(product=product)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with ExpectedException(
+                CannotChangeInformationType,
+                'Some blueprints are public.'):
+                product.information_type = info_type
+        spec.transitionToInformationType(InformationType.PROPRIETARY,
+                                         product.owner)
+        bug = self.factory.makeBug(target=product)
+        for bug_info_type in FREE_INFORMATION_TYPES:
+            bug.transitionToInformationType(bug_info_type, product.owner)
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with ExpectedException(
+                    CannotChangeInformationType,
+                    'Some bugs are neither proprietary nor embargoed.'):
+                    product.information_type = info_type
+        bug.transitionToInformationType(InformationType.PROPRIETARY,
+                                        product.owner)
+        branch = self.factory.makeBranch(product=product)
+        for branch_info_type in FREE_INFORMATION_TYPES:
+            branch.transitionToInformationType(branch_info_type,
+                                               product.owner)
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with ExpectedException(
+                    CannotChangeInformationType,
+                    'Some branches are neither proprietary nor embargoed.'):
+                    product.information_type = info_type
+        branch.transitionToInformationType(InformationType.PROPRIETARY,
+                                           product.owner)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product.information_type = info_type
+
+    def test_change_info_type_proprietary_check_translations(self):
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            for usage in ServiceUsage:
+                product.translations_usage = usage.value
+                for info_type in PROPRIETARY_INFORMATION_TYPES:
+                    if product.translations_usage == ServiceUsage.LAUNCHPAD:
+                        with ExpectedException(
+                            CannotChangeInformationType,
+                            'Translations are enabled.'):
+                            product.information_type = info_type
+                    else:
+                        product.information_type = info_type
+
+    def test_change_info_type_proprietary_sets_policies(self):
+        # Changing information type from public to proprietary sets the
+        # appropriate policies
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+            self.assertEqual(
+                BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+            self.assertEqual(
+                SpecificationSharingPolicy.PROPRIETARY,
+                product.specification_sharing_policy)
+
+    def test_change_info_type_embargoed_sets_policies(self):
+        # Changing information type from public to embargoed sets the
+        # appropriate policies
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.EMBARGOED
+            self.assertEqual(
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.branch_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.bug_sharing_policy)
+            self.assertEqual(
+                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                product.specification_sharing_policy)
+
+    def test_proprietary_to_public_leaves_policies(self):
+        # Changing information type from public leaves sharing policies
+        # unchanged.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            product.information_type = InformationType.PUBLIC
+            # Setting information type to the current type should be a no-op
+            product.information_type = InformationType.PUBLIC
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            SpecificationSharingPolicy.PROPRIETARY,
+            product.specification_sharing_policy)
+
+    def test_checkInformationType_bug_supervisor(self):
+        # Bug supervisors of proprietary products must not have inclusive
+        # membership policies.
+        team = self.factory.makeTeam()
+        product = self.factory.makeProduct(bug_supervisor=team)
+        for policy in (token.value for token in TeamMembershipPolicy):
+            with person_logged_in(team.teamowner):
+                team.membership_policy = policy
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with person_logged_in(product.owner):
+                    errors = list(product.checkInformationType(info_type))
+                if policy in EXCLUSIVE_TEAM_POLICY:
+                    self.assertEqual([], errors)
+                else:
+                    with ExpectedException(
+                        CannotChangeInformationType,
+                        'Bug supervisor has inclusive membership.'):
+                        raise errors[0]
+
+    def test_checkInformationType_questions(self):
+        # Proprietary products must not have questions
+        product = self.factory.makeProduct()
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makeQuestion(target=product)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has questions.'):
+                raise error
+
+    def test_checkInformationType_translations(self):
+        # Proprietary products must not have translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makePOTemplate(productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has translations.'):
+                raise error
 
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
@@ -552,8 +714,9 @@ class TestProduct(TestCaseWithFactory):
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
         'launchpad.LimitedView': set((
-            'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
-            'logo', 'name', 'official_answers', 'official_anything',
+            'bugtargetdisplayname', 'displayname', 'drivers',
+            'enable_bug_expiration', 'getSpecification',
+            'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
@@ -573,7 +736,7 @@ class TestProduct(TestCaseWithFactory):
             'date_next_suggest_packaging', 'datecreated', 'description',
             'development_focus', 'development_focusID',
             'direct_answer_contacts', 'distrosourcepackages',
-            'downloadurl', 'driver', 'drivers',
+            'downloadurl', 'driver',
             'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
             'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',
             'getAllowedBugInformationTypes',
@@ -587,7 +750,7 @@ class TestProduct(TestCaseWithFactory):
             'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
             'getMergeProposals', 'getMilestone', 'getMilestonesAndReleases',
             'getQuestion', 'getQuestionLanguages', 'getPackage', 'getRelease',
-            'getSeries', 'getSpecification', 'getSubscription',
+            'getSeries', 'getSubscription',
             'getSubscriptions', 'getSupportedLanguages', 'getTimeline',
             'getTopContributors', 'getTopContributorsGroupedByCategory',
             'getTranslationGroups', 'getTranslationImportQueueEntries',
@@ -595,7 +758,7 @@ class TestProduct(TestCaseWithFactory):
             'getVersionSortedSeries',
             'has_current_commercial_subscription',
             'has_custom_language_codes', 'has_milestones', 'homepage_content',
-            'homepageurl', 'icon', 'invitesTranslationEdits',
+            'homepageurl', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
             'mugshot', 'name_with_project', 'newCodeImport',
@@ -628,7 +791,7 @@ class TestProduct(TestCaseWithFactory):
         'launchpad.Edit': set((
             'addOfficialBugTag', 'removeOfficialBugTag',
             'setBranchSharingPolicy', 'setBugSharingPolicy',
-            'setSpecificationSharingPolicy')),
+            'setSpecificationSharingPolicy', 'checkInformationType')),
         'launchpad.Moderate': set((
             'is_permitted', 'license_approved', 'project_reviewed',
             'reviewer_whiteboard', 'setAliases')),
@@ -965,17 +1128,15 @@ class TestProduct(TestCaseWithFactory):
     def test_information_type_prevents_pruning(self):
         # Access policies for Product.information_type are not pruned.
         owner = self.factory.makePerson()
-        for info_type in [
-            InformationType.PROPRIETARY, InformationType.EMBARGOED]:
-            product = self.factory.makeProduct(
-                information_type=info_type, owner=owner)
-            with person_logged_in(owner):
-                product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
-                product.setSpecificationSharingPolicy(
-                    SpecificationSharingPolicy.PUBLIC)
-                product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
-            self.assertIsNot(None, getUtility(IAccessPolicySource).find(
-                [(product, info_type)]).one())
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED, owner=owner)
+        with person_logged_in(owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            product.setSpecificationSharingPolicy(
+                SpecificationSharingPolicy.PROPRIETARY)
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+        self.assertIsNot(None, getUtility(IAccessPolicySource).find(
+            [(product, InformationType.EMBARGOED)]).one())
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
@@ -1521,6 +1682,28 @@ class BaseSharingPolicyTests:
                 [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
                 getAccessPolicyTypes(product))
 
+    def test_proprietary_products_forbid_public_policies(self):
+        # A proprietary project forbids any sharing policy that would permit
+        # public artifacts.
+        owner = self.product.owner
+        with person_logged_in(owner):
+            self.product.licenses = [License.OTHER_PROPRIETARY]
+            self.product.information_type = InformationType.PROPRIETARY
+        policies_permitting_public = [self.public_policy]
+        policies_permitting_public.extend(
+            policy for policy in self.commercial_policies if
+            InformationType.PUBLIC in self.allowed_types[policy])
+        for policy in policies_permitting_public:
+            with ExpectedException(
+                ProprietaryProduct, "The project is Proprietary."):
+                self.setSharingPolicy(policy, owner)
+        with person_logged_in(owner):
+            self.product.information_type = InformationType.EMBARGOED
+        for policy in policies_permitting_public:
+            with ExpectedException(
+                ProprietaryProduct, "The project is Embargoed."):
+                self.setSharingPolicy(policy, owner)
+
 
 class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
                                       TestCaseWithFactory):
@@ -1535,6 +1718,7 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
         BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
         BugSharingPolicy.PROPRIETARY,
         )
+    allowed_types = BUG_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
@@ -1559,6 +1743,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         BranchSharingPolicy.PROPRIETARY,
         BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
+    allowed_types = BRANCH_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
@@ -1609,6 +1794,7 @@ class ProductSpecificationSharingPolicyTestCase(
         SpecificationSharingPolicy.PROPRIETARY,
         SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
+    allowed_types = SPECIFICATION_POLICY_ALLOWED_TYPES
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
@@ -1968,6 +2154,17 @@ class TestProductSet(TestCaseWithFactory):
         self.assertNotIn(proprietary, result)
         self.assertNotIn(embargoed, result)
 
+    def test_search_respects_privacy(self):
+        # Proprietary products are filtered from the results for people who
+        # cannot see them.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.assertIn(product, ProductSet.search(None))
+        with person_logged_in(owner):
+            product.information_type = InformationType.PROPRIETARY
+        self.assertNotIn(product, ProductSet.search(None))
+        self.assertIn(product, ProductSet.search(owner))
+
     def test_getProductPrivacyFilterAnonymous(self):
         # Ignore proprietary products for anonymous users
         proprietary, embargoed, public = self.makeAllInformationTypes()
@@ -2052,15 +2249,15 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(proprietary, result)
 
     def test_getTranslatables_filters_private_products(self):
-        # ProductSet.getTranslatables() returns rivate translatable
+        # ProductSet.getTranslatables() returns private translatable
         # products only for user that have grants for these products.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
-            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD)
+            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD,
+            information_type=InformationType.PROPRIETARY)
         series = self.factory.makeProductSeries(product)
-        self.factory.makePOTemplate(productseries=series)
         with person_logged_in(owner):
-            product.information_type = InformationType.PROPRIETARY
+            self.factory.makePOTemplate(productseries=series)
         # Anonymous users do not see private products.
         with person_logged_in(ANONYMOUS):
             translatables = getUtility(IProductSet).getTranslatables()
@@ -2078,3 +2275,32 @@ class TestProductSet(TestCaseWithFactory):
         with person_logged_in(user):
             translatables = getUtility(IProductSet).getTranslatables()
             self.assertIn(product, list(translatables))
+
+
+class TestProductSetWebService(WebServiceTestCase):
+
+    def test_latest_honours_privacy(self):
+        # Latest lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.latest()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.latest()])
+
+    def test_search_honours_privacy(self):
+        # search lists objects that the user can see, even if proprietary, and
+        # skips those the user can't see.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            name = product.name
+        productset = self.wsObject(ProductSet(), owner)
+        self.assertIn(name, [p.name for p in productset.search()])
+        productset = self.wsObject(ProductSet(), self.factory.makePerson())
+        self.assertNotIn(name, [p.name for p in productset.search()])

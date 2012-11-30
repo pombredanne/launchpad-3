@@ -5,10 +5,9 @@
 
 __metaclass__ = type
 
-from unittest import TestCase
-
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -18,19 +17,46 @@ from lp.registry.vocabularies import MilestoneVocabulary
 from lp.testing import (
     login,
     logout,
+    person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestMilestoneVocabulary(TestCase):
+class TestMilestoneVocabulary(TestCaseWithFactory):
     """Test that the MilestoneVocabulary behaves as expected."""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TestMilestoneVocabulary, self).setUp()
         login('test@canonical.com')
 
     def tearDown(self):
+        super(TestMilestoneVocabulary, self).tearDown()
         logout()
+
+    def test_project_group_does_not_show_nonpublic_products(self):
+        # Milestones for a projectgroup should not include those on an
+        # associated private product.
+        owner = self.factory.makePerson()
+        group = self.factory.makeProject(owner=owner)
+        public = self.factory.makeProduct(project=group, owner=owner)
+        private = self.factory.makeProduct(project=group, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            m1 = self.factory.makeMilestone(name='public', product=public)
+            m2 = self.factory.makeMilestone(name='private', product=private)
+        vocabulary = MilestoneVocabulary(group)
+        expected = [m1.title]
+        listing = [term.title for term in vocabulary]
+        self.assertEqual(expected, listing)
+
+        with person_logged_in(owner):
+            vocabulary = MilestoneVocabulary(group)
+            expected = [m1.title, m2.title]
+            listing = [term.title for term in vocabulary]
+            self.assertEqual(expected, listing)
 
     def testProductMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a product."""

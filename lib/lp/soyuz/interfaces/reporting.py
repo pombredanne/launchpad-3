@@ -8,6 +8,7 @@ __all__ = [
 
 
 from zope.interface import Attribute
+
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 

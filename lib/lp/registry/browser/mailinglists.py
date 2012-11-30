@@ -22,9 +22,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     )
 from lp.registry.interfaces.person import ITeam
-from lp.services.webapp import (
-    LaunchpadView,
-    )
+from lp.services.webapp import LaunchpadView
 
 
 class HeldMessageView(LaunchpadView):

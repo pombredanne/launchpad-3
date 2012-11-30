@@ -89,8 +89,8 @@ was inherited in the initialization.
     >>> print breezy_autotest.previous_series.title
     The Hoary Hedgehog Release
 
-    >>> hoary_evo_release = hoary_evo_source['1.0']
-    >>> copied_pub = hoary_evo_release.current_published.copyTo(
+    >>> evo_pub = hoary.getPublishedSources('evolution', version='1.0')[0]
+    >>> copied_pub = evo_pub.copyTo(
     ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
 
     >>> breezy_autotest_evo_source = breezy_autotest.getSourcePackage(
@@ -176,8 +176,7 @@ where they are published.
 
 Let's start by copying a PRIMARY archive source to Celso's PPA.
 
-    >>> copy = hoary_evo_source['1.0'].current_published.copyTo(
-    ...    hoary, pocket_release, cprov.archive)
+    >>> copy = evo_pub.copyTo(hoary, pocket_release, cprov.archive)
 
 No suitable build will be found for it.
 

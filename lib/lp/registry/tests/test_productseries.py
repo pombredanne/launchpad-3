@@ -8,11 +8,11 @@ __metaclass__ = type
 from storm.exceptions import NoneError
 from testtools.testcase import ExpectedException
 import transaction
+from zope.component import getUtility
 from zope.security.checker import (
     CheckerPublic,
     getChecker,
     )
-from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -864,3 +864,65 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             for permission, names in self.expected_set_permissions.items():
                 self.assertChangeAuthorized(names, self.public_series)
                 self.assertChangeAuthorized(names, self.proprietary_series)
+
+
+class TestTimelineProductSeries(TestCaseWithFactory):
+    """Tests for TimelineProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_access_to_timeline_of_public_product(self):
+        # ITestTimelineProductSeries instances related to public
+        # products are publicly visible.
+        series = self.factory.makeProductSeries()
+        timeline = series.getTimeline()
+        with person_logged_in(ANONYMOUS):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)
+        with person_logged_in(self.factory.makePerson()):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)
+
+    def test_access_to_timeline_of_proprietary_product(self):
+        # ITestTimelineProductSeries instances related to proprietary
+        # products are visible only for person with a policy grant for
+        # the product.
+        owner = self.factory.makePerson()
+        user_with_policy_grant = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        with person_logged_in(owner):
+            timeline = series.getTimeline()
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user_with_policy_grant, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+
+        # Anonymous users do not have access.
+        with person_logged_in(ANONYMOUS):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                self.assertRaises(Unauthorized, getattr, timeline, name)
+        # Ordinary users do not have access.
+        with person_logged_in(self.factory.makePerson()):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                self.assertRaises(Unauthorized, getattr, timeline, name)
+        # Users with a policy grant have access.
+        with person_logged_in(user_with_policy_grant):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)

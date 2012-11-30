@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -109,6 +113,24 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         observed = spph.sourcepackagerelease.aggregate_changelog(
             since_version="1.0")
         self.assertEqual(expected_changelog, observed)
+
+    def test_aggregate_changelog_invalid_utf8(self):
+        # aggregate_changelog copes with invalid UTF-8.
+        changelog_main = dedent(u"""\
+            foo (1.0) unstable; urgency=low
+
+              * 1.0 (héllo).""").encode("ISO-8859-1")
+        changelog_trailer = (
+            u" -- Føo Bær <foo@example.com>  "
+            u"Tue, 01 Jan 1970 01:50:41 +0000").encode("ISO-8859-1")
+        changelog_text = changelog_main + b"\n\n" + changelog_trailer
+        changelog = self.factory.makeLibraryFileAlias(content=changelog_text)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.0", changelog=changelog)
+        transaction.commit()
+        observed = spph.sourcepackagerelease.aggregate_changelog(
+            since_version=None)
+        self.assertEqual(changelog_main.decode("UTF-8", "replace"), observed)
 
 
 class TestGetActiveArchSpecificPublications(TestCaseWithFactory):

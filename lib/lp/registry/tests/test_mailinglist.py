@@ -6,9 +6,9 @@ __all__ = []
 
 from textwrap import dedent
 
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
-from testtools.matchers import Equals
 
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription,
