@@ -53,18 +53,18 @@ class TestSpecificationDependencies(TestCaseWithFactory):
     def test_no_deps(self):
         blueprint = self.factory.makeBlueprint()
         self.assertThat(list(blueprint.dependencies), Equals([]))
-        self.assertThat(list(blueprint.all_deps), Equals([]))
+        self.assertThat(list(blueprint.all_deps()), Equals([]))
         self.assertThat(list(blueprint.blocked_specs), Equals([]))
-        self.assertThat(list(blueprint.all_blocked), Equals([]))
+        self.assertThat(list(blueprint.all_blocked()), Equals([]))
 
     def test_single_dependency(self):
         do_first = self.factory.makeBlueprint()
         do_next = self.factory.makeBlueprint()
         do_next.createDependency(do_first)
         self.assertThat(list(do_first.blocked_specs), Equals([do_next]))
-        self.assertThat(list(do_first.all_blocked), Equals([do_next]))
+        self.assertThat(list(do_first.all_blocked()), Equals([do_next]))
         self.assertThat(list(do_next.dependencies), Equals([do_first]))
-        self.assertThat(list(do_next.all_deps), Equals([do_first]))
+        self.assertThat(list(do_next.all_deps()), Equals([do_first]))
 
     def test_linear_dependency(self):
         do_first = self.factory.makeBlueprint()
@@ -74,11 +74,11 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_last.createDependency(do_next)
         self.assertThat(sorted(do_first.blocked_specs), Equals([do_next]))
         self.assertThat(
-            sorted(do_first.all_blocked),
+            sorted(do_first.all_blocked()),
             Equals(sorted([do_next, do_last])))
         self.assertThat(sorted(do_last.dependencies), Equals([do_next]))
         self.assertThat(
-            sorted(do_last.all_deps),
+            sorted(do_last.all_deps()),
             Equals(sorted([do_first, do_next])))
 
     def test_diamond_dependency(self):
@@ -99,13 +99,13 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             sorted(do_first.blocked_specs),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_first.all_blocked),
+            sorted(do_first.all_blocked()),
             Equals(sorted([do_next_lhs, do_next_rhs, do_last])))
         self.assertThat(
             sorted(do_last.dependencies),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_last.all_deps),
+            sorted(do_last.all_deps()),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
 
     def test_all_deps_filters(self):
