@@ -163,6 +163,8 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
         return cls.getViewContent(view)
 
     def test_no_sync_links_for_proprietary(self):
+        # Proprietary products don't have links for synchronizing
+        # productseries.
         product = self.factory.makeProduct()
         content = self.getTranslationsContent(product)
         series_url = canonical_url(

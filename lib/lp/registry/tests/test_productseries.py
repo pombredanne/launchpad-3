@@ -80,7 +80,8 @@ class TestProductSeries(TestCaseWithFactory):
                 if mode == TranslationsBranchImportMode.NO_IMPORT:
                     continue
                 with ExpectedException(ProprietaryProduct,
-                        'Translations are disabled for private projects.'):
+                        'Translations are disabled for proprietary'
+                        ' projects.'):
                     series.translations_autoimport_mode = mode
 
 

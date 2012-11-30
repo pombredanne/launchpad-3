@@ -156,7 +156,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         if (self.product.private and
             value != TranslationsBranchImportMode.NO_IMPORT):
             raise ProprietaryProduct('Translations are disabled for'
-                                     ' private projects.')
+                                     ' proprietary projects.')
         return value
 
     translations_autoimport_mode = EnumCol(

@@ -27,6 +27,7 @@ class TestProductSeries(BrowserTestCase):
         return HTMLContains(tag)
 
     def test_private_disables_imports(self):
+        # Proprietary products disable import options.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             owner=owner, information_type=InformationType.PROPRIETARY)
