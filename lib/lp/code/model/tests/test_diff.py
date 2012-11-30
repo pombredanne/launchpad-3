@@ -259,10 +259,18 @@ class TestDiffInScripts(DiffTestCase):
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
             Diff.generateDiffstat(self.diff_bytes))
 
+    def test_generateDiffstat_with_CR(self):
+        diff_bytes = (
+            "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+            "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
+            "@@ -1,1 +1,1 @@\n"
+            " a\r-b\r c\r+d\r+e\r+f\r")
+        self.assertEqual({'foo': (0, 0)}, Diff.generateDiffstat(diff_bytes))
+
     def test_fromFileSetsDiffstat(self):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
-        self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
-                         diff.diffstat)
+        self.assertEqual(
+            {'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)}, diff.diffstat)
 
     def test_fromFileAcceptsBinary(self):
         diff_bytes = "Binary files a\t and b\t differ\n"
