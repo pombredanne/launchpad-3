@@ -136,7 +136,6 @@ from lp.services.webapp import (
     stepto,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import (
     ContextMenu,
     enabled_with_permission,

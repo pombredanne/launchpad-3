@@ -45,7 +45,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
@@ -89,6 +88,10 @@ from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessArtifactGrantSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -820,12 +823,11 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-
     def all_deps(self, user=None):
         public_clause = True
         if user is None:
             public_clause = (
-                Specification.information_type == InformationType.PUBLIC,        
+                Specification.information_type == InformationType.PUBLIC,
                 )
 
         results = Store.of(self).with_(
@@ -849,7 +851,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         public_clause = True
         if user is None:
             public_clause = (
-                Specification.information_type == InformationType.PUBLIC,        
+                Specification.information_type == InformationType.PUBLIC,
                 )
 
         results = Store.of(self).with_(

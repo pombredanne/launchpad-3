@@ -451,7 +451,7 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
 
     def all_deps():
         """All the dependencies, including dependencies of dependencies.
-       
+
         If a user is provided, filters to only dependencies the user can see.
         """
     def all_blocked():

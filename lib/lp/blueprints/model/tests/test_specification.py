@@ -115,7 +115,7 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             owner=owner, specification_sharing_policy=sharing_policy)
-        root = self.factory.makeBlueprint(product=product) 
+        root = self.factory.makeBlueprint(product=product)
         proprietary_dep = self.factory.makeBlueprint(
             product=product, information_type=InformationType.PROPRIETARY)
         public_dep = self.factory.makeBlueprint(product=product)
@@ -137,13 +137,13 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             owner=owner, specification_sharing_policy=sharing_policy)
-        root = self.factory.makeBlueprint(product=product) 
-        proprietary_blocked= self.factory.makeBlueprint(
+        root = self.factory.makeBlueprint(product=product)
+        proprietary_blocked = self.factory.makeBlueprint(
             product=product, information_type=InformationType.PROPRIETARY)
         public_blocked = self.factory.makeBlueprint(product=product)
         proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
-        # Anonymous (no user) requests only get public blocked specs. 
+        # Anonymous (no user) requests only get public blocked specs.
         self.assertEqual(
             [public_blocked], root.all_blocked())
         # The owner of the product can see everything.
