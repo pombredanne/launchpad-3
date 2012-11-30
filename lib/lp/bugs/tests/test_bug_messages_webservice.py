@@ -55,12 +55,11 @@ class TestMessageTraversal(WebServiceTestCase):
         # IIndexedMessage. The representation cannot make a link to the
         # parent message because it might switch to another context
         # object that is not exposed or the user may not have access to.
-        bug = self.factory.makeBug()
         message_1 = self.factory.makeMessage()
         message_2 = self.factory.makeMessage()
         message_2.parent = message_1
+        bug = self.factory.makeBug()
         bug.linkMessage(message_2)
-        transaction.commit()
         user = self.factory.makePerson()
         lp_bug = self.wsObject(bug, user)
         for lp_message in lp_bug.messages:
