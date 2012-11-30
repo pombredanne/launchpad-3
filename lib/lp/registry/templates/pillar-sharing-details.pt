@@ -24,6 +24,7 @@
 
 <body>
   <div metal:fill-slot="main">
+
     <div id="observer-summary">
       <p>
       <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs and
