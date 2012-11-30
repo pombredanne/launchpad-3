@@ -1201,10 +1201,7 @@ class SpecGraph:
             current_spec = to_search.pop()
             visited.add(current_spec)
             node = self.newOrExistingNode(current_spec)
-            try:
-                related_specs = set(get_related_specs_fn(current_spec))
-            except AttributeError:
-                import pdb; pdb.set_trace()
+            related_specs = set(get_related_specs_fn(current_spec))
             for related_spec in related_specs:
                 link_nodes_fn(node, self.newOrExistingNode(related_spec))
             to_search.update(related_specs.difference(visited))
