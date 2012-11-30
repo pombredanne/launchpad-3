@@ -822,11 +822,18 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
 
     def all_deps(self, user=None):
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,        
+                )
+
         results = Store.of(self).with_(
             SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)')
+            SQL('Specification.id in (select id from dependencies)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
 
         results = list(results)
@@ -839,11 +846,18 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
 
     def all_blocked(self, user=None):
         """See `ISpecification`."""
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,        
+                )
+
         results = Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)')
+            SQL('Specification.id in (select id from blocked)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
 
         results = list(results)

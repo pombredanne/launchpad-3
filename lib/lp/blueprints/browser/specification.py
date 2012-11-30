@@ -136,6 +136,7 @@ from lp.services.webapp import (
     stepto,
     )
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import (
     ContextMenu,
     enabled_with_permission,
@@ -1166,7 +1167,10 @@ class SpecGraph:
         """Add nodes for the specs that the given spec depends on,
         transitively.
         """
-        get_related_specs_fn = attrgetter('all_deps')
+        #user = getUtility(ILaunchBag).user
+        user = None
+        def get_related_specs_fn(spec):
+            return spec.all_deps(user=user)
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -1174,7 +1178,10 @@ class SpecGraph:
 
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
-        get_related_specs_fn = attrgetter('all_blocked')
+        #user = getUtility(ILaunchBag).user
+        user = None
+        def get_related_specs_fn(spec):
+            return spec.all_blocked(user=user)
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)

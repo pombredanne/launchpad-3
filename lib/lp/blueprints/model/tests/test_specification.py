@@ -109,6 +109,8 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
 
     def test_all_deps_filters(self):
+        # all_deps, when provided a user, shows only the dependencies the user
+        # can see.
         sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
@@ -119,8 +121,8 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         public_dep = self.factory.makeBlueprint(product=product)
         root.createDependency(proprietary_dep)
         root.createDependency(public_dep)
-        # Not having a user queries for all dependencies.
-        self.assertEqual([proprietary_dep, public_dep], root.all_deps())
+        # Anonymous (no user) requests only get public dependencies
+        self.assertEqual([public_dep], root.all_deps())
         # The owner of the product can see everything.
         self.assertEqual(
             [proprietary_dep, public_dep], root.all_deps(user=owner))
@@ -129,6 +131,8 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             [public_dep], root.all_deps(user=self.factory.makePerson()))
 
     def test_all_blocked_filters(self):
+        # all_blocked, when provided a user, shows only the blocked specs the
+        # user can see.
         sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
@@ -139,14 +143,14 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         public_blocked = self.factory.makeBlueprint(product=product)
         proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
-        # Not having a user queries for all dependencies.
+        # Anonymous (no user) requests only get public blocked specs. 
         self.assertEqual(
-            [proprietary_blocked, public_blocked], root.all_blocked())
+            [public_blocked], root.all_blocked())
         # The owner of the product can see everything.
         self.assertEqual(
             [proprietary_blocked, public_blocked],
             root.all_blocked(user=owner))
-        # A random person can't see the proprietary dependency.
+        # A random person can't see the proprietary blocked spec.
         self.assertEqual(
             [public_blocked],
             root.all_blocked(user=self.factory.makePerson()))
