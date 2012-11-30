@@ -407,7 +407,7 @@ class PillarPersonSharingView(LaunchpadView):
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
         bug_data = self._build_bug_template_data(self.bugtasks, request)
-        specification_data = self._build_specification_template_data(
+        spec_data = self._build_specification_template_data(
             self.specifications, request)
         grantee_data = {
             'displayname': self.person.displayname,
@@ -432,8 +432,7 @@ class PillarPersonSharingView(LaunchpadView):
         self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
 
-
-    def _build_specification_tempalte_data(self, specs, request):
+    def _build_specification_template_data(self, specs, request):
         spec_data = []
         for spec in specs:
             spec_data.append(dict(
