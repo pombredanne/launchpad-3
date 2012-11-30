@@ -29,6 +29,9 @@ from lp.code.model.diff import (
     PreviewDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -186,7 +189,8 @@ class TestDiff(DiffTestCase):
 
         from lp.code.model import diff as diff_module
         with monkey_patch(diff_module, get_request_remaining_seconds=fake):
-            self.assertIs(None, diff._getDiffTimeout())
+            self.assertIs(
+                LIBRARIAN_SERVER_DEFAULT_TIMEOUT, diff._getDiffTimeout())
             value = 3.1
             self.assertEqual(2.0, diff._getDiffTimeout())
             value = 1.11

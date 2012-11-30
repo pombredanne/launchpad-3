@@ -51,6 +51,9 @@ from lp.services.config import config
 from lp.services.database.bulk import load_referencing
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -110,7 +113,7 @@ class Diff(SQLBase):
         """
         remaining = get_request_remaining_seconds()
         if remaining is None:
-            return None
+            return LIBRARIAN_SERVER_DEFAULT_TIMEOUT
         elif remaining > 2.0:
             # The maximum permitted time for webapp requests.
             return 2.0
