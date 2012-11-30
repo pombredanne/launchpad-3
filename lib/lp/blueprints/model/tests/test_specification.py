@@ -121,16 +121,39 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         root.createDependency(public_dep)
         # Not having a user queries for all dependencies.
         self.assertEqual(
-            [public_dep, proprietary_dep], root.all_deps())
+            [proprietary_dep, public_dep], [d for d in root.all_deps()])
         # The owner of the product can see everything.
         self.assertEqual(
-            [public_dep, proprietary_dep], root.all_deps(user=owner))
+            [proprietary_dep, public_dep],
+            [d for d in root.all_deps(user=owner)])
         # A random person can't see the proprietary dependency.
         self.assertEqual(
-            [public_dep], root.all_deps(user=self.factory.makePerson()))
+            [public_dep],
+            [d for d in root.all_deps(user=self.factory.makePerson())])
 
     def test_all_blocked_filters(self):
-        self.fail()
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product) 
+        proprietary_blocked= self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_blocked = self.factory.makeBlueprint(product=product)
+        proprietary_blocked.createDependency(root)
+        public_blocked.createDependency(root)
+        # Not having a user queries for all dependencies.
+        self.assertEqual(
+            [proprietary_blocked, public_blocked],
+            [d for d in root.all_blocked()])
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [proprietary_blocked, public_blocked],
+            [d for d in root.all_blocked(user=owner)])
+        # A random person can't see the proprietary dependency.
+        self.assertEqual(
+            [public_blocked],
+            [d for d in root.all_blocked(user=self.factory.makePerson())])
 
 
 class TestSpecificationSubscriptionSort(TestCaseWithFactory):
