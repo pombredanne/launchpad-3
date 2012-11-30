@@ -120,16 +120,13 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         root.createDependency(proprietary_dep)
         root.createDependency(public_dep)
         # Not having a user queries for all dependencies.
-        self.assertEqual(
-            [proprietary_dep, public_dep], [d for d in root.all_deps()])
+        self.assertEqual([proprietary_dep, public_dep], root.all_deps())
         # The owner of the product can see everything.
         self.assertEqual(
-            [proprietary_dep, public_dep],
-            [d for d in root.all_deps(user=owner)])
+            [proprietary_dep, public_dep], root.all_deps(user=owner))
         # A random person can't see the proprietary dependency.
         self.assertEqual(
-            [public_dep],
-            [d for d in root.all_deps(user=self.factory.makePerson())])
+            [public_dep], root.all_deps(user=self.factory.makePerson()))
 
     def test_all_blocked_filters(self):
         sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
@@ -144,16 +141,15 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         public_blocked.createDependency(root)
         # Not having a user queries for all dependencies.
         self.assertEqual(
-            [proprietary_blocked, public_blocked],
-            [d for d in root.all_blocked()])
+            [proprietary_blocked, public_blocked], root.all_blocked())
         # The owner of the product can see everything.
         self.assertEqual(
             [proprietary_blocked, public_blocked],
-            [d for d in root.all_blocked(user=owner)])
+            root.all_blocked(user=owner))
         # A random person can't see the proprietary dependency.
         self.assertEqual(
             [public_blocked],
-            [d for d in root.all_blocked(user=self.factory.makePerson())])
+            root.all_blocked(user=self.factory.makePerson()))
 
 
 class TestSpecificationSubscriptionSort(TestCaseWithFactory):
