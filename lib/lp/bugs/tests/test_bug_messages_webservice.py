@@ -52,8 +52,8 @@ class TestMessageTraversal(WebServiceTestCase):
 
     def test_message_with_parent(self):
         # The API exposes the parent attribute IMessage that is hidden by
-        # IIndexedMessage. The representtion cannot make a link to the
-        # parent message because it is might switch to another context
+        # IIndexedMessage. The representation cannot make a link to the
+        # parent message because it might switch to another context
         # object that is not exposed or the user may not have access to.
         bug = self.factory.makeBug()
         message_1 = self.factory.makeMessage()
