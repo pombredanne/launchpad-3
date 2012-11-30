@@ -45,6 +45,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
     InformationType,
@@ -88,10 +89,6 @@ from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
-from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactGrantSource,
-    IAccessArtifactSource,
-    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -823,20 +820,31 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
+
     def all_deps(self, user=None):
-        return Store.of(self).with_(
+        results = Store.of(self).with_(
             SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
             SQL('Specification.id in (select id from dependencies)')
             ).order_by(Specification.name, Specification.id)
 
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
+
     def all_blocked(self, user=None):
         """See `ISpecification`."""
+        privacy_filter = True
         return Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
+            privacy_filter,
             SQL('Specification.id in (select id from blocked)')
             ).order_by(Specification.name, Specification.id)
 
