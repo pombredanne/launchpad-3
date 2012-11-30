@@ -404,10 +404,6 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             readonly=True),
         as_of="devel")
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
-    all_deps = Attribute(
-        "All the dependencies, including dependencies of dependencies.")
-    all_blocked = Attribute(
-        "All specs blocked on this, and those blocked on the blocked ones.")
     linked_branches = exported(
         CollectionField(
             title=_("Branches associated with this spec, usually "
@@ -452,6 +448,18 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             default=SpecificationLifecycleStatus.NOTSTARTED,
             readonly=True),
         as_of="devel")
+
+    def all_deps():
+        """All the dependencies, including dependencies of dependencies.
+       
+        If a user is provided, filters to only dependencies the user can see.
+        """
+    def all_blocked():
+        """All specs blocked on this, and those blocked on the blocked ones.
+
+        If a user is provided, filters to only blocked dependencies the user
+        can see.
+        """
 
     def validateMove(target):
         """Check that the specification can be moved to the target."""

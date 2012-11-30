@@ -823,8 +823,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    @property
-    def all_deps(self):
+    def all_deps(self, user=None):
         return Store.of(self).with_(
             SQL(recursive_dependent_query(self))).find(
             Specification,
@@ -832,8 +831,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             SQL('Specification.id in (select id from dependencies)')
             ).order_by(Specification.name, Specification.id)
 
-    @property
-    def all_blocked(self):
+    def all_blocked(self, user=None):
         """See `ISpecification`."""
         return Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
