@@ -9,7 +9,6 @@ import types
 
 
 original_import = __builtin__.__import__
-database_root = 'canonical.launchpad.database'
 naughty_imports = set()
 
 # Silence bogus warnings from Hardy's python-pkg-resources package.
@@ -20,30 +19,6 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True,
 
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
-
-
-permitted_database_imports = text_lines_to_set("""
-    doctest
-    lp.archiveuploader.nascentuploadfile
-    lp.code.feed.branch
-    lp.codehosting.inmemory
-    lp.codehosting.scanner.bzrsync
-    lp.registry.interfaces.person
-    lp.scripts.garbo
-    lp.services.librarian.browser
-    lp.services.librarian.client
-    lp.services.librarianserver.db
-    lp.systemhomes
-    lp.translations.translationmerger
-    """)
-
-warned_database_imports = text_lines_to_set("""
-    lp.registry.browser.distroseries
-    lp.soyuz.scripts.gina.handlers
-    lp.soyuz.scripts.obsolete_distroseries
-    lp.systemhomes
-    lp.translations.scripts.po_import
-    """)
 
 
 # Sometimes, third-party modules don't export all of their public APIs through
@@ -67,54 +42,51 @@ valid_imports_not_in_all = {
     }
 
 
-def database_import_allowed_into(module_path, name):
+unsafe_parts = set(['browser', 'feed', 'xmlrpc', 'widgets'])
+
+dubious = [
+    'lp.answers.browser.question',
+    'lp.app.browser.vocabulary',
+    'lp.blueprints.browser.sprint',
+    'lp.bugs.browser.bug',
+    'lp.bugs.browser.bugalsoaffects',
+    'lp.bugs.browser.bugsubscription',
+    'lp.bugs.browser.bugtarget',
+    'lp.bugs.browser.bugtask',
+    'lp.bugs.browser.person',
+    'lp.code.browser.branchlisting',
+    'lp.code.browser.sourcepackagerecipe',
+    'lp.registry.browser.distroseries',
+    'lp.registry.browser.distroseriesdifference',
+    'lp.registry.browser.milestone',
+    'lp.registry.browser.pillar',
+    'lp.registry.browser.person',
+    'lp.registry.browser.project',
+    'lp.registry.browser.sourcepackage',
+    'lp.soyuz.browser.archive',
+    'lp.soyuz.browser.builder',
+    'lp.soyuz.browser.queue',
+    'lp.translations.browser.potemplate',
+    'lp.translations.browser.serieslanguage',
+    'lp.translations.browser.sourcepackage',
+    'lp.translations.browser.translationlinksaggregator',
+    'lp.translations.browser.translationtemplatesbuild',
+    ]
+
+
+def database_import_allowed_into(module_path):
     """Return True if model code can be imported into the module path.
 
     It is allowed if:
         - The import was made with the __import__ hook.
         - The importer is a 'test' module.
-        - The importer is in the set of permitted_database_imports.
-        - The importer is within a model module or package.
+        - The importer is in a nodule that does not face users.
         - The import is recognised to be dubious, but not a priority to fix.
     """
-    if name == 'lp.registry.model.personroles':
-        return True
-    dubious = [
-        'lp.blueprints.browser.sprint',
-        'lp.bugs.browser.bug',
-        'lp.bugs.browser.bugalsoaffects',
-        'lp.bugs.browser.bugsubscription',
-        'lp.bugs.browser.bugtarget',
-        'lp.bugs.browser.bugtask',
-        'lp.bugs.browser.person',
-        'lp.code.browser.branchlisting',
-        'lp.code.browser.sourcepackagerecipe',
-        'lp.registry.browser.distroseries',
-        'lp.registry.browser.distroseriesdifference',
-        'lp.registry.browser.milestone',
-        'lp.registry.browser.pillar',
-        'lp.registry.browser.person',
-        'lp.registry.browser.project',
-        'lp.registry.browser.sourcepackage',
-        'lp.soyuz.browser.archive',
-        'lp.soyuz.browser.builder',
-        'lp.soyuz.browser.queue',
-        'lp.translations.browser.potemplate',
-        'lp.translations.browser.serieslanguage',
-        'lp.translations.browser.sourcepackage',
-        'lp.translations.browser.translationlinksaggregator',
-        'lp.translations.browser.translationtemplatesbuild',
-        ]
-    safe_parts = set(
-        ['model', 'scripts', 'adapters', 'vocabularies', 'vocabulary',
-         'security', 'services', 'subscribers', 'utilities'])
     module_parts = set(module_path.split('.'))
-    if (module_path == '__import__ hook' or
-        safe_parts & module_parts or
-        module_path in dubious or
-        is_test_module(module_path)):
-        return True
-    return module_path in permitted_database_imports
+    return (unsafe_parts.isdisjoint(module_parts)
+        or is_test_module(module_path)
+        or module_path in dubious)
 
 
 def is_test_module(module_path):
@@ -196,7 +168,6 @@ class NotFoundPolicyViolation(JackbootError):
 # The names of the arguments form part of the interface of __import__(...),
 # and must not be changed, as code may choose to invoke __import__ using
 # keyword arguments - e.g. the encodings module in Python 2.6.
-# pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports
 
@@ -242,15 +213,9 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
             raise NotFoundPolicyViolation(import_into)
 
     # Check the database import policy.
-    if ('.model.' in name
-        and not database_import_allowed_into(import_into, name)):
+    if '.model.' in name and not database_import_allowed_into(import_into):
         error = DatabaseImportPolicyViolation(import_into, name)
         naughty_imports.add(error)
-        # Raise an error except in the case of browser.traversers.
-        # This exception to raising an error is only temporary, until
-        # browser.traversers is cleaned up.
-        if import_into not in warned_database_imports:
-            raise error
 
     # Check the import from __all__ policy.
     if fromlist is not None and import_into.startswith('lp'):
