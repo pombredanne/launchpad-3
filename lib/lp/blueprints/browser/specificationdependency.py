@@ -12,13 +12,16 @@ __all__ = [
     ]
 
 from lazr.restful.interface import copy_field
+from zope.component import getUtility
 from zope.interface import Interface
 
 from lp import _
+from lp.app.enums import InformationType
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
@@ -94,6 +97,10 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
 class SpecificationDependencyTreeView(LaunchpadView):
     label = "Blueprint dependency tree"
 
+    def __init__(self, *args, **kwargs):
+        super(SpecificationDependencyTreeView, self).__init__(*args, **kwargs)
+        self.service = getUtility(IService, 'sharing')
+
     @property
     def page_title(self):
         return self.label
@@ -103,3 +110,24 @@ class SpecificationDependencyTreeView(LaunchpadView):
 
     def all_deps(self):
         return self.context.all_deps(self.user)
+
+    def dependencies(self):
+        deps = list(self.context.dependencies) 
+        if self.user:
+            (ignore, ignore, deps) = self.service.getVisibleArtifacts(
+                self.user, specifications=deps)
+        else:
+            deps = [d for d in deps if
+                d.information_type == InformationType.PUBLIC]
+        return deps
+
+    def blocked_specs(self):
+        blocked = list(self.context.blocked_specs)
+        if self.user:
+            (ignore, ignore, blocked) = self.service.getVisibleArtifacts(
+                self.user, specifications=blocked)
+        else:
+            blocked = [b for b in blocked if
+                b.information_type == InformationType.PUBLIC]
+        return blocked
+
