@@ -109,7 +109,25 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
 
     def test_all_deps_filters(self):
-        self.fail()
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product) 
+        proprietary_dep = self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_dep = self.factory.makeBlueprint(product=product)
+        root.createDependency(proprietary_dep)
+        root.createDependency(public_dep)
+        # Not having a user queries for all dependencies.
+        self.assertEqual(
+            [public_dep, proprietary_dep], root.all_deps())
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [public_dep, proprietary_dep], root.all_deps(user=owner))
+        # A random person can't see the proprietary dependency.
+        self.assertEqual(
+            [public_dep], root.all_deps(user=self.factory.makePerson()))
 
     def test_all_blocked_filters(self):
         self.fail()
