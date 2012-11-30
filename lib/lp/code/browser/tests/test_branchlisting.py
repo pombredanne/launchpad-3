@@ -20,6 +20,8 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
+from lp.app.interfaces.services import IService
 from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
@@ -31,7 +33,10 @@ from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
-from lp.registry.enums import PersonVisibility
+from lp.registry.enums import (
+    PersonVisibility,
+    SharingPermission,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -41,6 +46,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login_person,
     normalize_whitespace,
@@ -257,6 +263,57 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory,
     def test_batch_template(self):
         # The correct template is used for batch requests.
         self._test_batch_template(self.barney)
+
+    def test_proprietary_branch_for_series_user_has_artifact_grant(self):
+        # A user can be the owner of a branch which is the series
+        # branch of a proprietary product, and the user may only have
+        # an access grant for the branch but no policy grant for the
+        # product. In this case, the branch owner does get any information
+        #about the series.
+        product_owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=product_owner, information_type=InformationType.PROPRIETARY)
+        branch_owner = self.factory.makePerson()
+        sharing_service = getUtility(IService, 'sharing')
+        with person_logged_in(product_owner):
+            # The branch owner needs to have a policy grant at first
+            # so that they can create the branch.
+            sharing_service.sharePillarInformation(
+                product, branch_owner, product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+            proprietary_branch = self.factory.makeProductBranch(
+                product, owner=branch_owner, name='special-branch',
+                information_type=InformationType.PROPRIETARY)
+            series = self.factory.makeProductSeries(
+                product=product, branch=proprietary_branch)
+            sharing_service.deletePillarGrantee(
+                product, branch_owner, product_owner)
+        # Admin help is needed: Product owners do not have the
+        # permission to create artifact grants for branches they
+        # do not own, and the branch owner does have the permission
+        # to issue grants related to the product.
+        with admin_logged_in():
+            sharing_service.ensureAccessGrants(
+                [branch_owner], product_owner, branches=[proprietary_branch])
+
+        with person_logged_in(branch_owner):
+            view = create_initialized_view(
+                branch_owner, name="+branches", rootsite='code',
+                principal=branch_owner)
+            self.assertIn(proprietary_branch, view.branches().batch)
+            # The product series related to the branch is not returned
+            # for the branch owner.
+            self.assertEqual(
+                [], view.branches().getProductSeries(proprietary_branch))
+
+        with person_logged_in(product_owner):
+            # The product series related to the branch is returned
+            # for the product owner.
+            view = create_initialized_view(
+                branch_owner, name="+branches", rootsite='code',
+                principal=branch_owner)
+            self.assertEqual(
+                [series], view.branches().getProductSeries(proprietary_branch))
 
 
 class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
