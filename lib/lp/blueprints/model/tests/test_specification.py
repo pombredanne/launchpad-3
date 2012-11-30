@@ -108,6 +108,12 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             sorted(do_last.all_deps),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
 
+    def test_all_deps_filters(self):
+        self.fail()
+
+    def test_all_blocked_filters(self):
+        self.fail()
+
 
 class TestSpecificationSubscriptionSort(TestCaseWithFactory):
 
