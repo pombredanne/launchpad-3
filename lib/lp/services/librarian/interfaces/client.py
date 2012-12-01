@@ -14,8 +14,10 @@ __all__ = [
     'UploadFailed',
     ]
 
+import httplib
 import signal
 
+from lazr.restful.declarations import error_status
 from zope.interface import Interface
 
 
@@ -35,6 +37,7 @@ class DownloadFailed(LibrarianFailure):
     pass
 
 
+@error_status(httplib.REQUEST_TIMEOUT)
 class LibrarianServerError(Exception):
     """An error indicating that the Librarian server is not responding."""
 
@@ -91,7 +94,7 @@ class IFileDownloadClient(Interface):
 
     def getURLForAlias(aliasID, secure=False):
         """Returns the URL to the given file.
-        
+
         :param aliasID: The LibraryFileAlias for the file to get. A DB lookup
             will be done for this - if many are to be calculated, eagar loading
             is recommended.

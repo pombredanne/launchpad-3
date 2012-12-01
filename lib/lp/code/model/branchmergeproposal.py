@@ -415,7 +415,7 @@ class BranchMergeProposal(SQLBase):
         elif status == BranchMergeProposalStatus.MERGE_FAILED:
             self._transitionToState(status, user=user)
         else:
-            raise AssertionError('Unexpected queue status: ' % status)
+            raise AssertionError('Unexpected queue status: %s' % status)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""

@@ -89,6 +89,7 @@ __all__ = [
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
+    'get_request_remaining_seconds',
     'get_request_statements',
     'get_request_start_time',
     'get_request_duration',
