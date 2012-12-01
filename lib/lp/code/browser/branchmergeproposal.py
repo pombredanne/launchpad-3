@@ -107,6 +107,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -517,9 +518,18 @@ class BranchMergeProposalStatusMixin:
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
 
+    @property
+    def diff_available(self):
+        """Is the preview diff available from the librarian?"""
+        if getattr(self, '_diff_available', None) is None:
+            # Load the cache so that the answer is known.
+            self.preview_diff_text
+        return self._diff_available
+
     @cachedproperty
     def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        self._diff_available = True
         preview_diff = self.preview_diff
         if preview_diff is None:
             return None
@@ -527,6 +537,9 @@ class DiffRenderingMixin:
             diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
+        except LibrarianServerError:
+            self._diff_available = False
+            diff = ''
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 

@@ -51,10 +51,14 @@ from lp.services.config import config
 from lp.services.database.bulk import load_referencing
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
 class Diff(SQLBase):
@@ -94,11 +98,31 @@ class Diff(SQLBase):
         if self.diff_text is None:
             return ''
         else:
-            self.diff_text.open()
+            self.diff_text.open(self._getDiffTimeout())
             try:
                 return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
+
+    def _getDiffTimeout(self):
+        """Return the seconds allocated to get the diff from the librarian.
+
+         the value will be Non for scripts, 2 for the webapp, or if thre is
+         little request time left, the number will be smaller or equal to
+         the remaining request time.
+        """
+        remaining = get_request_remaining_seconds()
+        if remaining is None:
+            return LIBRARIAN_SERVER_DEFAULT_TIMEOUT
+        elif remaining > 2.0:
+            # The maximum permitted time for webapp requests.
+            return 2.0
+        elif remaining > 0.01:
+            # Shave off 1 hundreth of a second off so that the call site
+            # has a chance to recover.
+            return remaining - 0.01
+        else:
+            return remaining
 
     @property
     def oversized(self):
