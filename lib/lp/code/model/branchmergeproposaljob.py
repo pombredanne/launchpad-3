@@ -1,16 +1,13 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
-
 __metaclass__ = type
-
 
 __all__ = [
     'BranchMergeProposalJob',
@@ -376,8 +373,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         with server(get_ro_server(), no_replace=True):
             preview = PreviewDiff.fromBranchMergeProposal(
                 self.branch_merge_proposal)
-        with BranchMergeProposalDelta.monitor(
-            self.branch_merge_proposal):
+        with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
             self.branch_merge_proposal.preview_diff = preview
 
     def getOperationDescription(self):
