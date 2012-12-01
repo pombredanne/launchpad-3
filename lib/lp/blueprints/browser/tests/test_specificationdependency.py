@@ -42,6 +42,7 @@ class TestAddDependency(BrowserTestCase):
         with person_logged_in(None):
             self.assertIn(dependency, spec.dependencies)
 
+
 class TestDepTree(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -59,8 +60,8 @@ class TestDepTree(TestCaseWithFactory):
         public_dep = self.factory.makeBlueprint(product=product)
         root.createDependency(proprietary_dep)
         root.createDependency(public_dep)
-        
-        # Anonymous can see only the public 
+
+        # Anonymous can see only the public
         with anonymous_logged_in():
             view = create_view(root, name="+deptree")
             self.assertEqual([public_dep], view.all_deps())
@@ -73,7 +74,7 @@ class TestDepTree(TestCaseWithFactory):
                 [proprietary_dep, public_dep], view.all_deps())
             self.assertEqual(
                 [proprietary_dep, public_dep], view.dependencies())
-        
+
         # A random person cannot see the propriety dep.
         with person_logged_in(self.factory.makePerson()):
             view = create_view(root, name="+deptree")
@@ -93,8 +94,8 @@ class TestDepTree(TestCaseWithFactory):
         public_blocked = self.factory.makeBlueprint(product=product)
         proprietary_blocked.createDependency(root)
         public_blocked.createDependency(root)
-        
-        # Anonymous can see only the public 
+
+        # Anonymous can see only the public
         with anonymous_logged_in():
             view = create_view(root, name="+deptree")
             self.assertEqual([public_blocked], view.all_blocked())
@@ -107,7 +108,7 @@ class TestDepTree(TestCaseWithFactory):
                 [proprietary_blocked, public_blocked], view.all_blocked())
             self.assertEqual(
                 [proprietary_blocked, public_blocked], view.blocked_specs())
-        
+
         # A random person cannot see the propriety dep.
         with person_logged_in(self.factory.makePerson()):
             view = create_view(root, name="+deptree")

@@ -117,7 +117,7 @@ class SpecificationDependencyTreeView(LaunchpadView):
 
     @cachedproperty
     def dependencies(self):
-        deps = list(self.context.dependencies) 
+        deps = list(self.context.dependencies)
         if self.user:
             (ignore, ignore, deps) = self.service.getVisibleArtifacts(
                 self.user, specifications=deps)
