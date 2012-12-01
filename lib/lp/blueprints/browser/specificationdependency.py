@@ -26,6 +26,7 @@ from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -95,6 +96,7 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
 
 
 class SpecificationDependencyTreeView(LaunchpadView):
+
     label = "Blueprint dependency tree"
 
     def __init__(self, *args, **kwargs):
@@ -105,12 +107,15 @@ class SpecificationDependencyTreeView(LaunchpadView):
     def page_title(self):
         return self.label
 
+    @cachedproperty
     def all_blocked(self):
         return self.context.all_blocked(self.user)
 
+    @cachedproperty
     def all_deps(self):
         return self.context.all_deps(self.user)
 
+    @cachedproperty
     def dependencies(self):
         deps = list(self.context.dependencies) 
         if self.user:
@@ -121,6 +126,7 @@ class SpecificationDependencyTreeView(LaunchpadView):
                 d.information_type == InformationType.PUBLIC]
         return deps
 
+    @cachedproperty
     def blocked_specs(self):
         blocked = list(self.context.blocked_specs)
         if self.user:
@@ -130,4 +136,3 @@ class SpecificationDependencyTreeView(LaunchpadView):
             blocked = [b for b in blocked if
                 b.information_type == InformationType.PUBLIC]
         return blocked
-
