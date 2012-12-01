@@ -212,6 +212,8 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -507,6 +509,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             POTemplate.productseries == ProductSeries.id)
         if not templates.is_empty():
             yield CannotChangeInformationType('This project has translations.')
+        if not self.getTranslationImportQueueEntries().is_empty():
+            yield CannotChangeInformationType(
+                'This project has queued translations.')
+        import_productseries = store.find(
+            ProductSeries,
+            ProductSeries.product == self.id,
+            ProductSeries.translations_autoimport_mode !=
+            TranslationsBranchImportMode.NO_IMPORT)
+        if not import_productseries.is_empty():
+            yield CannotChangeInformationType(
+                'Some product series have translation imports enabled.')
         if not self.packagings.is_empty():
             yield CannotChangeInformationType('Some series are packaged.')
         if self.translations_usage == ServiceUsage.LAUNCHPAD:
@@ -592,10 +605,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+
+    def validate_translations_usage(self, attr, value):
+        if value == ServiceUsage.LAUNCHPAD and self.private:
+            raise ProprietaryProduct(
+                "Translations are not supported for proprietary products.")
+        return value
+
     translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        default=ServiceUsage.UNKNOWN,
+        storm_validator=validate_translations_usage)
 
     @property
     def codehosting_usage(self):
@@ -2072,16 +2093,13 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        user = getUtility(ILaunchBag).user
-        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID,
-            privacy_clause).config(
+            Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

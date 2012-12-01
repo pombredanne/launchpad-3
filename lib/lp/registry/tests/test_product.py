@@ -94,7 +94,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
-    ANONYMOUS,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -122,12 +121,14 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_pillar_category(self):
         # Products are really called Projects
@@ -440,6 +441,7 @@ class TestProduct(TestCaseWithFactory):
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(product.owner):
             for usage in ServiceUsage:
+                product.information_type = InformationType.PUBLIC
                 product.translations_usage = usage.value
                 for info_type in PROPRIETARY_INFORMATION_TYPES:
                     if product.translations_usage == ServiceUsage.LAUNCHPAD:
@@ -547,6 +549,59 @@ class TestProduct(TestCaseWithFactory):
             with ExpectedException(CannotChangeInformationType,
                                    'This project has translations.'):
                 raise error
+
+    def test_checkInformationType_queued_translations(self):
+        # Proprietary products must not have queued translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has queued translations.'):
+                raise error
+        removeSecurityProxy(entry).delete(entry.id)
+        with person_logged_in(product.owner):
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                self.assertContentEqual(
+                    [], product.checkInformationType(info_type))
+
+    def test_checkInformationType_auto_translation_imports(self):
+        # Proprietary products must not be at risk of creating translations.
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        self.useContext(person_logged_in(product.owner))
+        for mode in TranslationsBranchImportMode.items:
+            if mode == TranslationsBranchImportMode.NO_IMPORT:
+                continue
+            productseries.translations_autoimport_mode = mode
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                error, = list(product.checkInformationType(info_type))
+                with ExpectedException(CannotChangeInformationType,
+                    'Some product series have translation imports enabled.'):
+                    raise error
+        productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            self.assertContentEqual(
+                [], product.checkInformationType(info_type))
+
+    def test_private_forbids_translations(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.useContext(person_logged_in(owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product.information_type = info_type
+            with ExpectedException(
+                ProprietaryProduct,
+                "Translations are not supported for proprietary products."):
+                product.translations_usage = ServiceUsage.LAUNCHPAD
+            for usage in ServiceUsage.items:
+                if usage == ServiceUsage.LAUNCHPAD:
+                    continue
+                product.translations_usage = usage
 
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
@@ -2247,34 +2302,6 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
-
-    def test_getTranslatables_filters_private_products(self):
-        # ProductSet.getTranslatables() returns private translatable
-        # products only for user that have grants for these products.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD,
-            information_type=InformationType.PROPRIETARY)
-        series = self.factory.makeProductSeries(product)
-        with person_logged_in(owner):
-            self.factory.makePOTemplate(productseries=series)
-        # Anonymous users do not see private products.
-        with person_logged_in(ANONYMOUS):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertNotIn(product, list(translatables))
-        # Ordinary users do not see private products.
-        user = self.factory.makePerson()
-        with person_logged_in(user):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertNotIn(product, list(translatables))
-        # Users with policy grants on private products see them.
-        with person_logged_in(owner):
-            getUtility(IService, 'sharing').sharePillarInformation(
-                product, user, owner,
-                {InformationType.PROPRIETARY: SharingPermission.ALL})
-        with person_logged_in(user):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertIn(product, list(translatables))
 
 
 class TestProductSetWebService(WebServiceTestCase):

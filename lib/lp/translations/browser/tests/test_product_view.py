@@ -3,12 +3,25 @@
 
 __metaclass__ = type
 
-from lp.app.enums import ServiceUsage
+
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+)
+from testtools.matchers import Not
+
+from lp.app.enums import (
+    InformationType,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     celebrity_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -16,6 +29,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_view
+from lp.testing.views import create_initialized_view
 from lp.translations.browser.product import ProductView
 from lp.translations.publisher import TranslationsLayer
 
@@ -114,3 +128,60 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
             view = create_view(product, '+translations',
                                layer=TranslationsLayer)
             self.assertEqual(True, view.can_configure_translations())
+
+    def test_launchpad_not_listed_for_proprietary(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            for info_type in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+                product.information_type = info_type
+                view = create_initialized_view(
+                    product, '+configure-translations',
+                    layer=TranslationsLayer)
+                if product.private:
+                    self.assertNotIn(
+                        ServiceUsage.LAUNCHPAD,
+                        view.widgets['translations_usage'].vocabulary)
+                else:
+                    self.assertIn(
+                        ServiceUsage.LAUNCHPAD,
+                        view.widgets['translations_usage'].vocabulary)
+
+    @staticmethod
+    def getViewContent(view):
+        with person_logged_in(view.request.principal):
+            return view()
+
+    @staticmethod
+    def hasLink(url):
+        return HTMLContains(Tag('link', 'a', attrs={'href': url}))
+
+    @classmethod
+    def getTranslationsContent(cls, product):
+        view = create_initialized_view(product, '+translations',
+                                       layer=TranslationsLayer,
+                                       principal=product.owner)
+        return cls.getViewContent(view)
+
+    def test_no_sync_links_for_proprietary(self):
+        # Proprietary products don't have links for synchronizing
+        # productseries.
+        product = self.factory.makeProduct()
+        content = self.getTranslationsContent(product)
+        series_url = canonical_url(
+            product.development_focus, view_name='+translations',
+            rootsite='translations')
+        manual_url = canonical_url(
+            product.development_focus, view_name='+translations-upload',
+            rootsite='translations')
+        automatic_url = canonical_url(
+            product.development_focus, view_name='+translations-settings',
+            rootsite='translations')
+        self.assertThat(content, self.hasLink(series_url))
+        self.assertThat(content, self.hasLink(manual_url))
+        self.assertThat(content, self.hasLink(automatic_url))
+        with person_logged_in(product.owner):
+            product.information_type = InformationType.PROPRIETARY
+        content = self.getTranslationsContent(product)
+        self.assertThat(content, Not(self.hasLink(series_url)))
+        self.assertThat(content, Not(self.hasLink(manual_url)))
+        self.assertThat(content, Not(self.hasLink(automatic_url)))
