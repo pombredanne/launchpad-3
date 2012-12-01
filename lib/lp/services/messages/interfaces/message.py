@@ -23,8 +23,11 @@ __all__ = [
 
 from lazr.delegates import delegates
 from lazr.restful.declarations import (
+    accessor_for,
     export_as_webservice_entry,
+    export_read_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -107,6 +110,12 @@ class IMessage(Interface):
 
     def __iter__():
         """Iterate over all the message chunks."""
+
+    @accessor_for(parent)
+    @export_read_operation()
+    @operation_for_version('beta')
+    def getAPIParent():
+        """Return None because messages are not threaded over the API."""
 
 
 # Fix for self-referential schema.

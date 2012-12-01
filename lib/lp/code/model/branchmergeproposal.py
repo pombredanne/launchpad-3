@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212,F0401
-
 """Database class for branch merge prosals."""
 
 __metaclass__ = type
@@ -415,7 +413,7 @@ class BranchMergeProposal(SQLBase):
         elif status == BranchMergeProposalStatus.MERGE_FAILED:
             self._transitionToState(status, user=user)
         else:
-            raise AssertionError('Unexpected queue status: ' % status)
+            raise AssertionError('Unexpected queue status: %s' % status)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""

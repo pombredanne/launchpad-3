@@ -24,7 +24,7 @@
         context/product/@@+portlet-not-using-launchpad"/>
   </div>
 
-  <div class="yui-g">
+  <div class="yui-g" tal:condition="not: context/product/private">
     <div class="yui-u first portlet">
       <div metal:use-macro="context/@@launchpad_form/form" class="portlet">
         <div metal:fill-slot="extra_info">

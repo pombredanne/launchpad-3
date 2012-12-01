@@ -192,6 +192,45 @@ class TestSharingService(TestCaseWithFactory):
              BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
              BranchSharingPolicy.PROPRIETARY])
 
+    def test_getBugSharingPolicies_non_public_product(self):
+        # When the product is non-public the policy options are limited to
+        # only proprietary or embargoed/proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        with person_logged_in(owner):
+            self._assert_getBugSharingPolicies(
+                product, [BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                          BugSharingPolicy.PROPRIETARY])
+
+    def test_getBranchSharingPolicies_non_public_product(self):
+        # When the product is non-public the policy options are limited to
+        # only proprietary or embargoed/proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner
+        )
+        with person_logged_in(owner):
+            self._assert_getBranchSharingPolicies(
+                product, [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                          BranchSharingPolicy.PROPRIETARY])
+
+    def test_getSpecificationSharingPolicies_non_public_product(self):
+        # When the product is non-public the policy options are limited to
+        # only proprietary or embargoed/proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            owner=owner,
+        )
+        with person_logged_in(owner):
+            self._assert_getSpecificationSharingPolicies(
+                product, [SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                          SpecificationSharingPolicy.PROPRIETARY])
+
     def test_getBranchSharingPolicies_disallowed_policy(self):
         # getBranchSharingPolicies includes a pillar's current policy even if
         # it is nominally not allowed.
@@ -204,12 +243,17 @@ class TestSharingService(TestCaseWithFactory):
             [BranchSharingPolicy.PUBLIC, BranchSharingPolicy.FORBIDDEN])
 
     def test_getBranchSharingPolicies_product_with_embargoed(self):
-        # If the current sharing policy is embargoed, that is all that is
-        # allowed.
+        # If the current sharing policy is embargoed, it can still be made
+        # proprietary.
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner,
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        self._assert_getBranchSharingPolicies(
-            product, [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+        with person_logged_in(owner):
+            self._assert_getBranchSharingPolicies(
+                product, [BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                          BranchSharingPolicy.PROPRIETARY])
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()

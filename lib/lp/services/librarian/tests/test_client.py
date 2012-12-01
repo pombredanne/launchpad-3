@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
+import httplib
 import textwrap
 import unittest
 from urllib2 import (
@@ -25,8 +26,10 @@ from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.librarian.model import LibraryFileAlias
 from lp.testing.layers import (
     DatabaseLayer,
+    FunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.views import create_webservice_error_view
 
 
 class InstrumentedLibrarianClient(LibrarianClient):
@@ -36,12 +39,14 @@ class InstrumentedLibrarianClient(LibrarianClient):
         self.check_error_calls = 0
 
     sentDatabaseName = False
+
     def _sendHeader(self, name, value):
         if name == 'Database-Name':
             self.sentDatabaseName = True
         return LibrarianClient._sendHeader(self, name, value)
 
     called_getURLForDownload = False
+
     def _getURLForDownload(self, aliasID):
         self.called_getURLForDownload = True
         return LibrarianClient._getURLForDownload(self, aliasID)
@@ -79,7 +84,7 @@ class LibrarianClientTestCase(unittest.TestCase):
     def test_addFileSendsDatabaseName(self):
         # addFile should send the Database-Name header.
         client = InstrumentedLibrarianClient()
-        id1 = client.addFile(
+        client.addFile(
             'sample.txt', 6, StringIO('sample'), 'text/plain')
         self.failUnless(client.sentDatabaseName,
             "Database-Name header not sent by addFile")
@@ -91,7 +96,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         # different process, we need to explicitly tell the DatabaseLayer to
         # fully tear down and set up the database.
         DatabaseLayer.force_dirty_database()
-        id1 = client.remoteAddFile('sample.txt', 6, StringIO('sample'),
+        client.remoteAddFile('sample.txt', 6, StringIO('sample'),
                                    'text/plain')
         self.failUnless(client.sentDatabaseName,
             "Database-Name header not sent by remoteAddFile")
@@ -180,7 +185,7 @@ class LibrarianClientTestCase(unittest.TestCase):
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
             lfa.content = None
-            call = block_implicit_flushes( # Prevent a ProgrammingError
+            call = block_implicit_flushes(  # Prevent a ProgrammingError
                 LibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)
         finally:
@@ -216,7 +221,7 @@ class LibrarianClientTestCase(unittest.TestCase):
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
             lfa.content = None
-            call = block_implicit_flushes( # Prevent a ProgrammingError
+            call = block_implicit_flushes(  # Prevent a ProgrammingError
                 RestrictedLibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)
         finally:
@@ -231,7 +236,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         client = InstrumentedLibrarianClient()
         alias_id = client.addFile(
             'sample.txt', 6, StringIO('sample'), 'text/plain')
-        transaction.commit() # Make sure the file is in the "remote" database
+        transaction.commit()  # Make sure the file is in the "remote" database.
         self.failIf(client.called_getURLForDownload)
         # (Test:)
         f = client.getFileByAlias(alias_id)
@@ -306,3 +311,13 @@ class LibrarianClientTestCase(unittest.TestCase):
             client.getFileByAlias(alias_id), 'This is a fake file object', 3)
 
         client_module._File = _File
+
+
+class TestWebServiceErrors(unittest.TestCase):
+    """ Test that errors are correctly mapped to HTTP status codes."""
+
+    layer = FunctionalLayer
+
+    def test_LibrarianServerError_timeout(self):
+        error_view = create_webservice_error_view(LibrarianServerError())
+        self.assertEqual(httplib.REQUEST_TIMEOUT, error_view.status)

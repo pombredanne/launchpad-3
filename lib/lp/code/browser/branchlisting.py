@@ -340,7 +340,11 @@ class BranchListingItemsMixin:
             self._visible_branch_ids)
         result = {}
         for series in series_resultset:
-            result.setdefault(series.branch.id, []).append(series)
+            # Some products may be proprietary or embargoed, and users
+            # do not need to have access to them, while they may have
+            # artifact grants for the series branch.
+            if series.userCanView(self.view_user):
+                result.setdefault(series.branch.id, []).append(series)
         return result
 
     def getProductSeries(self, branch):
