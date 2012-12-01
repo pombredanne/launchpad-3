@@ -50,6 +50,25 @@ class TestMessageTraversal(WebServiceTestCase):
             messages,
             expected_messages)
 
+    def test_message_with_parent(self):
+        # The API exposes the parent attribute IMessage that is hidden by
+        # IIndexedMessage. The representation cannot make a link to the
+        # parent message because it might switch to another context
+        # object that is not exposed or the user may not have access to.
+        message_1 = self.factory.makeMessage()
+        message_2 = self.factory.makeMessage()
+        message_2.parent = message_1
+        bug = self.factory.makeBug()
+        bug.linkMessage(message_2)
+        user = self.factory.makePerson()
+        lp_bug = self.wsObject(bug, user)
+        for lp_message in lp_bug.messages:
+            # An IIndexedMessage's representation.
+            self.assertIs(None, lp_message.parent)
+        # An IMessage's representation.
+        lp_message = self.wsObject(message_2, user)
+        self.assertIs(None, lp_message.parent)
+
 
 class TestSetCommentVisibility(TestCaseWithFactory):
     """Tests who can successfully set comment visibility."""
