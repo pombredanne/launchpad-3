@@ -1332,7 +1332,8 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
                 field.description = (
                     field.description.replace('pillar', 'project'))
                 usage_field.field = field
-                if (self.usage_fieldname == 'answers_usage' and
+                if (self.usage_fieldname in
+                    ('answers_usage', 'translations_usage') and
                     self.context.information_type in
                     PROPRIETARY_INFORMATION_TYPES):
                     values = usage_field.field.vocabulary.items
