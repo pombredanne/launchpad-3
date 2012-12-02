@@ -265,22 +265,22 @@ block-them-too.
     >>> for spec in efourx.dependencies: print spec.name
     svg-support
 
-    >>> for spec in efourx.all_deps: print spec.name
+    >>> for spec in efourx.all_deps(): print spec.name
     svg-support
 
     >>> for spec in efourx.blocked_specs: print spec.name
     canvas
 
-    >>> for spec in efourx.all_blocked: print spec.name
+    >>> for spec in efourx.all_blocked(): print spec.name
     canvas
 
     >>> canvas = efourx.blocked_specs[0]
     >>> svg = efourx.dependencies[0]
-    >>> for spec in svg.all_blocked: print spec.name
+    >>> for spec in svg.all_blocked(): print spec.name
     canvas
     e4x
 
-    >>> for spec in canvas.all_deps: print spec.name
+    >>> for spec in canvas.all_deps(): print spec.name
     e4x
     svg-support
 

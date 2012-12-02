@@ -89,8 +89,8 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessArtifactGrantSource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -822,24 +822,52 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    @property
-    def all_deps(self):
-        return Store.of(self).with_(
+    def all_deps(self, user=None):
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,
+                )
+
+        results = Store.of(self).with_(
             SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)')
+            SQL('Specification.id in (select id from dependencies)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
 
-    @property
-    def all_blocked(self):
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
+
+    def all_blocked(self, user=None):
         """See `ISpecification`."""
-        return Store.of(self).with_(
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,
+                )
+
+        results = Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)')
+            SQL('Specification.id in (select id from blocked)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
+
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
 
     # branches
     def getBranchLink(self, branch):
