@@ -406,6 +406,8 @@ class PillarPersonSharingView(LaunchpadView):
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
         bug_data = self._build_bug_template_data(self.bugtasks, request)
+        spec_data = self._build_specification_template_data(
+            self.specifications, request)
         grantee_data = {
             'displayname': self.person.displayname,
             'self_link': absoluteURL(self.person, request)
@@ -417,6 +419,7 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
+        cache.objects['specifications'] = spec_data
 
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
@@ -427,6 +430,18 @@ class PillarPersonSharingView(LaunchpadView):
         bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])
         self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
+        self.shared_specifications_count = len(self.specifications)
+
+    def _build_specification_template_data(self, specs, request):
+        spec_data = []
+        for spec in specs:
+            spec_data.append(dict(
+                self_link=absoluteURL(spec, request),
+                web_link=canonical_url(spec, path_only_if_possible=True),
+                name=spec.name,
+                id=spec.id,
+                information_type=spec.information_type.title))
+        return spec_data
 
     def _build_branch_template_data(self, branches, request):
         branch_data = []

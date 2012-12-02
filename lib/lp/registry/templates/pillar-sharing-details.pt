@@ -24,11 +24,14 @@
 
 <body>
   <div metal:fill-slot="main">
+
     <div id="observer-summary">
       <p>
-      <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs and
-      <tal:branches replace="view/shared_branches_count">0</tal:branches>
-      branches shared with <tal:name replace="view/person/displayname">
+      <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs,
+      <tal:branches replace="view/shared_branches_count">0</tal:branches> branches,
+      and  <tal:specifications
+      replace="view/shared_specifications_count">0</tal:specifications>
+      specifications shared with <tal:name replace="view/person/displayname">
       grantee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
@@ -45,7 +48,7 @@
       <thead>
         <tr>
           <th colspan="2" width="">
-            Subscribed Bug Report or Branch
+            Subscribed Bug Report, Branch, or Blueprint
           </th>
           <th>
             Information Type
@@ -55,7 +58,7 @@
       <tbody id="sharing-table-body">
           <tr>
               <td colspan="3">
-                  There are no shared bugs or branches.
+                  There are no shared bugs, branches, or blueprints.
               </td>
           </tr>
       </tbody>
