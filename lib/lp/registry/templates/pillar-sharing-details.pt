@@ -48,7 +48,7 @@
       <thead>
         <tr>
           <th colspan="2" width="">
-            Subscribed Bug Report, Branch, or Specification
+            Subscribed Bug Report, Branch, or Blueprint
           </th>
           <th>
             Information Type
@@ -58,7 +58,7 @@
       <tbody id="sharing-table-body">
           <tr>
               <td colspan="3">
-                  There are no shared bugs, branches, or specifications.
+                  There are no shared bugs, branches, or blueprints.
               </td>
           </tr>
       </tbody>
