@@ -29,6 +29,7 @@ from lp.services.webapp import (
     canonical_url,
     urlparse,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
@@ -77,7 +78,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         """
         if spec is None or spec == self.context:
             return False
-        return spec not in set(self.context.all_blocked)
+        user = getattr(getUtility(ILaunchBag), 'user', None)
+        return spec not in set(self.context.all_blocked(user=user))
 
     def _order_by(self):
         """Look at the context to provide grouping.
