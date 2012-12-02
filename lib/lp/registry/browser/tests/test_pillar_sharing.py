@@ -161,7 +161,7 @@ class PillarSharingDetailsMixin:
             pillarperson.pillar.name, pillarperson.person.name)
         browser = self.getUserBrowser(user=self.owner, url=url)
         self.assertIn(
-            'There are no shared bugs or branches.', browser.contents)
+            'There are no shared bugs, branches, or specifications.', browser.contents)
 
     def test_init_works(self):
         # The view works with a feature flag.

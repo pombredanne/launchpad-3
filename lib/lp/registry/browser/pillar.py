@@ -389,7 +389,6 @@ class PillarSharingView(LaunchpadView):
 
 class PillarPersonSharingView(LaunchpadView):
 
-
     page_title = "Person or team"
     label = "Information shared with person or team"
 
@@ -431,6 +430,7 @@ class PillarPersonSharingView(LaunchpadView):
         bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])
         self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
+        self.shared_specifications_count = len(self.specifications)
 
     def _build_specification_template_data(self, specs, request):
         spec_data = []

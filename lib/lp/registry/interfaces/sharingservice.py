@@ -308,7 +308,9 @@ class ISharingService(IService):
         bugs=List(
             Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
-            Reference(schema=IBranch), title=_('Branches'), required=False))
+            Reference(schema=IBranch), title=_('Branches'), required=False),
+        specifications=List(
+            Reference(schema=ISpecification), title=_('Specifications'), required=False))
     @operation_for_version('devel')
     def revokeAccessGrants(pillar, grantee, user, branches=None, bugs=None,
                            specifications=None):

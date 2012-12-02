@@ -715,7 +715,6 @@ class SharingService:
     def revokeAccessGrants(self, pillar, grantee, user, branches=None,
                            bugs=None, specifications=None):
         """See `ISharingService`."""
-
         if not branches and not bugs and not specifications:
             raise ValueError(
                 "Either bugs, branches or specifications must be specified")
