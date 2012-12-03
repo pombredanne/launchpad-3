@@ -70,6 +70,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.bulk import (
@@ -1005,6 +1006,24 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
+class TeamMembershipPruner(BulkPruner):
+    """Remove team memberships for merged people.
+
+    People merge can leave team membership records behind because:
+        * The membership duplicates another membership.
+        * The membership would have created a cyclic relationshop.
+        * The operation avoid a race condition.
+    """
+    target_table_class = TeamMembership
+    ids_to_prune_query = """
+        SELECT TeamMembership.id
+        FROM TeamMembership, Person
+        WHERE
+            TeamMembership.person = person.id
+            AND person.merged IS NOT NULL
+        """
+
+
 class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
@@ -1632,6 +1651,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ScrubPOFileTranslator,
         ProductInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
+        TeamMembershipPruner,
         POTranslationPruner,
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
