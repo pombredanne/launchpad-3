@@ -161,7 +161,8 @@ class PillarSharingDetailsMixin:
             pillarperson.pillar.name, pillarperson.person.name)
         browser = self.getUserBrowser(user=self.owner, url=url)
         self.assertIn(
-            'There are no shared bugs, branches, or blueprints.', browser.contents)
+            'There are no shared bugs, branches, or blueprints.',
+            browser.contents)
 
     def test_init_works(self):
         # The view works with a feature flag.
@@ -334,6 +335,30 @@ class PillarSharingViewTestMixin:
             ['Private Security', 'Private'],
             cache.objects.get('invisible_information_types'))
 
+    def run_sharing_message_test(self, pillar, owner, public):
+        with person_logged_in(owner):
+            public_pillar_sharing_info = (
+                "Everyone can see %s's public information."
+                % pillar.displayname)
+            url = canonical_url(pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=owner)
+        browser.open(url)
+        if public:
+            self.assertTrue(public_pillar_sharing_info in browser.contents)
+            self.assertFalse(
+                "This project has no public information." in browser.contents)
+        else:
+            self.assertFalse(public_pillar_sharing_info in browser.contents)
+            self.assertTrue(
+                "This project has no public information." in browser.contents)
+
+    def test_who_its_shared_with__public_pillar(self):
+        # For public projects and distributions, the sharing page
+        # shows the message "Everyone can see project's public
+        # information".
+        self.run_sharing_message_test(
+            self.pillar, self.pillar.owner, public=True)
+
 
 class TestProductSharingView(PillarSharingViewTestMixin,
                                  SharingBaseTestCase):
@@ -373,6 +398,12 @@ class TestProductSharingView(PillarSharingViewTestMixin,
             'p', {'id': 'non-commercial-project-text'})
         self.assertIsNotNone(commercial_text)
         self.assertIsNone(non_commercial_text)
+
+    def test_who_its_shared_with__proprietary_product(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        self.run_sharing_message_test(product, owner, public=False)
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
