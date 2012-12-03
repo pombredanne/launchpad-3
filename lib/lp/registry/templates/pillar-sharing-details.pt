@@ -31,7 +31,7 @@
       <tal:branches replace="view/shared_branches_count">0</tal:branches> branches,
       and  <tal:specifications
       replace="view/shared_specifications_count">0</tal:specifications>
-      specifications shared with <tal:name replace="view/person/displayname">
+      blueprints shared with <tal:name replace="view/person/displayname">
       grantee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
