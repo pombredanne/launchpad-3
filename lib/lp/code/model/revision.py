@@ -143,6 +143,8 @@ class Revision(SQLBase):
             karma_date = min(self.revision_date, self.date_created)
             karma = branch.target.assignKarma(
                 author, 'revisionadded', karma_date)
+            # XXX sinzui 2012-12-03: Always set karma_allocated to True
+            # so that Lp does not reprocess junk and invalid user branches.
             if karma is not None:
                 self.karma_allocated = True
             return karma
@@ -461,6 +463,8 @@ class RevisionSet:
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
 
+        # XXX sinzui 2012-12-03: Return revisions where karma_allocated
+        # IS FALSE is faster.
         store = IStore(Revision)
         results_with_dupes = store.find(
             Revision,
