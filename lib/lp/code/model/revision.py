@@ -32,7 +32,6 @@ from storm.expr import (
     Asc,
     Desc,
     Join,
-    Not,
     Or,
     Select,
     )
@@ -60,7 +59,6 @@ from lp.code.interfaces.revision import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.model.person import ValidPersonCache
 from lp.services.database.bulk import create
 from lp.services.database.constants import (
     DEFAULT,
@@ -458,25 +456,11 @@ class RevisionSet:
     @staticmethod
     def getRevisionsNeedingKarmaAllocated(limit=None):
         """See `IRevisionSet`."""
-        # Here to stop circular imports.
-        from lp.code.model.branch import Branch
-        from lp.code.model.branchrevision import BranchRevision
-
-        # XXX sinzui 2012-12-03: Return revisions where karma_allocated
-        # IS FALSE is faster.
         store = IStore(Revision)
-        results_with_dupes = store.find(
+        results = store.find(
             Revision,
-            Revision.revision_author == RevisionAuthor.id,
-            RevisionAuthor.person == ValidPersonCache.id,
-            Not(Revision.karma_allocated),
-            BranchRevision.revision == Revision.id,
-            BranchRevision.branch == Branch.id,
-            Or(Branch.product != None, Branch.distroseries != None))[:limit]
-        # Eliminate duplicate rows, returning <= limit rows
-        return store.find(
-            Revision, Revision.id.is_in(
-                results_with_dupes.get_select_expr(Revision.id)))
+            Revision.karma_allocated is False)[:limit]
+        return results
 
     @staticmethod
     def getPublicRevisionsForPerson(person, day_limit=30):
