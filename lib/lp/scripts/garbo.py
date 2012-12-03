@@ -1603,7 +1603,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        ProductInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnlinkedAccountPruner,
