@@ -28,7 +28,6 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
-from lp.scripts.garbo import RevisionAuthorEmailLinker
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -36,7 +35,6 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
-from lp.services.log.logger import DevNullLogger
 from lp.testing import (
     login,
     logout,
