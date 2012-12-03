@@ -130,6 +130,9 @@ class Revision(SQLBase):
 
     def allocateKarma(self, branch):
         """See `IRevision`."""
+        # Always set karma_allocated to True so that Lp does not reprocess
+        # junk and invalid user branches because they do not get karma.
+        self.karma_allocated = True
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
         if author is not None:
@@ -143,10 +146,6 @@ class Revision(SQLBase):
             karma_date = min(self.revision_date, self.date_created)
             karma = branch.target.assignKarma(
                 author, 'revisionadded', karma_date)
-            # XXX sinzui 2012-12-03: Always set karma_allocated to True
-            # so that Lp does not reprocess junk and invalid user branches.
-            if karma is not None:
-                self.karma_allocated = True
             return karma
         else:
             return None
