@@ -1148,24 +1148,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
 
-    def test_ProductInformationTypeDefault(self):
-        switch_dbuser('testadmin')
-        # Set all existing projects to something other than None or 1.
-        store = IMasterStore(Product)
-        store.execute(Update(
-            {Product._information_type: 2}))
-        store.flush()
-        # Make a new product without an information_type.
-        product = self.factory.makeProduct()
-        store.execute(Update(
-            {Product._information_type: None}, Product.id == product.id))
-        store.flush()
-        self.assertEqual(1, store.find(Product,
-            Product._information_type == None).count())
-        self.runDaily()
-        self.assertEqual(0, store.find(Product,
-            Product._information_type == None).count())
-
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
