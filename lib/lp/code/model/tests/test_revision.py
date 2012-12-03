@@ -82,12 +82,12 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_revisionWithUnknownEmail(self):
         # A revision when created does not have karma allocated.
         rev = self.factory.makeRevision()
-        self.failIf(rev.karma_allocated)
+        self.assertFalse(rev.karma_allocated)
         # Even if the revision author is someone we know.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        self.failIf(rev.karma_allocated)
+        self.assertFalse(rev.karma_allocated)
 
     def test_noKarmaForUnknownAuthor(self):
         # If the revision author is unknown, karma isn't allocated.
