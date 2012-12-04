@@ -622,6 +622,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             'addSubscription', 'removeBugSubscription',
             )),
         'launchpad.Edit': set(('newMilestone', )),
+        'launchpad.LimitedView': set(('name', 'product', 'productID')),
         'launchpad.View': set((
             '_all_specifications', '_getOfficialTagClause',
             '_valid_specifications', 'active', 'all_milestones',
@@ -650,10 +651,10 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             'has_obsolete_translation_templates',
             'has_sharing_translation_templates', 'has_translation_files',
             'has_translation_templates', 'is_development_focus', 'milestones',
-            'name', 'official_bug_tags', 'owner', 'packagings', 'parent',
+            'official_bug_tags', 'owner', 'packagings', 'parent',
             'parent_subscription_target',
-            'personHasDriverRights', 'pillar', 'potemplate_count', 'product',
-            'productID', 'productserieslanguages', 'release_files',
+            'personHasDriverRights', 'pillar', 'potemplate_count',
+            'productserieslanguages', 'release_files',
             'releasefileglob', 'releases', 'releaseverstyle', 'searchTasks',
             'series', 'setPackaging', 'sourcepackages', 'specifications',
             'status', 'summary', 'target_type_display', 'title',
@@ -733,9 +734,13 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_series)
 
             # They have access to attributes requiring the permission
-            # launchpad.View of a series for a public product...
+            # launchpad.Viewand launchpad.LimitedView of a series for a
+            # public product...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
                 self.public_series)
 
             # ...but not to the same attributes of a series for s private
@@ -743,11 +748,15 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_series)
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
 
             # The cannot access other attributes of a series for
             # public and private products.
             for permission, names in self.expected_get_permissions.items():
-                if permission in (CheckerPublic, 'launchpad.View'):
+                if permission in (CheckerPublic, 'launchpad.LimitedView',
+                                  'launchpad.View'):
                     continue
                 self.assertAccessUnauthorized(names, self.public_series)
                 self.assertAccessUnauthorized(names, self.proprietary_series)
@@ -770,10 +779,13 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_series)
 
             # They have access to attributes requiring the permissions
-            # launchpad.View and launchpadAnyAllowedPerson of a series
-            # for a public product...
+            # launchpad.View, launchpad.LimitedView and
+            # launchpadAnyAllowedPerson of a series for a public product...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
                 self.public_series)
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
@@ -785,13 +797,17 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_series)
             self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+            self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
                 self.proprietary_series)
 
             # The cannot access other attributes of a series for
             # public and private products.
             for permission, names in self.expected_get_permissions.items():
-                if permission in (CheckerPublic, 'launchpad.View',
+                if permission in (CheckerPublic, 'launchpad.LimitedView',
+                                  'launchpad.View',
                                   'launchpad.AnyAllowedPerson'):
                     continue
                 self.assertAccessUnauthorized(names, self.public_series)
@@ -817,14 +833,17 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
 
     def test_access_for_user_with_policy_grant(self):
         # Users with a policy grant for the parent product can access
-        # properties requring the permission lanchpad.View or
-        # launchpad.ANyALlowedPerson of a series.
+        # properties requring the permission launchpad.LimitedView,
+        # launchpad.View or launchpad.AnyALlowedPerson of a series.
         user = self.factory.makePerson()
         with person_logged_in(self.proprietary_product_owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 self.proprietary_product, user, self.proprietary_product_owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
         with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_series)
@@ -836,6 +855,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             # private products.
             for permission, names in self.expected_get_permissions.items():
                 if permission in (CheckerPublic, 'launchpad.View',
+                                  'launchpad.LimitedView',
                                   'launchpad.AnyAllowedPerson'):
                     continue
                 self.assertAccessUnauthorized(names, self.proprietary_series)
@@ -851,6 +871,33 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             for permission, names in self.expected_set_permissions.items():
                 if permission == 'launchpad.AnyAllowedPerson':
                     continue
+                self.assertChangeUnauthorized(names, self.proprietary_series)
+
+    def test_access_for_user_with_artifact_grant(self):
+        # Users with an artifact grant related to the parent product
+        # can access properties requring the permission launchpad.LimitedView
+        # of a series.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            bug = self.factory.makeBug(
+                target=self.proprietary_product,
+                owner=self.proprietary_product_owner)
+            bug.subscribe(user, subscribed_by=self.proprietary_product_owner)
+
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+
+            # The cannot access other attributes of a series for
+            # private products.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.LimitedView'):
+                    continue
+                self.assertAccessUnauthorized(names, self.proprietary_series)
+
+            # They cannot change any attributes.
+            for permission, names in self.expected_set_permissions.items():
                 self.assertChangeUnauthorized(names, self.proprietary_series)
 
     def test_access_for_product_owner(self):
