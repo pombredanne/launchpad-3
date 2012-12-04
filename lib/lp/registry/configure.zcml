@@ -1035,20 +1035,24 @@
                 bugtasks
                 code_name
                 dateexpected
-                displayname
                 distribution
                 distroseries
                 getSpecifications
                 getTags
                 getTagsData
-                name
                 product
                 product_release
                 productseries
                 series_target
                 summary
-                target
                 title
+                "/>
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                displayname
+                name
+                target
                 "/>
         <require
             permission="launchpad.Edit"

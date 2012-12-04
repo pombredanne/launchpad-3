@@ -761,6 +761,15 @@ class EditProjectMilestoneNever(AuthorizationBase):
         return False
 
 
+class LimitedViewMilestone(DelegatedAuthorization):
+    permission = 'launchpad.LimitedView'
+    usedfor = IMilestone
+
+    def __init__(self, obj):
+        super(LimitedViewMilestone, self).__init__(
+            obj, obj.target, 'launchpad.LimitedView')
+
+
 class ViewMilestone(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IMilestone

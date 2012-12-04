@@ -21,7 +21,6 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
-    BugSharingPolicy,
     SharingPermission,
     SpecificationSharingPolicy,
     )
@@ -137,16 +136,17 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'id', 'checkAuthenticated', 'checkUnauthenticated',
             'userCanView',
             )),
+        'launchpad.LimitedView': set(('displayname', 'name', 'target', )),
         'launchpad.View': set((
             'active', 'bug_subscriptions', 'bugtasks', 'code_name',
-            'dateexpected', 'displayname', 'distribution', 'distroseries',
+            'dateexpected', 'distribution', 'distroseries',
             '_getOfficialTagClause', 'getBugSummaryContextWhereClause',
             'getBugTaskWeightFunction', 'getSpecifications',
             'getSubscription', 'getSubscriptions', 'getTags', 'getTagsData',
-            'getUsedBugTagsWithOpenCounts', 'name', 'official_bug_tags',
+            'getUsedBugTagsWithOpenCounts', 'official_bug_tags',
             'parent_subscription_target', 'product', 'product_release',
             'productseries', 'searchTasks', 'series_target',
-            'summary', 'target', 'target_type_display', 'title',
+            'summary', 'target_type_display', 'title',
             'userCanAlterBugSubscription', 'userCanAlterSubscription',
             'userHasBugSubscriptions',
             )),
@@ -232,9 +232,13 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
-            # launchpad.View of milestones for public products...
+            # launchpad.View or launchpad.View of milestones for public
+            # products...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
+                self.public_milestone)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
                 self.public_milestone)
 
             # ...but not to the same attributes of milestones for private
@@ -242,10 +246,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_milestone)
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_milestone)
 
             # They cannot access other attributes.
             for permission, names in self.expected_get_permissions.items():
-                if permission in (CheckerPublic, 'launchpad.View'):
+                if permission in (CheckerPublic, 'launchpad.View',
+                                  'launchpad.LimitedView'):
                     continue
                 self.assertAccessUnauthorized(names, self.public_milestone)
                 self.assertAccessUnauthorized(
@@ -270,10 +278,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
-            # launchpad.View or launchpad.AnyAllowedPerson of milestones
-            # for public products...
+            # launchpad.View, launchpad.LimitedView or
+            # launchpad.AnyAllowedPerson of milestones for public
+            # products...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
+                self.public_milestone)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
                 self.public_milestone)
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
@@ -285,13 +297,16 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.expected_get_permissions['launchpad.View'],
                 self.proprietary_milestone)
             self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_milestone)
+            self.assertAccessUnauthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
                 self.proprietary_milestone)
 
             # They cannot access other attributes.
             for permission, names in self.expected_get_permissions.items():
                 if permission in (
-                    CheckerPublic, 'launchpad.View',
+                    CheckerPublic, 'launchpad.View', 'launchpad.LimitedView',
                     'launchpad.AnyAllowedPerson'):
                     continue
                 self.assertAccessUnauthorized(names, self.public_milestone)
@@ -309,6 +324,42 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
         # to most attributes of the private product.
         user = self.factory.makePerson()
         with person_logged_in(self.proprietary_product_owner):
+            bug = self.factory.makeBug(
+                target=self.proprietary_product,
+                owner=self.proprietary_product_owner)
+            bug.subscribe(user, subscribed_by=self.proprietary_product_owner)
+
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_milestone)
+
+            # They have access to attributes requiring the permission
+            # launchpad.LimitedView of milestones for the private
+            # product.
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_milestone)
+
+            # They cannot access other attributes.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (
+                    CheckerPublic, 'launchpad.LimitedView'):
+                    continue
+                self.assertAccessUnauthorized(
+                    names, self.proprietary_milestone)
+
+            # They cannot change attributes.
+            for names in self.expected_set_permissions.values():
+                self.assertChangeUnauthorized(
+                    names, self.proprietary_milestone)
+
+    def test_access_for_user_with_artifact_grant_for_private_product(self):
+        # Users with an artifact grant for a private product have access
+        # to attributes requiring the permission launchpad.LimitedView of
+        # milestones for the private product.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 self.proprietary_product, user, self.proprietary_product_owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
@@ -319,10 +370,14 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
-            # launchpad.View or launchpad.AnyAllowedPerson of milestones
-            # for the private product.
+            # launchpad.View, launchpad.LimitedView or
+            # launchpad.AnyAllowedPerson of milestones for the private
+            # product.
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
+                self.proprietary_milestone)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
                 self.proprietary_milestone)
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.AnyAllowedPerson'],
@@ -331,7 +386,7 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             # They cannot access other attributes.
             for permission, names in self.expected_get_permissions.items():
                 if permission in (
-                    CheckerPublic, 'launchpad.View',
+                    CheckerPublic, 'launchpad.View', 'launchpad.LimitedView',
                     'launchpad.AnyAllowedPerson'):
                     continue
                 self.assertAccessUnauthorized(
