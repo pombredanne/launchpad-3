@@ -30,6 +30,15 @@ from lp.services.identity.interfaces.account import (
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
+class AccountStatusEnumCol(EnumCol):
+
+    def __set__(self, obj, value):
+        if self.__get__(obj) == value:
+            return
+        IAccount['status'].bind(obj)._validate(value)
+        super(AccountStatusEnumCol, self).__set__(obj, value)
+
+
 class Account(SQLBase):
     """An Account."""
 
@@ -42,25 +51,13 @@ class Account(SQLBase):
     creation_rationale = EnumCol(
         dbName='creation_rationale', schema=AccountCreationRationale,
         notNull=True)
-    _status = EnumCol(
-        dbName='status',
+    status = AccountStatusEnumCol(
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifiers = ReferenceSet(
         "Account.id", OpenIdIdentifier.account_id)
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter  # pyflakes:ignore
-    def status(self, value):
-        if self._status == value:
-            return
-        IAccount['status'].bind(self)._validate(value)
-        self._status = value
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
