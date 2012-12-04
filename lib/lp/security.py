@@ -156,6 +156,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesLimitedView,
     IProductSeriesView,
     ITimelineProductSeries,
     )
@@ -1317,6 +1318,15 @@ class DriveProduct(SeriesDrivers):
             super(DriveProduct, self).checkAuthenticated(user)
             or is_commercial_case(self.obj, user)
             or False)
+
+
+class LimitedViewProductSeries(DelegatedAuthorization):
+    permission = 'launchpad.LimitedView'
+    usedfor = IProductSeriesLimitedView
+
+    def __init__(self, obj):
+        super(LimitedViewProductSeries, self).__init__(
+            obj, obj.product, 'launchpad.LimitedView')
 
 
 class ViewProductSeries(AuthorizationBase):

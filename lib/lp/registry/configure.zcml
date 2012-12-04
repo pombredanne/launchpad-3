@@ -1565,6 +1565,9 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.productseries.IProductSeriesLimitedView"/>
+        <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
         <require
