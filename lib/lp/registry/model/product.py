@@ -442,11 +442,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         name='remote_product', allow_none=True, default=None)
 
     @property
-    def private(self):
-        """See `IProductPublic`"""
-        return self.information_type in PRIVATE_INFORMATION_TYPES
-
-    @property
     def date_next_suggest_packaging(self):
         """See `IProduct`
 
