@@ -226,7 +226,9 @@ class AccountStatusChoice(Choice):
         return value in self.transitions[self.context.status]
 
     def _validate(self, value):
-        """Ensure the value is valid transition for current AccountStatus.
+        """See `IField`.
+
+        Ensure the value is a valid transition for current AccountStatus.
 
         :raises AccountStatusError: When self.constraint() returns False.
         """
