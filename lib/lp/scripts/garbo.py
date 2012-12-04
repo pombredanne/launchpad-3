@@ -70,6 +70,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.bulk import (
@@ -1005,6 +1006,24 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
+class TeamMembershipPruner(BulkPruner):
+    """Remove team memberships for merged people.
+
+    People merge can leave team membership records behind because:
+        * The membership duplicates another membership.
+        * The membership would have created a cyclic relationshop.
+        * The operation avoid a race condition.
+    """
+    target_table_class = TeamMembership
+    ids_to_prune_query = """
+        SELECT TeamMembership.id
+        FROM TeamMembership, Person
+        WHERE
+            TeamMembership.person = person.id
+            AND person.merged IS NOT NULL
+        """
+
+
 class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
@@ -1185,33 +1204,6 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
                 % ONE_DAY_IN_SECONDS)).remove()
         transaction.commit()
         self._update_oldest()
-
-
-class ProductInformationTypeDefault(TunableLoop):
-    """Set all Product.information_type to Public."""
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(ProductInformationTypeDefault, self).__init__(
-            log, abort_time)
-        self.rows_updated = None
-        self.store = IMasterStore(Product)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.rows_updated == 0
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        subselect = Select(
-            Product.id, Product._information_type == None,
-            limit=chunk_size)
-        result = self.store.execute(
-            Update({Product._information_type: 1},
-            Product.id.is_in(subselect)))
-        transaction.commit()
-        self.rows_updated = result.rowcount
 
 
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
@@ -1630,8 +1622,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        ProductInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
+        TeamMembershipPruner,
         POTranslationPruner,
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,

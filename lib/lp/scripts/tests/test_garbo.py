@@ -61,8 +61,10 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamMembership
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -739,6 +741,25 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
 
+    def test_TeamMembershipPruner(self):
+        # Garbo should remove team memberships for meregd users and teams.
+        switch_dbuser('testadmin')
+        merged_user = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[merged_user])
+        merged_team = self.factory.makeTeam()
+        team.addMember(
+            merged_team, team.teamowner, status=TeamMembershipStatus.PROPOSED)
+        # This is fast and dirty way to place the user and team in a
+        # merged state to verify what the TeamMembershipPruner sees.
+        removeSecurityProxy(merged_user).merged = self.factory.makePerson()
+        removeSecurityProxy(merged_team).merged = self.factory.makeTeam()
+        store = Store.of(team)
+        store.flush()
+        result = store.find(TeamMembership, TeamMembership.team == team.id)
+        self.assertEqual(3, result.count())
+        self.runDaily()
+        self.assertContentEqual([team.teamowner], [tm.person for tm in result])
+
     def test_BugNotificationPruner(self):
         # Create some sample data
         switch_dbuser('testadmin')
@@ -1147,24 +1168,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
-
-    def test_ProductInformationTypeDefault(self):
-        switch_dbuser('testadmin')
-        # Set all existing projects to something other than None or 1.
-        store = IMasterStore(Product)
-        store.execute(Update(
-            {Product._information_type: 2}))
-        store.flush()
-        # Make a new product without an information_type.
-        product = self.factory.makeProduct()
-        store.execute(Update(
-            {Product._information_type: None}, Product.id == product.id))
-        store.flush()
-        self.assertEqual(1, store.find(Product,
-            Product._information_type == None).count())
-        self.runDaily()
-        self.assertEqual(0, store.find(Product,
-            Product._information_type == None).count())
 
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')

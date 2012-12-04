@@ -27,12 +27,16 @@ SpecGraph to keep track of the nodes that have been added.
     ...         self.title = title or name
     ...         self.is_complete = is_complete
     ...         self.assignee = assignee
-    ...         # Use lists here to ensure that the code converts them
-    ...         # to sets explicitly, like it has to do for SelectResults.
-    ...         self.dependencies = []
-    ...         # This is a hack for testing: we can set up dependencies,
-    ...         # and simply use their "mirror image" for blocked specs.
-    ...         self.blocked_specs = self.dependencies
+    ...         # For purposes of this doc, we're only stubbing the
+    ...         # dependency methods.
+    ...         self._all_deps = []
+    ...         self._all_blocked = self._all_deps
+    ...
+    ...     def all_deps(self, user):
+    ...         return self._all_deps
+    ...
+    ...     def all_blocked(self, user):
+    ...         return self._all_blocked
 
     >>> foo = Spec('foo', title='something with " and \n in it')
     >>> root = g.newNode(foo, root=True)
@@ -70,16 +74,16 @@ don't want a link to the spec we're currently looking at.
     <fnord-foo>:
 
     >>> foo1 = Spec('foo1')
-    >>> foo.dependencies.append(foo1)
+    >>> foo._all_deps.append(foo1)
     >>> foo2 = Spec('foo2')
-    >>> foo.dependencies.append(foo2)
+    >>> foo._all_deps.append(foo2)
     >>> foo11 = Spec('foo11')
-    >>> foo1.dependencies.append(foo11)
+    >>> foo1._all_deps.append(foo11)
     >>> foo111 = Spec('foo111')
-    >>> foo11.dependencies.append(foo111)
+    >>> foo11._all_deps.append(foo111)
 
     >>> def make_graph(dependency, blocked):
-    ...     g = SpecGraph()
+    ...     g = SpecGraph(user=None)
     ...     g.url_pattern_for_testing = 'http://whatever/%s'
     ...     g.newNode(foo, root=True)
     ...     if dependency:
@@ -175,11 +179,11 @@ don't want a link to the spec we're currently looking at.
 
 The graph grows when specifications gain more dependencies.
 
-    >>> foo1.dependencies.append(foo)
-    >>> foo111.dependencies.append(foo1)
-    >>> foo111.dependencies.append(foo)
-    >>> foo2.dependencies.append(foo1)
-    >>> foo1.dependencies.append(foo2)
+    >>> foo1._all_deps.append(foo)
+    >>> foo111._all_deps.append(foo1)
+    >>> foo111._all_deps.append(foo)
+    >>> foo2._all_deps.append(foo1)
+    >>> foo1._all_deps.append(foo2)
     >>> print_graph()
     Root is <fnord-foo>
     <fnord-foo>:

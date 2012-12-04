@@ -53,18 +53,18 @@ class TestSpecificationDependencies(TestCaseWithFactory):
     def test_no_deps(self):
         blueprint = self.factory.makeBlueprint()
         self.assertThat(list(blueprint.dependencies), Equals([]))
-        self.assertThat(list(blueprint.all_deps), Equals([]))
+        self.assertThat(list(blueprint.all_deps()), Equals([]))
         self.assertThat(list(blueprint.blocked_specs), Equals([]))
-        self.assertThat(list(blueprint.all_blocked), Equals([]))
+        self.assertThat(list(blueprint.all_blocked()), Equals([]))
 
     def test_single_dependency(self):
         do_first = self.factory.makeBlueprint()
         do_next = self.factory.makeBlueprint()
         do_next.createDependency(do_first)
         self.assertThat(list(do_first.blocked_specs), Equals([do_next]))
-        self.assertThat(list(do_first.all_blocked), Equals([do_next]))
+        self.assertThat(list(do_first.all_blocked()), Equals([do_next]))
         self.assertThat(list(do_next.dependencies), Equals([do_first]))
-        self.assertThat(list(do_next.all_deps), Equals([do_first]))
+        self.assertThat(list(do_next.all_deps()), Equals([do_first]))
 
     def test_linear_dependency(self):
         do_first = self.factory.makeBlueprint()
@@ -74,11 +74,11 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_last.createDependency(do_next)
         self.assertThat(sorted(do_first.blocked_specs), Equals([do_next]))
         self.assertThat(
-            sorted(do_first.all_blocked),
+            sorted(do_first.all_blocked()),
             Equals(sorted([do_next, do_last])))
         self.assertThat(sorted(do_last.dependencies), Equals([do_next]))
         self.assertThat(
-            sorted(do_last.all_deps),
+            sorted(do_last.all_deps()),
             Equals(sorted([do_first, do_next])))
 
     def test_diamond_dependency(self):
@@ -99,14 +99,61 @@ class TestSpecificationDependencies(TestCaseWithFactory):
             sorted(do_first.blocked_specs),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_first.all_blocked),
+            sorted(do_first.all_blocked()),
             Equals(sorted([do_next_lhs, do_next_rhs, do_last])))
         self.assertThat(
             sorted(do_last.dependencies),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_last.all_deps),
+            sorted(do_last.all_deps()),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
+
+    def test_all_deps_filters(self):
+        # all_deps, when provided a user, shows only the dependencies the user
+        # can see.
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product)
+        proprietary_dep = self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_dep = self.factory.makeBlueprint(product=product)
+        root.createDependency(proprietary_dep)
+        root.createDependency(public_dep)
+        # Anonymous (no user) requests only get public dependencies
+        self.assertEqual([public_dep], root.all_deps())
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [proprietary_dep, public_dep], root.all_deps(user=owner))
+        # A random person can't see the proprietary dependency.
+        self.assertEqual(
+            [public_dep], root.all_deps(user=self.factory.makePerson()))
+
+    def test_all_blocked_filters(self):
+        # all_blocked, when provided a user, shows only the blocked specs the
+        # user can see.
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product)
+        proprietary_blocked = self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_blocked = self.factory.makeBlueprint(product=product)
+        proprietary_blocked.createDependency(root)
+        public_blocked.createDependency(root)
+        # Anonymous (no user) requests only get public blocked specs.
+        self.assertEqual(
+            [public_blocked], root.all_blocked())
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [proprietary_blocked, public_blocked],
+            root.all_blocked(user=owner))
+        # A random person can't see the proprietary blocked spec.
+        self.assertEqual(
+            [public_blocked],
+            root.all_blocked(user=self.factory.makePerson()))
 
 
 class TestSpecificationSubscriptionSort(TestCaseWithFactory):

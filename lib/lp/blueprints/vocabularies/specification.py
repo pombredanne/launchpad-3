@@ -50,6 +50,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
+                    user = getattr(launchbag, 'user', None)
+                    if spec in launchbag.specification.all_blocked(user=user):
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
