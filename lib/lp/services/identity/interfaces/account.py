@@ -221,7 +221,7 @@ class AccountStatusChoice(Choice):
     def constraint(self, value):
         """See `IField`."""
         if not IAccount.providedBy(self.context):
-            # This is object is initializing.
+            # This object is initializing.
             return True
         return value in self.transitions[self.context.status]
 
