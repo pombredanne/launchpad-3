@@ -24,6 +24,8 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
+    AccountStatusError,
+    can_transition_to_account_status,
     IAccount,
     IAccountSet,
     )
@@ -42,13 +44,29 @@ class Account(SQLBase):
     creation_rationale = EnumCol(
         dbName='creation_rationale', schema=AccountCreationRationale,
         notNull=True)
-    status = EnumCol(
+    _status = EnumCol(
+        dbName='status',
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifiers = ReferenceSet(
         "Account.id", OpenIdIdentifier.account_id)
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter  # pyflakes:ignore
+    def status(self, value):
+        if self._status == value:
+            return
+        elif can_transition_to_account_status(self._status, value):
+            self._status = value
+        else:
+            raise AccountStatusError(
+                "The status cannot change from %s to %s" %
+                (self._status, value))
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')

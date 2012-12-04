@@ -6,7 +6,15 @@
 __metaclass__ = type
 __all__ = []
 
-from lp.testing import TestCaseWithFactory
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    AccountStatusError,
+    can_transition_to_account_status,
+    )
+from lp.testing import (
+    login_celebrity,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -26,3 +34,18 @@ class TestAccount(TestCaseWithFactory):
         distro = self.factory.makeAccount(u'\u0170-account')
         ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
         self.assertEqual("'\\u0170-account'", displayname)
+
+    def test_status_from_noccount(self):
+        # The status may change from NOACCOUNT to ACTIVE.
+        account = self.factory.makeAccount(status=AccountStatus.NOACCOUNT)
+        login_celebrity('admin')
+        for status in [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]:
+            self.assertFalse(
+                can_transition_to_account_status(account.status, status))
+            self.assertRaises(
+                AccountStatusError, setattr, account, 'status', status)
+        self.assertTrue(
+            can_transition_to_account_status(
+                account.status, AccountStatus.ACTIVE))
+        account.status = AccountStatus.ACTIVE
+        self.assertEqual(AccountStatus.ACTIVE, account.status)

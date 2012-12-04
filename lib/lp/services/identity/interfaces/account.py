@@ -8,8 +8,10 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
+    'AccountStatusError',
     'AccountSuspendedError',
     'AccountCreationRationale',
+    'can_transition_to_account_status',
     'IAccount',
     'IAccountPrivate',
     'IAccountPublic',
@@ -202,6 +204,44 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
+def can_transition_to_account_status(old_value, new_value):
+    transitions = {
+        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
+        AccountStatus.ACTIVE: [
+            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
+        AccountStatus.DEACTIVATED: [AccountStatus.ACTIVE],
+        AccountStatus.SUSPENDED: [AccountStatus.DEACTIVATED],
+        }
+    return new_value in transitions[old_value]
+
+
+class AccountStatusError(ValueError):
+    """The account status cannot change to the proposed status."""
+
+
+class AccountStatusChoice(Choice):
+    """A valid status and transition."""
+
+    def constraint(self, value):
+        """See `IField`."""
+        if not IAccount.providedBy(self.context):
+            # This is object is initializing.
+            return True
+        return can_transition_to_account_status(self.context.status, value)
+
+    def _validate(self, value):
+        """Ensure the AccountStatus is valid transition for current status.
+
+        Returns True if the account can change to the status, otherwise
+        raise AccountStatusError.
+        """
+        if not self.constraint(value):
+            raise AccountStatusError(
+                "The status cannot change from %s to %s" %
+                (self.context.status, value))
+        super(AccountStatusChoice, self)._validate(value)
+
+
 class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -210,7 +250,7 @@ class IAccountPublic(Interface):
         title=_('Display Name'), required=True, readonly=False,
         description=_("Your name as you would like it displayed."))
 
-    status = Choice(
+    status = AccountStatusChoice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
