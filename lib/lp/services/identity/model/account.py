@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for Account and associates."""
@@ -24,8 +24,6 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
-    AccountStatusError,
-    can_transition_to_account_status,
     IAccount,
     IAccountSet,
     )
@@ -61,12 +59,8 @@ class Account(SQLBase):
     def status(self, value):
         if self._status == value:
             return
-        elif can_transition_to_account_status(self._status, value):
-            self._status = value
-        else:
-            raise AccountStatusError(
-                "The status cannot change from %s to %s" %
-                (self._status, value))
+        IAccount['status'].bind(self)._validate(value)
+        self._status = value
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
