@@ -85,11 +85,15 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -640,6 +644,14 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     def has_similar_items(self):
         """Return True if similar FAQs or questions were found."""
         return self.similar_questions or self.similar_faqs
+
+    @property
+    def context_uses_answers(self):
+        """Return True if the context uses launchpad as an answer forum."""
+        if IServiceUsage.providedBy(self.context):
+            return self.context.answers_usage == ServiceUsage.LAUNCHPAD
+        else:
+            return False
 
     @action(_('Continue'))
     def continue_action(self, action, data):
