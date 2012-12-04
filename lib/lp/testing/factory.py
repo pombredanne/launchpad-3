@@ -632,6 +632,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
+        if account_status == AccountStatus.NOACCOUNT:
+            email_address_status = EmailAddressStatus.NEW
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             displayname=displayname,
