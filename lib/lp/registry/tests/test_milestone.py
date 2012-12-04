@@ -232,8 +232,8 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_milestone)
 
             # They have access to attributes requiring the permission
-            # launchpad.View or launchpad.View of milestones for public
-            # products...
+            # launchpad.View or launchpad.LimitedView of milestones for
+            # public products...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
                 self.public_milestone)
