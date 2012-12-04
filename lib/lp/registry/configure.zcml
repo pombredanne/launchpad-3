@@ -1035,20 +1035,24 @@
                 bugtasks
                 code_name
                 dateexpected
-                displayname
                 distribution
                 distroseries
                 getSpecifications
                 getTags
                 getTagsData
-                name
                 product
                 product_release
                 productseries
                 series_target
                 summary
-                target
                 title
+                "/>
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                displayname
+                name
+                target
                 "/>
         <require
             permission="launchpad.Edit"
@@ -1564,6 +1568,9 @@
         class="lp.registry.model.productseries.ProductSeries">
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
+        <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.productseries.IProductSeriesLimitedView"/>
         <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
