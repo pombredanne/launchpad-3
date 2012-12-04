@@ -9,7 +9,7 @@ __all__ = []
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     AccountStatusError,
-    can_transition_to_account_status,
+    IAccount,
     )
 from lp.testing import (
     login_celebrity,
@@ -38,14 +38,14 @@ class TestAccount(TestCaseWithFactory):
     def assertCannotTransition(self, account, statuses):
         for status in statuses:
             self.assertFalse(
-                can_transition_to_account_status(account.status, status))
+                IAccount['status'].bind(account).constraint(status))
             self.assertRaises(
                 AccountStatusError, setattr, account, 'status', status)
 
     def assertCanTransition(self, account, statuses):
         for status in statuses:
             self.assertTrue(
-                can_transition_to_account_status(account.status, status))
+                IAccount['status'].bind(account).constraint(status))
         account.status = status
         self.assertEqual(status, account.status)
 

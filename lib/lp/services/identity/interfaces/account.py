@@ -11,7 +11,6 @@ __all__ = [
     'AccountStatusError',
     'AccountSuspendedError',
     'AccountCreationRationale',
-    'can_transition_to_account_status',
     'IAccount',
     'IAccountPrivate',
     'IAccountPublic',
@@ -204,17 +203,6 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
-def can_transition_to_account_status(old_value, new_value):
-    transitions = {
-        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
-        AccountStatus.ACTIVE: [
-            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
-        AccountStatus.DEACTIVATED: [AccountStatus.ACTIVE],
-        AccountStatus.SUSPENDED: [AccountStatus.DEACTIVATED],
-        }
-    return new_value in transitions[old_value]
-
-
 class AccountStatusError(ValueError):
     """The account status cannot change to the proposed status."""
 
@@ -222,12 +210,20 @@ class AccountStatusError(ValueError):
 class AccountStatusChoice(Choice):
     """A valid status and transition."""
 
+    transitions = {
+        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
+        AccountStatus.ACTIVE: [
+            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
+        AccountStatus.DEACTIVATED: [AccountStatus.ACTIVE],
+        AccountStatus.SUSPENDED: [AccountStatus.DEACTIVATED],
+        }
+
     def constraint(self, value):
         """See `IField`."""
         if not IAccount.providedBy(self.context):
             # This is object is initializing.
             return True
-        return can_transition_to_account_status(self.context.status, value)
+        return value in self.transitions[self.context.status]
 
     def _validate(self, value):
         """Ensure the AccountStatus is valid transition for current status.
