@@ -171,6 +171,15 @@ class TestRevisionKarma(TestCaseWithFactory):
         karma = rev.allocateKarma(branch)
         self.assertIs(None, karma)
 
+    def test_allocateKarma_personal_branch_none(self):
+        # Revisions only associated with junk branches don't get karma,
+        # and the branch may be None because the revision_set does not
+        # attempt to get junk branches.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        karma = rev.allocateKarma(None)
+        self.assertIs(None, karma)
+
     def test_allocateKarma_package_branch(self):
         # A revision on a package branch gets karma.
         author = self.factory.makePerson()
