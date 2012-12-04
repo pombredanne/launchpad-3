@@ -133,7 +133,7 @@ class Revision(SQLBase):
         self.karma_allocated = True
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
-        if author is not None:
+        if author is not None and branch is not None:
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
