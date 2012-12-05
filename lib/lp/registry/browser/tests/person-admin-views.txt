@@ -146,7 +146,7 @@ user must log in to restore the email addresses using the reactivate step.
     >>> print view.errors
     []
     >>> user.account_status
-    <DBItem AccountStatus.ACTIVE, ...>
+    <DBItem AccountStatus.DEACTIVATED, ...>
     >>> print user.account_status_comment
     Zaphod's a hoopy frood.
     >>> print user.preferredemail
