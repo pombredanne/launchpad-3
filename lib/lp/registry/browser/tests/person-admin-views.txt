@@ -1,4 +1,5 @@
-= Person admin pages =
+Person admin pages
+==================
 
 Admistrators can access a subset of any IPerson's fields from the UI.
 The PersonAdministerView is registered under the +review name.
@@ -58,7 +59,8 @@ Non administrators cannot access the +review view
     False
 
 
-== Reviewing a person's account ==
+Reviewing a person's account
+----------------------------
 
 The +reviewaccount allows admins to see and edit user account information.
 Non-admins cannot access it.
@@ -131,6 +133,20 @@ an account is suspended, the preferred email address is disabled.
     Wanted by the galactic police.
     >>> print user.preferredemail
     None
+
+No one can force account status to an invalid transition:
+
+    >>> form = {
+    ...     'field.displayname': 'Zaphod Beeblebrox',
+    ...     'field.status': 'ACTIVE',
+    ...     'field.status_comment': "Zaphod's a hoopy frood.",
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(user, '+reviewaccount', form=form)
+    >>> [e[2] for e in view.errors]
+    [AccountStatusError(u'The status cannot change
+                        from Suspended Launchpad account to Active account')]
+
 
 An admin can deactivate a suspended user's account too. Unlike the act of
 suspension, reactivation does not change the user's email addresses; the
