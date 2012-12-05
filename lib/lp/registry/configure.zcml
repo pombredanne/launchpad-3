@@ -1045,7 +1045,6 @@
                 productseries
                 series_target
                 summary
-                title
                 "/>
         <require
             permission="launchpad.LimitedView"
@@ -1053,6 +1052,7 @@
                 displayname
                 name
                 target
+                title
                 "/>
         <require
             permission="launchpad.Edit"
@@ -1581,7 +1581,7 @@
             permission="launchpad.View"
             interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <require
-            permission="launchpad.View"
+            permission="launchpad.LimitedView"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1596,14 +1596,44 @@
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
-        <!-- IStructuralSubscriptionTarget -->
+        <!-- IStructuralSubscriptionTarget
 
+             Most attributes of IStructuralSubscriptionTargetRead require
+             launchpad.View, some require launchpad.LimitedView -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target"/>
         <require
             permission="launchpad.View"
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
+        <!-- IBugTarget -->
+        <require
+             permission="launchpad.LimitedView"
+             attributes="
+                 bugtargetdisplayname"/>>
+        <require
+             permission="launchpad.View"
+             attributes="
+                 bug_reported_acknowledgement
+                 bug_reporting_guidelines
+                 bugtargetname
+                 createBug
+                 enable_bugfiling_duplicate_search
+                 getBugTaskWeightFunction
+                 pillar
+                 searchTasks"/>
 
     </class>
     <adapter
