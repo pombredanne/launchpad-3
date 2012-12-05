@@ -486,7 +486,6 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
     handled as a known error condition, in which case a reply will have been
     sent if appropriate.
     """
-
     log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
 
