@@ -132,13 +132,13 @@ an account is suspended, the preferred email address is disabled.
     >>> print user.preferredemail
     None
 
-An admin can reactivate a disabled user's account too. Unlike the act of
+An admin can deactivate a suspended user's account too. Unlike the act of
 suspension, reactivation does not change the user's email addresses; the
-user must log in to restore these.
+user must log in to restore the email addresses using the reactivate step.
 
     >>> form = {
     ...     'field.displayname': 'Zaphod Beeblebrox',
-    ...     'field.status': 'ACTIVE',
+    ...     'field.status': 'DEACTIVATED',
     ...     'field.status_comment': "Zaphod's a hoopy frood.",
     ...     'field.actions.change': 'Change',
     ...     }

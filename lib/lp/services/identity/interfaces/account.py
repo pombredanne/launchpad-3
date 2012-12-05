@@ -34,6 +34,7 @@ from zope.schema import (
     Int,
     Text,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.services.fields import StrippedTextLine
@@ -223,6 +224,8 @@ class AccountStatusChoice(Choice):
         if not IAccount.providedBy(self.context):
             # This object is initializing.
             return True
+        if self.context.status == value:
+            return True
         return value in self.transitions[self.context.status]
 
     def _validate(self, value):
@@ -235,7 +238,7 @@ class AccountStatusChoice(Choice):
         if not self.constraint(value):
             raise AccountStatusError(
                 "The status cannot change from %s to %s" %
-                (self.context.status, value))
+                (removeSecurityProxy(self.context).status, value))
         super(AccountStatusChoice, self)._validate(value)
 
 
