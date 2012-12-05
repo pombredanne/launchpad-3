@@ -35,6 +35,23 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 
+from zope.interface import implements
+from lp.services.mail.handlers import mail_handlers
+from lp.services.mail.interfaces import IMailHandler
+
+
+class FakeHandler:
+    implements(IMailHandler)
+
+    def __init__(self, allow_unknown_users=True):
+        self.allow_unknown_users = allow_unknown_users
+        self.handledMails = []
+
+    def process(self, mail, to_addr, filealias):
+        self.handledMails.append(mail)
+        return True
+
+
 class IncomingTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -91,6 +108,17 @@ class IncomingTestCase(TestCaseWithFactory):
         self.assertIn("The mail you sent to Launchpad is too long.", body)
         self.assertIn("was 55 MB and the limit is 10 MB.", body)
 
+    def makeMessage(self, sender, to, subject='subject', body='body'):
+        from email.mime.multipart import MIMEMultipart
+        message = MIMEMultipart()
+        message['Message-Id'] = '<message-id>'
+        #msg['Date'] = formatdate()
+        message['To'] = to
+        message['From'] = sender
+        message['Subject'] = subject
+        message.set_payload(body)
+        return message
+
     def test_invalid_to_addresses(self):
         """Invalid To: header should not be handled as an OOPS."""
         raw_mail = open(os.path.join(
@@ -102,6 +130,44 @@ class IncomingTestCase(TestCaseWithFactory):
         TestMailer().send("from@example.com", "to@example.com", raw_mail)
         handleMail()
         self.assertEqual([], self.oopses)
+
+    def test_invalid_from_addresses_no_at(self):
+        """Invalid From: header such as no "@" is handled."""
+        test_handler = FakeHandler()
+        mail_handlers.add('lp.dev', test_handler)
+        message = self.makeMessage('me_at_eg.dom', 'test@lp.dev')
+        TestMailer().send(
+            'me_at_eg.dom', 'test@lp.dev', message.as_string())
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('me_at_eg.dom', test_handler.handledMails[0]['From'])
+
+    def test_invalid_cc_addresses_no_at(self):
+        """Invalid From: header such as no "@" is handled."""
+        test_handler = FakeHandler()
+        mail_handlers.add('lp.dev', test_handler)
+        self.factory.makePerson(email='me@eg.dom')
+        message = self.makeMessage('me@eg.dom', 'test@lp.dev')
+        message['Cc'] = 'me_at_eg.dom'
+        TestMailer().send(
+            'me@eg.dom', 'test@lp.dev', message.as_string())
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('me_at_eg.dom', test_handler.handledMails[0]['Cc'])
+
+    def test_invalid_from_addresses_unicode(self):
+        """Invalid From: header such as no "@" is handled."""
+        test_handler = FakeHandler()
+        mail_handlers.add('lp.dev', test_handler)
+        message = self.makeMessage('m\xeda@eg.dom', 'test@lp.dev')
+        TestMailer().send(
+            'm\xeda@eg.dom', 'test@lp.dev', message.as_string())
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('m\xeda@eg.dom', test_handler.handledMails[0]['From'])
 
 
 class AuthenticateEmailTestCase(TestCaseWithFactory):
