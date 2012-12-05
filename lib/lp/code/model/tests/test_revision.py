@@ -78,6 +78,11 @@ class TestRevisionKarma(TestCaseWithFactory):
     def setUp(self):
         # Use an administrator to set branch privacy easily.
         TestCaseWithFactory.setUp(self, "admin@canonical.com")
+        # Exclude sample data from the test results.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute(
+            "UPDATE Revision SET karma_allocated = TRUE "
+            "WHERE karma_allocated IS FALSE")
 
     def test_revisionWithUnknownEmail(self):
         # A revision when created does not have karma allocated.
