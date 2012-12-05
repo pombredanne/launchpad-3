@@ -1272,11 +1272,10 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
-        <allow
-            interface="lp.app.interfaces.informationtype.IInformationType"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.informationtype.IInformationType"/>
+        <allow attributes="information_type" />
         <require
             permission="launchpad.Edit"
             set_attributes="answers_usage blueprints_usage codehosting_usage

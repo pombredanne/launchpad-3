@@ -633,6 +633,7 @@ class TestProduct(TestCaseWithFactory):
         store.reset()
         product = store.get(Product, product.id)
         self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        self.assertTrue(product.private)
 
     def test_product_information_type_default(self):
         # Default information_type is PUBLIC
@@ -640,6 +641,7 @@ class TestProduct(TestCaseWithFactory):
         product = getUtility(IProductSet).createProduct(
             owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
         self.assertEqual(InformationType.PUBLIC, product.information_type)
+        self.assertFalse(product.private)
 
     invalid_information_types = [info_type for info_type in
             InformationType.items if info_type not in
