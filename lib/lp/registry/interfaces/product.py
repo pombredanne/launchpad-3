@@ -427,6 +427,13 @@ class IProductPublic(Interface):
     def userCanView(user):
         """True if the given user has access to this product."""
 
+    private = exported(
+        Bool(
+            title=_("Product is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "This product is visible only to those with access grants.")))
+
 
 class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
@@ -476,7 +483,6 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("The restricted team, moderated team, or person "
                           "who maintains the project information in "
                           "Launchpad.")))
-
     project = exported(
         ReferenceChoice(
             title=_('Part of'),

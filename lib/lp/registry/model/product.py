@@ -1808,10 +1808,6 @@ class ProductSet:
     def people(self):
         return getUtility(IPersonSet)
 
-    @property
-    def private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
-
     @classmethod
     def latest(cls, user, quantity=5):
         """See `IProductSet`."""
