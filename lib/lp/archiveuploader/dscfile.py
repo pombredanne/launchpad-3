@@ -59,6 +59,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.encoding import guess as guess_encoding
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
@@ -211,10 +212,14 @@ class SignableTagFile:
                                            self.policy.pocket.name))
             else:
                 policy_suite = '(unknown)'
-            person = getUtility(IPersonSet).ensurePerson(
-                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
-                comment=('when the %s_%s package was uploaded to %s'
-                         % (package, version, policy_suite)))
+            try:
+                person = getUtility(IPersonSet).ensurePerson(
+                    email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                    comment=('when the %s_%s package was uploaded to %s'
+                             % (package, version, policy_suite)))
+            except InvalidEmailAddress:
+                self.logger.info("Invalid email address: '%s'", email)
+                person = None
 
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"
