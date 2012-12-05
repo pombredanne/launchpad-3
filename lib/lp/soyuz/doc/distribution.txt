@@ -129,6 +129,7 @@ The searchPPAs() method only returns the PPAs of active users.
     >>> [archive for archive in result]
     []
 
+    >>> no_priv.account.status = AccountStatus.DEACTIVATED
     >>> no_priv.account.status = AccountStatus.ACTIVE
 
 
