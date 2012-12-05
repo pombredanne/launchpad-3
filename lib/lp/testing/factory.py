@@ -664,7 +664,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        once_active = (AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED)
         if account_status:
+            if account_status in once_active:
+                removeSecurityProxy(person.account).status = (
+                    AccountStatus.ACTIVE)
             removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
