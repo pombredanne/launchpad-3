@@ -169,6 +169,19 @@ class IncomingTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(test_handler.handledMails))
         self.assertEqual('m\xeda@eg.dom', test_handler.handledMails[0]['From'])
 
+    def test_invalid_cc_addresses_unicode(self):
+        """Invalid Cc: header such as no "@" is handled."""
+        test_handler = FakeHandler()
+        mail_handlers.add('lp.dev', test_handler)
+        message = self.makeMessage('me@eg.dom', 'test@lp.dev')
+        message['Cc'] = 'm\xeda@eg.dom'
+        TestMailer().send(
+            'm\xeda@eg.dom', 'test@lp.dev', message.as_string())
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('m\xeda@eg.dom', test_handler.handledMails[0]['Cc'])
+
 
 class AuthenticateEmailTestCase(TestCaseWithFactory):
 
