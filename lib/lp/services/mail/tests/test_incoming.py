@@ -35,7 +35,7 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 
-class TestIncoming(TestCaseWithFactory):
+class IncomingTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -102,6 +102,11 @@ class TestIncoming(TestCaseWithFactory):
         TestMailer().send("from@example.com", "to@example.com", raw_mail)
         handleMail()
         self.assertEqual([], self.oopses)
+
+
+class AuthenticateEmailTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
 
     def test_bad_signature_timestamp(self):
         """If the signature is nontrivial future-dated, it's not trusted."""
