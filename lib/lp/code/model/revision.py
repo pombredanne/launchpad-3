@@ -459,7 +459,7 @@ class RevisionSet:
         store = IStore(Revision)
         results = store.find(
             Revision,
-            Revision.karma_allocated is False)[:limit]
+            Revision.karma_allocated == False)[:limit]
         return results
 
     @staticmethod
