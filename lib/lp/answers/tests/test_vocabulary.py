@@ -29,6 +29,7 @@ class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
         vocabulary = UsesAnswersDistributionVocabulary(distribution)
         self.assertEqual(distribution, vocabulary.context)
         self.assertEqual(distribution, vocabulary.distribution) 
+
     def test_init_without_distribution(self):
         # When the context is not adaptable to IDistribution, the
         # distribution property is None
