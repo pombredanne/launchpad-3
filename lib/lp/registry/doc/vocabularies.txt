@@ -602,9 +602,8 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
     >>> naked_cprov.merged = None
     >>> checked_count = 0
     >>> for status in INACTIVE_ACCOUNT_STATUSES:
-    ...     naked_cprov.account_status = status
-    ...     naked_cprov.syncUpdate()
-    ...     checked_count += int(cprov in vocab)
+    ...     person = factory.makePerson(account_status=status)
+    ...     checked_count += int(person in vocab)
     >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
     True
 
