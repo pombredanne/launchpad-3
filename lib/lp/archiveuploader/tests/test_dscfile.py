@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from collections import namedtuple
 import os
 
 from lp.archiveuploader.dscfile import (
@@ -13,12 +14,14 @@ from lp.archiveuploader.dscfile import (
     find_changelog,
     find_copyright,
     format_to_file_checker_map,
+    SignableTagFile,
     unpack_source,
     )
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.model.person import Person
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -28,7 +31,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
@@ -112,6 +118,43 @@ class TestDscFile(TestCase):
             UploadError, find_changelog, self.tmpdir, DevNullLogger())
         self.assertEqual(
             error.args[0], "debian/changelog file too large, 10MiB max")
+
+
+class TestSignableTagFile(TestCaseWithFactory):
+    """Test `SignableTagFile`, a helper mixin."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSignableTagFile(self):
+        """Create a minimal `SignableTagFile` object."""
+        FakePolicy = namedtuple(
+            'FakePolicy',
+            ['pocket', 'distroseries', 'create_people'])
+        tagfile = SignableTagFile()
+        tagfile.logger = DevNullLogger()
+        tagfile.policy = FakePolicy(None, None, create_people=True)
+        tagfile._dict = {
+            'Source': 'arbitrary-source-package-name',
+            'Version': '1.0',
+            }
+        return tagfile
+
+    def test_parseAddress_finds_addressee(self):
+        tagfile = self.makeSignableTagFile()
+        email = self.factory.getUniqueEmailAddress()
+        person = self.factory.makePerson(email=email)
+        self.assertEqual(person, tagfile.parseAddress(email)['person'])
+
+    def test_parseAddress_creates_addressee_for_unknown_address(self):
+        unknown_email = self.factory.getUniqueEmailAddress()
+        results = self.makeSignableTagFile().parseAddress(unknown_email)
+        self.assertEqual(unknown_email, results['email'])
+        self.assertIsInstance(results['person'], Person)
+
+    def test_parseAddress_raises_UploadError_if_address_is_malformed(self):
+        self.assertRaises(
+            UploadError,
+            self.makeSignableTagFile().parseAddress, "invalid@bad-address")
 
 
 class TestDscFileLibrarian(TestCaseWithFactory):

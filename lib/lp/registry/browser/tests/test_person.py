@@ -58,7 +58,6 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
-    celebrity_logged_in,
     login,
     login_celebrity,
     login_person,
@@ -194,9 +193,8 @@ class TestPersonIndexView(BrowserTestCase):
             'name="robots" content="noindex,nofollow"' in markup)
 
     def test_is_probationary_or_invalid_user_with_invalid(self):
-        person = self.factory.makePerson()
-        with celebrity_logged_in('admin'):
-            person.account.status = AccountStatus.NOACCOUNT
+        person = self.factory.makePerson(
+            account_status=AccountStatus.NOACCOUNT)
         observer = self.factory.makePerson()
         view = create_initialized_view(person, '+index', principal=observer)
         self.assertIs(True, view.is_probationary_or_invalid_user)

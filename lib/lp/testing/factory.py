@@ -632,6 +632,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
+        if account_status == AccountStatus.NOACCOUNT:
+            email_address_status = EmailAddressStatus.NEW
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             displayname=displayname,
@@ -662,7 +664,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        once_active = (AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED)
         if account_status:
+            if account_status in once_active:
+                removeSecurityProxy(person.account).status = (
+                    AccountStatus.ACTIVE)
             removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
