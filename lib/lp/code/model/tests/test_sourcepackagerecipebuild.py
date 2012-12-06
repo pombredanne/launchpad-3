@@ -635,6 +635,7 @@ class TestBuildNotifications(TrialTestCase):
             root: %s
             """ % self.upload_root
             config.push('tmp_builddmaster_root', tmp_builddmaster_root)
+            self.addCleanup(config.pop, 'tmp_builddmaster_root')
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
