@@ -182,13 +182,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         default=SpecificationDefinitionStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
+    _assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    drafter = ForeignKey(dbName='drafter', notNull=False,
+    _drafter = ForeignKey(dbName='drafter', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    approver = ForeignKey(dbName='approver', notNull=False,
+    _approver = ForeignKey(dbName='approver', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     owner = ForeignKey(
@@ -264,6 +264,30 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         intermediateTable='SpecificationDependency')
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
+
+    def set_assignee(self, person):
+        self._assignee = person
+
+    def get_assignee(self):
+        return self._assignee
+
+    assignee = property(get_assignee, set_assignee)
+
+    def set_drafter(self, person):
+        self._drafter = person
+
+    def get_drafter(self):
+        return self._drafter
+
+    drafter = property(get_drafter, set_drafter)
+
+    def set_approver(self, person):
+        self._approver = person
+
+    def get_approver(self):
+        return self._approver
+
+    approver = property(get_approver, set_approver)
 
     @cachedproperty
     def subscriptions(self):
@@ -1027,14 +1051,16 @@ class HasSpecificationsMixin:
             clauses = [SQL(clauses)]
 
         def cache_people(rows):
-            """DecoratedResultSet pre_iter_hook to eager load Person attributes."""
+            """DecoratedResultSet pre_iter_hook to eager load Person
+             attributes.
+            """
             from lp.registry.model.person import Person
             # Find the people we need:
             person_ids = set()
             for spec in rows:
-                person_ids.add(spec.assigneeID)
-                person_ids.add(spec.approverID)
-                person_ids.add(spec.drafterID)
+                person_ids.add(spec._assigneeID)
+                person_ids.add(spec._approverID)
+                person_ids.add(spec._drafterID)
             person_ids.discard(None)
             if not person_ids:
                 return
@@ -1057,7 +1083,8 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = IStore(Specification).using(*tables).find(Specification, *clauses)
+        results = IStore(Specification).using(*tables).find(
+            Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1145,7 +1172,8 @@ class SpecificationSet(HasSpecificationsMixin):
                 order = [Desc(Specification.datecreated), Specification.id]
 
         if prejoin_people:
-            results = self._preload_specifications_people(privacy_tables, clauses)
+            results = self._preload_specifications_people(
+                privacy_tables, clauses)
         else:
             results = store.using(*privacy_tables).find(
                 Specification, *clauses)
@@ -1190,8 +1218,8 @@ class SpecificationSet(HasSpecificationsMixin):
         spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
-            approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            _approver=approver, product=product, distribution=distribution,
+            _assignee=assignee, _drafter=drafter, whiteboard=whiteboard)
         spec.transitionToInformationType(information_type, None)
         return spec
 

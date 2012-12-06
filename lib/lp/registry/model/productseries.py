@@ -443,7 +443,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = results.prejoin(['_assignee', '_approver', '_drafter'])
         return results
 
     def _customizeSearchParams(self, search_params):
