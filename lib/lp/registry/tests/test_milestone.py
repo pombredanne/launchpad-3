@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
+import datetime
 from operator import attrgetter
-import unittest
 
 from storm.exceptions import NoneError
 from zope.component import getUtility
@@ -29,6 +29,7 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestoneSet,
     )
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     ANONYMOUS,
@@ -44,16 +45,18 @@ from lp.testing.layers import (
 from lp.testing.matchers import DoesNotSnapshot
 
 
-class MilestoneTest(unittest.TestCase):
+class MilestoneTest(TestCaseWithFactory):
     """Milestone tests."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(MilestoneTest, self).setUp()
         login(ANONYMOUS)
 
     def tearDown(self):
         logout()
+        super(MilestoneTest, self).tearDown()
 
     def testMilestoneSetIterator(self):
         """Test of MilestoneSet.__iter__()."""
@@ -112,6 +115,15 @@ class MilestoneTest(unittest.TestCase):
         self.assertEqual(
             all_visible_milestones_ids,
             [1, 2, 3])
+
+    def test_proprietary_product_milestones_cannot_have_releases(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            self.assertRaises(ProprietaryProduct,
+                milestone.createProductRelease, owner, datetime.date.today())
 
 
 class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
