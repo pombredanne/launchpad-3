@@ -752,3 +752,55 @@ class TestBugActivityView(TestCaseWithFactory):
                 bug.default_bugtask, name='+activity')
             view.render()
         self.assertThat(recorder, HasQueryCount(Equals(7)))
+
+
+class TestMainBugView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMainBugView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            owner=self.product_owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(self.product_owner):
+            self.series = self.factory.makeProductSeries(
+                product=self.proprietary_product)
+            self.milestone = self.factory.makeMilestone(
+                product=self.proprietary_product)
+            self.bug = self.factory.makeBug(
+                target=self.proprietary_product, owner=self.product_owner)
+            self.bug.subscribe(self.user, subscribed_by=self.product_owner)
+
+    def test_bug_page_user_with_aag_proprietary_product(self):
+        # A user with an artifact grant for a bug targeted to a private
+        # product can view the bug page.
+        with person_logged_in(self.user):
+            url = canonical_url(self.bug)
+            # No exception is raised when the page is rendered.
+            self.getUserBrowser(url, user=self.user)
+
+    def test_bug_page_user_with_aag_proprietary_product_milestone_linked(self):
+        # A user with an artifact grant for a bug targeted to a private
+        # product can view the bug page, even if the bug is linked to
+        # milestone.
+        with person_logged_in(self.product_owner):
+            self.bug.default_bugtask.transitionToMilestone(
+                self.milestone, self.product_owner)
+        with person_logged_in(self.user):
+            url = canonical_url(self.bug)
+            # No exception is raised when the page is rendered.
+            self.getUserBrowser(url, user=self.user)
+
+    def test_bug_page_user_with_aag_proprietary_product_task_for_series(self):
+        # A user with an artifact grant for a bug targeted to a private
+        # product series can view the bug page.
+        with person_logged_in(self.product_owner):
+            self.factory.makeBugTask(
+                bug=self.bug, target=self.series)
+        with person_logged_in(self.user):
+            url = canonical_url(self.bug)
+            # No exception is raised when the page is rendered.
+            self.getUserBrowser(url, user=self.user)

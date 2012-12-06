@@ -136,7 +136,8 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'id', 'checkAuthenticated', 'checkUnauthenticated',
             'userCanView',
             )),
-        'launchpad.LimitedView': set(('displayname', 'name', 'target', )),
+        'launchpad.LimitedView': set((
+            'displayname', 'name', 'target',  'title',)),
         'launchpad.View': set((
             'active', 'bug_subscriptions', 'bugtasks', 'code_name',
             'dateexpected', 'distribution', 'distroseries',
@@ -146,7 +147,7 @@ class MilestoneSecurityAdaperTestCase(TestCaseWithFactory):
             'getUsedBugTagsWithOpenCounts', 'official_bug_tags',
             'parent_subscription_target', 'product', 'product_release',
             'productseries', 'searchTasks', 'series_target',
-            'summary', 'target_type_display', 'title',
+            'summary', 'target_type_display',
             'userCanAlterBugSubscription', 'userCanAlterSubscription',
             'userHasBugSubscriptions',
             )),
