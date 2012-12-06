@@ -52,6 +52,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getDistributionVocabulary(self):
         return 'Distribution'
+    
+    def getProductVocabulary(self):
+        return 'Product'
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:
@@ -59,7 +62,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         fields = [
             Choice(
                 __name__='product', title=u'Project',
-                required=True, vocabulary='Product'),
+                required=True, vocabulary=self.getProductVocabulary()),
             Choice(
                 __name__='distribution', title=u"Distribution",
                 required=True, vocabulary=self.getDistributionVocabulary(),
