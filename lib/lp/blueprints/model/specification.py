@@ -266,6 +266,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     def set_assignee(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
         self._assignee = person
 
     def get_assignee(self):
@@ -274,6 +275,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     assignee = property(get_assignee, set_assignee)
 
     def set_drafter(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
         self._drafter = person
 
     def get_drafter(self):
@@ -282,12 +284,22 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     drafter = property(get_drafter, set_drafter)
 
     def set_approver(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
         self._approver = person
 
     def get_approver(self):
         return self._approver
 
     approver = property(get_approver, set_approver)
+
+    def subscribeIfAccessGrantNeeded(self, person):
+        """Subscribe person if this specification is not public and if
+        the person does not already have grants to access the specification.
+        """
+        if person is None or self.userCanView(person):
+            return
+        current_user = getUtility(ILaunchBag).user
+        self.subscribe(person, subscribed_by=current_user)
 
     @cachedproperty
     def subscriptions(self):
