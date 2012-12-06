@@ -37,6 +37,7 @@ from zope.schema import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
+from lp.app.validators import LaunchpadValidationError
 from lp.services.fields import StrippedTextLine
 
 
@@ -204,7 +205,7 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
-class AccountStatusError(ValueError):
+class AccountStatusError(LaunchpadValidationError):
     """The account status cannot change to the proposed status."""
 
 
