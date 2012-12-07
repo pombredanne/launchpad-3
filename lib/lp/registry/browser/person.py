@@ -103,7 +103,6 @@ from zope.schema import (
     TextLine,
     )
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -1265,9 +1264,8 @@ class PersonVouchersView(LaunchpadFormView):
         """Set up the fields for this view."""
 
         self.form_fields = []
-        if self.has_commercial_projects:
-            self.form_fields = (self.createProjectField() +
-                                self.createVoucherField())
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -1329,21 +1327,6 @@ class PersonVouchersView(LaunchpadFormView):
             self.form_fields.select('project', 'voucher'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=True)
-
-    @cachedproperty
-    def has_commercial_projects(self):
-        """Does the user manage one or more commercial project?
-
-        Users with launchpad.Commercial permission can manage vouchers for any
-        project so the property is True always.  Otherwise it is true if the
-        vocabulary is not empty.
-        """
-        if check_permission('launchpad.Commercial', self.context):
-            return True
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(self.context,
-                                             "CommercialProjects")
-        return len(vocabulary) > 0
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):

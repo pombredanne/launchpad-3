@@ -20,27 +20,18 @@ valid open source licence so he is displayed the voucher redemption
 page.
 
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
-    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark')
+    >>> browser.getLink('Manage commercial subscriptions').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Purchase and Redeem Commercial Subscription Vouchers
     ...Select the project you wish to subscribe...
 
-no-priv is not an administrator on any projects.  When she accesses
-the page she is not given the option to redeem a voucher.
-
-    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~no-priv/+vouchers')
-    >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main)
-    Purchase and Redeem Commercial Subscription Vouchers...
-    No Privileges Person does not own any commercial projects. Only project
-    owners can redeem vouchers for a project.
-
 A user can access her voucher page but not someone else's.  Here
 no-priv tries to access '+vouchers' on another user and is not
 allowed.
 
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     Traceback (most recent call last):
     ...
@@ -55,7 +46,6 @@ the '+vouchers' page on any user.
     >>> print extract_text(main)
     Purchase and Redeem Commercial Subscription Vouchers
     ...Select the project you wish to subscribe...
-
 
 Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
 
