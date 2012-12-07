@@ -33,7 +33,8 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         voucher_proxy = TestSalesforceVoucherProxy()
         self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
         user_url = canonical_url(user)
-        view = create_initialized_view(user, '+vouchers')
+        with person_logged_in(user):
+            view = create_initialized_view(user, '+vouchers')
         self.assertEqual('Commercial subscription vouchers', view.page_title)
         self.assertEqual(user_url, view.cancel_url)
         self.assertIs(None, view.next_url)

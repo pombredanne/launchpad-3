@@ -177,6 +177,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
@@ -1330,7 +1331,8 @@ class PersonVouchersView(LaunchpadFormView):
         project so the property is True always.  Otherwise it is true if the
         vocabulary is not empty.
         """
-        if check_permission('launchpad.Commercial', self.context):
+        role = IPersonRoles(self.user)
+        if role.in_commercial_admin or role.in_admin:
             return True
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(self.context,
