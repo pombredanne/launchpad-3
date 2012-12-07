@@ -170,22 +170,13 @@ Any user can see that the project's licence is proprietary.
     >>> user_browser.contents
     '<...This project&rsquo;s licence is proprietary...
 
-A non-owner does not see that a commercial subscription is due, and the
-+purchase-subscription page will display an error. A user would have to
-load that page directly, since the link is not displayed.
+A non-owner does not see that a commercial subscription is due.
 
     >>> print find_tag_by_id(user_browser.contents,
     ...                      'portlet-requires-subscription')
     None
 
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+purchase-subscription')
-    >>> print find_tag_by_id(user_browser.contents, 'permission-error')
-    <div...class="error message"...
-    You do not have permission to purchase a subscription for this project...
-
-If the project qualifies for free hosting, neither portlet is displayed,
-and the +purchase-subscription page will display an error.
+If the project qualifies for free hosting, tghe portlet is not displayed.
 
     >>> firefox.licenses = [License.GNU_GPL_V2]
     >>> flush_database_updates()
@@ -194,12 +185,6 @@ and the +purchase-subscription page will display an error.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+purchase-subscription')
-    >>> print find_tag_by_id(owner_browser.contents, 'free-hosting-error')
-    <div...class="error message"...
-    This project does not require a commercial subscription to be purchased...
 
 If the project's licence is open source, the licence status is not
 displayed on the index page, since most projects fall into this
