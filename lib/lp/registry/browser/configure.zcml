@@ -945,7 +945,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             name="+vouchers"
-            permission="launchpad.Edit"
+            permission="launchpad.Commercial"
             class="lp.registry.browser.person.PersonVouchersView"
             template="../templates/person-vouchers.pt"/>
         <browser:page
