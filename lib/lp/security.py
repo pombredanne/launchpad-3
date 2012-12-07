@@ -895,6 +895,16 @@ class ViewTeamMembership(AuthorizationBase):
         return False
 
 
+class AdminByCommercialTeamOrAdminsOrPerson(AdminByCommercialTeamOrAdmins):
+    permission = 'launchpad.Commercial'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """Users can manage their commericial data and admins can help."""
+        base = super(AdminByCommercialTeamOrAdminsOrPerson, self)
+        return self.obj.id == user.id or base.checkAuthenticated(user)
+
+
 class EditPersonBySelfOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPerson
