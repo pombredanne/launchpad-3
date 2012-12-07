@@ -16,8 +16,7 @@
 
     <tal:no_vouchers condition="not: view/show_voucher_selection">
       <p>
-        <tal:name replace="context/fmt:displayname" />
-        does not have any redeemable vouchers available.
+        You do not have any redeemable commercial subscription vouchers.
         Here are the steps to obtain a commercial subscription:
       </p>
 

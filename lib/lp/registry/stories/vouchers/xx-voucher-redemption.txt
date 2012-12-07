@@ -53,7 +53,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Purchase and Redeem Commercial Subscription Vouchers
-    ...Sample Person does not have any redeemable vouchers available.
+    ...You do not have any redeemable commercial subscription vouchers.
     Here are the steps to obtain a commercial subscription:...
 
 
