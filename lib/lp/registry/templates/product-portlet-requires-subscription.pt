@@ -3,60 +3,56 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<div class="portlet" id="portlet-requires-subscription"
+<div id="portlet-requires-subscription"
+  style=""
   tal:condition="context/commercial_subscription_is_due">
   <h2>
-    Purchasing a subscription is required
+    Purchasing a commercial subscription is required
   </h2>
-  <div tal:condition="context/commercial_subscription/date_expires | nothing">
+
+  <img style="float:left;" alt="Expiration warning"
+    src="/@@/expiration-large" />
+
+  <p tal:condition="context/commercial_subscription/date_expires | nothing">
     <strong>Current subscription expires
     <tal:date_expire
      tal:replace="context/commercial_subscription/date_expires/fmt:displaydate"
-    />.
-    </strong>
-  </div>
-  <div>
+     />.</strong>
+    <span
+      tal:define="user_menu view/user/menu:overview"
+      tal:condition="context/qualifies_for_free_hosting">
+      <br />Purchase a commercial subcription from your
+      <a tal:replace="structure user_menu/manage_vouchers/fmt:link" />
+      page.
+    </span>
+  </p>
+
+  <tal:proprietary condition="not: context/qualifies_for_free_hosting">
     <p>
-      <img style="float:left;" alt="Expiration warning"
-        src="/@@/expiration-large" />
       The licensing of your project does not qualify for free
       hosting You have two options to continue using Launchpad
       for this project.
     </p>
+
     <ul class="bulleted" style="clear:left;">
       <li tal:define="user_menu view/user/menu:overview">
         Purchase a commercial subcription from your
         <a tal:replace="structure user_menu/manage_vouchers/fmt:link" />
         page.
       </li>
-      <li><a href="mailto:commercial@launchpad.net">Contact us</a>
-          about changing your licence.
+      <li>
+        Change the project's license to conform to
+        <a class="sprite maybe"
+          tal:define="config modules/lp.services.config/config"
+          tal:attributes="href config/commercial/licensing_policy_url"
+          >Launchpad's licensing policies</a>
       </li>
     </ul>
-    <p>
-      To qualify for free hosting, the project's licensing must meet the
-      following requirements:
-    </p>
-    <ul class="bulleted">
-      <li>Must make the source code freely available.</li>
-      <li>Must allow modification and distribution of modified copies under
-          the same licence.</li>
-      <li>Must allow redistribution.</li>
-      <li>Must not require royalty payments or any other fee for
-          redistribution or modification.</li>
-      <li>Must allow these rights to be passed on along with the software.</li>
-      <li>Must not discriminate against persons, groups or against fields
-          of endeavour.</li>
-      <li>Must not be distributed under a licence specific to Ubuntu.</li>
-      <li>Must not contaminate other software licences.</li>
-    </ul>
+  </tal:proprietary>
 
-    <p>
-      <a tal:define="config modules/lp.services.config/config"
-        tal:attributes="href config/commercial/licensing_policy_url">
-        View licensing policies
-      </a>
-    </p>
-  </div>
+  <p>
+    <a href="mailto:commercial@launchpad.net">Contact us</a> if you
+    have any questions about licensing or commercial hosting.
+  </p>
 </div>
 </tal:root>

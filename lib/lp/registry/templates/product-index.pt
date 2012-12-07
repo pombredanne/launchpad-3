@@ -38,6 +38,14 @@
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
+    <tal:warning-for-owner
+      condition="view/show_commercial_subscription_info">
+      <div
+        style="border-bottom: 1px solid #EBEBEB; margin-bottom: 1em;"
+        tal:condition="context/commercial_subscription_is_due"
+        tal:content="structure context/@@+portlet-requires-subscription"/>
+    </tal:warning-for-owner>
+
 	<div class="summary"
 	  tal:content="structure context/summary/fmt:markdown">
           $Product.summary goes here. This should be quite short,
@@ -190,13 +198,6 @@
           </div>
         </div>
       </div>
-
-      <tal:warning-for-owner
-        condition="view/show_commercial_subscription_info">
-        <div
-          tal:condition="context/commercial_subscription_is_due"
-          tal:content="structure context/@@+portlet-requires-subscription"/>
-      </tal:warning-for-owner>
 
       <div class="yui-g">
         <div class="yui-u first">

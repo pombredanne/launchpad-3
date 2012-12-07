@@ -155,7 +155,7 @@ direct the owner to purchase a subscription.
 
     >>> print find_tag_by_id(owner_browser.contents,
     ...     'portlet-requires-subscription')
-    <div...Purchasing a subscription is required...</div>
+    <div...Purchasing a commercial subscription is required...</div>
 
     >>> owner_browser.getLink('Manage commercial subscriptions').click()
     >>> print owner_browser.title
