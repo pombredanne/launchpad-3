@@ -48,6 +48,11 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertIs(None, view.next_url)
         self.assertEqual(0, len(view.redeemable_vouchers))
 
+    def assertFields(self, view):
+        self.assertEqual(1, len(view.redeemable_vouchers))
+        self.assertEqual(
+            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+
     def test_init_with_vouchers_and_projects(self):
         # The fields are setup when the user hase both vouchers and projects.
         user = self.factory.makePerson()
@@ -55,18 +60,14 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.makeVouchers(user, 1)
         self.factory.makeProduct(owner=user)
         view = create_initialized_view(user, '+vouchers')
-        self.assertEqual(1, len(view.redeemable_vouchers))
-        self.assertEqual(
-            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+        self.assertFields(view)
 
     def test_init_with_commercial_admin_with_vouchers(self):
         # The fields are setup if the commercial admin has vouchers.
         commercial_admin = login_celebrity('commercial_admin')
         self.makeVouchers(commercial_admin, 1)
         view = create_initialized_view(commercial_admin, '+vouchers')
-        self.assertEqual(1, len(view.redeemable_vouchers))
-        self.assertEqual(
-            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+        self.assertFields(view)
 
     def test_with_commercial_admin_for_user_with_vouchers_and_projects(self):
         # A commercial admin can see another user's vouchers and apply them.
@@ -76,9 +77,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.factory.makeProduct(owner=user)
         login_celebrity('commercial_admin')
         view = create_initialized_view(user, '+vouchers')
-        self.assertEqual(1, len(view.redeemable_vouchers))
-        self.assertEqual(
-            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+        self.assertFields(view)
 
     def test_redeem_with_commercial_admin_for_user(self):
         # A commercial admin can redeem a voucher for a user.
