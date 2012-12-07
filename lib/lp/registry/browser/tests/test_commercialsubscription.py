@@ -79,6 +79,15 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         view = create_initialized_view(user, '+vouchers')
         self.assertFields(view)
 
+    def assertRedeem(self, view, project, remaining=0):
+        self.assertEqual([], view.errors)
+        self.assertIsNot(None, project.commercial_subscription)
+        self.assertEqual(remaining, len(view.redeemable_vouchers))
+        self.assertEqual(
+            remaining, len(view.form_fields['voucher'].field.vocabulary))
+        self.assertEqual(
+            remaining, len(view.widgets['voucher'].vocabulary))
+
     def test_redeem_with_commercial_admin_for_user(self):
         # A commercial admin can redeem a voucher for a user.
         project = self.factory.makeProduct()
@@ -91,13 +100,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             }
         login_celebrity('commercial_admin')
         view = create_initialized_view(user, '+vouchers', form=form)
-        self.assertEqual([], view.errors)
-        self.assertIsNot(None, project.commercial_subscription)
-        self.assertEqual(0, len(view.redeemable_vouchers))
-        self.assertEqual(
-            0, len(view.form_fields['voucher'].field.vocabulary))
-        self.assertEqual(
-            0, len(view.widgets['voucher'].vocabulary))
+        self.assertRedeem(view, project)
 
     def test_redeem_with_commercial_admin(self):
         # The fields are setup if the commercial admin has vouchers.
@@ -111,13 +114,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
-        self.assertEqual([], view.errors)
-        self.assertIsNot(None, project.commercial_subscription)
-        self.assertEqual(0, len(view.redeemable_vouchers))
-        self.assertEqual(
-            0, len(view.form_fields['voucher'].field.vocabulary))
-        self.assertEqual(
-            0, len(view.widgets['voucher'].vocabulary))
+        self.assertRedeem(view, project)
 
     def test_redeem_twice_with_commercial_admin(self):
         # The fields are setup if the commercial admin has vouchers.
@@ -134,9 +131,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
-        self.assertEqual([], view.errors)
-        self.assertIsNot(None, project_1.commercial_subscription)
-        self.assertEqual(1, len(view.redeemable_vouchers))
+        self.assertRedeem(view, project_1, remaining=1)
         # A job will notify Salesforce of the voucher redemption but here we
         # will do it manually.
         voucher_proxy.redeemVoucher(
@@ -149,9 +144,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
-        self.assertEqual([], view.errors)
-        self.assertIsNot(None, project_2.commercial_subscription)
-        self.assertEqual(0, len(view.redeemable_vouchers))
+        self.assertRedeem(view, project_2)
 
     def test_pending_vouchers_excluded(self):
         # Vouchers pending redemption in Salesforce are not included in choice.
