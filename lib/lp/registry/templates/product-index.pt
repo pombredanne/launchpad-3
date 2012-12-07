@@ -137,9 +137,10 @@
                         condition="not:repeat/license/end">,</tal:comma>
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
-                  <tal:has_license_info condition="view/show_license_info">
+                  <div class="scrolled-box"
+                     condition="view/show_license_info">
                     (<tal:license_info replace="context/license_info" />)
-                  </tal:has_license_info>
+                  </div>
                 </dd>
                 <dd id="commercial_subscription"
                   tal:condition="context/commercial_subscription">
@@ -156,7 +157,7 @@
               <a tal:replace="structure overview_menu/rdf/fmt:link" />
             </p>
 
-            <div id="project-admin-whiteboard" class="whiteboard"
+            <div id="project-admin-whiteboard" class="whiteboard scrolled-box"
               tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>&nbsp;
