@@ -66,6 +66,43 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(
             ['project', 'voucher'], [f.__name__ for f in view.form_fields])
 
+    def test_with_commercial_admin_for_user_with_vouchers_and_projects(self):
+        # A commercial admin can see another user's vouchers and apply them.
+        user = self.factory.makePerson()
+        login_person(user)
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_proxy.grantVoucher(
+            user, user, user, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.factory.makeProduct(owner=user)
+        login_celebrity('commercial_admin')
+        view = create_initialized_view(user, '+vouchers')
+        self.assertEqual(1, len(view.redeemable_vouchers))
+        self.assertEqual(
+            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+
+    def test_redeem_with_commercial_admin_for_user(self):
+        # A commercial admin can redeem a voucher for a user.
+        project = self.factory.makeProduct()
+        user = project.owner
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_id = voucher_proxy.grantVoucher(user, user, user, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        form = {
+            'field.project': project.name,
+            'field.voucher': voucher_id,
+            'field.actions.redeem': 'Redeem',
+            }
+        login_celebrity('commercial_admin')
+        view = create_initialized_view(user, '+vouchers', form=form)
+        self.assertEqual([], view.errors)
+        self.assertIsNot(None, project.commercial_subscription)
+        self.assertEqual(0, len(view.redeemable_vouchers))
+        self.assertEqual(
+            0, len(view.form_fields['voucher'].field.vocabulary))
+        self.assertEqual(
+            0, len(view.widgets['voucher'].vocabulary))
+
     def test_redeem_with_commercial_admin(self):
         # The fields are setup if the commercial admin has vouchers.
         commercial_admin = login_celebrity('commercial_admin')
