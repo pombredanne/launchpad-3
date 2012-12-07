@@ -70,7 +70,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertFields(view)
 
     def test_with_commercial_admin_for_user_with_vouchers_and_projects(self):
-        # A commercial admin can see another user's vouchers and apply them.
+        # A commercial admin can see another user's vouchers.
         user = self.factory.makePerson()
         login_person(user)
         self.makeVouchers(user, 1)
