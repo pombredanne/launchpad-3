@@ -10,6 +10,8 @@ from datetime import (
     timedelta,
     )
 import re
+import shutil
+import tempfile
 
 from pytz import utc
 from storm.locals import Store
@@ -41,6 +43,7 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
@@ -623,6 +626,16 @@ class TestBuildNotifications(TrialTestCase):
         if fake_successful_upload:
             naked_build.verifySuccessfulUpload = FakeMethod(
                 result=True)
+            # We overwrite the buildmaster root to use a temp directory.
+            tempdir = tempfile.mkdtemp()
+            self.addCleanup(shutil.rmtree, tempdir)
+            self.upload_root = tempdir
+            tmp_builddmaster_root = """
+            [builddmaster]
+            root: %s
+            """ % self.upload_root
+            config.push('tmp_builddmaster_root', tmp_builddmaster_root)
+            self.addCleanup(config.pop, 'tmp_builddmaster_root')
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
@@ -650,12 +663,9 @@ class TestBuildNotifications(TrialTestCase):
         return self.assertDeferredNotifyCount(
             "OK", self.prepare_build(), 0)
 
-#XXX 2011-05-20 gmb bug=785679
-#    This test has been disabled since it broke intermittently in
-#    buildbot (but does not fail in isolation locally).
-##    def test_handleStatus_OK_successful_upload(self):
-##        return self.assertDeferredNotifyCount(
-##            "OK", self.prepare_build(True), 0)
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
