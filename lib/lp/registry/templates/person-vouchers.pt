@@ -14,10 +14,33 @@
      tal:define="
        config modules/lp.services.config/config">
 
+    <p>
+      Any open source project may choose to purchase a commercial subscription
+      to enable additional features. Projects with proprietary
+      licences require a commercial subscription. The owners of commercial
+      projects can
+    </p>
+
+    <ul class="bulleted">
+      <li>
+        Configure project sharing policies to enable proprietary bugs,
+        branches, and blueprints which are only visible to trusted people.
+      </li>
+      <li>
+        Create private teams with private mailing lists and
+        private personal package archives.
+      </li>
+    </ul>
+
+    <p>
+      See <a href="https://help.launchpad.net/CommercialHosting">Commercial
+      Hosting</a> for more details.
+    </p>
+
     <tal:no_vouchers condition="not: view/show_voucher_selection">
       <p>
-        You do not have any redeemable commercial subscription vouchers.
-        Here are the steps to obtain a commercial subscription:
+        <strong>You do not have any redeemable commercial subscription vouchers.
+        Here are the steps to obtain a commercial subscription:</strong>
       </p>
 
       <ol>
