@@ -26,12 +26,20 @@ from lp.testing.views import create_initialized_view
 class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
+    def makeVouchers(self, user, number, voucher_proxy=None):
+        if voucher_proxy is None:
+            voucher_proxy = TestSalesforceVoucherProxy()
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        vouchers = []
+        for n in xrange(number):
+            vouchers.append(voucher_proxy.grantVoucher(user, user, user, 12))
+        return vouchers
+
     def test_init_without_vouchers_or_projects(self):
         # The view provides common view properties, but the form is disabled.
         user = self.factory.makePerson()
         self.factory.makeProduct(owner=user)
-        voucher_proxy = TestSalesforceVoucherProxy()
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.makeVouchers(user, 0)
         user_url = canonical_url(user)
         with person_logged_in(user):
             view = create_initialized_view(user, '+vouchers')
@@ -44,10 +52,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         # The fields are setup when the user hase both vouchers and projects.
         user = self.factory.makePerson()
         login_person(user)
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_proxy.grantVoucher(
-            user, user, user, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.makeVouchers(user, 1)
         self.factory.makeProduct(owner=user)
         view = create_initialized_view(user, '+vouchers')
         self.assertEqual(1, len(view.redeemable_vouchers))
@@ -57,10 +62,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     def test_init_with_commercial_admin_with_vouchers(self):
         # The fields are setup if the commercial admin has vouchers.
         commercial_admin = login_celebrity('commercial_admin')
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.makeVouchers(commercial_admin, 1)
         view = create_initialized_view(commercial_admin, '+vouchers')
         self.assertEqual(1, len(view.redeemable_vouchers))
         self.assertEqual(
@@ -70,10 +72,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         # A commercial admin can see another user's vouchers and apply them.
         user = self.factory.makePerson()
         login_person(user)
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_proxy.grantVoucher(
-            user, user, user, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.makeVouchers(user, 1)
         self.factory.makeProduct(owner=user)
         login_celebrity('commercial_admin')
         view = create_initialized_view(user, '+vouchers')
@@ -85,9 +84,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         # A commercial admin can redeem a voucher for a user.
         project = self.factory.makeProduct()
         user = project.owner
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_id = voucher_proxy.grantVoucher(user, user, user, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        [voucher_id] = self.makeVouchers(user, 1)
         form = {
             'field.project': project.name,
             'field.voucher': voucher_id,
@@ -106,10 +103,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     def test_redeem_with_commercial_admin(self):
         # The fields are setup if the commercial admin has vouchers.
         commercial_admin = login_celebrity('commercial_admin')
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_id = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        [voucher_id] = self.makeVouchers(commercial_admin, 1)
         project = self.factory.makeProduct()
         form = {
             'field.project': project.name,
@@ -130,11 +124,8 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         # The fields are setup if the commercial admin has vouchers.
         commercial_admin = login_celebrity('commercial_admin')
         voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_id_1 = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        voucher_id_2 = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        voucher_id_1, voucher_id_2 = self.makeVouchers(
+            commercial_admin, 2, voucher_proxy)
         project_1 = self.factory.makeProduct()
         project_2 = self.factory.makeProduct()
         form = {
@@ -166,12 +157,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     def test_pending_vouchers_excluded(self):
         # Vouchers pending redemption in Salesforce are not included in choice.
         commercial_admin = login_celebrity('commercial_admin')
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_id_1 = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        voucher_id_2 = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        voucher_id_1, voucher_id_2 = self.makeVouchers(commercial_admin, 2)
         project_1 = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(
             project_1, False, 'pending-' + voucher_id_1)
@@ -184,10 +170,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     def test_redeem_twice_causes_error(self):
         # If a voucher is redeemed twice, the second attempt is rejected.
         commercial_admin = login_celebrity('commercial_admin')
-        voucher_proxy = TestSalesforceVoucherProxy()
-        voucher_id_1 = voucher_proxy.grantVoucher(
-            commercial_admin, commercial_admin, commercial_admin, 12)
-        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        voucher_id_1, voucher_id_2 = self.makeVouchers(commercial_admin, 2)
         project_1 = self.factory.makeProduct(name='p1')
         project_2 = self.factory.makeProduct(name='p2')
         url = canonical_url(commercial_admin, view_name='+vouchers')
