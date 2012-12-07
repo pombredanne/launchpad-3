@@ -492,12 +492,12 @@ class SprintMeetingExportView(LaunchpadView):
         for spec in model_specs:
             # Get the list of attendees that will attend the sprint.
             spec_people = people[spec.id]
-            if spec.assigneeID is not None:
-                spec_people[spec.assigneeID] = True
-                attendee_set.add(spec.assigneeID)
-            if spec.drafterID is not None:
-                spec_people[spec.drafterID] = True
-                attendee_set.add(spec.drafterID)
+            if spec.assignee is not None:
+                spec_people[spec.assignee.id] = True
+                attendee_set.add(spec.assignee.id)
+            if spec.drafter is not None:
+                spec_people[spec.drafter.id] = True
+                attendee_set.add(spec.drafter.id)
         people_by_id = dict((person.id, person) for person in
             getUtility(IPersonSet).getPrecachedPersonsFromIDs(attendee_set))
         self.specifications = [

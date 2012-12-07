@@ -157,7 +157,7 @@ class MilestoneData:
         store = Store.of(self.target)
         origin, clauses = visible_specification_query(user)
         origin.extend([
-            LeftJoin(Person, Specification.assigneeID == Person.id),
+            LeftJoin(Person, Specification._assigneeID == Person.id),
             ])
         milestones = self._milestone_ids_expr(user)
 
