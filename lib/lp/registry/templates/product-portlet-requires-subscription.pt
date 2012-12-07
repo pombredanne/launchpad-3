@@ -20,11 +20,15 @@
       <img style="float:left;" alt="Expiration warning"
         src="/@@/expiration-large" />
       The licensing of your project does not qualify for free
-      hosting. You have two options to continue using Launchpad
+      hosting You have two options to continue using Launchpad
       for this project.
     </p>
     <ul class="bulleted" style="clear:left;">
-      <li><a href="+purchase-subscription">Purchase a subscription.</a></li>
+      <li tal:define="user_menu view/user/menu:overview">
+        Purchase a commercial subcription from your
+        <a tal:replace="structure user_menu/manage_vouchers/fmt:link" />
+        page.
+      </li>
       <li><a href="mailto:commercial@launchpad.net">Contact us</a>
           about changing your licence.
       </li>

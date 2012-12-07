@@ -157,18 +157,12 @@ direct the owner to purchase a subscription.
     ...     'portlet-requires-subscription')
     <div...Purchasing a subscription is required...</div>
 
-    >>> owner_browser.getLink('Purchase a subscription.').click()
-    >>> owner_browser.url
-    'http://launchpad.dev/firefox/+purchase-subscription'
-
-    >>> print find_tags_by_class(owner_browser.contents, 'error message')
-    []
+    >>> owner_browser.getLink('Manage commercial subscriptions').click()
+    >>> print owner_browser.title
+    Commercial subscription vouchers : Sample Person
 
     >>> owner_browser.getLink('Canonical Shop')
     <Link...url='http://ubuntu.recycledmania.com...'>
-
-    >>> owner_browser.getLink('voucher management page')
-    <Link...url='http://launchpad.dev/~name12/+vouchers'...>
 
 Any user can see that the project's licence is proprietary.
 

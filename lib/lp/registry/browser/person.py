@@ -694,6 +694,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'projects',
         'activate_ppa',
         'maintained',
+        'manage_vouchers',
         'synchronised',
         'view_ppa_subscriptions',
         'ppa',
@@ -717,6 +718,13 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         request_tokens = self.context.oauth_request_tokens
         enabled = bool(access_tokens or request_tokens)
         return Link(target, text, enabled=enabled, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def manage_vouchers(self):
+        target = '+vouchers'
+        text = 'Manage commercial subscriptions'
+        summary = 'Purchase and redeem commercial subscription vouchers'
+        return Link(target, text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
