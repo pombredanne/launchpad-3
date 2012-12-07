@@ -1440,6 +1440,9 @@ class SpecificationTreeGraphView(LaunchpadView):
         process.stdin.close()
         output = process.stdout.read()
         err = process.stderr.read()
+        # XXX Abel Deuring 2012-12-06, bug 1087314
+        # err may just contain a warning, while the image might be rendered
+        # correctly. We should not raise an error in this case.
         if err:
             raise ProblemRenderingGraph(err, output)
         return output
