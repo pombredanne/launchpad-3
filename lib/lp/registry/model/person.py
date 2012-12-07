@@ -871,11 +871,11 @@ class Person(
         if SpecificationFilter.CREATOR in filter:
             role_clauses.append(Specification.owner == self)
         if SpecificationFilter.ASSIGNEE in filter:
-            role_clauses.append(Specification.assignee == self)
+            role_clauses.append(Specification._assignee == self)
         if SpecificationFilter.DRAFTER in filter:
-            role_clauses.append(Specification.drafter == self)
+            role_clauses.append(Specification._drafter == self)
         if SpecificationFilter.APPROVER in filter:
-            role_clauses.append(Specification.approver == self)
+            role_clauses.append(Specification._approver == self)
         if SpecificationFilter.SUBSCRIBER in filter:
             role_clauses.append(
                 Specification.id.is_in(
@@ -1499,7 +1499,7 @@ class Person(
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification.assigneeID.is_in(self.participant_ids))])
+               Specification._assigneeID.is_in(self.participant_ids))])
         result = store.using(*origin).find(WorkItem, *query)
         result.config(distinct=True)
 
@@ -1510,7 +1510,7 @@ class Person(
             bulk.load_related(Distribution, specs, ['distributionID'])
             assignee_ids = set(
                 [workitem.assignee_id for workitem in workitems]
-                + [spec.assigneeID for spec in specs])
+                + [spec._assigneeID for spec in specs])
             assignee_ids.discard(None)
             bulk.load(Person, assignee_ids, store)
             milestone_ids = set(
@@ -2249,7 +2249,7 @@ class Person(
             bug_task.transitionToAssignee(None)
 
         assigned_specs = Store.of(self).find(
-            Specification, assignee=self)
+            Specification, _assignee=self)
         for spec in assigned_specs:
             spec.assignee = None
 

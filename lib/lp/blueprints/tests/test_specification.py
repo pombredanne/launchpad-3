@@ -742,3 +742,52 @@ class TestSpecifications(TestCaseWithFactory):
         self.assertIn(
             blueprint1,
             list(context.specifications(user=grant.grantee)))
+
+    def run_test_setting_special_role_subscribes(self, role_name):
+        # If a user becomes the assignee, drafter or approver of a
+        # proprietary specification, they are automatically subscribed,
+        # if they do not have yet been granted access to the specification.
+        specification_sharing_policy = (
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        product = self.factory.makeProduct(
+            specification_sharing_policy=specification_sharing_policy)
+        blueprint = self.makeSpec(
+            product=product, information_type=InformationType.PROPRIETARY)
+        person_with_new_role = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            setattr(blueprint, role_name, person_with_new_role)
+            self.assertIsNot(
+                None, blueprint.subscription(person_with_new_role))
+
+        # Assignees/drafters/approvers are not subscribed if they already
+        # have a policy grant for the specification's target.
+        blueprint_2 = self.makeSpec(
+            product=product, information_type=InformationType.PROPRIETARY)
+        person_with_new_role_2 = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            permissions = {
+                InformationType.PROPRIETARY: SharingPermission.ALL,
+                }
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, person_with_new_role_2, product.owner, permissions)
+            setattr(blueprint_2, role_name, person_with_new_role_2)
+            self.assertIs(
+                None, blueprint.subscription(person_with_new_role_2))
+
+    def test_setting_assignee_subscribes(self):
+        # If a user becomes the assignee of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('assignee')
+
+    def test_setting_drafter_subscribes(self):
+        # If a user becomes the drafter of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('drafter')
+
+    def test_setting_approver_subscribes(self):
+        # If a user becomes the approver of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('approver')
