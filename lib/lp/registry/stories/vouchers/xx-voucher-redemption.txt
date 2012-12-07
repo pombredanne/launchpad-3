@@ -23,7 +23,7 @@ page.
     >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Redeem Vouchers for Commercial Subscriptions
+    Purchase and Redeem Commercial Subscription Vouchers
     ...Select the project you wish to subscribe...
 
 no-priv is not an administrator on any projects.  When she accesses
@@ -33,7 +33,7 @@ the page she is not given the option to redeem a voucher.
     >>> browser.open('http://launchpad.dev/~no-priv/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Redeem Vouchers for Commercial Subscriptions...
+    Purchase and Redeem Commercial Subscription Vouchers...
     No Privileges Person does not own any commercial projects. Only project
     owners can redeem vouchers for a project.
 
@@ -53,7 +53,7 @@ the '+vouchers' page on any user.
     >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Redeem Vouchers for Commercial Subscriptions
+    Purchase and Redeem Commercial Subscription Vouchers
     ...Select the project you wish to subscribe...
 
 
@@ -62,7 +62,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> browser.open('http://launchpad.dev/~name12/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Redeem Vouchers for Commercial Subscriptions
+    Purchase and Redeem Commercial Subscription Vouchers
     ...Sample Person does not have any redeemable vouchers available.
     Here are the steps to obtain a commercial subscription:...
 

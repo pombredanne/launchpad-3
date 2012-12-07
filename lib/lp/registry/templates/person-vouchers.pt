@@ -6,49 +6,62 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
-    <h1 metal:fill-slot="heading">
-      Redeem Vouchers for Commercial Subscriptions</h1>
+  <h1 metal:fill-slot="heading">
+    Purchase and Redeem Commercial Subscription Vouchers
+  </h1>
 
-    <div metal:fill-slot="main"
-         tal:define="
-           commercial_projects view/has_commercial_projects;
-           config modules/lp.services.config/config">
+  <div metal:fill-slot="main"
+     tal:define="
+       commercial_projects view/has_commercial_projects;
+       config modules/lp.services.config/config">
 
-        <tal:not_commercial condition="not: commercial_projects">
-          <tal:name replace="context/fmt:displayname"/>
-          does not own any commercial projects. Only project owners can redeem
-          vouchers for a project.
-        </tal:not_commercial>
-        <tal:commercial condition="commercial_projects">
-          <tal:define_vouchers
-              define="vouchers view/redeemable_vouchers" >
-            <tal:no_vouchers condition="not: view/show_voucher_selection">
-              <p>
-              <tal:name replace="context/fmt:displayname" />
-              does not have any redeemable vouchers available.</p>
+    <tal:not_commercial condition="not: commercial_projects">
+      <tal:name replace="context/fmt:displayname"/>
+      does not own any commercial projects. Only project owners
+      can redeem vouchers for a project.
+    </tal:not_commercial>
 
-              <tal:voucher-instructions
-                 replace="structure context/@@+voucher-purchase-instructions"
-                 />
+    <tal:commercial condition="commercial_projects">
+      <tal:no_vouchers condition="not: view/show_voucher_selection">
+        <p>
+          <tal:name replace="context/fmt:displayname" />
+          does not have any redeemable vouchers available.
+          Here are the steps to obtain a commercial subscription:
+        </p>
 
-            </tal:no_vouchers>
-            <tal:has_voucher condition="view/show_voucher_selection">
-              <div metal:use-macro="context/@@launchpad_form/form">
-                <metal:widgets fill-slot="widgets">
-                  <table class="form">
-                    <tal:widget define="widget nocall:view/widgets/project">
-                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                    </tal:widget>
-                    <tal:widget define="widget nocall:view/widgets/voucher">
-                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                    </tal:widget>
-                  </table>
-                </metal:widgets>
-              </div>
-            </tal:has_voucher>
-          </tal:define_vouchers>
-        </tal:commercial>
-    </div>
-  </body>
+        <ol>
+          <li>Purchase a Launchpad subscription from the
+            <a tal:define="config modules/lp.services.config/config"
+               tal:attributes="href config/commercial/purchase_subscription_url"
+               >Canonical Shop</a>.
+          </li>
+          <li>
+            You will receive an email that your order has been processed.
+          </li>
+          <li>
+            The shop will inform Launchpad of your purchase within 60 minutes.
+          </li>
+          <li>
+            Return to this page to choose the project the commercial
+            subscription is for.
+          </li>
+        </ol>
+      </tal:no_vouchers>
+
+      <tal:has_voucher condition="view/show_voucher_selection">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <metal:widgets fill-slot="widgets">
+            <table class="form">
+              <tal:widget define="widget nocall:view/widgets/project">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/voucher">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </metal:widgets>
+        </div>
+      </tal:has_voucher>
+    </tal:commercial>
+  </div>
 </html>
