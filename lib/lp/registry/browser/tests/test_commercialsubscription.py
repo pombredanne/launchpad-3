@@ -88,16 +88,19 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(
             remaining, len(view.widgets['voucher'].vocabulary))
 
+    def makeForm(self, project, voucher_id):
+        return {
+            'field.project': project.name,
+            'field.voucher': voucher_id,
+            'field.actions.redeem': 'Redeem',
+            }
+
     def test_redeem_with_commercial_admin_for_user(self):
         # A commercial admin can redeem a voucher for a user.
         project = self.factory.makeProduct()
         user = project.owner
         [voucher_id] = self.makeVouchers(user, 1)
-        form = {
-            'field.project': project.name,
-            'field.voucher': voucher_id,
-            'field.actions.redeem': 'Redeem',
-            }
+        form = self.makeForm(project, voucher_id)
         login_celebrity('commercial_admin')
         view = create_initialized_view(user, '+vouchers', form=form)
         self.assertRedeem(view, project)
@@ -107,11 +110,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         commercial_admin = login_celebrity('commercial_admin')
         [voucher_id] = self.makeVouchers(commercial_admin, 1)
         project = self.factory.makeProduct()
-        form = {
-            'field.project': project.name,
-            'field.voucher': voucher_id,
-            'field.actions.redeem': 'Redeem',
-            }
+        form = self.makeForm(project, voucher_id)
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
         self.assertRedeem(view, project)
@@ -124,11 +123,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             commercial_admin, 2, voucher_proxy)
         project_1 = self.factory.makeProduct()
         project_2 = self.factory.makeProduct()
-        form = {
-            'field.project': project_1.name,
-            'field.voucher': voucher_id_1,
-            'field.actions.redeem': 'Redeem',
-            }
+        form = self.makeForm(project_1, voucher_id_1)
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
         self.assertRedeem(view, project_1, remaining=1)
@@ -137,11 +132,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         voucher_proxy.redeemVoucher(
             voucher_id_1, commercial_admin, project_1)
 
-        form = {
-            'field.project': project_2.name,
-            'field.voucher': voucher_id_2,
-            'field.actions.redeem': 'Redeem',
-            }
+        form = self.makeForm(project_2, voucher_id_2)
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
         self.assertRedeem(view, project_2)
