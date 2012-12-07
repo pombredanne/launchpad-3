@@ -2249,7 +2249,7 @@ class Person(
             bug_task.transitionToAssignee(None)
 
         assigned_specs = Store.of(self).find(
-            Specification, assignee=self)
+            Specification, _assignee=self)
         for spec in assigned_specs:
             spec.assignee = None
 
