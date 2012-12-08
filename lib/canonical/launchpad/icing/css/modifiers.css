@@ -112,6 +112,11 @@ div.beta img {
     height: 10px;
     }
 
+.scrolled-box {
+    max-height: 4.5em;
+    overflow-y: scroll;
+    }
+
 .ellipsis.single-line {
     display: inline-block;
     white-space: nowrap;
