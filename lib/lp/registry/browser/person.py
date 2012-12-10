@@ -34,6 +34,7 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
+    'PersonOwnedTeamsView',
     'PersonRdfContentsView',
     'PersonRdfView',
     'PersonRelatedSoftwareView',
@@ -3776,6 +3777,18 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     @property
     def page_title(self):
         return "Related projects"
+
+
+class PersonOwnedTeamsView(PersonRelatedSoftwareView):
+    """View for +owned-teams."""
+    page_title = "Owned teams"
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.context.getOwnedTeams(self.user), self.request)
+        self.batchnav.setHeadings('team', 'teams')
+        self.batch = list(self.batchnav.currentBatch())
 
 
 class PersonOAuthTokensView(LaunchpadView):

@@ -909,6 +909,12 @@
             template="../templates/person-related-projects.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonOwnedTeamsView"
+            name="+owned-teams"
+            template="../templates/person-owned-teams.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonRelatedSoftwareView"
             permission="zope.Public"
             name="+related-software-navlinks"
