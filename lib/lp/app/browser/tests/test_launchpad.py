@@ -29,6 +29,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchpadRoot,
@@ -170,9 +171,9 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = "No such branch: '%s'." % (
-            branch.name + "wibble")
-        self.assertDisplaysError(bad_name, requiredMessage)
+        required_message = html_escape(
+            "No such branch: '%s'." % (branch.name + "wibble"))
+        self.assertDisplaysError(bad_name, required_message)
 
     def test_private_branch(self):
         # If an attempt is made to access a private branch, display an error.
@@ -180,8 +181,9 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
             information_type=InformationType.USERDATA)
         branch_unique_name = removeSecurityProxy(branch).unique_name
         login(ANONYMOUS)
-        requiredMessage = "No such branch: '%s'." % branch_unique_name
-        self.assertDisplaysError(branch_unique_name, requiredMessage)
+        required_message = html_escape(
+            "No such branch: '%s'." % branch_unique_name)
+        self.assertDisplaysError(branch_unique_name, required_message)
 
     def test_product_alias(self):
         # Traversing to /+branch/<product> redirects to the page for the
@@ -208,8 +210,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_nonexistent_product(self):
         # Traversing to /+branch/<no-such-product> displays an error message.
         non_existent = 'non-existent'
-        requiredMessage = u"No such product: '%s'." % non_existent
-        self.assertDisplaysError(non_existent, requiredMessage)
+        required_message = u"No such product: '%s'." % non_existent
+        self.assertDisplaysError(non_existent, html_escape(required_message))
 
     def test_nonexistent_product_without_referer(self):
         # Traversing to /+branch/<no-such-product> without a referer results
@@ -315,7 +317,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # error notification if the thing following +branch is a unique name
         # that's too short to be a real unique name.
         owner = self.factory.makePerson()
-        requiredMessage = (
+        requiredMessage = html_escape(
             u"Cannot understand namespace name: '%s'" % owner.name)
         self.assertDisplaysError('~%s' % owner.name, requiredMessage)
 

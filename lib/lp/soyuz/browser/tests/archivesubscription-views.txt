@@ -252,7 +252,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have revoked Andrew Bennetts's access to PPA named pppa for
+    You have revoked Andrew Bennetts&#x27;s access to PPA named pppa for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.

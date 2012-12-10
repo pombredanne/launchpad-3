@@ -114,7 +114,7 @@ After editing a builder, a relevant notification is added to the view.
 
     >>> for notification in builder_view.request.notifications:
     ...     print notification.message
-    The builder "Bob The Builder" was updated successfully.
+    The builder &quot;Bob The Builder&quot; was updated successfully.
 
 
 == Builders building private jobs ==

@@ -64,6 +64,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadRoot,
@@ -1476,7 +1477,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(sp2, bug_task.target)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected = (
+        expected = html_escape(
             "'%s' is a binary package. This bug has been assigned to its "
             "source package '%s' instead."
             % (bpr.binarypackagename.name, spn.name))

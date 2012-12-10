@@ -310,7 +310,7 @@ next to the heading "Merged at revision".
     >>> sample_browser.getControl('Mark as Merged').click()
 
     >>> print_feedback_messages(sample_browser.contents)
-    The proposal's merged revision has been updated.
+    The proposal&#x27;s merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
     Merged at revision: 42
