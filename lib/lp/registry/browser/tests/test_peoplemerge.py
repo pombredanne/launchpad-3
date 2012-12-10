@@ -16,6 +16,7 @@ from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mail import stub
 from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -278,9 +279,10 @@ class TestValidatingMergeView(TestCaseWithFactory):
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
         self.assertEqual(
-            [u"dupe has a PPA that must be deleted before it can be "
-              "merged. It may take ten minutes to remove the deleted PPA's "
-              "files."],
+            [html_escape(
+                u"dupe has a PPA that must be deleted before it can be "
+                "merged. It may take ten minutes to remove the deleted PPA's "
+                "files.")],
             view.errors)
 
     def test_cannot_merge_person_with_private_branches(self):
@@ -302,7 +304,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=form)
         self.assertEqual(
-            ["You can't merge target into itself."], view.errors)
+            [html_escape("You can't merge target into itself.")], view.errors)
 
     def test_cannot_merge_dupe_person_with_an_existing_merge_job(self):
         # A merge cannot be requested for an IPerson if it there is a job
@@ -418,9 +420,10 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
-            [u"dupe-team has a PPA that must be deleted before it can be "
-              "merged. It may take ten minutes to remove the deleted PPA's "
-              "files."],
+            [html_escape(
+                u"dupe-team has a PPA that must be deleted before it can be "
+                "merged. It may take ten minutes to remove the deleted PPA's "
+                "files.")],
             view.errors)
 
 
@@ -453,7 +456,8 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
         self.dupe_person.createPPA()
         view = self.getView()
         self.assertEqual(
-            [u"dupe-person has a PPA that must be deleted before it can be "
-              "merged. It may take ten minutes to remove the deleted PPA's "
-              "files."],
+            [html_escape(
+                u"dupe-person has a PPA that must be deleted before it can "
+                "be merged. It may take ten minutes to remove the deleted "
+                "PPA's files.")],
             view.errors)

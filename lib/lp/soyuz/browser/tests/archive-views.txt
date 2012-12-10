@@ -1012,7 +1012,7 @@ PPA the form fails because he has no permission to view its contents.
 
     >>> for error in view.errors:
     ...     print error
-    You don't have permission to use this dependency.
+    You don&#x27;t have permission to use this dependency.
 
 When we grant access to Celso for viewing the private PPA, by making
 him a memeber of the new team, setting the private PPA as dependency

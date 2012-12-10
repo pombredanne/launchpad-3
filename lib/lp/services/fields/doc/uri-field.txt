@@ -36,7 +36,7 @@ valid URI:
   >>> field.validate(u'not-a-uri')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: "not-a-uri" is not a valid URI
+  LaunchpadValidationError: &quot;not-a-uri&quot; is not a valid URI
 
 
 === Scheme Restrictions ===
@@ -50,7 +50,7 @@ will result in a validation error:
   >>> sftp_only.validate(u'http://launchpad.net/')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: The URI scheme "http" is not allowed.
+  LaunchpadValidationError: The URI scheme &quot;http&quot; is not allowed.
   Only URIs with the following schemes may be used: sftp
 
 

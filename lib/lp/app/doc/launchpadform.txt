@@ -260,9 +260,9 @@ Check that widget specific errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  [u'your password must not be "password"']
+  [u'your password must not be &quot;password&quot;']
   >>> view.widget_errors
-  {'password': u'your password must not be "password"'}
+  {'password': u'your password must not be &quot;password&quot;'}
 
 The base template used for LaunchpadFormView classes takes care of
 displaying these errors in the appropriate locations.

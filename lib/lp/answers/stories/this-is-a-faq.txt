@@ -174,7 +174,7 @@ with an error message.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    You didn't modify the linked FAQ.
+    You didn&#x27;t modify the linked FAQ.
 
 To remove the FAQ, the user selects the 'No existing...' option and
 submit the form again.

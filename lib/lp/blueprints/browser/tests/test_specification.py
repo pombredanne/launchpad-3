@@ -40,6 +40,7 @@ from lp.registry.interfaces.product import (
     IProductSeries,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
@@ -826,7 +827,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Started".', notification.message)
+            html_escape('Blueprint is now considered "Started".'),
+            notification.message)
 
     def test_unchanged_lifecycle_has_no_notification(self):
         spec = self.factory.makeSpecification(
@@ -860,7 +862,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Not started".',
+            html_escape('Blueprint is now considered "Not started".'),
             notification.message)
 
     def test_records_completion(self):
@@ -881,7 +883,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Complete".', notification.message)
+            html_escape('Blueprint is now considered "Complete".'),
+            notification.message)
 
 
 class TestSecificationHelpers(unittest.TestCase):

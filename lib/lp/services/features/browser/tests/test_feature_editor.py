@@ -16,6 +16,7 @@ from lp.services.features.browser.edit import FeatureControlView
 from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     BrowserTestCase,
@@ -51,7 +52,6 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
-        url = self.getFeatureRulesViewURL()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
@@ -218,4 +218,6 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertThat(
             browser.contents,
             Contains(
-                'Invalid rule syntax: duplicate priority for flag "key": 10'))
+                html_escape(
+                    'Invalid rule syntax: duplicate priority for flag "key": '
+                    '10')))

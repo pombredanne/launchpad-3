@@ -226,7 +226,7 @@ Uploading file signatures is optional, so we'll just try it this once.
     ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
-    [u"Your file 'foo.txt' has been uploaded."]
+    [u'Your file &#x27;foo.txt&#x27; has been uploaded.']
 
 A file can be uploaded without a GPG signature.
 
@@ -240,7 +240,7 @@ A file can be uploaded without a GPG signature.
     ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
-    [u"Your file 'bar.txt' has been uploaded."]
+    [u'Your file &#x27;bar.txt&#x27; has been uploaded.']
 
 The uploaded file is also displayed on the project's downloads page for any
 user to see.
@@ -338,7 +338,7 @@ Now let's successfully upload two more files.
     ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
-    [u"Your file 'foo2.txt' has been uploaded."]
+    [u'Your file &#x27;foo2.txt&#x27; has been uploaded.']
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
@@ -350,7 +350,7 @@ Now let's successfully upload two more files.
     ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
-    [u"Your file 'foo3.txt' has been uploaded."]
+    [u'Your file &#x27;foo3.txt&#x27; has been uploaded.']
 
 Add a file to a different release on the same project.
 
@@ -364,7 +364,7 @@ Add a file to a different release on the same project.
     ...     name="field.contenttype").displayValue = ["README File"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
-    [u"Your file 'foo09.txt' has been uploaded."]
+    [u'Your file &#x27;foo09.txt&#x27; has been uploaded.']
 
 Examine all of the available files for download for firefox now.  They
 are listed within series in reverse chronological order, except

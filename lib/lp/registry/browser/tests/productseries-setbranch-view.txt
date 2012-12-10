@@ -135,8 +135,9 @@ For Bazaar branches the scheme may only be http or https.
     ...     print notification.message
     >>> for error in view.errors:
     ...     print error
-    ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with
-    the following schemes may be used: bzr, http, https'))
+    ('repo_url'...The URI scheme &quot;bzr+ssh&quot; is not allowed.
+    Only URIs with the following schemes may be used: bzr, http,
+    https'))
 
 A correct URL is accepted.
 
@@ -188,7 +189,7 @@ Git branches cannnot use svn.
     ...     print notification.message
     >>> for error in view.errors:
     ...     print error
-    ('repo_url'...'The URI scheme "svn" is not allowed.  Only
+    ('repo_url'...'The URI scheme &quot;svn&quot; is not allowed.  Only
     URIs with the following schemes may be used: git, http, https'))
 
 But Git branches may use git.
@@ -230,7 +231,7 @@ But Subversion branches cannnot use git.
     ...     print notification.message
     >>> for error in view.errors:
     ...     print error
-    ('repo_url'...'The URI scheme "git" is not allowed.  Only
+    ('repo_url'...'The URI scheme &quot;git&quot; is not allowed.  Only
     URIs with the following schemes may be used: http, https, svn'))
 
 But Subversion branches may use svn as the scheme.

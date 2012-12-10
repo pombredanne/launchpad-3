@@ -16,6 +16,7 @@ from zope.component import (
 
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.queue import CompletePackageUpload
 from lp.soyuz.enums import PackageUploadStatus
@@ -160,8 +161,9 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         view = self.setupQueueView(request)
 
         self.assertEquals(
-            "FAILED: partner-upload (You have no rights to accept "
-            "component(s) 'partner')",
+            html_escape(
+                "FAILED: partner-upload (You have no rights to accept "
+                "component(s) 'partner')"),
             view.request.response.notifications[0].message)
         self.assertEquals(
             'NEW',
@@ -215,8 +217,9 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         view = self.setupQueueView(request)
 
         self.assertEquals(
-            "FAILED: main-upload (You have no rights to accept "
-            "component(s) 'main')",
+            html_escape(
+                "FAILED: main-upload (You have no rights to accept "
+                "component(s) 'main')"),
             view.request.response.notifications[0].message)
         self.assertEquals(
             'NEW',
@@ -264,8 +267,9 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         view = self.setupQueueView(request)
 
         self.assertEqual(
-            "FAILED: main-upload (You have no rights to accept "
-            "component(s) 'main')",
+            html_escape(
+                "FAILED: main-upload (You have no rights to accept "
+                "component(s) 'main')"),
             view.request.response.notifications[0].message)
         self.assertEqual(
             'NEW',
