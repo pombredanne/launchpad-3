@@ -986,6 +986,8 @@ class PersonOwnedTeamsViewTestCase(TestCaseWithFactory):
         self.assertEqual([team], view.batch)
 
     def test_page_text_with_teams(self):
+        # When the person owns teams, the page shows a a listing
+        # table. There is always a link to the team participation page.
         owner = self.factory.makePerson(name='snarf')
         self.factory.makeTeam(owner=owner, name='pting')
         with person_logged_in(owner):
@@ -1001,6 +1003,7 @@ class PersonOwnedTeamsViewTestCase(TestCaseWithFactory):
         self.assertIsNotNone(soup.find('table', {'class': 'lower-batch-nav'}))
 
     def test_page_text_without_teams(self):
+        # When the person does not own teams, the page states the case.
         owner = self.factory.makePerson(name='pting')
         with person_logged_in(owner):
             view = create_initialized_view(

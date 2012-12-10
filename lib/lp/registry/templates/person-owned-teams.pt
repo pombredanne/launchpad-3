@@ -63,10 +63,8 @@
         <span tal:replace="context/displayname">Foo Bar</span>
         doesn't own any teams.
       </p>
-      </tal:maintained-packages>
+    </tal:maintained-packages>
   </div>
-
 </div>
-
 </body>
 </html>
