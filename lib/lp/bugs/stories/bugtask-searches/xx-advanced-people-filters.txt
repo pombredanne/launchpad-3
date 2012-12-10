@@ -57,7 +57,7 @@ If we enter an invalid assignee, we'll get a nice error message.
     ...     'invalid-assignee')
     >>> anon_browser.getControl('Search', index=0).click()
     >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-assignee'."]
+    [u'There&#x27;s no person with the name or email address &#x27;invalid-assignee&#x27;.']
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/~name12/+reportedbugs?advanced=1')
@@ -65,7 +65,7 @@ If we enter an invalid assignee, we'll get a nice error message.
     ...     'invalid-assignee')
     >>> anon_browser.getControl('Search', index=0).click()
     >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-assignee'."]
+    [u'There&#x27;s no person with the name or email address &#x27;invalid-assignee&#x27;.']
 
 
 Searching by reporter
@@ -94,14 +94,15 @@ and invalid searches don't OOPS:
     ...     'invalid-reporter')
     >>> anon_browser.getControl('Search', index=0).click()
     >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-reporter'."]
+    [u'There&#x27;s no person with the name or email address &#x27;invalid-reporter&#x27;.']
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12/+assignedbugs')
     >>> anon_browser.getControl(name='field.bug_reporter').value = (
     ...     'invalid-reporter')
     >>> anon_browser.getControl('Search', index=0).click()
     >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-reporter'."]
+    [u'There&#x27;s no person with the name or email address
+    &#x27;invalid-reporter&#x27;.']
 
 
 Searching for a bug commenter's bugs
@@ -120,7 +121,7 @@ displayed.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'.
+    There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs that person has commented on.
 
@@ -177,7 +178,7 @@ displayed:
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'.
+    There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs for packages or products that
 the person is subscribed to. To demonstrate, we'll begin with a user who

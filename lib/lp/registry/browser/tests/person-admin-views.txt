@@ -1,4 +1,5 @@
-= Person admin pages =
+Person admin pages
+==================
 
 Admistrators can access a subset of any IPerson's fields from the UI.
 The PersonAdministerView is registered under the +review name.
@@ -58,7 +59,8 @@ Non administrators cannot access the +review view
     False
 
 
-== Reviewing a person's account ==
+Reviewing a person's account
+----------------------------
 
 The +reviewaccount allows admins to see and edit user account information.
 Non-admins cannot access it.
@@ -132,9 +134,7 @@ an account is suspended, the preferred email address is disabled.
     >>> print user.preferredemail
     None
 
-An admin can reactivate a disabled user's account too. Unlike the act of
-suspension, reactivation does not change the user's email addresses; the
-user must log in to restore these.
+No one can force account status to an invalid transition:
 
     >>> form = {
     ...     'field.displayname': 'Zaphod Beeblebrox',
@@ -143,10 +143,26 @@ user must log in to restore these.
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
+    >>> [e[2] for e in view.errors]
+    [AccountStatusError(u'The status cannot change
+                        from Suspended Launchpad account to Active account')]
+
+
+An admin can deactivate a suspended user's account too. Unlike the act of
+suspension, reactivation does not change the user's email addresses; the
+user must log in to restore the email addresses using the reactivate step.
+
+    >>> form = {
+    ...     'field.displayname': 'Zaphod Beeblebrox',
+    ...     'field.status': 'DEACTIVATED',
+    ...     'field.status_comment': "Zaphod's a hoopy frood.",
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(user, '+reviewaccount', form=form)
     >>> print view.errors
     []
     >>> user.account_status
-    <DBItem AccountStatus.ACTIVE, ...>
+    <DBItem AccountStatus.DEACTIVATED, ...>
     >>> print user.account_status_comment
     Zaphod's a hoopy frood.
     >>> print user.preferredemail

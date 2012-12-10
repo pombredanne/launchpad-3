@@ -427,6 +427,13 @@ class IProductPublic(Interface):
     def userCanView(user):
         """True if the given user has access to this product."""
 
+    private = exported(
+        Bool(
+            title=_("Product is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "This product is visible only to those with access grants.")))
+
 
 class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
     """Attributes that must be visible for person with artifact grants
@@ -476,7 +483,6 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
             description=_("The restricted team, moderated team, or person "
                           "who maintains the project information in "
                           "Launchpad.")))
-
     project = exported(
         ReferenceChoice(
             title=_('Part of'),
@@ -501,12 +507,12 @@ class IProductLimitedView(IHasIcon, IHasLogo, IHasOwner, ILaunchpadUsage):
 
 class IProductView(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-    IHasDrivers, IHasExternalBugTracker,
+    IHasExternalBugTracker,
     IHasMergeProposals, IHasMilestones, IHasExpirableBugs,
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
+    IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     registrant = exported(
@@ -528,11 +534,6 @@ class IProductView(
                 "and just appoint a team for each specific series, rather "
                 "than having one project team that does it all."),
             required=False, vocabulary='ValidPersonOrTeam'))
-
-    drivers = Attribute(
-        "Presents the drivers of this project as a list. A list is "
-        "required because there might be a project driver and also a "
-        "driver appointed in the overarching project group.")
 
     summary = exported(
         Summary(
@@ -915,12 +916,21 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
         Checks authorization and entitlement.
         """
 
+    def checkInformationType(value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
+
 
 class IProduct(
-    IBugTarget, IHasBugSupervisor, IProductEditRestricted,
+    IBugTarget, IHasBugSupervisor, IHasDrivers, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted, IProductView,
     IProductLimitedView, IProductPublic, IQuestionTarget, IRootContext,
-    IStructuralSubscriptionTarget, IInformationType, IPillar):
+    ISpecificationTarget, IStructuralSubscriptionTarget, IInformationType,
+    IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -930,6 +940,12 @@ class IProduct(
     """
 
     export_as_webservice_entry('project')
+
+    drivers = Attribute(
+        "Presents the drivers of this project as a list. A list is "
+        "required because there might be a project driver and also a "
+        "driver appointed in the overarching project group.")
+
 
 # Fix cyclic references.
 IProjectGroup['products'].value_type = Reference(IProduct)

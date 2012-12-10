@@ -89,8 +89,8 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessArtifactGrantSource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -108,7 +108,6 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -183,13 +182,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         default=SpecificationDefinitionStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
+    _assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    drafter = ForeignKey(dbName='drafter', notNull=False,
+    _drafter = ForeignKey(dbName='drafter', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    approver = ForeignKey(dbName='approver', notNull=False,
+    _approver = ForeignKey(dbName='approver', notNull=False,
         foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     owner = ForeignKey(
@@ -265,6 +264,42 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         intermediateTable='SpecificationDependency')
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
+
+    def set_assignee(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
+        self._assignee = person
+
+    def get_assignee(self):
+        return self._assignee
+
+    assignee = property(get_assignee, set_assignee)
+
+    def set_drafter(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
+        self._drafter = person
+
+    def get_drafter(self):
+        return self._drafter
+
+    drafter = property(get_drafter, set_drafter)
+
+    def set_approver(self, person):
+        self.subscribeIfAccessGrantNeeded(person)
+        self._approver = person
+
+    def get_approver(self):
+        return self._approver
+
+    approver = property(get_approver, set_approver)
+
+    def subscribeIfAccessGrantNeeded(self, person):
+        """Subscribe person if this specification is not public and if
+        the person does not already have grants to access the specification.
+        """
+        if person is None or self.userCanView(person):
+            return
+        current_user = getUtility(ILaunchBag).user
+        self.subscribe(person, subscribed_by=current_user)
 
     @cachedproperty
     def subscriptions(self):
@@ -823,24 +858,52 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    @property
-    def all_deps(self):
-        return Store.of(self).with_(
+    def all_deps(self, user=None):
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,
+                )
+
+        results = Store.of(self).with_(
             SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)')
+            SQL('Specification.id in (select id from dependencies)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
 
-    @property
-    def all_blocked(self):
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
+
+    def all_blocked(self, user=None):
         """See `ISpecification`."""
-        return Store.of(self).with_(
+        public_clause = True
+        if user is None:
+            public_clause = (
+                Specification.information_type == InformationType.PUBLIC,
+                )
+
+        results = Store.of(self).with_(
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)')
+            SQL('Specification.id in (select id from blocked)'),
+            public_clause,
             ).order_by(Specification.name, Specification.id)
+
+        results = list(results)
+
+        if user:
+            service = getUtility(IService, 'sharing')
+            (ignore, ignore, results) = service.getVisibleArtifacts(
+                user, specifications=results)
+        return results
 
     # branches
     def getBranchLink(self, branch):
@@ -996,17 +1059,20 @@ class HasSpecificationsMixin:
         :return: A DecoratedResultSet with Person precaching setup.
         """
         # Circular import.
-        from lp.registry.model.person import Person
         if isinstance(clauses, basestring):
             clauses = [SQL(clauses)]
 
         def cache_people(rows):
+            """DecoratedResultSet pre_iter_hook to eager load Person
+             attributes.
+            """
+            from lp.registry.model.person import Person
             # Find the people we need:
             person_ids = set()
             for spec in rows:
-                person_ids.add(spec.assigneeID)
-                person_ids.add(spec.approverID)
-                person_ids.add(spec.drafterID)
+                person_ids.add(spec._assigneeID)
+                person_ids.add(spec._approverID)
+                person_ids.add(spec._drafterID)
             person_ids.discard(None)
             if not person_ids:
                 return
@@ -1017,7 +1083,7 @@ class HasSpecificationsMixin:
             origin.extend(validity_info["joins"])
             columns.extend(validity_info["tables"])
             decorators = validity_info["decorators"]
-            personset = Store.of(self).using(*origin).find(
+            personset = IStore(Specification).using(*origin).find(
                 tuple(columns),
                 Person.id.is_in(person_ids),
                 )
@@ -1029,7 +1095,8 @@ class HasSpecificationsMixin:
                     index += 1
                     decorator(person, column)
 
-        results = Store.of(self).using(*tables).find(Specification, *clauses)
+        results = IStore(Specification).using(*tables).find(
+            Specification, *clauses)
         return DecoratedResultSet(results, pre_iter_hook=cache_people)
 
     @property
@@ -1088,100 +1155,41 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
-        """See IHasSpecifications."""
+        store = IStore(Specification)
 
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
+        # Take the visibility due to privacy into account.
+        privacy_tables, clauses = visible_specification_query(user)
+
         if not filter:
-            # When filter is None or [] then we decide the default
-            # which for a product is to show incomplete specs
+            # Default to showing incomplete specs
             filter = [SpecificationFilter.INCOMPLETE]
 
-        # now look at the filter and fill in the unsaid bits
-
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a distro
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
+        spec_clauses = get_specification_filters(filter)
+        clauses.extend(spec_clauses)
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
+            order = [Desc(Specification.priority),
+                     Specification.definition_status,
+                     Specification.name]
+
         elif sort == SpecificationSort.DATE:
             if SpecificationFilter.COMPLETE in filter:
                 # if we are showing completed, we care about date completed
-                order = ['-Specification.date_completed', 'Specification.id']
+                order = [Desc(Specification.date_completed),
+                         Specification.id]
             else:
                 # if not specially looking for complete, we care about date
                 # registered
-                order = ['-Specification.datecreated', 'Specification.id']
+                order = [Desc(Specification.datecreated), Specification.id]
 
-        # figure out what set of specifications we are interested in. for
-        # products, we need to be able to filter on the basis of:
-        #
-        #  - completeness.
-        #  - informational.
-        #
-
-        # filter out specs on inactive products
-        base = """((Specification.product IS NULL OR
-                   Specification.product NOT IN
-                    (SELECT Product.id FROM Product
-                     WHERE Product.active IS FALSE))
-                   AND Specification.information_type = 1)
-                """
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s ' %
-                quote(SpecificationImplementationStatus.INFORMATIONAL.value))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            # XXX: kiko 2007-02-07: this is untested and was broken.
-            query += (
-                ' AND Specification.definition_status NOT IN ( %s, %s ) ' %
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+            results = self._preload_specifications_people(
+                privacy_tables, clauses)
+        else:
+            results = store.using(*privacy_tables).find(
+                Specification, *clauses)
+        return results.order_by(*order)[:quantity]
 
     def getByURL(self, url):
         """See ISpecificationSet."""
@@ -1222,8 +1230,8 @@ class SpecificationSet(HasSpecificationsMixin):
         spec = Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
-            approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            _approver=approver, product=product, distribution=distribution,
+            _assignee=assignee, _drafter=drafter, whiteboard=whiteboard)
         spec.transitionToInformationType(information_type, None)
         return spec
 

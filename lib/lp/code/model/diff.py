@@ -51,10 +51,14 @@ from lp.services.config import config
 from lp.services.database.bulk import load_referencing
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
 class Diff(SQLBase):
@@ -94,11 +98,31 @@ class Diff(SQLBase):
         if self.diff_text is None:
             return ''
         else:
-            self.diff_text.open()
+            self.diff_text.open(self._getDiffTimeout())
             try:
                 return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
+
+    def _getDiffTimeout(self):
+        """Return the seconds allocated to get the diff from the librarian.
+
+         the value will be Non for scripts, 2 for the webapp, or if thre is
+         little request time left, the number will be smaller or equal to
+         the remaining request time.
+        """
+        remaining = get_request_remaining_seconds()
+        if remaining is None:
+            return LIBRARIAN_SERVER_DEFAULT_TIMEOUT
+        elif remaining > 2.0:
+            # The maximum permitted time for webapp requests.
+            return 2.0
+        elif remaining > 0.01:
+            # Shave off 1 hundreth of a second off so that the call site
+            # has a chance to recover.
+            return remaining - 0.01
+        else:
+            return remaining
 
     @property
     def oversized(self):
@@ -231,11 +255,6 @@ class Diff(SQLBase):
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
-        # Generation of diffstat is currently failing in some circumstances.
-        # See bug 436325.  Since diffstats are incidental to the whole
-        # process, we don't want failure here to kill the generation of the
-        # diff itself, but we do want to hear about it.  So log an error using
-        # the error reporting utility.
         try:
             diffstat = cls.generateDiffstat(diff_content_bytes)
         except Exception:
@@ -262,7 +281,9 @@ class Diff(SQLBase):
         :return: A map of {filename: (added_line_count, removed_line_count)}
         """
         file_stats = {}
-        for patch in parse_patches(diff_bytes.splitlines(True)):
+        # Set allow_dirty, so we don't raise exceptions for dirty patches.
+        patches = parse_patches(diff_bytes.splitlines(True), allow_dirty=True)
+        for patch in patches:
             if not isinstance(patch, Patch):
                 continue
             path = patch.newname.split('\t')[0]

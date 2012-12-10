@@ -1107,7 +1107,7 @@ an error message back.
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'error'):
     ...     print tag.renderContents()
-    Ignored your upload because you didn't select a file to upload.
+    Ignored your upload because you didn&#x27;t select a file to upload.
 
 Uploading files with an unkown file format notifies the user that it
 cannot be handled.

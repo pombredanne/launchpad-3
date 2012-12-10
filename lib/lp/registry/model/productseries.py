@@ -58,6 +58,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productrelease import IProductReleaseSet
@@ -147,11 +148,23 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+
+    def validate_autoimport_mode(self, attr, value):
+        # Perform the normal validation for None
+        if value is None:
+            return value
+        if (self.product.private and
+            value != TranslationsBranchImportMode.NO_IMPORT):
+            raise ProprietaryProduct('Translations are disabled for'
+                                     ' proprietary projects.')
+        return value
+
     translations_autoimport_mode = EnumCol(
         dbName='translations_autoimport_mode',
         notNull=True,
         schema=TranslationsBranchImportMode,
-        default=TranslationsBranchImportMode.NO_IMPORT)
+        default=TranslationsBranchImportMode.NO_IMPORT,
+        storm_validator=validate_autoimport_mode)
     translations_branch = ForeignKey(
         dbName='translations_branch', foreignKey='Branch', notNull=False,
         default=None)
@@ -430,7 +443,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = results.prejoin(['_assignee', '_approver', '_drafter'])
         return results
 
     def _customizeSearchParams(self, search_params):

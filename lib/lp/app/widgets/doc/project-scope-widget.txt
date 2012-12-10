@@ -116,13 +116,14 @@ raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no project named 'invalid'
-                              registered in Launchpad
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'There is no project named
+    &#x27;invalid&#x27; registered in Launchpad'))
 
 The same error text is returned by error():
 
     >>> print widget.error()
-    There is no project named 'invalid' registered in Launchpad
+    There is no project named &#x27;invalid&#x27; registered in Launchpad
 
 If no project name is given at all, a widget error is also raised:
 
@@ -135,7 +136,8 @@ If no project name is given at all, a widget error is also raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a project name
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'Please enter a project name'))
 
     >>> print widget.error()
     Please enter a project name
@@ -149,7 +151,8 @@ If no project name is given at all, a widget error is also raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a project name
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'Please enter a project name'))
 
     >>> print widget.error()
     Please enter a project name

@@ -163,6 +163,10 @@ class Message(SQLBase):
     # interface because it is used as a UI field in MessageAddView
     content = None
 
+    def getAPIParent(self):
+        """See `IMessage`."""
+        return None
+
 
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.

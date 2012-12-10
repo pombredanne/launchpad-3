@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'IProductSeries',
     'IProductSeriesEditRestricted',
+    'IProductSeriesLimitedView',
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'IProductSeriesView',
@@ -138,22 +139,7 @@ class IProductSeriesPublic(Interface):
         """True if the given user has access to this product."""
 
 
-class IProductSeriesView(
-    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
-    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
-    product = exported(
-        ReferenceChoice(title=_('Project'), required=True,
-            vocabulary='Product', schema=Interface),  # really IProduct
-        exported_as='project')
-    productID = Attribute('The product ID.')
-
-    status = exported(
-        Choice(
-            title=_('Status'), required=True, vocabulary=SeriesStatus,
-            default=SeriesStatus.DEVELOPMENT))
-
-    parent = Attribute('The structural parent of this series - the product')
+class IProductSeriesLimitedView(Interface):
 
     name = exported(
         ProductSeriesNameField(
@@ -164,6 +150,24 @@ class IProductSeriesView(
                 "lowercase, with no special characters. For example, '2.0' "
                 "or 'trunk'."),
             constraint=name_validator))
+
+    product = exported(
+        ReferenceChoice(title=_('Project'), required=True,
+            vocabulary='Product', schema=Interface),  # really IProduct
+        exported_as='project')
+    productID = Attribute('The product ID.')
+
+
+class IProductSeriesView(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
+    status = exported(
+        Choice(
+            title=_('Status'), required=True, vocabulary=SeriesStatus,
+            default=SeriesStatus.DEVELOPMENT))
+
+    parent = Attribute('The structural parent of this series - the product')
 
     datecreated = exported(
         Datetime(title=_('Date Registered'),
@@ -336,7 +340,8 @@ class IProductSeriesView(
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
-                     IProductSeriesView, IStructuralSubscriptionTarget):
+                     IProductSeriesView, IProductSeriesLimitedView,
+                     IStructuralSubscriptionTarget, IBugTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 

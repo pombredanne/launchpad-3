@@ -118,6 +118,7 @@ database. Only an admin can change the status.
     >>> account.date_status_set > original_date_status_set
     True
 
+    >>> account.status = AccountStatus.DEACTIVATED
     >>> account.status = AccountStatus.ACTIVE
     >>> login('no-priv@canonical.com')
 

@@ -40,6 +40,7 @@ from lp.registry.interfaces.product import (
     IProductSeries,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
@@ -157,7 +158,7 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
-class TestSpecificationView(TestCaseWithFactory):
+class TestSpecificationView(BrowserTestCase):
     """Test the SpecificationView."""
 
     layer = DatabaseFunctionalLayer
@@ -184,7 +185,21 @@ class TestSpecificationView(TestCaseWithFactory):
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
 
-    def test_view_for_user_with_artifact_grant(self):
+    def test_private_specification_without_authorization(self):
+        # Users without access get a 404 when trying to view private
+        # specifications.
+        owner = self.factory.makePerson()
+        policy = SpecificationSharingPolicy.PROPRIETARY
+        product = self.factory.makeProduct(owner=owner,
+            specification_sharing_policy=policy)
+        with person_logged_in(owner):
+            spec = self.factory.makeSpecification(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+            url = canonical_url(spec)
+        self.assertRaises(NotFound, self.getUserBrowser, url=url, user=None)
+
+    def test_view_for_subscriber_with_artifact_grant(self):
         # Users with an artifact grant for a specification related to a
         # private  product can view the specification page.
         owner = self.factory.makePerson()
@@ -196,13 +211,11 @@ class TestSpecificationView(TestCaseWithFactory):
             spec = self.factory.makeSpecification(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)
-            getUtility(IService, 'sharing').ensureAccessGrants(
-                [user], owner, specifications=[spec])
-        with person_logged_in(user):
-            view = create_initialized_view(
-                spec, name='+index', principal=user, rootsite='blueprints')
-            # Calling render() does not raise any exceptions.
-            self.assertIn(spec.name, view.render())
+            spec.subscribe(user, subscribed_by=owner)
+            spec_name = spec.name
+        # Creating the view does not raise any exceptions.
+        view = self.getViewBrowser(spec, user=user)
+        self.assertIn(spec_name, view.contents)
 
 
 def set_blueprint_information_type(test_case, enabled):
@@ -814,7 +827,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Started".', notification.message)
+            html_escape('Blueprint is now considered "Started".'),
+            notification.message)
 
     def test_unchanged_lifecycle_has_no_notification(self):
         spec = self.factory.makeSpecification(
@@ -848,7 +862,7 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Not started".',
+            html_escape('Blueprint is now considered "Not started".'),
             notification.message)
 
     def test_records_completion(self):
@@ -869,7 +883,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Complete".', notification.message)
+            html_escape('Blueprint is now considered "Complete".'),
+            notification.message)
 
 
 class TestSecificationHelpers(unittest.TestCase):

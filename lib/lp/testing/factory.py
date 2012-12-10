@@ -632,6 +632,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
+        if account_status == AccountStatus.NOACCOUNT:
+            email_address_status = EmailAddressStatus.NEW
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             displayname=displayname,
@@ -662,7 +664,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        once_active = (AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED)
         if account_status:
+            if account_status in once_active:
+                removeSecurityProxy(person.account).status = (
+                    AccountStatus.ACTIVE)
             removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
@@ -967,7 +973,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, driver=None, icon=None,
         bug_sharing_policy=None, branch_sharing_policy=None,
-        specification_sharing_policy=None, information_type=None):
+        specification_sharing_policy=None, information_type=None,
+        answers_usage=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -1014,6 +1021,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.official_malone = official_malone
         if translations_usage is not None:
             naked_product.translations_usage = translations_usage
+        if answers_usage is not None:
+            naked_product.answers_usage = answers_usage
         if bug_supervisor is not None:
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:

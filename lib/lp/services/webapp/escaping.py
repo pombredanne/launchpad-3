@@ -18,6 +18,11 @@ from lp.services.webapp.interfaces import IStructuredString
 from lp.services.webapp.publisher import get_current_browser_request
 
 
+HTML_REPLACEMENTS = (
+    ('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;'), ('"', '&quot;'),
+    ("'", '&#x27;'))
+
+
 def html_escape(message):
     """Performs translation and sanitizes any HTML present in the message.
 
@@ -43,11 +48,8 @@ def html_escape(message):
         # internationalized object, so we need to translate it
         # first. See bug #54987.
         raw = unicode(translate_if_i18n(message))
-        raw = raw.replace('&', '&amp;')
-        raw = raw.replace('<', '&lt;')
-        raw = raw.replace('>', '&gt;')
-        raw = raw.replace('"', '&quot;')
-        raw = raw.replace("'", '&#x27;')
+        for needle, replacement in HTML_REPLACEMENTS:
+            raw = raw.replace(needle, replacement)
         return raw
 
 
@@ -91,12 +93,12 @@ class structured:
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
         if reps:
-            escaped = tuple(html_escape(rep) for rep in reps)
+            self.escapedtext = text % tuple(html_escape(rep) for rep in reps)
         elif kwreps:
-            escaped = dict((k, html_escape(v)) for k, v in kwreps.iteritems())
+            self.escapedtext = text % dict(
+                (k, html_escape(v)) for k, v in kwreps.iteritems())
         else:
-            escaped = ()
-        self.escapedtext = text % escaped
+            self.escapedtext = text
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text

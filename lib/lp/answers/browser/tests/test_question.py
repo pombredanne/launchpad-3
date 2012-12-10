@@ -7,12 +7,16 @@ __metaclass__ = type
 
 __all__ = []
 
+from zope.security.proxy import removeSecurityProxy
 from lp.answers.browser.question import QuestionTargetWidget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.publisher import AnswersLayer
+from lp.app.enums import ServiceUsage
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
+    logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -55,6 +59,20 @@ class TestQuestionAddView(TestCaseWithFactory):
         self.assertEqual(
             'The summary cannot exceed 250 characters.', view.errors[0])
 
+    def test_context_uses_answers(self):
+        # If a target doesn't use answers, it doesn't provide the form.
+        #logout()
+        owner = removeSecurityProxy(self.question_target).owner
+        with person_logged_in(owner):
+            self.question_target.answers_usage = ServiceUsage.NOT_APPLICABLE
+        login_person(self.user)
+        view = create_initialized_view(
+            self.question_target, name='+addquestion', layer=AnswersLayer,
+            principal=self.user)
+        self.assertFalse(view.context_uses_answers)
+        contents = view.render()
+        msg = "<strong>does not use</strong> Launchpad as its answer forum"
+        self.assertIn(msg, contents)
 
 class QuestionEditViewTestCase(TestCaseWithFactory):
     """Verify the behavior of the QuestionEditView."""

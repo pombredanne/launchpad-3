@@ -1035,18 +1035,22 @@
                 bugtasks
                 code_name
                 dateexpected
-                displayname
                 distribution
                 distroseries
                 getSpecifications
                 getTags
                 getTagsData
-                name
                 product
                 product_release
                 productseries
                 series_target
                 summary
+                "/>
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                displayname
+                name
                 target
                 title
                 "/>
@@ -1268,11 +1272,10 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
-        <allow
-            interface="lp.app.interfaces.informationtype.IInformationType"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.informationtype.IInformationType"/>
+        <allow attributes="information_type" />
         <require
             permission="launchpad.Edit"
             set_attributes="answers_usage blueprints_usage codehosting_usage
@@ -1436,6 +1439,31 @@
         <require
             permission="launchpad.Edit"
             set_attributes="bug_supervisor"/>
+
+        <!-- ISpecificationTarget -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                getSpecification" />
+        <require
+            permission="launchpad.View"
+            attributes="
+                _all_specifications
+                _valid_specifications
+                getAllowedSpecificationInformationTypes
+                getDefaultSpecificationInformationType
+                specifications" />
+
+        <!-- IHasDrivers -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                drivers" />
+        <require
+            permission="launchpad.View"
+            attributes="
+                personHasDriverRights" />
+
     </class>
 
     <!-- ProductWithLicenses
@@ -1540,6 +1568,9 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.productseries.IProductSeriesLimitedView"/>
+        <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
         <require
@@ -1549,7 +1580,7 @@
             permission="launchpad.View"
             interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <require
-            permission="launchpad.View"
+            permission="launchpad.LimitedView"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1564,14 +1595,44 @@
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
-        <!-- IStructuralSubscriptionTarget -->
+        <!-- IStructuralSubscriptionTarget
 
+             Most attributes of IStructuralSubscriptionTargetRead require
+             launchpad.View, some require launchpad.LimitedView -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target"/>
         <require
             permission="launchpad.View"
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
+        <!-- IBugTarget -->
+        <require
+             permission="launchpad.LimitedView"
+             attributes="
+                 bugtargetdisplayname"/>>
+        <require
+             permission="launchpad.View"
+             attributes="
+                 bug_reported_acknowledgement
+                 bug_reporting_guidelines
+                 bugtargetname
+                 createBug
+                 enable_bugfiling_duplicate_search
+                 getBugTaskWeightFunction
+                 pillar
+                 searchTasks"/>
 
     </class>
     <adapter
@@ -1599,7 +1660,8 @@
 
     <class
         class="lp.registry.model.productseries.TimelineProductSeries">
-        <allow
+        <require
+            permission="launchpad.View"
             interface="lp.registry.interfaces.productseries.ITimelineProductSeries"/>
     </class>
 

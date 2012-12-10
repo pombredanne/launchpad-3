@@ -1112,10 +1112,11 @@ class SpecGraph:
     # containing one '%s' replacement marker.
     url_pattern_for_testing = None
 
-    def __init__(self):
+    def __init__(self, user=None):
         self.nodes = set()
         self.edges = set()
         self.root_node = None
+        self.user = user
 
     def newNode(self, spec, root=False):
         """Return a new node based on the given spec.
@@ -1166,7 +1167,8 @@ class SpecGraph:
         """Add nodes for the specs that the given spec depends on,
         transitively.
         """
-        get_related_specs_fn = attrgetter('dependencies')
+        def get_related_specs_fn(spec):
+            return spec.all_deps(user=self.user)
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -1174,7 +1176,8 @@ class SpecGraph:
 
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
-        get_related_specs_fn = attrgetter('blocked_specs')
+        def get_related_specs_fn(spec):
+            return spec.all_blocked(user=self.user)
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
@@ -1405,7 +1408,7 @@ class SpecificationTreeGraphView(LaunchpadView):
     def makeSpecGraph(self):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
-        graph = SpecGraph()
+        graph = SpecGraph(self.user)
         graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
@@ -1437,6 +1440,9 @@ class SpecificationTreeGraphView(LaunchpadView):
         process.stdin.close()
         output = process.stdout.read()
         err = process.stderr.read()
+        # XXX Abel Deuring 2012-12-06, bug 1087314
+        # err may just contain a warning, while the image might be rendered
+        # correctly. We should not raise an error in this case.
         if err:
             raise ProblemRenderingGraph(err, output)
         return output

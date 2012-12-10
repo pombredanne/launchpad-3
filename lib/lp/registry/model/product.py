@@ -61,6 +61,7 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import (
+    Question,
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
@@ -130,6 +131,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    INCLUSIVE_TEAM_POLICY,
     SpecificationSharingPolicy,
     )
 from lp.registry.errors import (
@@ -210,6 +212,8 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -299,7 +303,7 @@ class ProductWithLicenses:
     def composeLicensesColumn(cls, for_class=None):
         """Compose a Storm column specification for licences.
 
-        Use this to render a list of `Product` links without querying
+        Use this to render a list of `Product` linkes without querying
         licences for each one individually.
 
         It lets you prefetch the licensing information in the same
@@ -454,13 +458,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         pass
 
     def _valid_product_information_type(self, attr, value):
+        for exception in self.checkInformationType(value):
+            raise exception
+        return value
+
+    def checkInformationType(self, value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
         if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
-            raise CannotChangeInformationType('Not supported for Projects.')
+            yield CannotChangeInformationType('Not supported for Projects.')
         if value in PROPRIETARY_INFORMATION_TYPES:
             if self.answers_usage == ServiceUsage.LAUNCHPAD:
-                raise CannotChangeInformationType('Answers is enabled.')
+                yield CannotChangeInformationType('Answers is enabled.')
         if self._SO_creating or value not in PROPRIETARY_INFORMATION_TYPES:
-            return value
+            return
         # Additional checks when transitioning an existing product to a
         # proprietary type
         # All specs located by an ALL search are public.
@@ -469,26 +484,46 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not public_specs.is_empty():
             # Unlike bugs and branches, specifications cannot be USERDATA or a
             # security type.
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some blueprints are public.')
-        non_proprietary_bugs = Store.of(self).find(Bug,
+        store = Store.of(self)
+        non_proprietary_bugs = store.find(Bug,
             Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
             BugTask.bug == Bug.id, BugTask.product == self.id)
         if not non_proprietary_bugs.is_empty():
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
-        non_proprietary_branches = Store.of(self).find(
+        non_proprietary_branches = store.find(
             Branch, Branch.product == self.id,
             Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
         )
         if not non_proprietary_branches.is_empty():
-            raise CannotChangeInformationType(
+            yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')
+        questions = store.find(Question, Question.product == self.id)
+        if not questions.is_empty():
+            yield CannotChangeInformationType('This project has questions.')
+        templates = store.find(
+            POTemplate, ProductSeries.product == self.id,
+            POTemplate.productseries == ProductSeries.id)
+        if not templates.is_empty():
+            yield CannotChangeInformationType('This project has translations.')
+        if not self.getTranslationImportQueueEntries().is_empty():
+            yield CannotChangeInformationType(
+                'This project has queued translations.')
+        import_productseries = store.find(
+            ProductSeries,
+            ProductSeries.product == self.id,
+            ProductSeries.translations_autoimport_mode !=
+            TranslationsBranchImportMode.NO_IMPORT)
+        if not import_productseries.is_empty():
+            yield CannotChangeInformationType(
+                'Some product series have translation imports enabled.')
         if not self.packagings.is_empty():
-            raise CannotChangeInformationType('Some series are packaged.')
+            yield CannotChangeInformationType('Some series are packaged.')
         if self.translations_usage == ServiceUsage.LAUNCHPAD:
-            raise CannotChangeInformationType('Translations are enabled.')
+            yield CannotChangeInformationType('Translations are enabled.')
         # Proprietary check works only after creation, because during
         # creation, has_commercial_subscription cannot give the right value
         # and triggers an inappropriate DB flush.
@@ -503,10 +538,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # If you have a commercial subscription, but it's not current, you
         # cannot set the information type to a PROPRIETARY type.
         if not self.has_current_commercial_subscription:
-            raise CommercialSubscribersOnly(
+            yield CommercialSubscribersOnly(
                 'A valid commercial subscription is required for private'
                 ' Projects.')
-        return value
+        if (self.bug_supervisor is not None and
+            self.bug_supervisor.membership_policy in INCLUSIVE_TEAM_POLICY):
+            yield CannotChangeInformationType(
+                'Bug supervisor has inclusive membership.')
 
     _information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC,
@@ -567,10 +605,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
+
+    def validate_translations_usage(self, attr, value):
+        if value == ServiceUsage.LAUNCHPAD and self.private:
+            raise ProprietaryProduct(
+                "Translations are not supported for proprietary products.")
+        return value
+
     translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        default=ServiceUsage.UNKNOWN,
+        storm_validator=validate_translations_usage)
 
     @property
     def codehosting_usage(self):
@@ -2043,16 +2089,13 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        user = getUtility(ILaunchBag).user
-        privacy_clause = self.getProductPrivacyFilter(user)
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID,
-            privacy_clause).config(
+            Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

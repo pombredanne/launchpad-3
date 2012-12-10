@@ -5,7 +5,11 @@
 
 __metaclass__ = type
 
-
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import pytz
 from storm.store import Store
 from zope.component import (
     getUtility,
@@ -28,7 +32,11 @@ from lp.app.interfaces.services import IService
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationFilter,
     SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -40,6 +48,7 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -533,3 +542,252 @@ class TestSpecificationSet(TestCaseWithFactory):
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
+
+
+def list_result(context, filter=None, user=None):
+    result = context.specifications(
+        user, SpecificationSort.DATE, filter=filter)
+    return list(result)
+
+
+class TestSpecifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecifications, self).setUp()
+        self.date_created = datetime.now(pytz.utc)
+
+    def makeSpec(self, product=None, date_created=0, title=None,
+                 status=NewSpecificationDefinitionStatus.NEW,
+                 name=None, priority=None, information_type=None):
+        blueprint = self.factory.makeSpecification(
+            title=title, status=status, name=name, priority=priority,
+            information_type=information_type, product=product,
+            )
+        removeSecurityProxy(blueprint).datecreated = (
+            self.date_created + timedelta(date_created))
+        return blueprint
+
+    def test_specifications_quantity(self):
+        # Ensure the quantity controls the maximum number of entries.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        for count in range(10):
+            self.factory.makeSpecification(product=product)
+        self.assertEqual(20, context.specifications(None).count())
+        result = context.specifications(None, quantity=None).count()
+        self.assertEqual(20, result)
+        self.assertEqual(8, context.specifications(None, quantity=8).count())
+        self.assertEqual(11, context.specifications(None, quantity=11).count())
+
+    def test_date_sort(self):
+        # Sort on date_created.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        blueprint1 = self.makeSpec(product, date_created=0)
+        blueprint2 = self.makeSpec(product, date_created=-1)
+        blueprint3 = self.makeSpec(product, date_created=1)
+        result = list_result(context)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result[0:3])
+
+    def test_date_sort_id(self):
+        # date-sorting when no date varies uses object id.
+        context = getUtility(ISpecificationSet)
+        product = self.factory.makeProduct()
+        blueprint1 = self.makeSpec(product)
+        blueprint2 = self.makeSpec(product)
+        blueprint3 = self.makeSpec(product)
+        result = list_result(context)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result[0:3])
+
+    def test_priority_sort(self):
+        # Sorting by priority works and is the default.
+        # When priority is supplied, status is ignored.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(priority=SpecificationPriority.UNDEFINED,
+                                   status=SpecificationDefinitionStatus.NEW)
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(
+            product, priority=SpecificationPriority.NOTFORUS,
+            status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(
+            product, priority=SpecificationPriority.LOW,
+            status=SpecificationDefinitionStatus.NEW)
+        result = list(context.specifications(
+            None, sort=SpecificationSort.PRIORITY))
+        self.assertTrue(
+            result.index(blueprint3) <
+            result.index(blueprint1) <
+            result.index(blueprint2))
+
+    def test_priority_sort_fallback_is_priority(self):
+        # Sorting by default falls back to Priority
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(name='b')
+        product = blueprint1.product
+        self.makeSpec(product, name='c')
+        self.makeSpec(product, name='a')
+        base_result = context.specifications(None)
+        priority_result = context.specifications(
+            None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual(list(base_result), list(priority_result))
+
+    def test_informational(self):
+        # INFORMATIONAL causes only informational specs to be shown.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        informational = self.factory.makeSpecification(
+            implementation_status=enum.INFORMATIONAL)
+        product = informational.product
+        plain = self.factory.makeSpecification(product=product)
+        result = context.specifications(None)
+        self.assertIn(informational, result)
+        self.assertIn(plain, result)
+        result = context.specifications(
+            None, filter=[SpecificationFilter.INFORMATIONAL])
+        self.assertIn(informational, result)
+        self.assertNotIn(plain, result)
+
+    def test_completeness(self):
+        # If COMPLETE is specified, completed specs are listed.  If INCOMPLETE
+        # is specified or neither is specified, only incomplete specs are
+        # listed.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        product = implemented.product
+        non_implemented = self.factory.makeSpecification(product=product)
+        result = context.specifications(
+            None, filter=[SpecificationFilter.COMPLETE])
+        self.assertIn(implemented, result)
+        self.assertNotIn(non_implemented, result)
+
+        result = context.specifications(
+            None, filter=[SpecificationFilter.INCOMPLETE])
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+        result = context.specifications(None)
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
+    def test_all(self):
+        # ALL causes both complete and incomplete to be listed.
+        context = getUtility(ISpecificationSet)
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        product = implemented.product
+        non_implemented = self.factory.makeSpecification(product=product)
+        result = context.specifications(None, filter=[SpecificationFilter.ALL])
+        self.assertIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
+    def test_valid(self):
+        # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
+        # (INCOMPLETE already excludes OBSOLETE and SUPERSEDED.)
+        context = getUtility(ISpecificationSet)
+        i_enum = SpecificationImplementationStatus
+        d_enum = SpecificationDefinitionStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=i_enum.IMPLEMENTED)
+        product = implemented.product
+        superseded = self.factory.makeSpecification(product=product,
+                                                    status=d_enum.SUPERSEDED)
+        self.factory.makeSpecification(product=product, status=d_enum.OBSOLETE)
+        filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
+        results = context.specifications(None, filter=filter)
+        self.assertIn(implemented, results)
+        self.assertNotIn(superseded, results)
+
+    def test_text_search(self):
+        # Text searches work.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(title='abc')
+        product = blueprint1.product
+        blueprint2 = self.makeSpec(product, title='def')
+        result = list_result(context, ['abc'])
+        self.assertEqual([blueprint1], result)
+        result = list_result(product, ['def'])
+        self.assertEqual([blueprint2], result)
+
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        context = getUtility(ISpecificationSet)
+        private_spec = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertNotIn(private_spec, list(context.specifications(None)))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertIn(
+            blueprint1,
+            list(context.specifications(grant.grantee)))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        context = getUtility(ISpecificationSet)
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertIn(
+            blueprint1,
+            list(context.specifications(user=grant.grantee)))
+
+    def run_test_setting_special_role_subscribes(self, role_name):
+        # If a user becomes the assignee, drafter or approver of a
+        # proprietary specification, they are automatically subscribed,
+        # if they do not have yet been granted access to the specification.
+        specification_sharing_policy = (
+                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        product = self.factory.makeProduct(
+            specification_sharing_policy=specification_sharing_policy)
+        blueprint = self.makeSpec(
+            product=product, information_type=InformationType.PROPRIETARY)
+        person_with_new_role = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            setattr(blueprint, role_name, person_with_new_role)
+            self.assertIsNot(
+                None, blueprint.subscription(person_with_new_role))
+
+        # Assignees/drafters/approvers are not subscribed if they already
+        # have a policy grant for the specification's target.
+        blueprint_2 = self.makeSpec(
+            product=product, information_type=InformationType.PROPRIETARY)
+        person_with_new_role_2 = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            permissions = {
+                InformationType.PROPRIETARY: SharingPermission.ALL,
+                }
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, person_with_new_role_2, product.owner, permissions)
+            setattr(blueprint_2, role_name, person_with_new_role_2)
+            self.assertIs(
+                None, blueprint.subscription(person_with_new_role_2))
+
+    def test_setting_assignee_subscribes(self):
+        # If a user becomes the assignee of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('assignee')
+
+    def test_setting_drafter_subscribes(self):
+        # If a user becomes the drafter of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('drafter')
+
+    def test_setting_approver_subscribes(self):
+        # If a user becomes the approver of a proprietary specification,
+        # they are automatically subscribed, if they do not have yet
+        # been granted access to the specification.
+        self.run_test_setting_special_role_subscribes('approver')

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for Account and associates."""
@@ -30,6 +30,15 @@ from lp.services.identity.interfaces.account import (
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
+class AccountStatusEnumCol(EnumCol):
+
+    def __set__(self, obj, value):
+        if self.__get__(obj) == value:
+            return
+        IAccount['status'].bind(obj)._validate(value)
+        super(AccountStatusEnumCol, self).__set__(obj, value)
+
+
 class Account(SQLBase):
     """An Account."""
 
@@ -42,7 +51,7 @@ class Account(SQLBase):
     creation_rationale = EnumCol(
         dbName='creation_rationale', schema=AccountCreationRationale,
         notNull=True)
-    status = EnumCol(
+    status = AccountStatusEnumCol(
         enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)

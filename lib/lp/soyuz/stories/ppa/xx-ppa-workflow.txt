@@ -416,7 +416,7 @@ a sources.list entry.  If the field fails validation an error is displayed.
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
     There is 1 error.
-    'deb not_a_url' is not a complete and valid sources.list entry
+    &#x27;deb not_a_url&#x27; is not a complete and valid sources.list entry
 
 
 Setting the buildd secret for non-private archives also generates an error:
@@ -527,7 +527,7 @@ and the rendered form contains the 'name' field.
     >>> for error in get_feedback_messages(browser2.contents):
     ...     print error
     There is 1 error.
-    You already have a PPA named 'boomppa'.
+    You already have a PPA named &#x27;boomppa&#x27;.
 
     >>> print browser2.getControl(name="field.name").value
     boomppa
@@ -614,7 +614,7 @@ If Celso, by mistake, uses the same name of one of his existing PPAs
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    You already have a PPA named 'ppa'.
+    You already have a PPA named &#x27;ppa&#x27;.
 
 If the PPA is named as the distribution it is targeted for it cannot
 be created, mainly because of the way we publish repositories
@@ -791,8 +791,8 @@ contain a notification message that the deletion is in progress.
 
     >>> for msg in get_feedback_messages(no_priv_browser.contents):
     ...     print msg
-    Deletion of 'PPA for No Privileges Person' has been requested and
-    the repository will be removed shortly.
+    Deletion of &#x27;PPA for No Privileges Person&#x27; has been
+    requested and the repository will be removed shortly.
 
 The deleted PPA is still available to browse via a link on the profile page
 so you can see its build history, etc.:

@@ -64,6 +64,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     SharingPermission,
     SpecificationSharingPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     CannotChangeInformationType,
@@ -92,8 +93,8 @@ from lp.registry.model.productlicense import ProductLicense
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import html_escape
 from lp.testing import (
-    ANONYMOUS,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -121,12 +122,14 @@ from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_pillar_category(self):
         # Products are really called Projects
@@ -439,6 +442,7 @@ class TestProduct(TestCaseWithFactory):
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(product.owner):
             for usage in ServiceUsage:
+                product.information_type = InformationType.PUBLIC
                 product.translations_usage = usage.value
                 for info_type in PROPRIETARY_INFORMATION_TYPES:
                     if product.translations_usage == ServiceUsage.LAUNCHPAD:
@@ -497,6 +501,109 @@ class TestProduct(TestCaseWithFactory):
             SpecificationSharingPolicy.PROPRIETARY,
             product.specification_sharing_policy)
 
+    def test_checkInformationType_bug_supervisor(self):
+        # Bug supervisors of proprietary products must not have inclusive
+        # membership policies.
+        team = self.factory.makeTeam()
+        product = self.factory.makeProduct(bug_supervisor=team)
+        for policy in (token.value for token in TeamMembershipPolicy):
+            with person_logged_in(team.teamowner):
+                team.membership_policy = policy
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                with person_logged_in(product.owner):
+                    errors = list(product.checkInformationType(info_type))
+                if policy in EXCLUSIVE_TEAM_POLICY:
+                    self.assertEqual([], errors)
+                else:
+                    with ExpectedException(
+                        CannotChangeInformationType,
+                        'Bug supervisor has inclusive membership.'):
+                        raise errors[0]
+
+    def test_checkInformationType_questions(self):
+        # Proprietary products must not have questions
+        product = self.factory.makeProduct()
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makeQuestion(target=product)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has questions.'):
+                raise error
+
+    def test_checkInformationType_translations(self):
+        # Proprietary products must not have translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                self.assertEqual([],
+                    list(product.checkInformationType(info_type)))
+        self.factory.makePOTemplate(productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has translations.'):
+                raise error
+
+    def test_checkInformationType_queued_translations(self):
+        # Proprietary products must not have queued translations
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=productseries)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            with person_logged_in(product.owner):
+                error, = list(product.checkInformationType(info_type))
+            with ExpectedException(CannotChangeInformationType,
+                                   'This project has queued translations.'):
+                raise error
+        removeSecurityProxy(entry).delete(entry.id)
+        with person_logged_in(product.owner):
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                self.assertContentEqual(
+                    [], product.checkInformationType(info_type))
+
+    def test_checkInformationType_auto_translation_imports(self):
+        # Proprietary products must not be at risk of creating translations.
+        productseries = self.factory.makeProductSeries()
+        product = productseries.product
+        self.useContext(person_logged_in(product.owner))
+        for mode in TranslationsBranchImportMode.items:
+            if mode == TranslationsBranchImportMode.NO_IMPORT:
+                continue
+            productseries.translations_autoimport_mode = mode
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                error, = list(product.checkInformationType(info_type))
+                with ExpectedException(CannotChangeInformationType,
+                    'Some product series have translation imports enabled.'):
+                    raise error
+        productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            self.assertContentEqual(
+                [], product.checkInformationType(info_type))
+
+    def test_private_forbids_translations(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.useContext(person_logged_in(owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            product.information_type = info_type
+            with ExpectedException(
+                ProprietaryProduct,
+                "Translations are not supported for proprietary products."):
+                product.translations_usage = ServiceUsage.LAUNCHPAD
+            for usage in ServiceUsage.items:
+                if usage == ServiceUsage.LAUNCHPAD:
+                    continue
+                product.translations_usage = usage
+
     def createProduct(self, information_type=None, license=None):
         # convenience method for testing IProductSet.createProduct rather than
         # self.factory.makeProduct
@@ -527,6 +634,7 @@ class TestProduct(TestCaseWithFactory):
         store.reset()
         product = store.get(Product, product.id)
         self.assertEqual(InformationType.PROPRIETARY, product.information_type)
+        self.assertTrue(product.private)
 
     def test_product_information_type_default(self):
         # Default information_type is PUBLIC
@@ -534,6 +642,7 @@ class TestProduct(TestCaseWithFactory):
         product = getUtility(IProductSet).createProduct(
             owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
         self.assertEqual(InformationType.PUBLIC, product.information_type)
+        self.assertFalse(product.private)
 
     invalid_information_types = [info_type for info_type in
             InformationType.items if info_type not in
@@ -663,7 +772,8 @@ class TestProduct(TestCaseWithFactory):
             'active', 'id', 'information_type', 'pillar_category', 'private',
             'userCanView',)),
         'launchpad.LimitedView': set((
-            'bugtargetdisplayname', 'displayname', 'enable_bug_expiration',
+            'bugtargetdisplayname', 'displayname', 'drivers',
+            'enable_bug_expiration', 'getSpecification',
             'icon', 'logo', 'name', 'official_answers', 'official_anything',
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
@@ -684,7 +794,7 @@ class TestProduct(TestCaseWithFactory):
             'date_next_suggest_packaging', 'datecreated', 'description',
             'development_focus', 'development_focusID',
             'direct_answer_contacts', 'distrosourcepackages',
-            'downloadurl', 'driver', 'drivers',
+            'downloadurl', 'driver',
             'enable_bugfiling_duplicate_search', 'findReferencedOOPS',
             'findSimilarFAQs', 'findSimilarQuestions', 'freshmeatproject',
             'getAllowedBugInformationTypes',
@@ -698,7 +808,7 @@ class TestProduct(TestCaseWithFactory):
             'getFAQ', 'getFirstEntryToImport', 'getLinkedBugWatches',
             'getMergeProposals', 'getMilestone', 'getMilestonesAndReleases',
             'getQuestion', 'getQuestionLanguages', 'getPackage', 'getRelease',
-            'getSeries', 'getSpecification', 'getSubscription',
+            'getSeries', 'getSubscription',
             'getSubscriptions', 'getSupportedLanguages', 'getTimeline',
             'getTopContributors', 'getTopContributorsGroupedByCategory',
             'getTranslationGroups', 'getTranslationImportQueueEntries',
@@ -739,7 +849,7 @@ class TestProduct(TestCaseWithFactory):
         'launchpad.Edit': set((
             'addOfficialBugTag', 'removeOfficialBugTag',
             'setBranchSharingPolicy', 'setBugSharingPolicy',
-            'setSpecificationSharingPolicy')),
+            'setSpecificationSharingPolicy', 'checkInformationType')),
         'launchpad.Moderate': set((
             'is_permitted', 'license_approved', 'project_reviewed',
             'reviewer_whiteboard', 'setAliases')),
@@ -1288,7 +1398,7 @@ class TestProductFiles(TestCase):
         firefox_owner.getControl("Upload").click()
         self.assertEqual(
             get_feedback_messages(firefox_owner.contents),
-            [u"Your file 'foo\xa5.txt' has been uploaded."])
+            [html_escape(u"Your file 'foo\xa5.txt' has been uploaded.")])
         firefox_owner.open('http://launchpad.dev/firefox/+download')
         content = find_main_content(firefox_owner.contents)
         rows = content.findAll('tr')
@@ -2195,34 +2305,6 @@ class TestProductSet(TestCaseWithFactory):
         self.assertIn(public, result)
         self.assertIn(embargoed, result)
         self.assertIn(proprietary, result)
-
-    def test_getTranslatables_filters_private_products(self):
-        # ProductSet.getTranslatables() returns private translatable
-        # products only for user that have grants for these products.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            owner=owner, translations_usage=ServiceUsage.LAUNCHPAD,
-            information_type=InformationType.PROPRIETARY)
-        series = self.factory.makeProductSeries(product)
-        with person_logged_in(owner):
-            self.factory.makePOTemplate(productseries=series)
-        # Anonymous users do not see private products.
-        with person_logged_in(ANONYMOUS):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertNotIn(product, list(translatables))
-        # Ordinary users do not see private products.
-        user = self.factory.makePerson()
-        with person_logged_in(user):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertNotIn(product, list(translatables))
-        # Users with policy grants on private products see them.
-        with person_logged_in(owner):
-            getUtility(IService, 'sharing').sharePillarInformation(
-                product, user, owner,
-                {InformationType.PROPRIETARY: SharingPermission.ALL})
-        with person_logged_in(user):
-            translatables = getUtility(IProductSet).getTranslatables()
-            self.assertIn(product, list(translatables))
 
 
 class TestProductSetWebService(WebServiceTestCase):

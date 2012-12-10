@@ -103,7 +103,6 @@ from zope.schema import (
     TextLine,
     )
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -694,6 +693,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'projects',
         'activate_ppa',
         'maintained',
+        'manage_vouchers',
         'synchronised',
         'view_ppa_subscriptions',
         'ppa',
@@ -717,6 +717,13 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         request_tokens = self.context.oauth_request_tokens
         enabled = bool(access_tokens or request_tokens)
         return Link(target, text, enabled=enabled, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def manage_vouchers(self):
+        target = '+vouchers'
+        text = 'Manage commercial subscriptions'
+        summary = 'Purchase and redeem commercial subscription vouchers'
+        return Link(target, text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1257,9 +1264,8 @@ class PersonVouchersView(LaunchpadFormView):
         """Set up the fields for this view."""
 
         self.form_fields = []
-        if self.has_commercial_projects:
-            self.form_fields = (self.createProjectField() +
-                                self.createVoucherField())
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -1321,21 +1327,6 @@ class PersonVouchersView(LaunchpadFormView):
             self.form_fields.select('project', 'voucher'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=True)
-
-    @cachedproperty
-    def has_commercial_projects(self):
-        """Does the user manage one or more commercial project?
-
-        Users with launchpad.Commercial permission can manage vouchers for any
-        project so the property is True always.  Otherwise it is true if the
-        vocabulary is not empty.
-        """
-        if check_permission('launchpad.Commercial', self.context):
-            return True
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(self.context,
-                                             "CommercialProjects")
-        return len(vocabulary) > 0
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
@@ -1504,7 +1495,54 @@ class PersonKarmaView(LaunchpadView):
         return self.context.latestKarma().count() > 0
 
 
-class PersonView(LaunchpadView, FeedsMixin):
+class ContactViaWebLinksMixin:
+
+    @cachedproperty
+    def group_to_contact(self):
+        """Contacting a team may contact different email addresses.
+
+        :return: the recipients of the message.
+        :rtype: `ContactViaWebNotificationRecipientSet` constant:
+                TO_USER
+                TO_ADMINS
+                TO_MEMBERS
+        """
+        return ContactViaWebNotificationRecipientSet(
+            self.user, self.context).primary_reason
+
+    @property
+    def contact_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            if self.viewing_own_page:
+                return 'Send an email to yourself through Launchpad'
+            else:
+                return 'Send an email to this user through Launchpad'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Send an email to your team's members through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate link text."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            # Note that we explicitly do not change the text to "Contact
+            # yourself" when viewing your own page.
+            return 'Contact this user'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Contact this team's members"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+
+class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     """A View class used in almost all Person's pages."""
 
     @property
@@ -1738,50 +1776,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return (
             self.user is not None and self.context.is_valid_person_or_team)
-
-    @cachedproperty
-    def group_to_contact(self):
-        """Contacting a team may contact different email addresses.
-
-        :return: the recipients of the message.
-        :rtype: `ContactViaWebNotificationRecipientSet` constant:
-                TO_USER
-                TO_ADMINS
-                TO_MEMBERS
-        """
-        return ContactViaWebNotificationRecipientSet(
-            self.user, self.context)._primary_reason
-
-    @property
-    def contact_link_title(self):
-        """Return the appropriate +contactuser link title for the tooltip."""
-        ContactViaWeb = ContactViaWebNotificationRecipientSet
-        if self.group_to_contact == ContactViaWeb.TO_USER:
-            if self.viewing_own_page:
-                return 'Send an email to yourself through Launchpad'
-            else:
-                return 'Send an email to this user through Launchpad'
-        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
-            return "Send an email to your team's members through Launchpad"
-        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
-            return "Send an email to this team's admins through Launchpad"
-        else:
-            raise AssertionError('Unknown group to contact.')
-
-    @property
-    def specific_contact_text(self):
-        """Return the appropriate link text."""
-        ContactViaWeb = ContactViaWebNotificationRecipientSet
-        if self.group_to_contact == ContactViaWeb.TO_USER:
-            # Note that we explicitly do not change the text to "Contact
-            # yourself" when viewing your own page.
-            return 'Contact this user'
-        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
-            return "Contact this team's members"
-        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
-            return "Contact this team's admins"
-        else:
-            raise AssertionError('Unknown group to contact.')
 
     @property
     def should_show_polls_portlet(self):
@@ -3919,7 +3913,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         self.user = user
         self.description = None
-        self._primary_reason = None
+        self.primary_reason = None
         self._primary_recipient = None
         self._reason = None
         self._header = None
@@ -3955,12 +3949,12 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
+        if self.primary_reason is self.TO_USER:
             reason = (
                 'using the "Contact this user" link on your profile page\n'
                 '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             reason = (
                 'using the "Contact this team\'s admins" link on the '
                 '%s team page\n(%s)' % (
@@ -3968,7 +3962,7 @@ class ContactViaWebNotificationRecipientSet:
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         else:
-            # self._primary_reason is self.TO_MEMBERS.
+            # self.primary_reason is self.TO_MEMBERS.
             reason = (
                 'to each member of the %s team using the '
                 '"Contact this team" link on the %s team page\n(%s)' % (
@@ -3984,11 +3978,11 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
+        if self.primary_reason is self.TO_USER:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             return (
                 'You are contacting the %s (%s) team admins.' %
                 (person_or_team.displayname, person_or_team.name))
@@ -4008,12 +4002,12 @@ class ContactViaWebNotificationRecipientSet:
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}
-        if self._primary_reason is self.TO_MEMBERS:
+        if self.primary_reason is self.TO_MEMBERS:
             team = self._primary_recipient
             for recipient in team.getMembersWithPreferredEmails():
                 email = removeSecurityProxy(recipient).preferredemail.email
                 all_recipients[email] = recipient
-        elif self._primary_reason is self.TO_ADMINS:
+        elif self.primary_reason is self.TO_ADMINS:
             team = self._primary_recipient
             for admin in team.adminmembers:
                 # This method is similar to getTeamAdminsEmailAddresses, but
@@ -4063,13 +4057,16 @@ class ContactViaWebNotificationRecipientSet:
         """The number of recipients in the set."""
         if self._count_recipients is None:
             recipient = self._primary_recipient
-            if self._primary_reason is self.TO_MEMBERS:
+            if self.primary_reason is self.TO_MEMBERS:
+                # Get the count without loading all the members.
                 self._count_recipients = (
                     recipient.getMembersWithPreferredEmailsCount())
+            elif self.primary_reason is self.TO_ADMINS:
+                self._count_recipients = len(self._all_recipients)
             elif recipient.is_valid_person_or_team:
                 self._count_recipients = 1
             else:
-                # The user or team owner is deactivated.
+                # The user is deactivated.
                 self._count_recipients = 0
         return self._count_recipients
 
@@ -4094,7 +4091,7 @@ class ContactViaWebNotificationRecipientSet:
         recipients.
         """
         self._reset_state()
-        self._primary_reason = self._getPrimaryReason(person)
+        self.primary_reason = self._getPrimaryReason(person)
         self._primary_recipient = person
         if reason is None:
             reason, header = self._getReasonAndHeader(person)
@@ -4214,6 +4211,18 @@ class EmailToPersonView(LaunchpadFormView):
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return throttle_date + interval
+
+    @property
+    def contact_not_possible_reason(self):
+        """The reason the person cannot be contacted."""
+        if self.has_valid_email_address:
+            return None
+        elif self.recipients.primary_reason is self.recipients.TO_USER:
+            return "The user is not active."
+        elif self.recipients.primary_reason is self.recipients.TO_ADMINS:
+            return "The team has no admins. Contact the team owner instead."
+        else:
+            return "The team has no members."
 
     @property
     def page_title(self):

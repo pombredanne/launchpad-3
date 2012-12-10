@@ -1946,7 +1946,7 @@ class Bug(SQLBase, InformationTypeMixin):
 
             self.duplicateof = duplicate_of
         except LaunchpadValidationError as validation_error:
-            raise InvalidDuplicateValue(validation_error)
+            raise InvalidDuplicateValue(validation_error, already_escaped=True)
         if duplicate_of is not None:
             affected_bug_ids.add(duplicate_of.id)
             # Maybe confirm bug tasks, now that more people might be affected

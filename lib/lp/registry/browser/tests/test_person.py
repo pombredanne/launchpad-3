@@ -47,6 +47,7 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
@@ -58,7 +59,6 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
-    celebrity_logged_in,
     login,
     login_celebrity,
     login_person,
@@ -194,9 +194,8 @@ class TestPersonIndexView(BrowserTestCase):
             'name="robots" content="noindex,nofollow"' in markup)
 
     def test_is_probationary_or_invalid_user_with_invalid(self):
-        person = self.factory.makePerson()
-        with celebrity_logged_in('admin'):
-            person.account.status = AccountStatus.NOACCOUNT
+        person = self.factory.makePerson(
+            account_status=AccountStatus.NOACCOUNT)
         observer = self.factory.makePerson()
         view = create_initialized_view(person, '+index', principal=observer)
         self.assertIs(True, view.is_probationary_or_invalid_user)
@@ -479,7 +478,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertIsNotNone(token)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"A confirmation message has been sent to '%s'."
             " Follow the instructions in that message to confirm"
             " that the address is yours. (If the message doesn't arrive in a"
@@ -525,7 +524,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = create_initialized_view(self.person, '+editemails', form=form)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"An e-mail message was sent to '%s' "
             "with instructions on how to confirm that it belongs to you."
             % added_email)
@@ -575,7 +574,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = create_initialized_view(self.person, '+editemails', form=form)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"The email address '%s' has been removed." % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
 
@@ -587,7 +586,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(self.person, '+editemails', form=form)
         error_msg = view.errors[0]
-        expected_msg = (
+        expected_msg = html_escape(
             "You can't remove %s because it's your contact email address."
             % self.valid_email_address)
         self.assertEqual(expected_msg, error_msg)
@@ -634,16 +633,17 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
     def test_email_string_validation_invalid_email(self):
         """+editemails should warn when provided data is not an email."""
         not_an_email = 'foo'
-        expected_msg = u"'foo' doesn't seem to be a valid email address."
+        expected_msg = html_escape(
+            u"'foo' doesn't seem to be a valid email address.")
         self._assertEmailAndError(not_an_email, expected_msg)
 
     def test_email_string_validation_is_escaped(self):
         """+editemails should escape output to prevent XSS."""
         xss_email = "foo@example.com<script>window.alert('XSS')</script>"
         expected_msg = (
-            u"'foo@example.com&lt;script&gt;"
-            "window.alert('XSS')&lt;/script&gt;'"
-            " doesn't seem to be a valid email address.")
+            u"&#x27;foo@example.com&lt;script&gt;"
+            "window.alert(&#x27;XSS&#x27;)&lt;/script&gt;&#x27;"
+            " doesn&#x27;t seem to be a valid email address.")
         self._assertEmailAndError(xss_email, expected_msg)
 
     def test_edit_email_login_redirect(self):

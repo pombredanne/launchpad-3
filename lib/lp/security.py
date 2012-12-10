@@ -156,6 +156,7 @@ from lp.registry.interfaces.productrelease import (
     )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
+    IProductSeriesLimitedView,
     IProductSeriesView,
     ITimelineProductSeries,
     )
@@ -490,9 +491,16 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
-class ViewTimelineProductSeries(AnonymousAuthorization):
-    """Anyone can view an ITimelineProductSeries."""
+class ViewTimelineProductSeries(DelegatedAuthorization):
+    """Anyone who can view the related product can also view an
+    ITimelineProductSeries.
+    """
+    permission = 'launchpad.View'
     usedfor = ITimelineProductSeries
+
+    def __init__(self, obj):
+        super(ViewTimelineProductSeries, self).__init__(
+            obj, obj.product, 'launchpad.View')
 
 
 class ViewProductReleaseFile(AnonymousAuthorization):
@@ -753,6 +761,15 @@ class EditProjectMilestoneNever(AuthorizationBase):
         return False
 
 
+class LimitedViewMilestone(DelegatedAuthorization):
+    permission = 'launchpad.LimitedView'
+    usedfor = IMilestone
+
+    def __init__(self, obj):
+        super(LimitedViewMilestone, self).__init__(
+            obj, obj.target, 'launchpad.LimitedView')
+
+
 class ViewMilestone(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IMilestone
@@ -876,6 +893,16 @@ class ViewTeamMembership(AuthorizationBase):
             or user.inTeam(self.obj.team)):
             return True
         return False
+
+
+class AdminByCommercialTeamOrAdminsOrPerson(AdminByCommercialTeamOrAdmins):
+    permission = 'launchpad.Commercial'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """Users can manage their commericial data and admins can help."""
+        base = super(AdminByCommercialTeamOrAdminsOrPerson, self)
+        return self.obj.id == user.id or base.checkAuthenticated(user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -1310,6 +1337,15 @@ class DriveProduct(SeriesDrivers):
             super(DriveProduct, self).checkAuthenticated(user)
             or is_commercial_case(self.obj, user)
             or False)
+
+
+class LimitedViewProductSeries(DelegatedAuthorization):
+    permission = 'launchpad.LimitedView'
+    usedfor = IProductSeriesLimitedView
+
+    def __init__(self, obj):
+        super(LimitedViewProductSeries, self).__init__(
+            obj, obj.product, 'launchpad.LimitedView')
 
 
 class ViewProductSeries(AuthorizationBase):

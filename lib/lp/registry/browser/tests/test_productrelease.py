@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 
+from lp.services.webapp.escaping import html_escape
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -39,7 +40,8 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
         notifications = [
             nm.message for nm in view.request.response.notifications]
         self.assertEqual(
-            ["Your file 'pting.tar.gz' has been uploaded."], notifications)
+            [html_escape("Your file 'pting.tar.gz' has been uploaded.")],
+            notifications)
 
     def test_add_file_duplicate(self):
         release = self.factory.makeProductRelease()
@@ -51,4 +53,5 @@ class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(
                 release, '+adddownloadfile', form=form)
         self.assertEqual(
-            ["The file '%s' is already uploaded." % file_name], view.errors)
+            [html_escape("The file '%s' is already uploaded." % file_name)],
+            view.errors)

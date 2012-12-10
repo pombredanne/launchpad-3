@@ -162,4 +162,4 @@ the poll opens -- at that point new options cannot be added.
     >>> team_admin_browser.getControl('Continue').click()
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
-    A poll cannot open less than 12 hours after it's created.
+    A poll cannot open less than 12 hours after it&#x27;s created.

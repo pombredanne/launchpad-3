@@ -32,7 +32,6 @@ from storm.expr import (
     Asc,
     Desc,
     Join,
-    Not,
     Or,
     Select,
     )
@@ -60,7 +59,6 @@ from lp.code.interfaces.revision import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.model.person import ValidPersonCache
 from lp.services.database.bulk import create
 from lp.services.database.constants import (
     DEFAULT,
@@ -130,9 +128,12 @@ class Revision(SQLBase):
 
     def allocateKarma(self, branch):
         """See `IRevision`."""
+        # Always set karma_allocated to True so that Lp does not reprocess
+        # junk and invalid user branches because they do not get karma.
+        self.karma_allocated = True
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
-        if author is not None:
+        if author is not None and branch is not None:
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
@@ -143,8 +144,6 @@ class Revision(SQLBase):
             karma_date = min(self.revision_date, self.date_created)
             karma = branch.target.assignKarma(
                 author, 'revisionadded', karma_date)
-            if karma is not None:
-                self.karma_allocated = True
             return karma
         else:
             return None
@@ -457,23 +456,11 @@ class RevisionSet:
     @staticmethod
     def getRevisionsNeedingKarmaAllocated(limit=None):
         """See `IRevisionSet`."""
-        # Here to stop circular imports.
-        from lp.code.model.branch import Branch
-        from lp.code.model.branchrevision import BranchRevision
-
         store = IStore(Revision)
-        results_with_dupes = store.find(
+        results = store.find(
             Revision,
-            Revision.revision_author == RevisionAuthor.id,
-            RevisionAuthor.person == ValidPersonCache.id,
-            Not(Revision.karma_allocated),
-            BranchRevision.revision == Revision.id,
-            BranchRevision.branch == Branch.id,
-            Or(Branch.product != None, Branch.distroseries != None))[:limit]
-        # Eliminate duplicate rows, returning <= limit rows
-        return store.find(
-            Revision, Revision.id.is_in(
-                results_with_dupes.get_select_expr(Revision.id)))
+            Revision.karma_allocated == False)[:limit]
+        return results
 
     @staticmethod
     def getPublicRevisionsForPerson(person, day_limit=30):

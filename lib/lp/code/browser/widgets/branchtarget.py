@@ -18,6 +18,7 @@ from zope.app.form.interfaces import (
     IInputWidget,
     InputErrors,
     MissingInputError,
+    WidgetInputError,
     )
 from zope.app.form.utility import setUpWidget
 from zope.interface import implements
@@ -89,13 +90,17 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
-                raise LaunchpadValidationError('Please enter a project name')
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError('Please enter a project name'))
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.product" % self.name)
-                raise LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad" % entered_name)
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no project named '%s' registered in"
+                        " Launchpad" % entered_name))
         elif form_value == 'personal':
             return '+junk'
         else:

@@ -17,6 +17,10 @@
       </div>
       <div class="boardCommentBody attachmentBody">
         <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
+        <tal:diff-not-available condition="not: view/diff_available">
+            The diff is not available at this time. You can reload the
+            page or download it.
+        </tal:diff-not-available>
       </div>
       <div class="boardCommentFooter"
            tal:condition="view/diff_oversized">

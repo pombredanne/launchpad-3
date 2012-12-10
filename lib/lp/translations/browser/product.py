@@ -136,3 +136,8 @@ class ProductView(LaunchpadView):
         return [series for series in self.context.series if (
             series.status != SeriesStatus.OBSOLETE and
             series not in translatable)]
+
+    @property
+    def allow_series_translation(self):
+        return (check_permission("launchpad.Edit", self.context) and not
+                self.context.private)
