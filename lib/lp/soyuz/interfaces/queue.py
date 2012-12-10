@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Queue interfaces."""
 
 __metaclass__ = type
@@ -211,6 +209,11 @@ class IPackageUpload(Interface):
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
+
+    searchable_names = TextLine(
+        title=_("Searchable names for this item"), readonly=True)
+    searchable_versions = List(
+        title=_("Searchable versions for this item"), readonly=True)
 
     package_name = exported(
         TextLine(

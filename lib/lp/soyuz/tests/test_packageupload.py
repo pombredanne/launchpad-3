@@ -116,6 +116,8 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.addSource(spr)
         self.assertEqual(spr.sourcepackagename.name, upload.package_name)
         self.assertEqual(spr.version, upload.package_version)
+        self.assertEqual(spr.name, upload.searchable_names)
+        self.assertContentEqual([spr.version], upload.searchable_versions)
 
     def test_publish_sets_packageupload(self):
         # Publishing a PackageUploadSource will pass itself to the source
@@ -459,6 +461,25 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         upload, job = self.makeUploadWithPackageCopyJob()
         self.assertEqual(job.package_name, upload.package_name)
         self.assertEqual(job.package_version, upload.package_version)
+        self.assertEqual(job.package_name, upload.searchable_names)
+        self.assertEqual([job.package_version], upload.searchable_versions)
+
+    def test_searchables_for_builds(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeBuildPackageUpload(distroseries)
+        bpr = upload.builds[0].build.binarypackages[0] 
+        names = '%s %s' % (
+            upload.builds[0].build.source_package_release.name, bpr.name)
+        self.assertEqual(upload.searchable_names, names)
+        self.assertEqual(upload.searchable_versions, [bpr.version])
+
+    def test_searchables_for_custom(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeCustomPackageUpload(distroseries)
+        self.assertEqual(
+            upload.searchable_names,
+            upload.customfiles[0].libraryfilealias.filename)
+        self.assertIsNone(upload.searchable_versions)
 
     def test_displayarchs_for_copy_job_is_sync(self):
         # For copy jobs, displayarchs is "source."

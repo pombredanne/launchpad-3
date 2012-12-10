@@ -1339,12 +1339,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 changesfilename, len(changesfilecontent),
                 StringIO(changesfilecontent), 'text/plain',
                 restricted=archive.private)
+        searchable_names = None
+        searchable_versions = None
+        if package_copy_job is not None:
+            searchable_names = package_copy_job.package_name
+            searchable_versions = [package_copy_job.package_version]
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
-            pocket=pocket, archive=archive,
-            changesfile=changes_file_alias, signing_key=signing_key,
-            package_copy_job=package_copy_job)
+            pocket=pocket, archive=archive, changesfile=changes_file_alias,
+            signing_key=signing_key, package_copy_job=package_copy_job,
+            searchable_names=searchable_names,
+            searchable_versions=searchable_versions)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""

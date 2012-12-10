@@ -18,6 +18,7 @@ from datetime import (
     )
 import logging
 import multiprocessing
+from operator import itemgetter
 import os
 import threading
 import time
@@ -121,6 +122,7 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -1345,6 +1347,154 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class PopulatePackageUploadSearchableNames(TunableLoop):
+    """Populates PackageUpload.searchable_names."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulatePackageUploadSearchableNames, self).__init__(
+            log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(PackageUpload)
+
+    def findPackageUploadIDs(self):
+        return self.store.find(
+            (PackageUpload.id,), PackageUpload.searchable_names == None,
+            PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
+
+    def isDone(self):
+        return self.findPackageUploadIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        packageupload_ids = map(
+            itemgetter(0), list(self.findPackageUploadIDs()[:chunk_size]))
+        results = self.store.find(
+            (PackageUpload.id, SQL("""
+            array_to_string((SELECT array_agg(
+                DISTINCT spn.name ORDER BY spn.name)
+                FROM
+                    packageuploadbuild
+                    JOIN binarypackagebuild AS bpb ON
+                        bpb.id = packageuploadbuild.build
+                    JOIN sourcepackagerelease AS spr ON
+                        spr.id = bpb.source_package_release
+                    JOIN sourcepackagename AS spn ON
+                        spn.id = spr.sourcepackagename
+                WHERE packageuploadbuild.packageupload = packageupload.id
+            ) ||
+            (
+            SELECT array_agg(
+            DISTINCT bpn.name ORDER BY bpn.name)
+            FROM
+                packageuploadbuild
+                JOIN binarypackagerelease ON
+                    binarypackagerelease.build = packageuploadbuild.build
+                JOIN binarypackagename AS bpn ON
+                    bpn.id = binarypackagerelease.binarypackagename
+            WHERE packageuploadbuild.packageupload = packageupload.id
+        ) ||
+        (
+            SELECT array_agg(
+            DISTINCT sourcepackagename.name ORDER BY sourcepackagename.name)
+            FROM
+                packageuploadsource
+                JOIN sourcepackagerelease AS spr ON
+                    spr.id = packageuploadsource.sourcepackagerelease
+                JOIN sourcepackagename ON
+                    sourcepackagename.id = spr.sourcepackagename
+            WHERE packageuploadsource.packageupload = packageupload.id
+        ) ||
+        (
+            SELECT array_agg(
+                DISTINCT libraryfilealias.filename
+                ORDER BY libraryfilealias.filename)
+            FROM
+                packageuploadcustom
+                JOIN libraryfilealias ON
+                    libraryfilealias.id = packageuploadcustom.libraryfilealias
+            WHERE packageuploadcustom.packageupload = packageupload.id
+        ) ||
+        (
+         SELECT package_name FROM packagecopyjob
+             WHERE packageupload.package_copy_job = packagecopyjob.id
+        ), ' ')""")), PackageUpload.id.is_in(packageupload_ids))
+        cache_data = ClassAlias(PackageUpload, "cache_data")
+        updated_columns = dict(
+            [(PackageUpload.searchable_names, cache_data.searchable_names)])
+        values = [
+            [dbify_value(col, val)[0]
+            for (col, val) in zip(
+                (PackageUpload.id, PackageUpload.searchable_names), data)]
+            for data in results]
+        cols = [('id', 'integer'), ('searchable_names', 'text')]
+        cache_data_expr = Values('cache_data', cols, values)
+        self.store.execute(
+            BulkUpdate(
+                updated_columns, table=PackageUpload, values=cache_data_expr,
+                where=PackageUpload.id == cache_data.id))
+        self.start_at = packageupload_ids[-1] + 1
+        transaction.commit()
+
+
+class PopulatePackageUploadSearchableVersions(TunableLoop):
+    """Populates PackageUpload.searchable_versions."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulatePackageUploadSearchableVersions, self).__init__(
+            log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(PackageUpload)
+
+    def findPackageUploadIDs(self):
+        return self.store.find(
+            (PackageUpload.id,), PackageUpload.searchable_versions == None,
+            PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
+
+    def isDone(self):
+        return self.findPackageUploadIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        packageupload_ids = map(
+            itemgetter(0), list(self.findPackageUploadIDs()[:chunk_size]))
+        results = self.store.find(
+            (PackageUpload.id, SQL("""
+                (COALESCE(
+                    (SELECT ARRAY[spr.version]
+                    FROM packageuploadsource
+                        JOIN sourcepackagerelease AS spr ON
+                            spr.id = packageuploadsource.sourcepackagerelease
+                    WHERE packageuploadsource.packageupload = packageupload.id),
+                    ARRAY[]::debversion[]
+                ) || (
+                SELECT array_agg(DISTINCT binarypackagerelease.version)
+                FROM packageuploadbuild
+                    JOIN binarypackagerelease ON
+                        binarypackagerelease.build = packageuploadbuild.build
+                WHERE packageuploadbuild.packageupload = packageupload.id)
+                )::text[]
+             """)), PackageUpload.id.is_in(packageupload_ids))
+        cache_data = ClassAlias(PackageUpload, "cache_data")
+        updated_columns = dict(
+            [(PackageUpload.searchable_versions,
+            cache_data.searchable_versions)])
+        values = [
+            [dbify_value(col, val)[0]
+            for (col, val) in zip(
+                (PackageUpload.id, PackageUpload.searchable_versions), data)]
+            for data in results]
+        cols = [('id', 'integer'), ('searchable_versions', 'text[]')]
+        cache_data_expr = Values('cache_data', cols, values)
+        self.store.execute(
+            BulkUpdate(
+                updated_columns, table=PackageUpload, values=cache_data_expr,
+                where=PackageUpload.id == cache_data.id))
+        self.start_at = packageupload_ids[-1] + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1600,6 +1750,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        PopulatePackageUploadSearchableNames,
+        PopulatePackageUploadSearchableVersions,
         ]
     experimental_tunable_loops = []
 

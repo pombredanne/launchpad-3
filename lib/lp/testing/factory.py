@@ -3428,10 +3428,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket=pocket)
         build = self.makeBinaryPackageBuild(
             source_package_release=source_package_release, pocket=pocket)
-        upload.addBuild(build)
         self.makeBinaryPackageRelease(
             binarypackagename=binarypackagename, build=build,
             component=component)
+        upload.addBuild(build)
         return upload
 
     def makeCustomPackageUpload(self, distroseries=None, archive=None,
