@@ -17,6 +17,11 @@ from lp.services.webapp.interfaces import IStructuredString
 from lp.services.webapp.publisher import get_current_browser_request
 
 
+HTML_REPLACEMENTS = (
+    ('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;'), ('"', '&quot;'),
+    ("'", '&#x27;'))
+
+
 def html_escape(message):
     """Performs translation and sanitizes any HTML present in the message.
 
@@ -37,11 +42,8 @@ def html_escape(message):
         # internationalized object, so we need to translate it
         # first. See bug #54987.
         raw = unicode(translate_if_i18n(message))
-        raw = raw.replace('&', '&amp;')
-        raw = raw.replace('<', '&lt;')
-        raw = raw.replace('>', '&gt;')
-        raw = raw.replace('"', '&quot;')
-        raw = raw.replace("'", '&#x27;')
+        for needle, replacement in HTML_REPLACEMENTS:
+            raw = raw.replace(needle, replacement)
         return raw
 
 
