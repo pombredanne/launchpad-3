@@ -8,7 +8,10 @@ import re
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from zope.app.form.browser.interfaces import IBrowserWidget
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import (
+    IInputWidget,
+    WidgetInputError,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -185,8 +188,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
             "There is no package named 'non-existent' published in Fnord.")
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_distribution(self):
@@ -206,8 +209,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         message = (
             "There is no distribution named 'non-existent' registered in "
             "Launchpad")
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_product(self):
@@ -225,8 +228,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         del form['field.target.product']
         self.widget.request = LaunchpadTestRequest(form=form)
         message = 'Please enter a project name'
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_product_invalid(self):
@@ -238,8 +241,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         message = (
             "There is no project named 'non-existent' registered in "
             "Launchpad")
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(message, self.widget.error())
 
     def test_setRenderedValue_product(self):
