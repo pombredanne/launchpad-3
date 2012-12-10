@@ -1765,6 +1765,18 @@ class Person(
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, comment=comment)
 
+    def getOwnedTeams(self, user=None):
+        """See `IPerson`."""
+        query = And(
+            get_person_visibility_terms(user),
+            Person.teamowner == self.id,
+            Person.merged == None)
+        store = IStore(Person)
+        results = store.find(
+            Person, query).order_by(
+                Upper(Person.displayname), Upper(Person.name))
+        return results
+
     @cachedproperty
     def administrated_teams(self):
         return list(self.getAdministratedTeams())

@@ -1301,6 +1301,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         The person's membership may be direct or indirect.
         """
 
+    def getOwnedTeams(user=None):
+        """Return the teams that this person owns.
+
+        The iterator includes the teams that the user owns, but it not
+        a member of.
+        """
+
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
@@ -1308,7 +1315,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         member with admin privilege, or member of a team with such
         privileges.  It excludes teams which have been merged.
         """
-
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.

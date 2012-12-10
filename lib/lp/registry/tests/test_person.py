@@ -266,6 +266,15 @@ class TestPersonTeams(TestCaseWithFactory):
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
 
+    def test_getOwnedTeams(self):
+        # The interator contains the teams that person owns, regardless of
+        # membership.
+        owner = self.a_team.teamowner
+        with person_logged_in(owner):
+            owner.leave(self.a_team)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+
     def test_administrated_teams(self):
         # The property Person.administrated_teams is a cached copy of
         # the result of Person.getAdministratedTeams().
