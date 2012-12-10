@@ -65,16 +65,6 @@
         permission="zope.Public"
         />
 
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        name="+voucher-purchase-instructions"
-        permission="launchpad.Edit"
-        template="../templates/voucher-purchase-instructions.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.person.IPerson"
-        name="+voucher-purchase-instructions"
-        permission="launchpad.Edit"
-        template="../templates/voucher-purchase-instructions.pt"/>
     <browser:url
         for="lp.registry.interfaces.teammembership.ITeamMembership"
         path_expression="string:+member/${person/name}"
@@ -1419,12 +1409,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.pillar.IPillarPerson"
         name="+index"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        name="+purchase-subscription"
-        class="lp.registry.browser.product.ProductPurchaseSubscriptionView"
-        template="../templates/product-purchase-subscription.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

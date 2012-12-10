@@ -38,6 +38,14 @@
           <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
         </p>
 
+    <tal:warning-for-owner
+      condition="view/show_commercial_subscription_info">
+      <div
+        style="border-bottom: 1px solid #EBEBEB; margin-bottom: 1em;"
+        tal:condition="context/commercial_subscription_is_due"
+        tal:content="structure context/@@+portlet-requires-subscription"/>
+    </tal:warning-for-owner>
+
 	<div class="summary"
 	  tal:content="structure context/summary/fmt:markdown">
           $Product.summary goes here. This should be quite short,
@@ -129,9 +137,10 @@
                         condition="not:repeat/license/end">,</tal:comma>
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
-                  <tal:has_license_info condition="view/show_license_info">
+                  <div class="scrolled-box"
+                     condition="view/show_license_info">
                     (<tal:license_info replace="context/license_info" />)
-                  </tal:has_license_info>
+                  </div>
                 </dd>
                 <dd id="commercial_subscription"
                   tal:condition="context/commercial_subscription">
@@ -148,7 +157,7 @@
               <a tal:replace="structure overview_menu/rdf/fmt:link" />
             </p>
 
-            <div id="project-admin-whiteboard" class="whiteboard"
+            <div id="project-admin-whiteboard" class="whiteboard scrolled-box"
               tal:condition="context/required:launchpad.Moderate">
               <div>
                 <strong>Whiteboard</strong>&nbsp;
@@ -190,13 +199,6 @@
           </div>
         </div>
       </div>
-
-      <tal:warning-for-owner
-        condition="view/show_commercial_subscription_info">
-        <div
-          tal:condition="context/commercial_subscription_is_due"
-          tal:content="structure context/@@+portlet-requires-subscription"/>
-      </tal:warning-for-owner>
 
       <div class="yui-g">
         <div class="yui-u first">
