@@ -45,6 +45,31 @@ class NonPublicProductReleaseViewTestCase(BrowserTestCase):
                    ' It cannot have any releases.')
             self.assertTrue(html_escape(msg) in browser.contents)
 
+    def test_embargoed_add_milestone(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='fnord',
+            owner=owner, information_type=InformationType.EMBARGOED)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            view = create_initialized_view(milestone, name="+addrelease")
+            notifications = [
+                nm.message for nm in view.request.response.notifications]
+            self.assertEqual(
+                [html_escape("Any releases added for Fnord will be PUBLIC.")],
+                notifications)
+
+    def test_embargoed_add_series(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='fnord',
+            owner=owner, information_type=InformationType.EMBARGOED)
+        series = self.factory.makeProductSeries(product=product, name='bnord')
+        with person_logged_in(owner):
+            view = create_initialized_view(series, name="+addrelease")
+            notifications = [
+                nm.message for nm in view.request.response.notifications]
+            self.assertEqual(
+                [html_escape("Any releases added for bnord will be PUBLIC.")],
+                notifications)
 
 class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
 

@@ -111,14 +111,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
     custom_widget('release_notes', TextAreaWidget, height=7, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
-    def initialize(self):
-        super(ProductReleaseAddViewBase, self).initialize()
-        if (self.context.product.information_type ==
-            InformationType.EMBARGOED):
-            self.request.response.addWarningNotification(
-                _("Any releases added for %s will be PUBLIC." %
-                  self.context.displayname))
-
     def _prependKeepMilestoneActiveField(self):
         keep_milestone_active_checkbox = FormFields(
             Bool(
@@ -174,6 +166,11 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
         ]
 
     def initialize(self):
+        if (self.context.product.information_type ==
+            InformationType.EMBARGOED):
+            self.request.response.addWarningNotification(
+                _("Any releases added for %s will be PUBLIC." %
+                  self.context.product.displayname))
         if self.context.product_release is not None:
             self.request.response.addErrorNotification(
                 _("A project release already exists for this milestone."))
@@ -204,6 +201,14 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
         'release_notes',
         'changelog',
         ]
+
+    def initialize(self):
+        if (self.context.product.information_type ==
+            InformationType.EMBARGOED):
+            self.request.response.addWarningNotification(
+                _("Any releases added for %s will be PUBLIC." %
+                  self.context.displayname))
+        super(ProductReleaseFromSeriesAddView, self).initialize() 
 
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
