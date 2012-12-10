@@ -23,6 +23,7 @@ from lp.registry.vocabularies import (
     DistributionVocabulary,
     ProductVocabulary,
     )
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
@@ -190,7 +191,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             "There is no package named 'non-existent' published in Fnord.")
         e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
         self.assertEqual(LaunchpadValidationError(message), e.errors)
-        self.assertEqual(message, self.widget.error())
+        self.assertEqual(html_escape(message), self.widget.error())
 
     def test_getInputValue_distribution(self):
         # The field value is the distribution when the package radio button
@@ -211,7 +212,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             "Launchpad")
         e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
         self.assertEqual(LaunchpadValidationError(message), e.errors)
-        self.assertEqual(message, self.widget.error())
+        self.assertEqual(html_escape(message), self.widget.error())
 
     def test_getInputValue_product(self):
         # The field value is the product when the project radio button
@@ -243,7 +244,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
             "Launchpad")
         e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
         self.assertEqual(LaunchpadValidationError(message), e.errors)
-        self.assertEqual(message, self.widget.error())
+        self.assertEqual(html_escape(message), self.widget.error())
 
     def test_setRenderedValue_product(self):
         # Passing a product will set the widget's render state to 'product'.

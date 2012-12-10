@@ -36,6 +36,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     EventRecorder,
@@ -688,8 +689,10 @@ class FileBugViewBaseExtraDataTestCase(FileBugViewMixin, TestCaseWithFactory):
             no.message for no in view.request.response.notifications]
         self.assertContentEqual(
             ['<p class="last">Thank you for your bug report.</p>',
-             'The file "attachment1" was attached to the bug report.',
-             'The file "attachment2" was attached to the bug report.'],
+             html_escape(
+                 'The file "attachment1" was attached to the bug report.'),
+             html_escape(
+                 'The file "attachment2" was attached to the bug report.')],
             notifications)
 
     def test_submit_comment_with_large_extra_description(self):

@@ -126,7 +126,7 @@ status change:
     >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print error.renderContents()
     There are 2 errors.
-    You didn't change the status.
+    You didn&#x27;t change the status.
     You must provide an explanation message.
 
 To correct the mistake of the previous example, the administrator would

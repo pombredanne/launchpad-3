@@ -42,6 +42,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.model.processor import ProcessorFamily
@@ -405,7 +406,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            'The bzr-builder instruction "run" is not permitted here.')
+            html_escape(
+                'The bzr-builder instruction "run" is not permitted here.'))
 
     def createRecipe(self, recipe_text, branch=None):
         if branch is None:
@@ -686,7 +688,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            "You already have a PPA named 'foo'.")
+            html_escape("You already have a PPA named 'foo'."))
 
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a
@@ -872,7 +874,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            'The bzr-builder instruction "run" is not permitted here.')
+            html_escape(
+                'The bzr-builder instruction "run" is not permitted here.'))
 
     def test_edit_recipe_format_too_new(self):
         # If the recipe's format version is too new, we should notify the
@@ -1532,8 +1535,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
-        self.assertIn("You have exceeded today's quota for ubuntu woody.",
-                extract_text(find_main_content(browser.contents)))
+        self.assertIn(
+            html_escape("You have exceeded today's quota for ubuntu woody."),
+            extract_text(find_main_content(browser.contents)))
 
     def test_request_builds_rejects_duplicate(self):
         """Over-quota build requests cause validation failures."""

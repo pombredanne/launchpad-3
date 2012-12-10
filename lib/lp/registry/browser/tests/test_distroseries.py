@@ -66,6 +66,7 @@ from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
@@ -1560,8 +1561,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series,
             '+localpackagediffs')
 
-        radio_title = \
-            "&nbsp;Ignored packages with a higher version than in 'Lucid'"
+        radio_title = (
+            "&nbsp;Ignored packages with a higher version than in "
+            "&#x27;Lucid&#x27;")
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -2027,8 +2029,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
-            "The signer of this package has no upload rights to this "
-            "distribution's primary archive" in view.errors[0])
+            html_escape(
+                "The signer of this package has no upload rights to this "
+                "distribution's primary archive") in view.errors[0])
 
     def makePersonWithComponentPermission(self, archive, component=None):
         person = self.factory.makePerson()

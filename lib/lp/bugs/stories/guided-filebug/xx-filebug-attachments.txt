@@ -38,7 +38,7 @@ was attached.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Thank you for your bug report.
-    The file "example.txt" was attached to the bug report.
+    The file &quot;example.txt&quot; was attached to the bug report.
 
 No Privileges Person can see the attachment in the attachments portlet.
 

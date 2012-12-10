@@ -185,7 +185,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have revoked Launchpad Developers's access to PPA
+    You have revoked Launchpad Developers&#x27;s access to PPA
     named p3a for Celso Providelo.
 
 
@@ -264,7 +264,8 @@ the page is redisplayed with new sources.list entries and a notification.
     ...     print msg
     Launchpad has generated the new password you requested for your
     access to the archive PPA named p3a for Celso Providelo. Please
-    follow the instructions below to update your custom "sources.list".
+    follow the instructions below to update your custom
+    &quot;sources.list&quot;.
 
 
 === Scenario 3: A user activates a team subscription ===

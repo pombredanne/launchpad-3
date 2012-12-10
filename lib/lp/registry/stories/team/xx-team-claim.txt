@@ -47,11 +47,12 @@ turning that profile into a team.
 
     >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
-    A confirmation message has been sent to 'doc@lists.ubuntu.com'. Follow
-    the instructions in that message to finish claiming this team. (If the
-    above address is from a mailing list, it may be necessary to talk with
-    one of its admins to accept the message from Launchpad so that you can
-    finish the process.)
+    A confirmation message has been sent to
+    &#x27;doc@lists.ubuntu.com&#x27;. Follow the instructions in that
+    message to finish claiming this team. (If the above address is from
+    a mailing list, it may be necessary to talk with one of its admins
+    to accept the message from Launchpad so that you can finish the
+    process.)
 
 That will send an email to the address given, with a link to finish the
 claiming process.

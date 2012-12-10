@@ -612,7 +612,7 @@ not be able to move it.
     Move announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('For').value = 'kubuntu'
     >>> kamion_browser.getControl('Retarget').click()
-    >>> "don't have permission" in extract_text(
+    >>> "don&#x27;t have permission" in extract_text(
     ...     find_main_content(kamion_browser.contents))
     True
     >>> print kamion_browser.title

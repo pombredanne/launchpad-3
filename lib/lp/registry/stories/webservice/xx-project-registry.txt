@@ -635,15 +635,16 @@ an error.
     name: my-new-project is already used by another project
 
 If the fields do not validate a Bad Request error is received.  Here the
-URL is not properly formed.
+URL is not properly formed. Due to bug #1088358 the error is escaped as
+if it was HTML.
 
     >>> print create_project('my-new-project', 'My New Project',
     ...     'My New Project', 'My Shiny New Project',
     ...     wiki_url="htp://badurl.example.com")
     HTTP/1.1 400 Bad Request
     ...
-    wiki_url: The URI scheme "htp" is not allowed.  Only URIs with the
-    following schemes may be used: ftp, http, https
+    wiki_url: The URI scheme &quot;htp&quot; is not allowed.  Only URIs
+    with the following schemes may be used: ftp, http, https
     ...
 
 
