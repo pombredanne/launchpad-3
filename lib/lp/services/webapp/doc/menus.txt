@@ -318,26 +318,6 @@ Checking out the escapedtext attribute.
     >>> IFacetLink(link).escapedtext
     u'some <b> --&gt; </b> text'
 
-We can test the 'structured' helper directly.
-
-    >>> structured('foo').escapedtext
-    u'foo'
-
-    >>> structured('%s', 'a < b > c & d " e').escapedtext
-    u'a &lt; b &gt; c &amp; d " e'
-
-    >>> structured('a < b > c & d " e').escapedtext
-    u'a < b > c & d " e'
-
-    >>> structured(
-    ...     'replacement %(foo)s, %(bar)s', foo='<foo>', bar='bar').escapedtext
-    u'replacement &lt;foo&gt;, bar'
-
-    >>> structured('whatever', 'foo', 'bar', baz='baz')
-    Traceback (most recent call last):
-    ...
-    TypeError:...
-
 Next, we return the link as HTML.
 
     # We need to use a real launchpad test request so the view adapter
