@@ -633,6 +633,11 @@ class CommonMenuLinks:
         enabled = bool(self.person.getAffiliatedPillars(user))
         return Link(target, text, enabled=enabled, icon='info')
 
+    def owned_teams(self):
+        target = '+owned-teams'
+        text = 'Owned teams'
+        return Link(target, text, icon='info')
+
     def subscriptions(self):
         target = '+subscriptions'
         text = 'Direct subscriptions'
@@ -695,6 +700,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'activate_ppa',
         'maintained',
         'manage_vouchers',
+        'owned_teams',
         'synchronised',
         'view_ppa_subscriptions',
         'ppa',
@@ -838,7 +844,7 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
     links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
-             'synchronised', 'projects')
+             'synchronised', 'projects', 'owned_teams')
 
     @property
     def person(self):
