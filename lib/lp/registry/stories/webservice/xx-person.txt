@@ -534,7 +534,8 @@ Wiki names can be modified.
     >>> print wiki_name['url']
     http://www.example.com/MrExample
 
-But only if we supply valid data.
+But only if we supply valid data. Due to bug #1088358 the error is
+escaped as if it was HTML.
 
     >>> patch = {
     ...    u'wiki': u'javascript:void/**/',
@@ -544,7 +545,7 @@ But only if we supply valid data.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    wiki: The URI scheme "javascript" is not allowed.
+    wiki: The URI scheme &quot;javascript&quot; is not allowed.
     Only URIs with the following schemes may be used: http, https
 
 

@@ -55,7 +55,7 @@ not have permission to accept items in "main":
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: alsa-utils (You have no rights to accept component(s) 'main')
+    FAILED: alsa-utils (You have no rights to accept component(s) &#x27;main&#x27;)
 
 The same applies to the binary upload "pmount" because its build
 produced a package in main:
@@ -64,7 +64,7 @@ produced a package in main:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: pmount (You have no rights to accept component(s) 'main')
+    FAILED: pmount (You have no rights to accept component(s) &#x27;main&#x27;)
 
 Let's change the components on some uploads so that the user has
 permission to manipulate them.
@@ -153,5 +153,5 @@ will be left alone.
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in sorted(get_feedback_messages(motu_browser.contents)):
     ...     print message
-    FAILED: netapplet (You have no rights to accept component(s) 'main')
+    FAILED: netapplet (You have no rights to accept component(s) &#x27;main&#x27;)
     OK: mozilla-firefox(multiverse/(unchanged)/(unchanged))

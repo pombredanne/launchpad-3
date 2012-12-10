@@ -34,7 +34,7 @@
                 <input tal:replace="structure view/widgets/scope" />
                 <div class="message"
                   tal:condition="view/widgets/scope/error"
-                  tal:content="view/widgets/scope/error">
+                  tal:content="structure view/widgets/scope/error">
                   Error message
                 </div>
               </td>

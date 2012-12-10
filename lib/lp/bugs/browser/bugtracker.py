@@ -39,6 +39,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.bugs.browser.widgets.bugtask import UbuntuSourcePackageNameWidget
@@ -303,16 +304,20 @@ class BugTrackerEditView(LaunchpadEditFormView):
         # If aliases has an error, unwrap the Dantean exception from
         # Zope so that we can tell the user something useful.
         if self.getFieldError('aliases'):
-            # XXX: GavinPanella 2008-04-02 bug=210901: The error
-            # messages may already be escaped (with `cgi.escape`), but
-            # the water is muddy, so we won't attempt to unescape them
-            # or otherwise munge them, in case we introduce a
-            # different problem. For now, escaping twice is okay as we
-            # won't see any artifacts of that during normal use.
+            # XXX: wgrant 2008-04-02 bug=210901: The error
+            # messages may have already been escaped by
+            # LaunchpadValidationError, so wrap them in structured() to
+            # avoid double-escaping them. It's possible that non-LVEs
+            # could also be escaped, but I can't think of any cases so
+            # let's just escape them anyway.
             aliases_errors = self.widgets['aliases']._error.errors.args[0]
+            maybe_structured_errors = [
+                structured(error)
+                if isinstance(error, LaunchpadValidationError) else error
+                for error in aliases_errors]
             self.setFieldError('aliases', structured(
-                    '<br />'.join(['%s'] * len(aliases_errors)),
-                    *aliases_errors))
+                    '<br />'.join(['%s'] * len(maybe_structured_errors)),
+                    *maybe_structured_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):

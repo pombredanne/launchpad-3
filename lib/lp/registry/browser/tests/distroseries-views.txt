@@ -72,7 +72,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = 'bRoKen_AdDreSs'
     >>> administrate_distroseries(hoary, form)
     1 errors
-    E-mail changes to: Invalid email 'bRoKen_AdDreSs'.
+    E-mail changes to: Invalid email &#x27;bRoKen_AdDreSs&#x27;.
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com
@@ -369,7 +369,7 @@ The distroseries version must be a valid debversion.
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
-    'Hardy-6.06-LTS': Could not parse version...
+    &#x27;Hardy-6.06-LTS&#x27;: Could not parse version...
 
 The distroseries version is unique to a distribution. Version '2009.06'
 cannot be reused by another Ubuntu series.

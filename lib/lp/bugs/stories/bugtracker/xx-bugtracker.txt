@@ -78,7 +78,7 @@ is informed about it.
     ...     print extract_text(message)
     There is 1 error.
     http://bugzilla.mozilla.org/ is already registered in Launchpad
-    as "The Mozilla.org Bug Tracker" (mozilla.org).
+    as &quot;The Mozilla.org Bug Tracker&quot; (mozilla.org).
 
 The same happens if the requested URL is aliased to another bug tracker.
 Aliases can be edited once a bug tracker has been added, but for now
@@ -105,7 +105,7 @@ we'll dig directly to the database.
     ...     print extract_text(message)
     There is 1 error.
     http://alias.example.com/ is already registered in Launchpad
-    as "GnomeGBug GTracker" (gnome-bugzilla).
+    as &quot;GnomeGBug GTracker&quot; (gnome-bugzilla).
 
 After successfully registering the bug tracker, the user is redirected
 to the bug tracker page.
@@ -221,7 +221,7 @@ tracker uses.
     ...     print message
     There is 1 error.
     http://bugzilla.mozilla.org/ is already registered in Launchpad
-    as "The Mozilla.org Bug Tracker" (mozilla.org).
+    as &quot;The Mozilla.org Bug Tracker&quot; (mozilla.org).
 
 If the user inadvertently enters an invalid URL, they are shown an
 informative error message explaining why it is invalid.
@@ -233,7 +233,7 @@ informative error message explaining why it is invalid.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    "what? my wife does this stuff" is not a valid URI
+    &quot;what? my wife does this stuff&quot; is not a valid URI
 
     >>> user_browser.getControl('Location', index=0).value = (
     ...     'http://ξνεr.been.fishing?')
@@ -327,7 +327,7 @@ bugtracker.
     ...     print message
     There is 1 error.
     http://bugzilla.mozilla.org/ is already registered in Launchpad
-    as "The Mozilla.org Bug Tracker" (mozilla.org).
+    as &quot;The Mozilla.org Bug Tracker&quot; (mozilla.org).
 
 Multiple aliases can be entered by separating URLs with whitespace.
 
@@ -360,7 +360,7 @@ shown informative error messages.
     ...     print message
     There is 1 error.
     URIs must consist of ASCII characters
-    "been" is not a valid URI
+    &quot;been&quot; is not a valid URI
 
 
 Deleting a bug tracker
@@ -391,7 +391,7 @@ deletion yet:
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    Freddy's Bugs has been deleted.
+    Freddy&#x27;s Bugs has been deleted.
 
 Bug trackers can be deleted by anyone, subject to a few restrictions:
 

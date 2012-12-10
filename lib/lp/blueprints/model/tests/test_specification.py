@@ -201,7 +201,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
         existing = self.factory.makeSpecification(
                 specurl=u'http://ubuntu.com/foo',
                 title='<script>alert("foo");</script>')
-        cleaned_title = '&lt;script&gt;alert("foo");&lt;/script&gt;'
+        cleaned_title = '&lt;script&gt;alert(&quot;foo&quot;);&lt;/script&gt;'
         spec = self.factory.makeSpecification()
         url = canonical_url(existing)
         field = ISpecification['specurl'].bind(spec)

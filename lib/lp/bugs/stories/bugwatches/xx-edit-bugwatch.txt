@@ -37,7 +37,7 @@ Likewise, stupid URLs are rejected with a polite error message.
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(message)
     There is 1 error.
-    "GELLER" is not a valid URI
+    &quot;GELLER&quot; is not a valid URI
 
 
 BugWatch details

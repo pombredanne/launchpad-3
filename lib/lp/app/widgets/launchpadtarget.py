@@ -17,6 +17,7 @@ from zope.app.form.interfaces import (
     IInputWidget,
     InputErrors,
     MissingInputError,
+    WidgetInputError,
     )
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -113,15 +114,18 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
-                self._error = LaunchpadValidationError(
-                    'Please enter a project name')
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError('Please enter a project name'))
                 raise self._error
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.product" % self.name)
-                self._error = LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad" % entered_name)
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no project named '%s' registered in"
+                        " Launchpad" % entered_name))
                 raise self._error
         elif form_value == 'package':
             try:
@@ -129,9 +133,11 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.distribution" % self.name)
-                self._error = LaunchpadValidationError(
-                    "There is no distribution named '%s' registered in"
-                    " Launchpad" % entered_name)
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no distribution named '%s' registered in"
+                        " Launchpad" % entered_name))
                 raise self._error
             if self.package_widget.hasInput():
                 try:
@@ -148,9 +154,11 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 except (ConversionError, NotFoundError):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
-                    self._error = LaunchpadValidationError(
-                        "There is no package named '%s' published in %s."
-                         % (entered_name, distribution.displayname))
+                    self._error = WidgetInputError(
+                        self.name, self.label,
+                        LaunchpadValidationError(
+                            "There is no package named '%s' published in %s."
+                            % (entered_name, distribution.displayname)))
                     raise self._error
                 return dsp
             else:

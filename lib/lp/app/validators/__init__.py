@@ -52,14 +52,15 @@ class LaunchpadValidationError(ValidationError):
     """
     implements(ILaunchpadValidationError)
 
-    def __init__(self, message):
+    def __init__(self, message, already_escaped=False):
         """Create a LaunchpadValidationError instance.
 
         `message` should be an HTML quoted string. Extra arguments
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
         """
-        message = html_escape(message)
+        if not already_escaped:
+            message = html_escape(message)
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).

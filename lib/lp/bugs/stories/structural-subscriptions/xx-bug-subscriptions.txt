@@ -106,7 +106,7 @@ No Privileges Person is now subscribed...
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     No Privileges Person will now receive an e-mail each time someone reports
-    or changes a public bug in "mozilla-firefox in Ubuntu".
+    or changes a public bug in &quot;mozilla-firefox in Ubuntu&quot;.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
@@ -129,7 +129,7 @@ No Privileges Person is now subscribed...
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
     No Privileges Person will no longer automatically receive e-mail about
-    public bugs in "mozilla-firefox in Ubuntu".
+    public bugs in &quot;mozilla-firefox in Ubuntu&quot;.
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))

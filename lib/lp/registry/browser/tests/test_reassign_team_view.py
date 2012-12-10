@@ -14,6 +14,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
@@ -151,10 +152,11 @@ class TestTeamReassignmentViewErrors(TestCaseWithFactory):
         view = create_initialized_view(
             a_team, '+reassign', form=form, principal=owner)
         self.assertEqual(
-            [u"There's already a person/team with the name 'a-team' in "
-            "Launchpad. Please choose a different name or select the option "
-            "to make that person/team the new owner, if that's what you "
-             "want."],
+            [html_escape(
+                u"There's already a person/team with the name 'a-team' in "
+                "Launchpad. Please choose a different name or select the "
+                "option to make that person/team the new owner, if that's "
+                "what you want.")],
             view.errors)
 
     def test_cyclical_direct_team_membership_error(self):
