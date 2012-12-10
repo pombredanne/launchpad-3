@@ -275,6 +275,16 @@ class TestPersonTeams(TestCaseWithFactory):
         results = list(owner.getOwnedTeams(self.user))
         self.assertEqual([self.a_team], results)
 
+    def test_getOwnedTeams_visibility(self):
+        # The interator contains the teams that the user can see.
+        owner = self.a_team.teamowner
+        p_team = self.factory.makeTeam(
+            name='p-team', owner=owner, visibility=PersonVisibility.PRIVATE)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+        results = list(owner.getOwnedTeams(owner))
+        self.assertEqual([self.a_team, p_team], results)
+
     def test_administrated_teams(self):
         # The property Person.administrated_teams is a cached copy of
         # the result of Person.getAdministratedTeams().
