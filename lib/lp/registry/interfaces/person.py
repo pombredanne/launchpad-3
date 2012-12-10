@@ -1302,7 +1302,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """
 
     @call_with(user=REQUEST_USER)
-    @operation_returns_collection_of(Interface)  # Really ITeam
+    @operation_returns_collection_of(Interface)  # Really ITeam.
     @export_read_operation()
     @operation_for_version("devel")
     def getOwnedTeams(user=None):

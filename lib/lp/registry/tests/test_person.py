@@ -268,7 +268,7 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual(expected_members, retrieved_members)
 
     def test_getOwnedTeams(self):
-        # The interator contains the teams that person owns, regardless of
+        # The iterator contains the teams that person owns, regardless of
         # membership.
         owner = self.a_team.teamowner
         with person_logged_in(owner):
@@ -277,7 +277,7 @@ class TestPersonTeams(TestCaseWithFactory):
         self.assertEqual([self.a_team], results)
 
     def test_getOwnedTeams_visibility(self):
-        # The interator contains the teams that the user can see.
+        # The iterator contains the teams that the user can see.
         owner = self.a_team.teamowner
         p_team = self.factory.makeTeam(
             name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
