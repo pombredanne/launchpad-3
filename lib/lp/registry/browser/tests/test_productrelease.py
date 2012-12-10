@@ -8,7 +8,6 @@ __metaclass__ = type
 
 from lp.app.enums import InformationType
 from lp.services.webapp.escaping import html_escape
-from lp.services.webapp import canonical_url
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -70,6 +69,7 @@ class NonPublicProductReleaseViewTestCase(BrowserTestCase):
             self.assertEqual(
                 [html_escape("Any releases added for bnord will be PUBLIC.")],
                 notifications)
+
 
 class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
 

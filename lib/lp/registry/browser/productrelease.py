@@ -208,7 +208,7 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
             self.request.response.addWarningNotification(
                 _("Any releases added for %s will be PUBLIC." %
                   self.context.displayname))
-        super(ProductReleaseFromSeriesAddView, self).initialize() 
+        super(ProductReleaseFromSeriesAddView, self).initialize()
 
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
