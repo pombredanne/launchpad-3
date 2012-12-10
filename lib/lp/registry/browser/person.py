@@ -103,7 +103,6 @@ from zope.schema import (
     TextLine,
     )
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -694,6 +693,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'projects',
         'activate_ppa',
         'maintained',
+        'manage_vouchers',
         'synchronised',
         'view_ppa_subscriptions',
         'ppa',
@@ -717,6 +717,13 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         request_tokens = self.context.oauth_request_tokens
         enabled = bool(access_tokens or request_tokens)
         return Link(target, text, enabled=enabled, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def manage_vouchers(self):
+        target = '+vouchers'
+        text = 'Manage commercial subscriptions'
+        summary = 'Purchase and redeem commercial subscription vouchers'
+        return Link(target, text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1257,9 +1264,8 @@ class PersonVouchersView(LaunchpadFormView):
         """Set up the fields for this view."""
 
         self.form_fields = []
-        if self.has_commercial_projects:
-            self.form_fields = (self.createProjectField() +
-                                self.createVoucherField())
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -1321,21 +1327,6 @@ class PersonVouchersView(LaunchpadFormView):
             self.form_fields.select('project', 'voucher'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=True)
-
-    @cachedproperty
-    def has_commercial_projects(self):
-        """Does the user manage one or more commercial project?
-
-        Users with launchpad.Commercial permission can manage vouchers for any
-        project so the property is True always.  Otherwise it is true if the
-        vocabulary is not empty.
-        """
-        if check_permission('launchpad.Commercial', self.context):
-            return True
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(self.context,
-                                             "CommercialProjects")
-        return len(vocabulary) > 0
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):

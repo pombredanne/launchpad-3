@@ -287,7 +287,7 @@ presented ordered to appear in a 3 column list.
 
 
     >>> print extract_text(find_tag_by_id(html, 'special'))
-    I don't know yet
+    I don&#x27;t know yet
     Other/Proprietary
     Other/Open Source
 
@@ -372,7 +372,7 @@ But not all of them.
     >>> print_checked_items(license_widget(), links=True)
     [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
-    [ ] I don't know yet
+    [ ] I don&#x27;t know yet
     [ ] Other/Proprietary
     [ ] Other/Open Source
 

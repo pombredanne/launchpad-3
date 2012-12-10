@@ -165,7 +165,7 @@ And a relevant notification is displayed after the mode toggle.
 
     >>> messages = get_feedback_messages(cprov_browser.contents)
     >>> print messages
-    [u'The builder "Bob The Builder" was updated successfully.']
+    [u'The builder &quot;Bob The Builder&quot; was updated successfully.']
 
 Via the 'edit' form Celso can also modify the 'builderok',
 'failure_notes', 'virtualized' and 'virtual machine' fields. All the
@@ -185,7 +185,7 @@ notification.
 
     >>> messages = get_feedback_messages(cprov_browser.contents)
     >>> print messages
-    [u'The builder "Bob The Builder" was updated successfully.']
+    [u'The builder &quot;Bob The Builder&quot; was updated successfully.']
 
 
 == Marking a builder as inactive ==

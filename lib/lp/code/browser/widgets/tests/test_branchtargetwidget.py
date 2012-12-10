@@ -8,7 +8,10 @@ import re
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from zope.app.form.browser.interfaces import IBrowserWidget
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import (
+    IInputWidget,
+    WidgetInputError,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -21,6 +24,7 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.registry.vocabularies import ProductVocabulary
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
@@ -192,8 +196,8 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         del form['field.target.product']
         self.widget.request = LaunchpadTestRequest(form=form)
         message = 'Please enter a project name'
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
         self.assertEqual(message, self.widget.error())
 
     def test_getInputValue_product_invalid(self):
@@ -205,9 +209,9 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         message = (
             "There is no project named 'non-existent' registered in "
             "Launchpad")
-        self.assertRaisesWithContent(
-            LaunchpadValidationError, message, self.widget.getInputValue)
-        self.assertEqual(message, self.widget.error())
+        e = self.assertRaises(WidgetInputError, self.widget.getInputValue)
+        self.assertEqual(LaunchpadValidationError(message), e.errors)
+        self.assertEqual(html_escape(message), self.widget.error())
 
     def test_setRenderedValue_product(self):
         # Passing a product branch target will set the widget's render state to

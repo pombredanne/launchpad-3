@@ -159,7 +159,7 @@ class IProductSeriesLimitedView(Interface):
 
 
 class IProductSeriesView(
-    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISeriesMixin, IHasAppointedDriver, IHasOwner,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
     IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     status = exported(
@@ -341,7 +341,7 @@ class IProductSeriesView(
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IProductSeriesView, IProductSeriesLimitedView,
-                     IStructuralSubscriptionTarget):
+                     IStructuralSubscriptionTarget, IBugTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 

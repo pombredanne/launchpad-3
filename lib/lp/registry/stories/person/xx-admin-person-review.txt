@@ -105,4 +105,4 @@ about the suspension.
     >>> print expert_browser.url
     http://launchpad.dev/people
     >>> print get_feedback_messages(expert_browser.contents)[0]
-    The account "No Privileges Person" has been suspended.
+    The account &quot;No Privileges Person&quot; has been suspended.

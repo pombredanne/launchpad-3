@@ -149,7 +149,7 @@ message.
     ...     debian, '+bugs', form_values)
 
     >>> distro_advanced_search_listingview.getFieldError('bug_reporter')
-    u"There's no person with the name or email address 'invalid-reporter'."
+    u'There&#x27;s no person with the name or email address &#x27;invalid-reporter&#x27;.'
 
 The same if we try with an invalid assignee.
 
@@ -163,7 +163,7 @@ The same if we try with an invalid assignee.
     ...     debian, '+bugs', form_values)
 
     >>> distro_advanced_search_listingview.getFieldError('assignee')
-    u"There's no person with the name or email address 'invalid-assignee'."
+    u'There&#x27;s no person with the name or email address &#x27;invalid-assignee&#x27;.'
 
 Searching by component is possible, as long as the context has defined a
 .currentseries.
