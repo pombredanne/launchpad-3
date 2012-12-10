@@ -225,7 +225,7 @@ class POFileMetadataViewMixin:
             links.append(
                 structured(
                     '<a class="style-guide-url" href="%s">%s instructions</a>',
-                    group_guide, self.translation_group.title))
+                    group_guide, self.translation_group.title).escapedtext)
 
         if team_guide is not None:
             if group_guide is None:
@@ -235,9 +235,10 @@ class POFileMetadataViewMixin:
                 # Full team name may get tedious after we just named the
                 # group.  Just use the language name.
                 name = self.context.language.englishname
-            structured(
-                '<a class="style-guide-url" href="%s"> %s guidelines</a>',
-                team_guide, name)
+            links.append(
+                structured(
+                    '<a class="style-guide-url" href="%s"> %s guidelines</a>',
+                    team_guide, name).escapedtext)
 
         text = ' and '.join(links).rstrip()
 
