@@ -6,13 +6,44 @@
 __metaclass__ = type
 
 
+from lp.app.enums import InformationType
 from lp.services.webapp.escaping import html_escape
+from lp.services.webapp import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
+
+
+class NonPublicProductReleaseViewTestCase(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_proprietary_add_milestone(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='fnord',
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        milestone = self.factory.makeMilestone(product=product)
+        with person_logged_in(owner):
+            browser = self.getViewBrowser(
+                milestone, view_name="+addrelease", user=owner)
+            msg = 'Fnord is PROPRIETARY. It cannot have any releases.'
+            self.assertTrue(html_escape(msg) in browser.contents)
+
+    def test_proprietary_add_series(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(name='fnord',
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product, name='bnord')
+        with person_logged_in(owner):
+            browser = self.getViewBrowser(
+                series, view_name="+addrelease", user=owner)
+            msg = ('The bnord series of Fnord is PROPRIETARY.'
+                   ' It cannot have any releases.')
+            self.assertTrue(html_escape(msg) in browser.contents)
 
 
 class ProductReleaseAddDownloadFileViewTestCase(TestCaseWithFactory):
