@@ -651,8 +651,9 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     @property
     def context_uses_answers(self):
         """Return True if the context uses launchpad as an answer forum."""
-        if IServiceUsage.providedBy(self.context):
-            return self.context.answers_usage == ServiceUsage.LAUNCHPAD
+        usage = IServiceUsage(self.context)
+        if usage is not None:             
+            return usage.answers_usage == ServiceUsage.LAUNCHPAD
         else:
             return False
 
