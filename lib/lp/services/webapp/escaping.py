@@ -71,12 +71,12 @@ class structured:
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
         if reps:
-            escaped = tuple(html_escape(rep) for rep in reps)
+            self.escapedtext = text % tuple(html_escape(rep) for rep in reps)
         elif kwreps:
-            escaped = dict((k, html_escape(v)) for k, v in kwreps.iteritems())
+            self.escapedtext = text % dict(
+                (k, html_escape(v)) for k, v in kwreps.iteritems())
         else:
-            escaped = ()
-        self.escapedtext = text % escaped
+            self.escapedtext = text
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
