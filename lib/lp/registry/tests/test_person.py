@@ -70,6 +70,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
+    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -279,11 +280,35 @@ class TestPersonTeams(TestCaseWithFactory):
         # The interator contains the teams that the user can see.
         owner = self.a_team.teamowner
         p_team = self.factory.makeTeam(
-            name='p-team', owner=owner, visibility=PersonVisibility.PRIVATE)
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
         results = list(owner.getOwnedTeams(self.user))
         self.assertEqual([self.a_team], results)
         results = list(owner.getOwnedTeams(owner))
         self.assertEqual([self.a_team, p_team], results)
+
+    def test_getOwnedTeams_webservice(self):
+        # The user in the interaction is used as the user arg.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        lp = launchpadlib_for('test', person=self.user)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
+
+    def test_getOwnedTeams_webservice_anonymous(self):
+        # The user in the interaction is used as the user arg.
+        # Anonymous scripts also do not reveal private teams.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        logout()
+        lp = launchpadlib_for('test', person=None)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
 
     def test_administrated_teams(self):
         # The property Person.administrated_teams is a cached copy of
