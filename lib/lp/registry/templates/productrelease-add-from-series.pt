@@ -64,6 +64,7 @@
 </metal:block>
 
 <div metal:fill-slot="main">
+  <tal:releases-allowed condition="view/releases_allowed">
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" tal:condition="context/releases"
          style="border-bottom: solid 1px black">
@@ -77,6 +78,12 @@
       </ul>
     </div>
   </div>
+  </tal:releases-allowed>
+  <tal:releases-forbidden condition="not: view/releases_allowed">
+    The <tal:seriesname replace="context/displayname" /> series of
+    <tal:productname replace="context/product/displayname" /> is PROPRIETARY.
+    It cannot have any releases.
+  </tal:releases-forbidden>
 </div>
 
 </body>

@@ -39,6 +39,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.enums import InformationType
 from lp.app.widgets.date import DateTimeWidget
 from lp.registry.browser import (
     BaseRdfView,
@@ -110,6 +111,14 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
     custom_widget('release_notes', TextAreaWidget, height=7, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
+    def initialize(self):
+        super(ProductReleaseAddViewBase, self).initialize()
+        if (self.context.product.information_type ==
+            InformationType.EMBARGOED):
+            self.request.response.addWarningNotification(
+                _("Any releases added for %s will be PUBLIC." %
+                  self.context.displayname))
+
     def _prependKeepMilestoneActiveField(self):
         keep_milestone_active_checkbox = FormFields(
             Bool(
@@ -133,6 +142,11 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             milestone.active = False
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
+
+    @property
+    def releases_allowed(self):
+        return (self.context.product.information_type !=
+                InformationType.PROPRIETARY)
 
     @property
     def label(self):

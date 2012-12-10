@@ -14,6 +14,7 @@
   </metal:block>
 
 <div metal:fill-slot="main">
+  <tal:releases-allowed condition="view/releases_allowed">
   <div metal:use-macro="context/@@launchpad_form/form">
     <div id="other-releases"
          metal:fill-slot="extra_info"
@@ -29,6 +30,12 @@
       </ul>
     </div>
   </div>
+  </tal:releases-allowed>
+  <tal:releases-forbidden condition="not: view/releases_allowed">
+    <tal:productname replace="context/displayname" /> is PROPRIETARY. It cannot
+    have any releases.
+  </tal:releases-forbidden>
+
 </div>
 
 </body>
