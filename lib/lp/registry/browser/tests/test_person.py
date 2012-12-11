@@ -79,6 +79,7 @@ from lp.testing.layers import (
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
+    find_tag_by_id,
     setupBrowserForUser,
     )
 from lp.testing.views import (
@@ -968,6 +969,48 @@ class TestPersonPPAPackagesView(TestCaseWithFactory):
         self.assertEqual(
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
+
+
+class PersonOwnedTeamsViewTestCase(TestCaseWithFactory):
+    """Test +owned-teams view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_properties(self):
+        # The batch is created when the view is initialized.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        view = create_initialized_view(owner, '+owned-teams')
+        self.assertEqual('Owned teams', view.page_title)
+        self.assertEqual('team', view.batchnav._singular_heading)
+        self.assertEqual([team], view.batch)
+
+    def test_page_text_with_teams(self):
+        # When the person owns teams, the page shows a a listing
+        # table. There is always a link to the team participation page.
+        owner = self.factory.makePerson(name='snarf')
+        self.factory.makeTeam(owner=owner, name='pting')
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                owner, '+owned-teams', principal=owner)
+            markup = view()
+        soup = find_tag_by_id(markup, 'maincontent')
+        participation_link = 'http://launchpad.dev/~snarf/+participation'
+        self.assertIsNotNone(soup.find('a', {'href': participation_link}))
+        self.assertIsNotNone(soup.find('table', {'id': 'owned-teams'}))
+        self.assertIsNotNone(soup.find('a', {'href': '/~pting'}))
+        self.assertIsNotNone(soup.find('table', {'class': 'upper-batch-nav'}))
+        self.assertIsNotNone(soup.find('table', {'class': 'lower-batch-nav'}))
+
+    def test_page_text_without_teams(self):
+        # When the person does not own teams, the page states the case.
+        owner = self.factory.makePerson(name='pting')
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                owner, '+owned-teams', principal=owner)
+            markup = view()
+        soup = find_tag_by_id(markup, 'maincontent')
+        self.assertIsNotNone(soup.find('p', {'id': 'no-teams'}))
 
 
 class TestPersonSynchronisedPackagesView(TestCaseWithFactory):

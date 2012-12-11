@@ -21,7 +21,7 @@
     <span
       tal:define="user_menu view/user/menu:overview"
       tal:condition="context/qualifies_for_free_hosting">
-      <br />Purchase a commercial subcription from your
+      <br />Purchase a commercial subscription from your
       <a tal:replace="structure user_menu/manage_vouchers/fmt:link" />
       page.
     </span>
@@ -36,7 +36,7 @@
 
     <ul class="bulleted" style="clear:left;">
       <li tal:define="user_menu view/user/menu:overview">
-        Purchase a commercial subcription from your
+        Purchase a commercial subscription from your
         <a tal:replace="structure user_menu/manage_vouchers/fmt:link" />
         page.
       </li>
@@ -45,7 +45,7 @@
         <a class="sprite maybe"
           tal:define="config modules/lp.services.config/config"
           tal:attributes="href config/commercial/licensing_policy_url"
-          >Launchpad's licensing policies</a>
+          >Launchpad's licensing policies</a>.
       </li>
     </ul>
   </tal:proprietary>

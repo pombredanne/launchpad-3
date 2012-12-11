@@ -1301,6 +1301,17 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         The person's membership may be direct or indirect.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)  # Really ITeam.
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getOwnedTeams(user=None):
+        """Return the teams that this person owns.
+
+        The iterator includes the teams that the user owns, but it not
+        a member of.
+        """
+
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
@@ -1308,7 +1319,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         member with admin privilege, or member of a team with such
         privileges.  It excludes teams which have been merged.
         """
-
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
@@ -2547,6 +2557,8 @@ for method, name in params_to_fix:
 #     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
+IPersonViewRestricted['getOwnedTeams'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = ITeam
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

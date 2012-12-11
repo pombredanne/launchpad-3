@@ -70,6 +70,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
+    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -265,6 +266,49 @@ class TestPersonTeams(TestCaseWithFactory):
         expected_members = sorted([self.user, self.a_team.teamowner])
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
+
+    def test_getOwnedTeams(self):
+        # The iterator contains the teams that person owns, regardless of
+        # membership.
+        owner = self.a_team.teamowner
+        with person_logged_in(owner):
+            owner.leave(self.a_team)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+
+    def test_getOwnedTeams_visibility(self):
+        # The iterator contains the teams that the user can see.
+        owner = self.a_team.teamowner
+        p_team = self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+        results = list(owner.getOwnedTeams(owner))
+        self.assertEqual([self.a_team, p_team], results)
+
+    def test_getOwnedTeams_webservice(self):
+        # The user in the interaction is used as the user arg.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        lp = launchpadlib_for('test', person=self.user)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
+
+    def test_getOwnedTeams_webservice_anonymous(self):
+        # The user in the interaction is used as the user arg.
+        # Anonymous scripts also do not reveal private teams.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        logout()
+        lp = launchpadlib_for('test', person=None)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
 
     def test_administrated_teams(self):
         # The property Person.administrated_teams is a cached copy of
