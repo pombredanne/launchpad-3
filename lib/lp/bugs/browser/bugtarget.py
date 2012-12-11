@@ -20,7 +20,6 @@ __all__ = [
     "product_to_productbugconfiguration",
     ]
 
-import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
@@ -602,8 +601,8 @@ class FileBugViewBase(LaunchpadFormView):
                     comment=attachment_comment, is_patch=data['patch'])
 
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(filename))
+                    'The file "%s" was attached to the bug report.'
+                    % filename)
 
             for attachment in extra_data.attachments:
                 bug.linkAttachment(
@@ -612,8 +611,8 @@ class FileBugViewBase(LaunchpadFormView):
                     comment=attachment_comment,
                     send_notifications=False)
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['file_alias'].filename))
+                    'The file "%s" was attached to the bug report.'
+                    % attachment['file_alias'].filename)
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug

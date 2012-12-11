@@ -394,17 +394,18 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             # Add a hidden field to fool LaunchpadFormView into thinking we
             # submitted the action it expected when in fact we're submiting
             # something else to indicate the user has confirmed.
-            confirm_button = (
+            confirm_button = structured(
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
-                % self.continue_action.__name__)
-            self.notifications.append(_(dedent("""
-                %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, the %s status will not update automatically.
-                %s""" % (cgi.escape(target.displayname),
-                         cgi.escape(target.displayname),
-                         confirm_button))))
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />',
+                self.continue_action.__name__)
+            self.notifications.append(structured(
+                dedent("""
+                    %s doesn't use Launchpad as its bug tracker. Without a bug
+                    URL to watch, the %s status will not update automatically.
+                    %s"""),
+                target.displayname, target.displayname,
+                confirm_button).escapedtext)
             return None
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)

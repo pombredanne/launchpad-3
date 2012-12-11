@@ -7,8 +7,6 @@
 
 __metaclass__ = type
 
-import cgi
-
 from lazr.restful.utils import safe_hasattr
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
@@ -25,6 +23,7 @@ from lp.app.browser.vocabulary import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
@@ -95,7 +94,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken': cgi.escape(self.formToken, quote=True),
+            'formToken': self.formToken,
             'name': self.input_id,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
@@ -103,11 +102,12 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             'style': self.style,
             'cssClass': self.cssClass,
             }
-        return """<input type="text" value="%(formToken)s" id="%(name)s"
+        return structured(
+            """<input type="text" value="%(formToken)s" id="%(name)s"
                          name="%(name)s" size="%(displayWidth)s"
                          maxlength="%(displayMaxWidth)s"
                          onKeyPress="%(onKeyPress)s" style="%(style)s"
-                         class="%(cssClass)s" />""" % d
+                         class="%(cssClass)s" />""", **d).escapedtext
 
     @property
     def selected_value(self):

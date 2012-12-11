@@ -25,7 +25,6 @@ __all__ = [
     'WrongNumberOfReviewTypeArguments',
     ]
 
-from cgi import escape
 import httplib
 import re
 
@@ -102,7 +101,10 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
@@ -164,13 +166,14 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(launchpad_domain)})
+                mapping={'domain': html_escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
 
         for hostname in get_blacklisted_hostnames():
             if uri.underDomain(hostname):
                 message = _(
-                    'Launchpad cannot mirror branches from %s.' % hostname)
+                    'Launchpad cannot mirror branches from %s.'
+                    % html_escape(hostname))
                 raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
@@ -180,7 +183,7 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(constraint_text)})
+                mapping={'domain': html_escape(constraint_text)})
             raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -196,8 +199,8 @@ class BranchURIField(URIField):
             message = _(
                 'The bzr branch <a href="${url}">${branch}</a> is '
                 'already registered with this URL.',
-                mapping={'url': canonical_url(branch),
-                         'branch': escape(branch.displayname)})
+                mapping={'url': html_escape(canonical_url(branch)),
+                         'branch': html_escape(branch.displayname)})
             raise LaunchpadValidationError(structured(message))
 
 

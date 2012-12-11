@@ -36,8 +36,9 @@ And viewing that page should show the updated information.
 
     >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'report').renderContents().strip()
-    <p>Hi! I'm trying to learn about SVG but I can't get it to work at
-    all in firefox. Maybe there is a plugin? Help! Thanks. Mark</p>
+    <p>Hi! I&#x27;m trying to learn about SVG but I can&#x27;t get it to
+    work at all in firefox. Maybe there is a plugin? Help! Thanks.
+    Mark</p>
     >>> print soup.first('h1').renderContents()
     Problem showing the SVG demo on W3C web site
 
