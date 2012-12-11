@@ -23,10 +23,7 @@ from datetime import datetime
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.textwidgets import (
-    escape,
-    TextWidget,
-    )
+from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.interfaces import (
     ConversionError,
@@ -40,6 +37,7 @@ from zope.datetime import (
     )
 
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -609,4 +607,4 @@ class DatetimeDisplayWidget(DisplayWidget):
         if value == self.context.missing_value:
             return u""
         value = value.astimezone(time_zone)
-        return escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
+        return html_escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
