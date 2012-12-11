@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
+from lp.app.enums import InformationType
 from lp.blueprints.model.specification import (
     Specification,
     visible_specification_query,
@@ -55,6 +56,7 @@ from lp.bugs.model.bugtask import BugTaskSet
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -274,6 +276,10 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def createProductRelease(self, owner, datereleased,
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
+        info_type = self.product.information_type
+        if info_type == InformationType.PROPRIETARY:
+            raise ProprietaryProduct(
+                "Proprietary products cannot have releases.")
         if self.product_release is not None:
             raise MultipleProductReleases()
         release = ProductRelease(
