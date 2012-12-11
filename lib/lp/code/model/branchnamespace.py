@@ -216,7 +216,7 @@ class _BaseNamespace:
         # XXX sinzui 2012-12-10: The reg
         # if mover.inTeam(vcs_imports) and branch.owner == self.owner: return
         from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-        from lp.code.interfaces.branch import BranchType
+        from lp.code.enums import BranchType
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         is_vcs_import = (
             branch.branch_type == BranchType.IMPORTED
