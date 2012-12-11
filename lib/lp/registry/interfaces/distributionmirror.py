@@ -20,8 +20,6 @@ __all__ = [
     'UnableToFetchCDImageFileList',
     ]
 
-from cgi import escape
-
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -63,7 +61,10 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
@@ -285,8 +286,8 @@ class DistroMirrorURIField(URIField):
             message = _(
                 'The distribution mirror <a href="${url}">${mirror}</a> '
                 'is already registered with this URL.',
-                mapping={'url': canonical_url(mirror),
-                         'mirror': escape(mirror.title)})
+                mapping={'url': html_escape(canonical_url(mirror)),
+                         'mirror': html_escape(mirror.title)})
             raise LaunchpadValidationError(structured(message))
 
 

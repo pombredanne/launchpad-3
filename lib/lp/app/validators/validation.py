@@ -15,7 +15,6 @@ __all__ = [
     'validate_date_interval',
     ]
 
-from cgi import escape
 from textwrap import dedent
 
 from zope.app.form.interfaces import WidgetsError
@@ -28,7 +27,10 @@ from lp.app.validators.cve import valid_cve
 from lp.app.validators.email import valid_email
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.webapp import canonical_url
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -94,9 +96,9 @@ def _check_email_availability(email):
         person = email_address.person
         message = _('${email} is already registered in Launchpad and is '
                     'associated with <a href="${url}">${person}</a>.',
-                    mapping={'email': escape(email),
-                            'url': canonical_url(person),
-                            'person': escape(person.displayname)})
+                    mapping={'email': html_escape(email),
+                            'url': html_escape(canonical_url(person)),
+                            'person': html_escape(person.displayname)})
         raise LaunchpadValidationError(structured(message))
 
 
@@ -125,8 +127,8 @@ def validate_new_person_email(email):
     if owner is not None:
         message = _("The profile you're trying to create already exists: "
                     '<a href="${url}">${owner}</a>.',
-                    mapping={'url': canonical_url(owner),
-                             'owner': escape(owner.displayname)})
+                    mapping={'url': html_escape(canonical_url(owner)),
+                             'owner': html_escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
 

@@ -28,7 +28,6 @@ __all__ = [
 
 from operator import attrgetter
 import re
-from xml.sax.saxutils import escape
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -1385,12 +1384,13 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         if selected:
             attributes['checked'] = 'checked'
         input = renderElement(u'input', **attributes)
-        button = '<label style="font-weight: normal">%s&nbsp;%s:</label>' % (
-            input, escape(term.token))
-        link = '<a href="%s">%s</a>' % (
-            canonical_url(term.value), escape(term.title))
+        button = structured(
+            '<label style="font-weight: normal">%s&nbsp;%s:</label>',
+            structured(input), term.token)
+        link = structured(
+            '<a href="%s">%s</a>', canonical_url(term.value), term.title)
 
-        return "\n".join([button, link])
+        return "\n".join([button.escapedtext, link.escapedtext])
 
     def renderSearchWidget(self):
         """Render the search entry field and the button."""

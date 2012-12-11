@@ -21,7 +21,6 @@ import operator
 import os
 import time
 from urlparse import urljoin
-from xml.sax.saxutils import escape as xml_escape
 
 from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
@@ -45,9 +44,7 @@ from lp.services.webapp import (
     urlappend,
     urlparse,
     )
-# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
-# from canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.vhosts import allvhosts
 
@@ -306,7 +303,7 @@ class FeedTypedData:
             altered_content = self._content
 
         if self.content_type in ('text', 'html'):
-            altered_content = xml_escape(altered_content)
+            altered_content = html_escape(altered_content)
         elif self.content_type == 'xhtml':
             soup = BeautifulSoup(
                 altered_content,

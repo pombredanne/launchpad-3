@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import bisect
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -48,10 +47,7 @@ from zope.traversing.interfaces import (
 
 from lp import _
 from lp.app.browser.badge import IHasBadges
-from lp.app.browser.stringformatter import (
-    escape,
-    FormattersAPI,
-    )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import (
     IHasIcon,
@@ -80,7 +76,10 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -1217,12 +1216,14 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         custom_icon = ObjectImageDisplayAPI(person).custom_icon_url()
         if custom_icon is None:
             css_class = ObjectImageDisplayAPI(person).sprite_css()
-            return (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, cgi.escape(text))
+            return structured(
+                '<a href="%s" class="%s">%s</a>',
+                url, css_class, text).escapedtext
         else:
-            return (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, cgi.escape(text))
+            return structured(
+                '<a href="%s" class="bg-image" '
+                'style="background-image: url(%s)">%s</a>',
+                url, custom_icon, text).escapedtext
 
     def link(self, view_name, rootsite='mainsite'):
         """See `ObjectFormatterAPI`.
@@ -1302,8 +1303,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         if not check_permission('launchpad.LimitedView', person):
             # This person has no permission to view the team details.
             self._report_visibility_leak()
-            return '<span class="sprite team">%s</span>' % cgi.escape(
-                self.hidden)
+            return structured(
+                '<span class="sprite team">%s</span>', self.hidden).escapedtext
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def icon(self, view_name):
@@ -1379,13 +1380,10 @@ class CustomizableFormatter(ObjectFormatterAPI):
         This summary is for use in fmt:link, which is meant to be used in
         contexts like lists of items.
         """
-        values = {}
-        for key, value in self._link_summary_values().iteritems():
-            if value is None:
-                values[key] = ''
-            else:
-                values[key] = cgi.escape(value)
-        return self._link_summary_template % values
+        values = dict(
+            (k, v if v is not None else '')
+            for k, v in self._link_summary_values().iteritems())
+        return structured(self._link_summary_template, **values).escapedtext
 
     def _title_values(self):
         """Return a dict of values to use for template substitution.
@@ -1404,13 +1402,10 @@ class CustomizableFormatter(ObjectFormatterAPI):
         title_template = getattr(self, '_title_template', None)
         if title_template is None:
             return None
-        values = {}
-        for key, value in self._title_values().iteritems():
-            if value is None:
-                values[key] = ''
-            else:
-                values[key] = cgi.escape(value)
-        return title_template % values
+        values = dict(
+            (k, v if v is not None else '')
+            for k, v in self._link_summary_values().iteritems())
+        return structured(title_template, **values).escapedtext
 
     def sprite_css(self):
         """Retrieve the icon for the _context, if any.
@@ -1491,18 +1486,19 @@ class PillarFormatterAPI(CustomizableFormatter):
         'summary' (see CustomizableFormatter._make_link_summary()).
         """
         context = self._context
+        # XXX wgrant: the structured() in this dict is evil; refactor.
         mapping = {
             'url': self.url(view_name, rootsite),
-            'name': cgi.escape(context.name),
-            'displayname': cgi.escape(context.displayname),
-            'summary': self._make_link_summary(),
+            'name': context.name,
+            'displayname': context.displayname,
+            'summary': structured(self._make_link_summary()),
             }
         custom_icon = ObjectImageDisplayAPI(context).custom_icon_url()
         if custom_icon is None:
             mapping['css_class'] = ObjectImageDisplayAPI(context).sprite_css()
-            return template % mapping
+            return structured(template, **mapping).escapedtext
         mapping['custom_icon'] = custom_icon
-        return custom_icon_template % mapping
+        return structured(custom_icon_template, **mapping).escapedtext
 
     def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, ProjectGroup or distribution.
@@ -1579,7 +1575,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = cgi.escape(file_.description)
+            description = file_.description
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)
@@ -1600,7 +1596,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
                 file_.signature)
         else:
             html += ')'
-        return html % replacements
+        return structured(html, **replacements).escapedtext
 
     def url(self, view_name=None, rootsite=None):
         """Return the URL to download the file."""
@@ -1631,7 +1627,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         branch = self._context
         return {
             'bzr_identity': branch.bzr_identity,
-            'display_name': cgi.escape(branch.displayname),
+            'display_name': branch.displayname,
             'name': branch.name,
             'unique_name': branch.unique_name,
             'url': self.url(view_name),
@@ -1639,9 +1635,9 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     def link(self, view_name):
         """A hyperlinked branch icon with the displayname."""
-        return (
+        return structured(
             '<a href="%(url)s" class="sprite branch">'
-            '%(display_name)s</a>' % self._args(view_name))
+            '%(display_name)s</a>', **self._args(view_name)).escapedtext
 
     def bzrLink(self, view_name):
         """A hyperlinked branch icon with the bazaar identity."""
@@ -1650,16 +1646,17 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""
-        return (
+        return structured(
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(name)s</a>: %(title)s' % self._args(view_name))
+            '&nbsp;%(name)s</a>: %(title)s',
+            **self._args(view_name)).escapedtext
 
     def titleLink(self, view_name):
         """A hyperlinked branch name with following title."""
-        return (
+        return structured(
             '<a href="%(url)s" title="%(display_name)s">'
-            '%(name)s</a>: %(title)s' % self._args(view_name))
+            '%(name)s</a>: %(title)s', **self._args(view_name)).escapedtext
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1754,8 +1751,7 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
 
     def _composeArchiveReference(self, archive):
         if archive.is_ppa:
-            return " [%s/%s]" % (
-                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+            return " [%s/%s]" % (archive.owner.name, archive.name)
         else:
             return ""
 
@@ -1765,9 +1761,9 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
             return 'private job'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
-        title = cgi.escape(build.title)
         archive = self._composeArchiveReference(build.archive)
-        return '<a href="%s">%s</a>%s' % (url, title, archive)
+        return structured(
+            '<a href="%s">%s</a>%s', url, build.title, archive).escapedtext
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -1960,7 +1956,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         title = self._context.title
         if getUtility(ILaunchBag).user is None:
             title = FormattersAPI(title).obfuscate_email()
-        return u'<a href="%s">%s</a>' % (escape(url), escape(title))
+        return structured('<a href="%s">%s</a>', url, title).escapedtext
 
     def external_link(self):
         """Return an HTML link to the external bugtracker.
@@ -1971,10 +1967,11 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         """
         url = self._context.baseurl
         if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
-            return escape(u'mailto:<email address hidden>')
+            return html_escape(u'mailto:<email address hidden>')
         else:
-            href = escape(url)
-            return u'<a class="link-external" href="%s">%s</a>' % (href, href)
+            return structured(
+                '<a class="link-external" href="%(url)s">%(url)s</a>',
+                url=url).escapedtext
 
     def external_title_link(self):
         """Return an HTML link to the external bugtracker.
@@ -1989,9 +1986,10 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         if getUtility(ILaunchBag).user is None:
             title = FormattersAPI(title).obfuscate_email()
             if url.startswith('mailto:'):
-                return escape(title)
-        return u'<a class="link-external" href="%s">%s</a>' % (
-            escape(url), escape(title))
+                return html_escape(title)
+        return structured(
+            '<a class="link-external" href="%s">%s</a>',
+            url, title).escapedtext
 
     def aliases(self):
         """Generate alias URLs, obfuscating where necessary.
@@ -2002,7 +2000,7 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
         anonymous = getUtility(ILaunchBag).user is None
         for alias in self._context.aliases:
             if anonymous and alias.startswith('mailto:'):
-                yield escape(u'mailto:<email address hidden>')
+                yield u'mailto:<email address hidden>'
             else:
                 yield alias
 
@@ -2025,15 +2023,14 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         an email address, only the summary is returned (i.e. no link).
         """
         if summary is None or len(summary) == 0:
-            summary = u'&mdash;'
-        else:
-            summary = escape(summary)
+            summary = structured(u'&mdash;')
         url = self._context.url
         if url.startswith('mailto:') and getUtility(ILaunchBag).user is None:
-            return summary
+            return html_escape(summary)
         else:
-            return u'<a class="link-external" href="%s">%s</a>' % (
-                escape(url), summary)
+            return structured(
+                '<a class="link-external" href="%s">%s</a>',
+                url, summary).escapedtext
 
     def external_link(self):
         """Return an HTML link with a detailed link text.
@@ -2465,11 +2462,11 @@ class RevisionAuthorFormatterAPI(ObjectFormatterAPI):
             return PersonFormatterAPI(self._context.person).link(
                 view_name, rootsite)
         elif context.name_without_email:
-            return cgi.escape(context.name_without_email)
+            return html_escape(context.name_without_email)
         elif context.email and getUtility(ILaunchBag).user is not None:
-            return cgi.escape(context.email)
+            return html_escape(context.email)
         elif context.email:
-            return "&lt;email address hidden&gt;"
+            return html_escape("<email address hidden>")
         else:
             # The RevisionAuthor name and email is None.
             return ''
@@ -2661,7 +2658,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
         """See `ObjectFormatterAPI`."""
         group = self._context
         url = self.url(view_name, rootsite)
-        return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+        return structured('<a href="%s">%s</a>', url, group.title).escapedtext
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -2683,8 +2680,9 @@ class LanguageFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name, rootsite='translations'):
         """See `ObjectFormatterAPI`."""
         url = self.url(view_name, rootsite)
-        return u'<a href="%s" class="sprite language">%s</a>' % (
-            url, cgi.escape(self._context.englishname))
+        return structured(
+            '<a href="%s" class="sprite language">%s</a>',
+            url, self._context.englishname).escapedtext
 
     def displayname(self, view_name, rootsite=None):
         """See `ObjectFormatterAPI`."""
@@ -2708,7 +2706,7 @@ class POFileFormatterAPI(ObjectFormatterAPI):
         """See `ObjectFormatterAPI`."""
         pofile = self._context
         url = self.url(view_name, rootsite)
-        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
+        return structured('<a href="%s">%s</a>', url, pofile.title).escapedtext
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -2728,7 +2726,7 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name, rootsite=None):
         diff = self._context
         if not diff.date_fulfilled:
-            return '%s (pending)' % cgi.escape(diff.title)
+            return structured('%s (pending)', diff.title).escapedtext
         else:
             return download_link(
                 diff.diff_content.http_url, diff.title,
@@ -2780,8 +2778,10 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
         return "%s on %s" % (self._context.nickname, self._context.network)
 
     def formatted_displayname(self, view_name=None):
-        return dedent("""\
-            <strong>%s</strong>
-            <span class="lesser"> on </span>
-            <strong>%s</strong>
-        """ % (escape(self._context.nickname), escape(self._context.network)))
+        return structured(
+            dedent("""\
+                <strong>%s</strong>
+                <span class="lesser"> on </span>
+                <strong>%s</strong>
+            """),
+            self._context.nickname, self._context.network).escapedtext

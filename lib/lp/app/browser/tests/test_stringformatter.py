@@ -222,12 +222,12 @@ class TestLinkifyingProtocols(TestCase):
     def test_protocol_alone_does_not_link(self):
         test_string = "This doesn't link: apt:"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: apt:</p>"
+        expected_html = "<p>This doesn&#x27;t link: apt:</p>"
         self.assertEqual(expected_html, html)
 
         test_string = "This doesn't link: http://"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: http://</p>"
+        expected_html = "<p>This doesn&#x27;t link: http://</p>"
         self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
@@ -252,7 +252,7 @@ class TestLinkifyingProtocols(TestCase):
         test_string = "This doesn't become a link: file://some/file.txt"
         html = FormattersAPI(test_string).text_to_html()
         expected_html = (
-            "<p>This doesn't become a link: "
+            "<p>This doesn&#x27;t become a link: "
             "file://<wbr />some/file.<wbr />txt</p>")
         self.assertEqual(expected_html, html)
 
@@ -260,14 +260,14 @@ class TestLinkifyingProtocols(TestCase):
         test_string = "This doesn't become a link: http://www.example.com/"
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            "<p>This doesn't become a link: http://www.example.com/</p>")
+            "<p>This doesn&#x27;t become a link: http://www.example.com/</p>")
         self.assertEqual(expected_html, html)
 
     def test_no_link_html_code_with_linkify_text_false(self):
         test_string = '<a href="http://example.com/">http://example.com/</a>'
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            '<p>&lt;a href="http://example.com/"&gt;'
+            '<p>&lt;a href=&quot;http://example.com/&quot;&gt;'
             'http://example.com/&lt;/a&gt;</p>')
         self.assertEqual(expected_html, html)
 
