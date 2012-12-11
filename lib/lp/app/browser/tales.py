@@ -1404,7 +1404,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
             return None
         values = dict(
             (k, v if v is not None else '')
-            for k, v in self._link_summary_values().iteritems())
+            for k, v in self._title_values().iteritems())
         return structured(title_template, **values).escapedtext
 
     def sprite_css(self):
