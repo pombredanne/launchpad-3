@@ -1272,31 +1272,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
 
-    def test_PopulatePackageUploadSearchableNames(self):
-        # PopulatePackageUploadSearchableNames sets searchable_names for
-        # existing uploads correctly.
-        switch_dbuser('testadmin')
-        distroseries = self.factory.makeDistroSeries()
-        source = self.factory.makeSourcePackageUpload(distroseries)
-        binary = self.factory.makeBuildPackageUpload(distroseries)
-        custom = self.factory.makeCustomPackageUpload(distroseries)
-        # They are all have searchable_names set, so unset it.
-        for kind in (source, binary, custom):
-            removeSecurityProxy(kind).searchable_names = None
-        transaction.commit()
-        self.runHourly()
-        source_name = source.sources[0].sourcepackagerelease.name
-        binary_names = '%s %s' % (
-            binary.builds[0].build.source_package_release.name,
-            binary.builds[0].build.binarypackages[0].name)
-        filename = custom.customfiles[0].libraryfilealias.filename
-        self.assertEqual(source.searchable_names, source_name)
-        self.assertEqual(binary.searchable_names, binary_names)
-        self.assertEqual(custom.searchable_names, filename)
-
-    def test_PopulatePackageUploadSearchableVersions(self):
-        # PopulatePackageUploadSearchableVersions sets searchable_versions for
-        # existing uploads correctly.
+    def test_PopulatePackageUploadSearchables(self):
+        # PopulatePackageUploadSearchables sets searchable_names and
+        # searchable_versions for existing uploads correctly.
         switch_dbuser('testadmin')
         distroseries = self.factory.makeDistroSeries()
         source = self.factory.makeSourcePackageUpload(distroseries)
@@ -1304,16 +1282,28 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         self.factory.makeBinaryPackageRelease(build=build)
         binary.addBuild(build)
-        # They are all have searchable_versions set, so unset it.
-        for kind in (source, binary):
+        custom = self.factory.makeCustomPackageUpload(distroseries)
+        # They are all have searchable_{names,versions} set, so unset them.
+        for kind in (source, binary, custom):
+            removeSecurityProxy(kind).searchable_names = None
             removeSecurityProxy(kind).searchable_versions = None
         transaction.commit()
         self.runHourly()
+        source_name = source.sources[0].sourcepackagerelease.name
+        binary_names = ' '.join(
+            [build.build.source_package_release.name
+                for build in binary.builds] + [
+                build.build.binarypackages[0].name for build in binary.builds])
+        filename = custom.customfiles[0].libraryfilealias.filename
+        self.assertEqual(source.searchable_names, source_name)
+        self.assertEqual(binary.searchable_names, binary_names)
+        self.assertEqual(custom.searchable_names, filename)
         source_version = [source.sources[0].sourcepackagerelease.version]
         binary_versions = [
             build.build.binarypackages[0].version for build in binary.builds]
         self.assertContentEqual(source_version, source.searchable_versions)
         self.assertContentEqual(binary_versions, binary.searchable_versions)
+        self.assertEqual([], custom.searchable_versions)
 
 
 class TestGarboTasks(TestCaseWithFactory):

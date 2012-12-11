@@ -849,24 +849,24 @@ class PackageUpload(SQLBase):
 
         return publishing_records
 
-    def appendSearchableNames(self, names):
-        name = ' '.join(names)
-        if self.searchable_names:
-            self.searchable_names = '%s %s' % (self.searchable_names, name)
-        else:
-            self.searchable_names = name
+    def _appendSearchables(self, kind, new):
+        if not kind:
+            return set(new)
+        return set(kind) | set(new)
 
-    def appendSearchableVersions(self, version):
-        if self.searchable_versions:
-            self.searchable_versions.append(version)
-        else:
-            self.searchable_versions = [version]
+    def setSearchableNames(self, names):
+        self.searchable_names = ' '.join(
+            self._appendSearchables(self.searchable_names, names))
+
+    def setSearchableVersions(self, versions):
+        self.searchable_versions = self._appendSearchables(
+            self.searchable_versions, versions)
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
         del get_property_cache(self).sources
-        self.appendSearchableNames([spr.name])
-        self.appendSearchableVersions(spr.version)
+        self.setSearchableNames([spr.name])
+        self.setSearchableVersions([spr.version])
         return PackageUploadSource(
             packageupload=self, sourcepackagerelease=spr.id)
 
@@ -874,16 +874,18 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         del get_property_cache(self).builds
         names = [build.source_package_release.name]
-        names.extend([bpr.name for bpr in build.binarypackages])
-        self.appendSearchableNames(names)
-        versions = set([bpr.version for bpr in build.binarypackages])
-        [self.appendSearchableVersions(version) for version in versions]
+        versions = []
+        for bpr in build.binarypackages:
+            names.append(bpr.name)
+            versions.append(bpr.version)
+        self.setSearchableNames(names)
+        self.setSearchableVersions(versions)
         return PackageUploadBuild(packageupload=self, build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
         del get_property_cache(self).customfiles
-        self.appendSearchableNames([library_file.filename])
+        self.setSearchableNames([library_file.filename])
         return PackageUploadCustom(
             packageupload=self, libraryfilealias=library_file.id,
             customformat=custom_type)
