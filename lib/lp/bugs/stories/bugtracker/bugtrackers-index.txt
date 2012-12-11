@@ -39,7 +39,7 @@ The page presents a table with all bugtrackers currently registered:
     Email Address
     0
     ------------------------
-    T'other Gnome GBugGTracker
+    T&#x27;other Gnome GBugGTracker
     http://bugzilla.gnome.org/
       --> http://bugzilla.gnome.org/
     &mdash;
