@@ -302,7 +302,7 @@ class CodeImportNewView(CodeImportBaseView):
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
-        if user_has_special_branch_access(self.user):
+        if user_has_special_branch_access(self.user, self.context):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
