@@ -359,6 +359,18 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
             self.assertIsNone(
                 namespace.validateMove(branch, mover, name=new_name))
 
+    def test_validateMove_vcs_imports_change_owner_import_branch(self):
+        # Members of ~vcs-imports can change the owner any imported branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(owner, product)
+        name = self.factory.getUniqueString()
+        branch = namespace.createBranch(BranchType.IMPORTED, name, owner)
+        new_owner = self.factory.makePerson()
+        new_namespace = ProductNamespace(new_owner, product)
+        with celebrity_logged_in('vcs_imports') as mover:
+            self.assertIsNone(new_namespace.validateMove(branch, mover))
+
 
 class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     """Tests for the privacy aspects of `ProductNamespace`.
