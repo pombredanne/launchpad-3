@@ -34,6 +34,7 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
+    'PersonOwnedTeamsView',
     'PersonRdfContentsView',
     'PersonRdfView',
     'PersonRelatedSoftwareView',
@@ -632,6 +633,11 @@ class CommonMenuLinks:
         enabled = bool(self.person.getAffiliatedPillars(user))
         return Link(target, text, enabled=enabled, icon='info')
 
+    def owned_teams(self):
+        target = '+owned-teams'
+        text = 'Owned teams'
+        return Link(target, text, icon='info')
+
     def subscriptions(self):
         target = '+subscriptions'
         text = 'Direct subscriptions'
@@ -694,6 +700,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'activate_ppa',
         'maintained',
         'manage_vouchers',
+        'owned_teams',
         'synchronised',
         'view_ppa_subscriptions',
         'ppa',
@@ -837,7 +844,7 @@ class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
     links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
-             'synchronised', 'projects')
+             'synchronised', 'projects', 'owned_teams')
 
     @property
     def person(self):
@@ -3776,6 +3783,18 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     @property
     def page_title(self):
         return "Related projects"
+
+
+class PersonOwnedTeamsView(PersonRelatedSoftwareView):
+    """View for +owned-teams."""
+    page_title = "Owned teams"
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.context.getOwnedTeams(self.user), self.request)
+        self.batchnav.setHeadings('team', 'teams')
+        self.batch = list(self.batchnav.currentBatch())
 
 
 class PersonOAuthTokensView(LaunchpadView):

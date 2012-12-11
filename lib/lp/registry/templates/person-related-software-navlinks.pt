@@ -29,6 +29,10 @@
         tal:define="link view/menu:navigation/projects"
         tal:condition="link/enabled"
         tal:content="structure link/fmt:link" />
+       <li
+        tal:define="link view/menu:navigation/owned_teams"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
     </ul>
 
 </tal:root>
