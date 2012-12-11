@@ -18,6 +18,7 @@ from lp.testing.pages import find_tag_by_id
 class TestMessageVisibilityMixin:
 
     comment_text = "You can't see me."
+    html_comment_text = html_escape(comment_text).encode('utf-8')
 
     def makeHiddenMessage(self):
         """To be overwridden by subclasses.
@@ -39,24 +40,23 @@ class TestMessageVisibilityMixin:
         context = self.makeHiddenMessage()
         admin = self.factory.makeAdministrator()
         view = self.getView(context=context, user=admin)
-        self.assertIn(self.comment_text, view.contents)
+        self.assertIn(self.html_comment_text, view.contents)
 
     def test_registry_can_see_comments(self):
         context = self.makeHiddenMessage()
         registry_expert = self.factory.makeRegistryExpert()
         view = self.getView(context=context, user=registry_expert)
-        self.assertIn(
-            html_escape(self.comment_text).encode('utf-8'), view.contents)
+        self.assertIn(self.html_comment_text, view.contents)
 
     def test_anon_cannot_see_comments(self):
         context = self.makeHiddenMessage()
         view = self.getView(context=context, no_login=True)
-        self.assertNotIn(self.comment_text, view.contents)
+        self.assertNotIn(self.html_comment_text, view.contents)
 
     def test_random_cannot_see_comments(self):
         context = self.makeHiddenMessage()
         view = self.getView(context=context)
-        self.assertNotIn(self.comment_text, view.contents)
+        self.assertNotIn(self.html_comment_text, view.contents)
 
 
 class TestHideMessageControlMixin:
