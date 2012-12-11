@@ -20,6 +20,7 @@ where all items can be perused.
     Uploaded packages
     Related PPA packages
     Related projects
+    Owned teams
 
     >>> print browser.getLink("Maintained packages").url
     http://launchpad.dev/~mark/+maintained-packages
