@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 
+from lp.services.webapp.escaping import html_escape
 from lp.testing.pages import find_tag_by_id
 
 
@@ -44,7 +45,8 @@ class TestMessageVisibilityMixin:
         context = self.makeHiddenMessage()
         registry_expert = self.factory.makeRegistryExpert()
         view = self.getView(context=context, user=registry_expert)
-        self.assertIn(self.comment_text, view.contents)
+        self.assertIn(
+            html_escape(self.comment_text).encode('utf-8'), view.contents)
 
     def test_anon_cannot_see_comments(self):
         context = self.makeHiddenMessage()
