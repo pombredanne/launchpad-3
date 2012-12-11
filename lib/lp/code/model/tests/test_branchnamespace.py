@@ -54,6 +54,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -346,6 +347,17 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         product = self.factory.makeProduct()
         namespace = ProductNamespace(person, product)
         self.assertEqual(IBranchTarget(product), namespace.target)
+
+    def test_validateMove_vcs_imports_rename_import_branch(self):
+        # Members of ~vcs-imports can rename any imported branch.
+        namespace = self.getNamespace()
+        owner = removeSecurityProxy(namespace).owner
+        name = self.factory.getUniqueString()
+        branch = namespace.createBranch(BranchType.IMPORTED, name, owner)
+        new_name = self.factory.getUniqueString()
+        with celebrity_logged_in('vcs_imports') as mover:
+            self.assertIsNone(
+                namespace.validateMove(branch, mover, name=new_name))
 
 
 class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):

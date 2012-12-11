@@ -213,7 +213,16 @@ class _BaseNamespace:
         if name is None:
             name = branch.name
         self.validateBranchName(name)
-        self.validateRegistrant(mover)
+        # XXX sinzui 2012-12-10: The reg
+        # if mover.inTeam(vcs_imports) and branch.owner == self.owner: return
+        from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+        from lp.code.interfaces.branch import BranchType
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        is_vcs_import = (
+            branch.branch_type == BranchType.IMPORTED
+            and mover.inTeam(vcs_imports))
+        if not is_vcs_import:
+            self.validateRegistrant(mover)
 
     def moveBranch(self, branch, mover, new_name=None,
                    rename_if_necessary=False):
