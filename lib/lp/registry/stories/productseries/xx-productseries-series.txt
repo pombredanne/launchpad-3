@@ -32,7 +32,8 @@ listed.
     Latest milestones: 1.0    Latest releases: 0.9.2, 0.9.1, 0.9
     Bugs targeted: None
     Blueprints targeted: 1 Unknown
-    The "trunk" series represents the primary line of development rather ...
+    The &quot;trunk&quot; series represents the primary line of
+    development rather ...
 
 Any user can see that the trunk series is the focus of development and that
 it is highlighted.

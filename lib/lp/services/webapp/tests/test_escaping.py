@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from lp.services.webapp.escaping import (
     html_escape,
+    html_unescape,
     structured,
     )
 from lp.testing import TestCase
@@ -22,6 +23,11 @@ class TestHtmlEscape(TestCase):
         struct = structured('<b>%s</b>', '<i>It works!</i>')
         self.assertEqual(
             '<b>&lt;i&gt;It works!&lt;/i&gt;</b>', html_escape(struct))
+
+    def test_unescape_works(self):
+        # html_unescape undoes the 5 entity transformations performed by
+        # html_escape.
+        self.assertEqual('&<>"\'', html_unescape('&amp;&lt;&gt;&quot;&#x27;'))
 
 
 class TestStructured(TestCase):

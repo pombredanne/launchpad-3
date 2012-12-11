@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'html_escape',
+    'html_unescape',
     'structured',
     ]
 
@@ -25,6 +26,11 @@ HTML_REPLACEMENTS = (
 def html_escape(message):
     """Performs translation and sanitizes any HTML present in the message.
 
+    DO NOT USE THIS DIRECTLY UNLESS YOU ARE SURE YOU NEED TO.
+
+    There is rarely a good reason to use this directly instead of going via
+    structured().
+
     A plain string message will be sanitized ("&", "<" and ">" are
     converted to HTML-safe sequences).  Passing a message that
     provides the `IStructuredString` interface will return a unicode
@@ -45,6 +51,22 @@ def html_escape(message):
         for needle, replacement in HTML_REPLACEMENTS:
             raw = raw.replace(needle, replacement)
         return raw
+
+
+def html_unescape(message):
+    """Reverses the transformation performed by html_escape.
+
+    DO NOT USE THIS EXCEPT IN LEGACY CODE.
+
+    Converts the 5 entities references produced by html_escape into their
+    original form. There is almost no reason to ever do this.
+    """
+    s = message.replace('&lt;', '<')
+    s = s.replace('&gt;', '>')
+    s = s.replace('&quot;', '"')
+    s = s.replace('&#x27;', "'")
+    s = s.replace('&amp;', '&')
+    return s
 
 
 def translate_if_i18n(obj_or_msgid):

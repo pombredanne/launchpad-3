@@ -135,9 +135,7 @@ He cannot see the address reading the question either.
     >>> description = find_main_content(anon_browser.contents).p
     >>> description.renderContents()
     'I am not able to open my email client if i click on a
-     <a ...
-       href="mailto:&lt;email">mailto:...&lt;email</a> address hidden&gt;
-       link ...'
+    mailto:&lt;email address hidden&gt; link ...'
 
 Anonymous users cannot see the email addresses in the Related
 questions portlet on a FAQ page.

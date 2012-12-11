@@ -141,7 +141,7 @@ discussion.
     Status: Open ...
 
     >>> print_last_comment(owner_browser.contents)
-    The following SVG doesn't display properly:
+    The following SVG doesn&#x27;t display properly:
     http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg
 
 
@@ -279,7 +279,7 @@ its status back to 'Open'.
     >>> print_last_comment(owner_browser.contents)
     Actually, there are still SVGs that do not display correctly.
     For example, the following
-    http://people.w3.org/maxf/ChessGML/immortal.svg doesn't
+    http://people.w3.org/maxf/ChessGML/immortal.svg doesn&#x27;t
     display correctly.
 
 This also removes the highlighting from the previous answer and sets the

@@ -28,7 +28,6 @@ __all__ = [
 
 from operator import attrgetter
 import re
-from xml.sax.saxutils import escape
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -76,7 +75,10 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
+from lp.answers.vocabulary import (
+    UsesAnswersDistributionVocabulary,
+    UsesAnswersProductVocabulary,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -85,11 +87,15 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -641,6 +647,15 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         """Return True if similar FAQs or questions were found."""
         return self.similar_questions or self.similar_faqs
 
+    @property
+    def context_uses_answers(self):
+        """Return True if the context uses launchpad as an answer forum."""
+        usage = IServiceUsage(self.context)
+        if usage is not None:             
+            return usage.answers_usage == ServiceUsage.LAUNCHPAD
+        else:
+            return False
+
     @action(_('Continue'))
     def continue_action(self, action, data):
         """Search for questions and FAQs similar to the entered summary."""
@@ -726,6 +741,9 @@ class QuestionChangeStatusView(LaunchpadFormView):
 
 class QuestionTargetWidget(LaunchpadTargetWidget):
     """A targeting widget that is aware of pillars that use Answers."""
+
+    def getProductVocabulary(self):
+        return 'UsesAnswersProduct'
 
     def getDistributionVocabulary(self):
         distro = self.context.context.distribution
@@ -1366,12 +1384,13 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         if selected:
             attributes['checked'] = 'checked'
         input = renderElement(u'input', **attributes)
-        button = '<label style="font-weight: normal">%s&nbsp;%s:</label>' % (
-            input, escape(term.token))
-        link = '<a href="%s">%s</a>' % (
-            canonical_url(term.value), escape(term.title))
+        button = structured(
+            '<label style="font-weight: normal">%s&nbsp;%s:</label>',
+            structured(input), term.token)
+        link = structured(
+            '<a href="%s">%s</a>', canonical_url(term.value), term.title)
 
-        return "\n".join([button, link])
+        return "\n".join([button.escapedtext, link.escapedtext])
 
     def renderSearchWidget(self):
         """Render the search entry field and the button."""

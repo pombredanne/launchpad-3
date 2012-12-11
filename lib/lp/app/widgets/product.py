@@ -12,7 +12,6 @@ __all__ = [
     'ProductNameWidget',
     ]
 
-import cgi
 import math
 
 from lazr.restful.interface import copy_field
@@ -179,10 +178,10 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if project is None or project.bugtracker is None:
             project_bugtracker_caption = "Somewhere else"
         else:
-            project_bugtracker_caption = (
-                'In the %s bug tracker (<a href="%s">%s</a>)</label>' % (
-                    project.displayname, canonical_url(project.bugtracker),
-                    cgi.escape(project.bugtracker.title)))
+            project_bugtracker_caption = structured(
+                'In the %s bug tracker (<a href="%s">%s</a>)</label>',
+                project.displayname, canonical_url(project.bugtracker),
+                project.bugtracker.title).escapedtext
         project_bugtracker_arguments = dict(
             index=1, text=self._renderLabel(project_bugtracker_caption, 1),
             value="project", name=self.name, cssClass=self.cssClass)

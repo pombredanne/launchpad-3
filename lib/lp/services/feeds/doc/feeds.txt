@@ -138,13 +138,13 @@ be escaped using xml entities such as "&lt;".
     >>> from lp.services.feeds.feed import FeedTypedData
     >>> text = FeedTypedData("<b> and &nbsp; and &amp;")
     >>> text.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
     >>> text2 = FeedTypedData("<b> and &nbsp; and &amp;", content_type="text")
     >>> text2.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
     >>> html = FeedTypedData("<b> and &nbsp; and &amp;", content_type="html")
     >>> html.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
 
 Since xhtml is valid xml, the "<" and ">" characters do not need to be
 escaped. However, xhtml supports many more entities than xml, and Internet
