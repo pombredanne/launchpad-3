@@ -71,7 +71,6 @@ from zope.schema import (
 
 from lp import _
 from lp.app.enums import InformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
@@ -93,6 +92,7 @@ from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.config import config
@@ -1526,15 +1526,26 @@ class BzrIdentityMixin:
         return sorted(links)
 
 
-def user_has_special_branch_access(user):
-    """Admins and bazaar experts have special access.
+def user_has_special_branch_access(user, branch=None):
+    """Admins and vcs-import members have have special access.
 
     :param user: A 'Person' or None.
+    :param branch: A branch or None when checking collection access.
     """
     if user is None:
         return False
-    celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin)
+    roles = IPersonRoles(user)
+    if roles.in_admin:
+        return True
+    if branch is None:
+        return False
+    code_import = branch.code_import
+    if code_import is None:
+        return False
+    return (
+        roles.in_vcs_imports
+        or (IPersonRoles(branch.owner).in_vcs_imports
+            and user.inTeam(code_import.registrant)))
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,
