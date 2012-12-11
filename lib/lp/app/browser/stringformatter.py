@@ -473,6 +473,9 @@ class FormattersAPI:
     # We will simplify "unreserved / pct-encoded / sub-delims" as the
     # following regular expression:
     #   [-a-zA-Z0-9._~%!$&'()*+,;=]
+    # But we are working on text that has already been through
+    # html_escape, so the & and ' are &amp; and &#x27; respectively. It
+    # gets a bit more complicated.
     #
     # We also require that the path-rootless form not begin with a
     # colon to avoid matching strings like "http::foo" (to avoid bug
@@ -504,36 +507,36 @@ class FormattersAPI:
             # "//" authority path-abempty
             //
             (?: # userinfo
-              [%(unreserved)s:]*
+              (?:%(unreserved)s|:)*
               @
             )?
             (?: # host
               \d+\.\d+\.\d+\.\d+ |
-              [%(unreserved)s]*
+              %(unreserved)s*
             )
             (?: # port
               : \d*
             )?
-            (?: / [%(unreserved)s:@]* )*
+            (?: / (?:%(unreserved)s|[:@])* )*
           ) | (?:
             # path-absolute
             /
-            (?: [%(unreserved)s:@]+
-                (?: / [%(unreserved)s:@]* )* )?
+            (?: (?:%(unreserved)s|[:@])+
+                (?: / (?:%(unreserved)s|[:@])* )* )?
           ) | (?:
             # path-rootless
-            [%(unreserved)s@]
-            [%(unreserved)s:@]*
-            (?: / [%(unreserved)s:@]* )*
+            (?:%(unreserved)s|@)
+            (?:%(unreserved)s|[:@])*
+            (?: / (?:%(unreserved)s|[:@])* )*
           )
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?\[\]]*
+          (?:%(unreserved)s|[:@/\?\[\]])*
         )?
         (?: # fragment
           \#
-          [%(unreserved)s:@/\?]*
+          (?:%(unreserved)s|[:@/\?])*
         )?
       ) |
       (?P<clbug>
@@ -558,9 +561,9 @@ class FormattersAPI:
       ) |
       (?P<lpbranchurl>
         \blp:(?:///|/)?
-        (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
+        (?P<branch>%(unreserved)s(?:%(unreserved)s|/)*)
       )
-    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+    ''' % {'unreserved': "(?:[-a-zA-Z0-9._~%!$'()*+,;=]|&amp;|&\#x27;)"},
                              re.IGNORECASE | re.VERBOSE)
 
     # There is various punctuation that can occur at the end of a link that

@@ -187,7 +187,7 @@ The new message was added to the question:
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
-    Sorry, this document doesn't really answer your question.
+    Sorry, this document doesn&#x27;t really answer your question.
 
 The link was also removed from the details portlet:
 

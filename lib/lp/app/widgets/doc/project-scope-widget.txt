@@ -181,7 +181,7 @@ button, as well as displaying the product name in the project widget.
       <input type="text" value="mozilla" id="field.scope.target"
              name="field.scope.target" size="20"
              maxlength=""
-             onKeyPress="selectWidget('field.scope.option.project', event)" style=""
+             onKeyPress="selectWidget(&#x27;field.scope.option.project&#x27;, event)" style=""
              class="" />
     ...
 

@@ -67,7 +67,7 @@ and the rejection message is added to the question board.
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
-    <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
+    <p>Rejecting because it&#x27;s a duplicate of <a...>bug #1</a>.</p>
 
 The call to help with this problem is not displayed.
 
@@ -153,5 +153,5 @@ and the explanation message is added to the question discussion:
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
-    <p>Setting status back to 'Open'. Questions similar to a bug report
-    should be linked to it, not rejected.</p>
+    <p>Setting status back to &#x27;Open&#x27;. Questions similar to a
+    bug report should be linked to it, not rejected.</p>

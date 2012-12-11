@@ -17,7 +17,7 @@ text into it by calling the selectWidget Javascript function.
     >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
     >>> assignee_widget = find_tag_by_id(browser.contents, 'field.assignee')
     >>> print assignee_widget['onkeypress']
-    selectWidget('assignee_option', event)
+    selectWidget(&#x27;assignee_option&#x27;, event)
 
     >>> print find_tag_by_id(browser.contents, 'assignee_option')
     <input...type="radio"...>
