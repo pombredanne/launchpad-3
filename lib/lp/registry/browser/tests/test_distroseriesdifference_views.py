@@ -511,9 +511,9 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
 
         self.assertEqual(
-            1, len(soup.findAll('pre', text="I'm working on this.")))
+            1, len(soup.findAll('pre', text="I&#x27;m working on this.")))
         self.assertEqual(
-            1, len(soup.findAll('pre', text="Here's another comment.")))
+            1, len(soup.findAll('pre', text="Here&#x27;s another comment.")))
 
     def test_last_common_version_is_linked(self):
         # The "Last Common Version" version text should link to the

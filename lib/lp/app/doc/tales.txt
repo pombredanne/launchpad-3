@@ -266,7 +266,7 @@ To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
     >>> test_tales('foo/fmt:nl_to_br',
     ...             foo='icicle\nbicycle\ntricycle & troika')
-    'icicle<br />\nbicycle<br />\ntricycle &amp; troika'
+    u'icicle<br />\nbicycle<br />\ntricycle &amp; troika'
 
 To "<pre>" format a string, use fmt:nice_pre:
 
@@ -274,16 +274,16 @@ To "<pre>" format a string, use fmt:nice_pre:
     >>> pprint.pprint(textwrap.wrap(
     ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
     ...    ))
-    ['<pre class="wrap">hello &amp; goodbye</pre>']
+    [u'<pre class="wrap">hello &amp; goodbye</pre>']
 
 Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words', foo='short words')
-    'short words'
+    u'short words'
 
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
-    '&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
+    u'&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
 
 To get a int with its thousands separated by a comma, use fmt:intcomma.
 
@@ -447,7 +447,7 @@ Person's displayname will be escaped; averting a XSS vulnerability.
     ...     "Sample Person<br/><script>alert('XSS')</script>")
     >>> test_tales("person/fmt:link", person=sample_person)
     u'<a href=".../~name12"...>Sample
-      Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Person&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
 The fmt:link formatter takes an additional view_name component to extend
 the link:
@@ -527,11 +527,11 @@ title might be interpreted by the browser.
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
     u'<a href=".../bugs/1" ...>Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Opps&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
     u'<a href=".../firefox/+bug/1" ...>Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Opps&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
 
 Branch subscriptions
@@ -781,7 +781,7 @@ which help when hiding email addresses from users who are not logged in.
     external-title-link -->
       u'&lt;email address hidden&gt; bug tracker'
     aliases -->
-      [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+      [u'http://bugs.vikingsrool.no/', u'mailto:<email address hidden>']
 
     >>> login('test@canonical.com')
 
@@ -1019,10 +1019,10 @@ Escaping strings
 To escape a string you should use fmt:escape.
 
     >>> test_tales('foo/fmt:escape', foo='some value')
-    'some value'
+    u'some value'
 
     >>> test_tales('foo/fmt:escape', foo='some <br /> value')
-    'some &lt;br /&gt; value'
+    u'some &lt;br /&gt; value'
 
 
 CSS ids

@@ -486,16 +486,16 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
                 return structured(
-                    "You have been unsubscribed from bug %d%s.",
+                    "You have been unsubscribed from bug %s%s.",
                     current_bug.id, unsubed_dupes_msg_fragment).escapedtext
             else:
                 return structured(
-                    "You have been unsubscribed from bug %d%s. You no "
+                    "You have been unsubscribed from bug %s%s. You no "
                     "longer have access to this private bug.",
                     current_bug.id, unsubed_dupes_msg_fragment).escapedtext
         else:
             return structured(
-                "%s has been unsubscribed from bug %d%s.",
+                "%s has been unsubscribed from bug %s%s.",
                 user.displayname, current_bug.id,
                 unsubed_dupes_msg_fragment).escapedtext
 
@@ -511,7 +511,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         dupe_links = []
         for unsubed_dupe in unsubed_dupes:
             dupe_links.append(structured(
-                '<a href="%s" title="%s">#%d</a>',
+                '<a href="%s" title="%s">#%s</a>',
                 canonical_url(unsubed_dupe), unsubed_dupe.title,
                 unsubed_dupe.id))
         # We can't current join structured()s, so do it manually.
