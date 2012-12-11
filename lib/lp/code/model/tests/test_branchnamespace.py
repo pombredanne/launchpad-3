@@ -350,11 +350,14 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
 
     def test_validateMove_vcs_imports_rename_import_branch(self):
         # Members of ~vcs-imports can rename any imported branch.
-        namespace = self.getNamespace()
-        owner = removeSecurityProxy(namespace).owner
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
-        branch = namespace.createBranch(BranchType.IMPORTED, name, owner)
+        code_import = self.factory.makeCodeImport(
+            registrant=owner, target=IBranchTarget(product), branch_name=name)
+        branch = code_import.branch
         new_name = self.factory.getUniqueString()
+        namespace = ProductNamespace(owner, product)
         with celebrity_logged_in('vcs_imports') as mover:
             self.assertIsNone(
                 namespace.validateMove(branch, mover, name=new_name))
@@ -363,9 +366,9 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         # Members of ~vcs-imports can change the owner any imported branch.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
-        namespace = ProductNamespace(owner, product)
-        name = self.factory.getUniqueString()
-        branch = namespace.createBranch(BranchType.IMPORTED, name, owner)
+        code_import = self.factory.makeCodeImport(
+            registrant=owner, target=IBranchTarget(product))
+        branch = code_import.branch
         new_owner = self.factory.makePerson()
         new_namespace = ProductNamespace(new_owner, product)
         with celebrity_logged_in('vcs_imports') as mover:
