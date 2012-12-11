@@ -377,7 +377,7 @@ class MilestoneView(
         super(MilestoneView, self).__init__(context, request)
         if IMilestoneData.providedBy(context):
             self.milestone = context
-            self.release = context.product_release
+            self.release = getattr(context, "product_release", None)
         else:
             self.milestone = context.milestone
             self.release = context
