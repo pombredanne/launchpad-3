@@ -176,9 +176,9 @@ class _BaseNamespace:
         notify(ObjectCreatedEvent(branch))
         return branch
 
-    def validateRegistrant(self, registrant):
+    def validateRegistrant(self, registrant, branch=None):
         """See `IBranchNamespace`."""
-        if user_has_special_branch_access(registrant):
+        if user_has_special_branch_access(registrant, branch):
             return
         owner = self.owner
         if not registrant.inTeam(owner):
@@ -213,9 +213,7 @@ class _BaseNamespace:
         if name is None:
             name = branch.name
         self.validateBranchName(name)
-        from lp.services.webapp.authorization import check_permission
-        if not check_permission('launchpad.Edit', branch):
-            self.validateRegistrant(mover)
+        self.validateRegistrant(mover, branch)
 
     def moveBranch(self, branch, mover, new_name=None,
                    rename_if_necessary=False):
