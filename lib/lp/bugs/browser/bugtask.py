@@ -277,7 +277,10 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -306,12 +309,13 @@ def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
 
     def render(value):
-        html = """<span>
-          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
-        </span>""" % {
-            'href': canonical_url(context.target),
-            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
-            'displayname': cgi.escape(context.bugtargetdisplayname)}
+        html = structured(
+            """<span>
+            <a href="%(href)s" class="%(css_class)s">%(displayname)s</a>
+            </span>""",
+            href=canonical_url(context.target),
+            css_class=ObjectImageDisplayAPI(context.target).sprite_css(),
+            displayname=context.bugtargetdisplayname).escapedtext
         return html
     return render
 
@@ -4342,8 +4346,8 @@ class BugActivityItem:
         if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
-            diff = cgi.escape(
-                get_unified_diff(self.oldvalue, self.newvalue, 72), True)
+            diff = html_escape(
+                get_unified_diff(self.oldvalue, self.newvalue, 72))
             return diff.replace("\n", "<br />")
 
         elif attribute == 'description':
@@ -4355,7 +4359,7 @@ class BugActivityItem:
         elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
-            return cgi.escape(self._formatted_tags_change).replace(
+            return html_escape(self._formatted_tags_change).replace(
                 '\n', '<br />')
 
         elif attribute == 'assignee':
@@ -4363,14 +4367,14 @@ class BugActivityItem:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
                 else:
-                    return_dict[key] = cgi.escape(return_dict[key])
+                    return_dict[key] = html_escape(return_dict[key])
 
         elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
                 else:
-                    return_dict[key] = cgi.escape(return_dict[key])
+                    return_dict[key] = html_escape(return_dict[key])
 
         elif attribute == 'bug task deleted':
             return self.oldvalue
@@ -4380,7 +4384,7 @@ class BugActivityItem:
             # Since we don't necessarily know what they are, we escape
             # them.
             for key in return_dict:
-                return_dict[key] = cgi.escape(return_dict[key])
+                return_dict[key] = html_escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
 

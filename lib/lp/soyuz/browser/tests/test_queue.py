@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import cgi
-
 from lxml import html
 import transaction
 from zope.component import (
@@ -466,8 +464,8 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         alt = self.factory.getUniqueString()
         icon = self.factory.getUniqueString() + ".png"
         title = self.factory.getUniqueString()
-        html_text = self.makeCompletePackageUpload().composeIcon(
-            alt, icon, title)
+        html_text = html_escape(
+            self.makeCompletePackageUpload().composeIcon(alt, icon, title))
         img = html.fromstring(html_text)
         self.assertEqual("img", img.tag)
         self.assertEqual("[%s]" % alt, img.get("alt"))
@@ -477,7 +475,8 @@ class TestCompletePackageUpload(TestCaseWithFactory):
     def test_composeIcon_title_defaults_to_alt_text(self):
         alt = self.factory.getUniqueString()
         icon = self.factory.getUniqueString() + ".png"
-        html_text = self.makeCompletePackageUpload().composeIcon(alt, icon)
+        html_text = html_escape(
+            self.makeCompletePackageUpload().composeIcon(alt, icon))
         img = html.fromstring(html_text)
         self.assertEqual(alt, img.get("title"))
 
@@ -485,8 +484,8 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         alt = 'alt"&'
         icon = self.factory.getUniqueString() + ".png"
         title = 'title"&'
-        html_text = self.makeCompletePackageUpload().composeIcon(
-            alt, icon, title)
+        html_text = html_escape(
+            self.makeCompletePackageUpload().composeIcon(alt, icon, title))
         img = html.fromstring(html_text)
         self.assertEqual("[%s]" % alt, img.get("alt"))
         self.assertEqual(title, img.get("title"))
@@ -494,7 +493,7 @@ class TestCompletePackageUpload(TestCaseWithFactory):
     def test_composeIconList_produces_icons(self):
         icons = self.makeCompletePackageUpload().composeIconList()
         self.assertNotEqual([], icons)
-        self.assertEqual('img', html.fromstring(icons[0]).tag)
+        self.assertEqual('img', html.fromstring(html_escape(icons[0])).tag)
 
     def test_composeIconList_produces_icons_conditionally(self):
         complete_upload = self.makeCompletePackageUpload()
@@ -512,7 +511,8 @@ class TestCompletePackageUpload(TestCaseWithFactory):
 
     def test_composeNameAndChangesLink_links_to_changes_file(self):
         complete_upload = self.makeCompletePackageUpload()
-        link = html.fromstring(complete_upload.composeNameAndChangesLink())
+        link = html.fromstring(
+            html_escape(complete_upload.composeNameAndChangesLink()))
         self.assertEqual(
             complete_upload.changesfile.http_url, link.get("href"))
 
@@ -523,13 +523,15 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         upload.changesfile = None
         complete_upload = self.makeCompletePackageUpload(upload)
         self.assertIn(
-            cgi.escape(filename), complete_upload.composeNameAndChangesLink())
+            html_escape(filename),
+            html_escape(complete_upload.composeNameAndChangesLink()))
 
     def test_composeNameAndChangesLink_escapes_name_in_link(self):
         filename = 'name"&name'
         upload = self.factory.makeCustomPackageUpload(filename=filename)
         complete_upload = self.makeCompletePackageUpload(upload)
-        link = html.fromstring(complete_upload.composeNameAndChangesLink())
+        link = html.fromstring(
+            html_escape(complete_upload.composeNameAndChangesLink()))
         self.assertIn(filename, link.get("title"))
         self.assertEqual(filename, link.text)
 

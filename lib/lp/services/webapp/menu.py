@@ -18,7 +18,6 @@ __all__ = [
     'MenuLink',
     ]
 
-import cgi
 import types
 
 from lazr.delegates import delegates
@@ -33,6 +32,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -42,7 +42,6 @@ from lp.services.webapp.interfaces import (
     ILinkData,
     IMenuBase,
     INavigationMenu,
-    IStructuredString,
     )
 from lp.services.webapp.publisher import (
     canonical_url,
@@ -152,11 +151,9 @@ class MenuLink:
 
     @property
     def escapedtext(self):
-        text = self._linkdata.text
-        if IStructuredString.providedBy(text):
-            return text.escapedtext
-        else:
-            return cgi.escape(text)
+        # This is often an IStructuredString, which html_escape knows
+        # to not double-escape.
+        return html_escape(self._linkdata.text)
 
     @property
     def icon_url(self):

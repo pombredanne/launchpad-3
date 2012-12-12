@@ -10,7 +10,6 @@ __all__ = [
     'QueueItemsView',
     ]
 
-import cgi
 import operator
 
 from lazr.delegates import delegates
@@ -34,6 +33,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
@@ -560,11 +560,9 @@ class CompletePackageUpload:
         # These should really be sprites!
         if title is None:
             title = alt
-        return '<img alt="[%s]" src="/@@/%s" title="%s" />' % (
-            cgi.escape(alt, quote=True),
-            icon,
-            cgi.escape(title, quote=True),
-            )
+        return structured(
+            '<img alt="[%s]" src="/@@/%s" title="%s" />',
+            alt, icon, title)
 
     def composeIconList(self):
         """List icons that should be shown for this upload."""
@@ -581,31 +579,29 @@ class CompletePackageUpload:
             ]
         return [
             self.composeIcon(*details)
-            for condition, details in potential_icons
-                if condition]
+            for condition, details in potential_icons if condition]
 
     def composeNameAndChangesLink(self):
         """Compose HTML: upload name and link to changes file."""
-        raw_displayname = self.displayname
-        displayname = cgi.escape(raw_displayname)
         if self.changesfile is None:
-            return displayname
+            return self.displayname
         else:
-            return '<a href="%s" title="Changes file for %s">%s</a>' % (
-                self.changesfile.http_url,
-                cgi.escape(self.displayname, quote=True),
-                displayname)
+            return structured(
+                '<a href="%s" title="Changes file for %s">%s</a>',
+                self.changesfile.http_url, self.displayname,
+                self.displayname)
 
     @property
     def icons_and_name(self):
         """Icon list and name, linked to changes file if appropriate."""
         iconlist_id = "queue%d-iconlist" % self.id
         icons = self.composeIconList()
+        icon_string = structured('\n'.join(['%s'] * len(icons)), *icons)
         link = self.composeNameAndChangesLink()
-        return """
-            <div id="%s">
+        return structured(
+            """<div id="%s">
               %s
               %s
               (%s)
-            </div>
-            """ % (iconlist_id, '\n'.join(icons), link, self.displayarchs)
+            </div>""",
+            iconlist_id, icon_string, link, self.displayarchs).escapedtext
