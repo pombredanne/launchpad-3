@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 """Browser views related to archive subscriptions."""
 
@@ -362,30 +360,25 @@ class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
+        # Set properties for SourcesListEntriesWidget.
         self.archive = self.context.archive
+        self.sources_list_user = self.context.subscriber
 
         # If an activation was requested and there isn't a currently
         # active token, then create a token, provide a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
             self.context.archive.newAuthToken(self.context.subscriber)
-
             self.request.response.redirect(self.request.getURL())
-
         # Otherwise, if a regeneration was requested and there is an
         # active token, then cancel the old token, create a new one,
         # provide a notification and redirect.
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
-
             self.context.archive.newAuthToken(self.context.subscriber)
-
             self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
                 "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
                 "\"sources.list\"." % self.context.archive.displayname)
-
             self.request.response.redirect(self.request.getURL())

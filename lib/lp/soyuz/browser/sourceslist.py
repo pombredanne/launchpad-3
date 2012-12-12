@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 """Browser views for sources list entries."""
 
@@ -138,10 +136,7 @@ class SourcesListEntriesView(LaunchpadView):
 
 
 class SourcesListEntriesWidget:
-    """Setup the sources list entries widget.
-
-    This class assumes self.user is set in child classes.
-    """
+    """Setup the sources list entries widget."""
 
     @cachedproperty
     def sources_list_entries(self):
@@ -153,12 +148,10 @@ class SourcesListEntriesWidget:
             return SourcesListEntriesView(entries, self.request)
         else:
             comment = "Personal access of %s (%s) to %s" % (
-                self.user.displayname,
-                self.user.name,
-                self.archive.displayname)
+                self.sources_list_user.displayname,
+                self.sources_list_user.name, self.archive.displayname)
             entries = SourcesListEntries(
-                self.archive.distribution,
-                self.active_token.archive_url,
+                self.archive.distribution, self.active_token.archive_url,
                 self.archive.series_with_sources)
             return SourcesListEntriesView(
                 entries, self.request, comment=comment)
@@ -168,7 +161,7 @@ class SourcesListEntriesWidget:
         """Return the corresponding current token for this subscription."""
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
-            self.archive, self.user)
+            self.archive, self.sources_list_user)
 
     @property
     def archive_url(self):
