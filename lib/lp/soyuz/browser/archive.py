@@ -586,9 +586,9 @@ class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
                     "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
+        # Set properties for SourcesListEntriesWidget.
         self.archive = self.context
+        self.sources_list_user = self.user
 
     @cachedproperty
     def private(self):
