@@ -1291,9 +1291,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runHourly()
         source_name = source.sources[0].sourcepackagerelease.name
         binary_names = ' '.join(
-            [build.build.source_package_release.name
-                for build in binary.builds] + [
-                build.build.binarypackages[0].name for build in binary.builds])
+            [build.build.binarypackages[0].name for build in binary.builds] + [
+                build.build.source_package_release.name
+                    for build in binary.builds])
         filename = custom.customfiles[0].libraryfilealias.filename
         self.assertEqual(source.searchable_names, source_name)
         self.assertEqual(binary.searchable_names, binary_names)
@@ -1303,7 +1303,23 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             build.build.binarypackages[0].version for build in binary.builds]
         self.assertContentEqual(source_version, source.searchable_versions)
         self.assertContentEqual(binary_versions, binary.searchable_versions)
-        self.assertEqual([], custom.searchable_versions)
+        self.assertIsNone(custom.searchable_versions)
+
+    def test_PopulatePackageUploadSearchables_deduplication(self):
+        # When the SPN and the BPN are the same for a build, the
+        # searchable_names field is set to just one name.
+        switch_dbuser('testadmin')
+        distroseries = self.factory.makeDistroSeries()
+        spr = self.factory.makeSourcePackageRelease()
+        bpn = self.factory.makeBinaryPackageName(name=spr.name)
+        binary = self.factory.makeBuildPackageUpload(
+            distroseries=distroseries, binarypackagename=bpn,
+            source_package_release=spr)
+        removeSecurityProxy(binary).searchable_names = None
+        removeSecurityProxy(binary).searchable_versions = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(spr.name, binary.searchable_names)
 
 
 class TestGarboTasks(TestCaseWithFactory):

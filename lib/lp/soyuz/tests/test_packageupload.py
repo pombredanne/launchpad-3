@@ -469,9 +469,18 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         upload = self.factory.makeBuildPackageUpload(distroseries)
         bpr = upload.builds[0].build.binarypackages[0] 
         names = '%s %s' % (
-            upload.builds[0].build.source_package_release.name, bpr.name)
+            bpr.name, upload.builds[0].build.source_package_release.name)
         self.assertEqual(upload.searchable_names, names)
-        self.assertEqual(upload.searchable_versions, [bpr.version])
+        self.assertContentEqual(upload.searchable_versions, [bpr.version])
+
+    def test_searchables_for_builds_duplication(self):
+        distroseries = self.factory.makeDistroSeries()
+        spr = self.factory.makeSourcePackageRelease()
+        bpn = self.factory.makeBinaryPackageName(name=spr.name)
+        binary = self.factory.makeBuildPackageUpload(
+            distroseries=distroseries, binarypackagename=bpn,
+            source_package_release=spr)
+        self.assertEqual(spr.name, binary.searchable_names)
 
     def test_searchables_for_custom(self):
         distroseries = self.factory.makeDistroSeries()

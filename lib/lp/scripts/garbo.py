@@ -1374,69 +1374,67 @@ class PopulatePackageUploadSearchables(TunableLoop):
         # source names, binary names, libraryfile filenames and their versions.
         results = self.store.find(
             (PackageUpload.id, SQL("""
-            array_to_string((SELECT array_agg(
-                DISTINCT spn.name ORDER BY spn.name)
-                FROM
-                    packageuploadbuild
-                    JOIN binarypackagebuild AS bpb ON
+            (SELECT string_agg(DISTINCT name, ' ' ORDER BY name) FROM (
+                (SELECT spn.name
+                    FROM
+                        packageuploadbuild
+                        JOIN binarypackagebuild AS bpb ON
                         bpb.id = packageuploadbuild.build
-                    JOIN sourcepackagerelease AS spr ON
+                        JOIN sourcepackagerelease AS spr ON
                         spr.id = bpb.source_package_release
-                    JOIN sourcepackagename AS spn ON
+                        JOIN sourcepackagename AS spn ON
                         spn.id = spr.sourcepackagename
-                WHERE packageuploadbuild.packageupload = packageupload.id
-            ) ||
+                    WHERE packageuploadbuild.packageupload = packageupload.id
+                )
+                UNION
+                (SELECT bpn.name
+                    FROM
+                        packageuploadbuild
+                        JOIN binarypackagerelease ON
+                        binarypackagerelease.build = packageuploadbuild.build
+                        JOIN binarypackagename AS bpn ON
+                        bpn.id = binarypackagerelease.binarypackagename
+                    WHERE packageuploadbuild.packageupload = packageupload.id
+                )
+                UNION
+                (SELECT sourcepackagename.name
+                    FROM
+                        packageuploadsource
+                        JOIN sourcepackagerelease AS spr ON
+                        spr.id = packageuploadsource.sourcepackagerelease
+                        JOIN sourcepackagename ON
+                        sourcepackagename.id = spr.sourcepackagename
+                    WHERE packageuploadsource.packageupload = packageupload.id
+                )
+                UNION
+                (SELECT lfa.filename
+                    FROM
+                        packageuploadcustom
+                        JOIN libraryfilealias AS lfa ON
+                        lfa.id = packageuploadcustom.libraryfilealias
+                    WHERE packageuploadcustom.packageupload = packageupload.id
+                )
+                UNION
+                (SELECT package_name FROM packagecopyjob
+                WHERE packageupload.package_copy_job = packagecopyjob.id
+        )) AS names (name))
+        """), SQL("""
+        (SELECT array_agg(DISTINCT version ORDER BY version)::text[] FROM (
             (
-            SELECT array_agg(
-            DISTINCT bpn.name ORDER BY bpn.name)
-            FROM
-                packageuploadbuild
-                JOIN binarypackagerelease ON
-                    binarypackagerelease.build = packageuploadbuild.build
-                JOIN binarypackagename AS bpn ON
-                    bpn.id = binarypackagerelease.binarypackagename
-            WHERE packageuploadbuild.packageupload = packageupload.id
-        ) ||
-        (
-            SELECT array_agg(
-            DISTINCT sourcepackagename.name ORDER BY sourcepackagename.name)
-            FROM
-                packageuploadsource
-                JOIN sourcepackagerelease AS spr ON
-                    spr.id = packageuploadsource.sourcepackagerelease
-                JOIN sourcepackagename ON
-                    sourcepackagename.id = spr.sourcepackagename
-            WHERE packageuploadsource.packageupload = packageupload.id
-        ) ||
-        (
-            SELECT array_agg(
-                DISTINCT libraryfilealias.filename
-                ORDER BY libraryfilealias.filename)
-            FROM
-                packageuploadcustom
-                JOIN libraryfilealias ON
-                    libraryfilealias.id = packageuploadcustom.libraryfilealias
-            WHERE packageuploadcustom.packageupload = packageupload.id
-        ) ||
-        (
-         SELECT package_name FROM packagecopyjob
-             WHERE packageupload.package_copy_job = packagecopyjob.id
-        ), ' ')"""), SQL("""
-        (
-            COALESCE(
-                (SELECT ARRAY[spr.version]
+                SELECT spr.version
                 FROM packageuploadsource
                     JOIN sourcepackagerelease AS spr ON
                         spr.id = packageuploadsource.sourcepackagerelease
-                WHERE packageuploadsource.packageupload = packageupload.id),
-                ARRAY[]::debversion[]
-            ) || (
-            SELECT array_agg(DISTINCT binarypackagerelease.version)
-            FROM packageuploadbuild
-                JOIN binarypackagerelease ON
-                    binarypackagerelease.build = packageuploadbuild.build
-            WHERE packageuploadbuild.packageupload = packageupload.id)
-            )::text[]
+                WHERE packageuploadsource.packageupload = packageupload.id
+            )
+            UNION
+            (
+                SELECT binarypackagerelease.version
+                FROM packageuploadbuild
+                    JOIN binarypackagerelease ON
+                        binarypackagerelease.build = packageuploadbuild.build
+                WHERE packageuploadbuild.packageupload = packageupload.id
+            )) AS versions (version))
         """)), PackageUpload.id.is_in(packageupload_ids))
         # Construct our cache data and populate our Values expression.
         cache_data = ClassAlias(PackageUpload, "cache_data")
