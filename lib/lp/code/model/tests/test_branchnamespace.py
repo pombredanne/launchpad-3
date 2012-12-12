@@ -54,6 +54,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -346,6 +347,32 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         product = self.factory.makeProduct()
         namespace = ProductNamespace(person, product)
         self.assertEqual(IBranchTarget(product), namespace.target)
+
+    def test_validateMove_vcs_imports_rename_import_branch(self):
+        # Members of ~vcs-imports can rename any imported branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        name = self.factory.getUniqueString()
+        code_import = self.factory.makeCodeImport(
+            registrant=owner, target=IBranchTarget(product), branch_name=name)
+        branch = code_import.branch
+        new_name = self.factory.getUniqueString()
+        namespace = ProductNamespace(owner, product)
+        with celebrity_logged_in('vcs_imports') as mover:
+            self.assertIsNone(
+                namespace.validateMove(branch, mover, name=new_name))
+
+    def test_validateMove_vcs_imports_change_owner_import_branch(self):
+        # Members of ~vcs-imports can change the owner any imported branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        code_import = self.factory.makeCodeImport(
+            registrant=owner, target=IBranchTarget(product))
+        branch = code_import.branch
+        new_owner = self.factory.makePerson()
+        new_namespace = ProductNamespace(new_owner, product)
+        with celebrity_logged_in('vcs_imports') as mover:
+            self.assertIsNone(new_namespace.validateMove(branch, mover))
 
 
 class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
