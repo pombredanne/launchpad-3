@@ -191,7 +191,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
                     FormattersAPI(watch.bugtracker.title).obfuscate_email())
             else:
                 url = watch.url
-                if url in title:
+                if url in watch.bugtracker.title:
                     title = html_escape(watch.bugtracker.title).replace(
                         html_escape(url),
                         structured(
