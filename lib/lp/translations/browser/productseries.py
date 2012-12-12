@@ -16,7 +16,6 @@ __all__ = [
     'ProductSeriesView',
     ]
 
-import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
@@ -306,10 +305,12 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                             "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
                             "different templates.", len(conflicts))
+                        conflict_str = structured(
+                            "</li><li>".join(["%s" % len(conflicts)]),
+                            *conflicts)
                         ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
+                            "<ul><li>%s</li></ul>", conflict_str)
                     self.request.response.addWarningNotification(
                         structured(
                         "%s  This makes it "

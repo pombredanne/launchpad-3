@@ -28,7 +28,6 @@ __all__ = [
     'TryImportAgainView',
     ]
 
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -163,10 +162,6 @@ from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
-
-
-def quote(text):
-    return cgi.escape(text, quote=True)
 
 
 class BranchURL:
@@ -709,12 +704,12 @@ class BranchNameValidationMixin:
         if owner == self.user:
             prefix = "You already have"
         else:
-            prefix = "%s already has" % cgi.escape(owner.displayname)
-        message = (
-            "%s a branch for <em>%s</em> called <em>%s</em>."
-            % (prefix, existing_branch.target.displayname,
-               existing_branch.name))
-        self.setFieldError(field_name, structured(message))
+            prefix = "%s already has" % owner.displayname
+        message = structured(
+            "%s a branch for <em>%s</em> called <em>%s</em>.",
+            prefix, existing_branch.target.displayname,
+            existing_branch.name)
+        self.setFieldError(field_name, message)
 
 
 class BranchEditFormView(LaunchpadEditFormView):

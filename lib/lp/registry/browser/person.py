@@ -58,7 +58,6 @@ __all__ = [
     ]
 
 
-import cgi
 from datetime import datetime
 import itertools
 from itertools import chain
@@ -1452,7 +1451,7 @@ class PersonLanguagesView(LaunchpadFormView):
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % cgi.escape(self.context.displayname)
+            subject = "%s's" % self.context.displayname
 
         # Add languages to the user's preferences.
         messages = []
@@ -1469,7 +1468,8 @@ class PersonLanguagesView(LaunchpadFormView):
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language': language.englishname, 'subject': subject})
         if len(messages) > 0:
-            message = structured('<br />'.join(messages))
+            message = structured(
+                '<br />'.join(['%s'] * len(messages)), *messages)
             self.request.response.addInfoNotification(message)
 
     @property
