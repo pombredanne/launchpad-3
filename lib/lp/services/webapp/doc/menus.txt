@@ -304,10 +304,10 @@ Checking out the escapedtext attribute.
     >>> link = Link('+target', 'text -->')
 
     >>> ILink(link).escapedtext
-    'text --&gt;'
+    u'text --&gt;'
 
     >>> IFacetLink(link).escapedtext
-    'text --&gt;'
+    u'text --&gt;'
 
     >>> text = structured('some <b> %s </b> text', '-->')
     >>> link = Link('+target', text)
