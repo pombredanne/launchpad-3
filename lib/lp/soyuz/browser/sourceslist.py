@@ -140,11 +140,11 @@ class SourcesListEntriesWidget:
 
     def __init__(self):
         self.archive = None
-        self.current_user = None
+        self.sources_list_user = None
 
     def set_archive_and_user(self, archive, user):
         self.archive = archive
-        self.current_user = user
+        self.sources_list_user = user
 
     @cachedproperty
     def sources_list_entries(self):
@@ -156,8 +156,8 @@ class SourcesListEntriesWidget:
             return SourcesListEntriesView(entries, self.request)
         else:
             comment = "Personal access of %s (%s) to %s" % (
-                self.user.displayname, self.current_user.name,
-                self.archive.displayname)
+                self.sources_list_user.displayname,
+                self.sources_list_user.name, self.archive.displayname)
             entries = SourcesListEntries(
                 self.archive.distribution, self.active_token.archive_url,
                 self.archive.series_with_sources)
@@ -169,7 +169,7 @@ class SourcesListEntriesWidget:
         """Return the corresponding current token for this subscription."""
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
-            self.archive, self.current_user)
+            self.archive, self.sources_list_user)
 
     @property
     def archive_url(self):
