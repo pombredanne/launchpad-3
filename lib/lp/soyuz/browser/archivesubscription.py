@@ -360,8 +360,9 @@ class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
-        super(PersonArchiveSubscriptionView, self).set_archive_and_user(
-            self.context.archive, self.context.subscriber)
+        # Set properties for SourcesListEntriesWidget.
+        self.archive = self.context.archive
+        self.sources_list_user = self.context.subscriber
 
         # If an activation was requested and there isn't a currently
         # active token, then create a token, provide a notification

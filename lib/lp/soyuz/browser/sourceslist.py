@@ -138,14 +138,6 @@ class SourcesListEntriesView(LaunchpadView):
 class SourcesListEntriesWidget:
     """Setup the sources list entries widget."""
 
-    def __init__(self):
-        self.archive = None
-        self.sources_list_user = None
-
-    def set_archive_and_user(self, archive, user):
-        self.archive = archive
-        self.sources_list_user = user
-
     @cachedproperty
     def sources_list_entries(self):
         """Setup and return the sources list entries widget."""
