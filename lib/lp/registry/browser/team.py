@@ -32,7 +32,6 @@ __all__ = [
     ]
 
 
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -1757,7 +1756,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
 
     @property
     def label(self):
-        return 'Join ' + cgi.escape(self.context.displayname)
+        return 'Join ' + self.context.displayname
 
     page_title = label
 
@@ -2014,7 +2013,7 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
 
     @property
     def label(self):
-        return 'Leave ' + cgi.escape(self.context.displayname)
+        return 'Leave ' + self.context.displayname
 
     page_title = label
 

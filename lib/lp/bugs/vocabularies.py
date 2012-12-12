@@ -19,7 +19,6 @@ __all__ = [
     'WebBugTrackerVocabulary',
     ]
 
-import cgi
 from operator import attrgetter
 
 from sqlobject import (
@@ -70,6 +69,10 @@ from lp.services.database.lpstorm import IStore
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
+    )
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
     )
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
@@ -181,34 +184,30 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
-
-        def escape(string):
-            return cgi.escape(string, quote=True)
-
         if watch.url.startswith('mailto:'):
             user = getUtility(ILaunchBag).user
             if user is None:
-                title = FormattersAPI(
-                    watch.bugtracker.title).obfuscate_email()
-                return SimpleTerm(
-                    watch, watch.id, escape(title))
+                title = html_escape(
+                    FormattersAPI(watch.bugtracker.title).obfuscate_email())
             else:
                 url = watch.url
-                title = escape(watch.bugtracker.title)
-                if url in title:
-                    title = title.replace(
-                        url, '<a href="%s">%s</a>' % (
-                            escape(url), escape(url)))
+                if url in watch.bugtracker.title:
+                    title = html_escape(watch.bugtracker.title).replace(
+                        html_escape(url),
+                        structured(
+                            '<a href="%s">%s</a>', url, url).escapedtext)
                 else:
-                    title = '%s &lt;<a href="%s">%s</a>&gt;' % (
-                        title, escape(url), escape(url[7:]))
-                return SimpleTerm(watch, watch.id, title)
+                    title = structured(
+                        '%s &lt;<a href="%s">%s</a>&gt;',
+                        watch.bugtracker.title, url, url[7:]).escapedtext
         else:
-            return SimpleTerm(
-                watch, watch.id, '%s <a href="%s">#%s</a>' % (
-                    escape(watch.bugtracker.title),
-                    escape(watch.url),
-                    escape(watch.remotebug)))
+            title = structured(
+                '%s <a href="%s">#%s</a>',
+                watch.bugtracker.title, watch.url,
+                watch.remotebug).escapedtext
+
+        # title is already HTML-escaped.
+        return SimpleTerm(watch, watch.id, title)
 
 
 class DistributionUsingMaloneVocabulary:

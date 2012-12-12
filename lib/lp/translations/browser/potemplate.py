@@ -25,7 +25,6 @@ __all__ = [
     'BaseSeriesTemplatesView',
     ]
 
-import cgi
 import datetime
 import operator
 import os.path
@@ -76,7 +75,10 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
@@ -492,9 +494,9 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' % (
-                        num, plural_s, plural_s, itthey,
-                        canonical_url(self.context.translationtarget))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                    num, plural_s, plural_s, itthey,
+                    canonical_url(self.context.translationtarget)))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -509,10 +511,12 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                             "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
                             "different templates.", len(conflicts))
+                        conflict_str = structured(
+                            "</li><li>".join(["%s" % len(conflicts)]),
+                            *conflicts)
                         ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
+                            "<ul><li>%s</li></ul>", conflict_str)
                     self.request.response.addWarningNotification(
                         structured(
                         "%s  This makes it "
@@ -981,7 +985,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
     def _renderSourcePackage(self, template):
         """Render the `SourcePackageName` for `template`."""
         if self.is_distroseries:
-            return cgi.escape(template.sourcepackagename.name)
+            return html_escape(template.sourcepackagename.name)
         else:
             return None
 
@@ -992,7 +996,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :param url: The cached URL for `template`.
         :return: HTML for a link to `template`.
         """
-        text = '<a href="%s">%s</a>' % (url, cgi.escape(template.name))
+        text = '<a href="%s">%s</a>' % (url, html_escape(template.name))
         if not template.iscurrent:
             text += ' (inactive)'
         return text
@@ -1009,7 +1013,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         if sourcepackagename is None:
             sourcepackagename = template.sourcepackagename
         # Build the edit link.
-        escaped_source = cgi.escape(sourcepackagename.name)
+        escaped_source = html_escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = (
@@ -1018,8 +1022,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
-            escaped_series = cgi.escape(productseries.name)
-            escaped_template = cgi.escape(template.name)
+            escaped_series = html_escape(productseries.name)
+            escaped_template = html_escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
             return (edit_link + '<a href="%s">%s/%s</a>'
