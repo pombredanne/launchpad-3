@@ -1360,7 +1360,8 @@ class PopulatePackageUploadSearchables(TunableLoop):
 
     def findPackageUploadIDs(self):
         return self.store.find(
-            (PackageUpload.id,), PackageUpload.searchable_names == None,
+            (PackageUpload.id,),
+            PackageUpload.searchable_names == None,
             PackageUpload.searchable_versions == None,
             PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
 
@@ -1419,7 +1420,8 @@ class PopulatePackageUploadSearchables(TunableLoop):
                 WHERE packageupload.package_copy_job = packagecopyjob.id
         )) AS names (name))
         """), SQL("""
-        (SELECT array_agg(DISTINCT version ORDER BY version)::text[] FROM (
+        (SELECT COALESCE(array_agg(DISTINCT version ORDER BY version)::text[],
+            ARRAY[]::text[]) FROM (
             (
                 SELECT spr.version
                 FROM packageuploadsource

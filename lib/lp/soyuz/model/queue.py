@@ -241,8 +241,8 @@ class PackageUpload(SQLBase):
     package_copy_job_id = Int(name='package_copy_job', allow_none=True)
     package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
 
-    searchable_names = StringCol(name='searchable_names')
-    searchable_versions = List(type=Unicode())
+    searchable_names = StringCol(name='searchable_names', default='')
+    searchable_versions = List(type=Unicode(), default_factory=list)
 
     # XXX julian 2007-05-06:
     # Sources should not be SQLMultipleJoin, there is only ever one
@@ -255,6 +255,14 @@ class PackageUpload(SQLBase):
     # Does not include source builds.
     _builds = SQLMultipleJoin('PackageUploadBuild',
                               joinColumn='packageupload')
+
+    def __init__(self, *args, **kwargs):
+        super(PackageUpload, self).__init__(*args, **kwargs)
+        # searchable_{name,version}s are set for the other cases when
+        # add{Source,Build,Custom} are called.
+        if self.package_copy_job:
+            self.addSearchableNames([self.package_copy_job.package_name])
+            self.addSearchableVersions([self.package_copy_job.package_version])
 
     @cachedproperty
     def sources(self):
@@ -849,24 +857,22 @@ class PackageUpload(SQLBase):
 
         return publishing_records
 
-    def _appendSearchables(self, kind, new):
-        if not kind:
-            return set(new)
-        return set(kind) | set(new)
+    def _appendSearchables(self, existing, new):
+        return sorted(filter(None, set(existing) | set(new)))
 
-    def setSearchableNames(self, names):
+    def addSearchableNames(self, names):
         self.searchable_names = ' '.join(
-            self._appendSearchables(self.searchable_names, names))
+            self._appendSearchables(self.searchable_names.split(' '), names))
 
-    def setSearchableVersions(self, versions):
+    def addSearchableVersions(self, versions):
         self.searchable_versions = self._appendSearchables(
             self.searchable_versions, versions)
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
         del get_property_cache(self).sources
-        self.setSearchableNames([spr.name])
-        self.setSearchableVersions([spr.version])
+        self.addSearchableNames([spr.name])
+        self.addSearchableVersions([spr.version])
         return PackageUploadSource(
             packageupload=self, sourcepackagerelease=spr.id)
 
@@ -878,14 +884,14 @@ class PackageUpload(SQLBase):
         for bpr in build.binarypackages:
             names.append(bpr.name)
             versions.append(bpr.version)
-        self.setSearchableNames(names)
-        self.setSearchableVersions(versions)
+        self.addSearchableNames(names)
+        self.addSearchableVersions(versions)
         return PackageUploadBuild(packageupload=self, build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
         del get_property_cache(self).customfiles
-        self.setSearchableNames([library_file.filename])
+        self.addSearchableNames([library_file.filename])
         return PackageUploadCustom(
             packageupload=self, libraryfilealias=library_file.id,
             customformat=custom_type)

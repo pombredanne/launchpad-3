@@ -1303,7 +1303,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             build.build.binarypackages[0].version for build in binary.builds]
         self.assertContentEqual(source_version, source.searchable_versions)
         self.assertContentEqual(binary_versions, binary.searchable_versions)
-        self.assertIsNone(custom.searchable_versions)
+        self.assertEqual([], custom.searchable_versions)
 
     def test_PopulatePackageUploadSearchables_deduplication(self):
         # When the SPN and the BPN are the same for a build, the
