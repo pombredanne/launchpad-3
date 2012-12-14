@@ -8,21 +8,23 @@ __all__ = []
 from contextlib import contextmanager
 import os
 import shutil
-import sys
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import tempfile
-from transaction import commit
-from subprocess import Popen, PIPE
 
 from Mailman import mm_cfg
 from Mailman.MailList import MailList
 from Mailman.Utils import list_names
+from transaction import commit
 
-from canonical.config import config
-from canonical.launchpad.database.emailaddress import EmailAddressSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mailman.testing import MailmanTestCase
 from lp.testing import person_logged_in
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 @contextmanager
@@ -84,9 +86,7 @@ class TestMListSync(MailmanTestCase):
              self.host_name, source_dir),
             stdout=PIPE, stderr=PIPE,
             cwd=config.root,
-            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name,
-                     PYTHONPATH=os.pathsep.join(sys.path),
-                     PATH=os.environ.get('PATH')))
+            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name))
         stdout, stderr = proc.communicate()
         return proc.returncode, stderr
 

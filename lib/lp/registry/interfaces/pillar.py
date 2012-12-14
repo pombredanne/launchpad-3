@@ -27,15 +27,29 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Int,
     List,
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    SpecificationSharingPolicy,
+    )
 
 
-__all__ = ['IHasAliases', 'IPillar', 'IPillarName', 'IPillarNameSet']
+__all__ = [
+    'IHasAliases',
+    'IHasSharingPolicies',
+    'IPillar',
+    'IPillarName',
+    'IPillarNameSet',
+    'IPillarPerson',
+    'IPillarPersonFactory',
+    ]
 
 
 class IPillar(Interface):
@@ -73,6 +87,25 @@ class IHasAliases(Interface):
         :param names: A sequence of names (as strings) that should be aliases
             to this pillar.
         """
+
+
+class IHasSharingPolicies(Interface):
+    """Sharing policies used to define bug and branch visibility rules."""
+    branch_sharing_policy = exported(Choice(
+        title=_('Branch sharing policy'),
+        description=_("Sharing policy for this pillar's branches."),
+        required=False, readonly=True, vocabulary=BranchSharingPolicy),
+        as_of='devel')
+    bug_sharing_policy = exported(Choice(
+        title=_('Bug sharing policy'),
+        description=_("Sharing policy for this pillar's bugs."),
+        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Blueprint sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        as_of='devel')
 
 
 class IPillarName(Interface):
@@ -150,3 +183,17 @@ class IPillarNameSet(Interface):
             value_type=Reference(schema=IPillar)),
         exported_as="featured_pillars"
         )
+
+
+class IPillarPerson(Interface):
+    """A Person's connection to a Pillar."""
+
+    person = Attribute("The person associated with the pillar.")
+    pillar = Attribute("The pillar associated with the person.")
+
+
+class IPillarPersonFactory(Interface):
+    """Creates `IPillarPerson`s."""
+
+    def create(person, pillar):
+        """Create and return an `IPillarPerson`."""

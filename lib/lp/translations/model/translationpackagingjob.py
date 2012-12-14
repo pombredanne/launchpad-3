@@ -26,9 +26,8 @@ from zope.interface import (
     implements,
     )
 
-from lp.services.job.interfaces.job import (
-    IRunnableJob,
-    )
+from lp.services.config import config
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
@@ -90,11 +89,13 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     create_on_event = IObjectCreatedEvent
 
+    config = config.packaging_translations
+
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
         if not self.distroseries.distribution.full_functionality:
-            logger.warning(
+            logger.info(
                 'Skipping merge for unsupported distroseries "%s".' %
                 self.distroseries.displayname)
             return
@@ -115,6 +116,8 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     create_on_event = IObjectDeletedEvent
 
+    config = config.packaging_translations
+
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
@@ -132,6 +135,8 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
     class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
 
     create_on_event = IObjectModifiedEvent
+
+    config = config.packaging_translations
 
     @classmethod
     def forPOTemplate(cls, potemplate):

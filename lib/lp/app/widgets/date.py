@@ -23,10 +23,7 @@ from datetime import datetime
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.textwidgets import (
-    escape,
-    TextWidget,
-    )
+from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.interfaces import (
     ConversionError,
@@ -39,14 +36,15 @@ from zope.datetime import (
     parse,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class DateTimeWidget(TextWidget):
     """A date and time selection widget with popup selector.
 
-      >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+      >>> from lp.services.webapp.servers import LaunchpadTestRequest
       >>> from zope.schema import Field
       >>> field = Field(__name__='foo', title=u'Foo')
       >>> widget = DateTimeWidget(field, LaunchpadTestRequest())
@@ -127,7 +125,6 @@ class DateTimeWidget(TextWidget):
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
     def __init__(self, context, request):
-        request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
         launchbag = getUtility(ILaunchBag)
         self.system_time_zone = launchbag.time_zone
@@ -340,7 +337,7 @@ class DateTimeWidget(TextWidget):
         for fmt in self.supported_input_formats:
             try:
                 datetime.strptime(input.strip(), fmt)
-            except (ValueError), e:
+            except (ValueError) as e:
                 if 'unconverted data remains' in str(e):
                     return
                 else:
@@ -397,7 +394,7 @@ class DateTimeWidget(TextWidget):
             micro = round(micro * 1000000)
             dt = datetime(year, month, day,
                           hour, minute, int(second), int(micro))
-        except (DateTimeError, ValueError, IndexError), v:
+        except (DateTimeError, ValueError, IndexError) as v:
             raise ConversionError('Invalid date value', v)
         return self.time_zone.localize(dt)
 
@@ -510,11 +507,6 @@ class DateWidget(DateTimeWidget):
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
 
-    def __init__(self, context, request):
-        super(DateWidget, self).__init__(context, request)
-        request.needs_datepicker_iframe = True
-        request.needs_datetimepicker_iframe = False
-
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date.
 
@@ -615,4 +607,4 @@ class DatetimeDisplayWidget(DisplayWidget):
         if value == self.context.missing_value:
             return u""
         value = value.astimezone(time_zone)
-        return escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
+        return html_escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))

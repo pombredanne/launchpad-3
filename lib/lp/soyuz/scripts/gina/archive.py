@@ -21,7 +21,7 @@ import tempfile
 
 import apt_pkg
 
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 from lp.soyuz.scripts.gina import call
 
 
@@ -199,10 +199,10 @@ class PackagesMap:
             # because most of them are the same for all architectures,
             # but we go over it to also cover source packages that only
             # compile for one architecture.
-            sources = apt_pkg.ParseTagFile(info_set.srcfile)
-            while sources.Step():
+            sources = apt_pkg.TagFile(info_set.srcfile)
+            for section in sources:
                 try:
-                    src_tmp = dict(sources.Section)
+                    src_tmp = dict(section)
                     src_tmp['Component'] = info_set.component
                     src_name = src_tmp['Package']
                 except KeyError:
@@ -222,10 +222,10 @@ class PackagesMap:
 
             tmpbin_map = self.bin_map[info_set.arch]
 
-            binaries = apt_pkg.ParseTagFile(info_set.binfile)
-            while binaries.Step():
+            binaries = apt_pkg.TagFile(info_set.binfile)
+            for section in binaries:
                 try:
-                    bin_tmp = dict(binaries.Section)
+                    bin_tmp = dict(section)
                     # The component isn't listed in the tagfile.
                     bin_tmp['Component'] = info_set.component
                     bin_name = bin_tmp['Package']
@@ -237,10 +237,10 @@ class PackagesMap:
                 tmpbin_map[bin_name] = bin_tmp
 
             # Run over the D-I stanzas and store info in tmp_bin_map.
-            dibinaries = apt_pkg.ParseTagFile(info_set.difile)
-            while dibinaries.Step():
+            dibinaries = apt_pkg.TagFile(info_set.difile)
+            for section in dibinaries:
                 try:
-                    dibin_tmp = dict(dibinaries.Section)
+                    dibin_tmp = dict(section)
                     dibin_tmp['Component'] = info_set.component
                     dibin_name = dibin_tmp['Package']
                 except KeyError:

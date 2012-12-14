@@ -1,11 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Watch a log file and wait until it has grown in size."""
 
 __metaclass__ = type
 __all__ = [
-    'BounceWatcher'
+    'BounceWatcher',
     'LogWatcher',
     'MHonArcWatcher',
     'SMTPDWatcher',
@@ -22,14 +22,6 @@ import time
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
 from Mailman.mm_cfg import LOG_DIR
-
-
-try:
-    # Python 2.5
-    SEEK_END = os.SEEK_END
-except AttributeError:
-    # Python 2.4
-    SEEK_END = 2
 
 
 BREAK_ON_TIMEOUT = bool(os.getenv('BREAK_ON_TIMEOUT'))
@@ -78,7 +70,7 @@ class LogWatcher:
         finally:
             log_file.close()
         self._log_file = open(self._log_path)
-        self._log_file.seek(0, SEEK_END)
+        self._log_file.seek(0, os.SEEK_END)
         self._line_cache = []
         self.last_lines_read = []
 

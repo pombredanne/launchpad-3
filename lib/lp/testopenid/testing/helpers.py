@@ -20,7 +20,7 @@ from openid.consumer.discover import (
     )
 from zope.testbrowser.testing import PublisherHTTPHandler
 
-from canonical.launchpad.webapp import LaunchpadView
+from lp.services.webapp import LaunchpadView
 from lp.testopenid.interfaces.server import get_server_url
 
 

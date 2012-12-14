@@ -10,9 +10,9 @@ import os
 
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.answers.notification import QuestionNotification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.webapp.publisher import canonical_url
 
 
 def get_email_template(filename):

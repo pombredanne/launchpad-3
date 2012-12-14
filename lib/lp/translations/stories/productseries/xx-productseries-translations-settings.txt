@@ -35,8 +35,8 @@ When the official Bazaar branch gets removed from the product series,
 a message indicating so is displayed instead of the branch. The
 message also directs to the page where the branch can be set.
 
-    >>> browser.open('http://launchpad.dev/evolution/trunk/+linkbranch')
-    >>> browser.getControl(name='field.branch').value = ''
+    >>> browser.open('http://launchpad.dev/evolution/trunk/+setbranch')
+    >>> browser.getControl(name='field.branch_location').value = ''
     >>> browser.getControl('Update').click()
 
     >>> browser.open(
@@ -48,7 +48,7 @@ message also directs to the page where the branch can be set.
     Set it now!
     >>> browser.getLink('Set it now!').click()
     >>> print browser.url
-    http://launchpad.dev/evolution/trunk/+linkbranch
+    http://launchpad.dev/evolution/trunk/+setbranch
 
 Pointer to one-time import
 --------------------------
@@ -61,9 +61,8 @@ can be requested and a link to that page is provided.
     ...     '+translations-settings')
     >>> settings = find_tag_by_id(browser.contents, 'bzr-request-display')
     >>> print extract_text(settings)
-    If you only need a one-time import, please request it
-    here.
-    >>> browser.getLink('here').click()
+    You can request a one-time import.
+    >>> browser.getLink('request a one-time import').click()
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 

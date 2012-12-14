@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test MaloneHandler."""
@@ -16,15 +16,7 @@ from zope.security.management import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.mail.commands import (
     BugEmailCommand,
@@ -37,7 +29,11 @@ from lp.bugs.mail.handler import (
     MaloneHandler,
     )
 from lp.bugs.model.bugnotification import BugNotification
+from lp.registry.enums import BugSharingPolicy
+from lp.services.config import config
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import (
     celebrity_logged_in,
     login,
@@ -45,7 +41,13 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import GPGSigningContext
+from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -164,15 +166,10 @@ class TestMaloneHandler(TestCaseWithFactory):
         transaction.commit()
         return stub.test_emails[:]
 
-    def switchDbUser(self, user):
-        """Commit the transaction and switch to the new user."""
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(user)
-
     def getFailureForMessage(self, to_address, from_address=None, body=None):
         mail = self.factory.makeSignedMessage(
             body=body, email_address=from_address)
-        self.switchDbUser(config.processmail.dbuser)
+        switch_dbuser(config.processmail.dbuser)
         # Rejection email goes to the preferred email of the current user.
         # The current user is extracted from the current interaction, which is
         # set up using the authenticateEmail method.  However that expects
@@ -208,24 +205,24 @@ class TestMaloneHandler(TestCaseWithFactory):
         # Private bugs are accessible by their subscribers.
         person = self.factory.makePerson()
         with celebrity_logged_in('admin'):
-            bug = getUtility(IBugSet).get(1)
+            bug = getUtility(IBugSet).get(4)
             bug.setPrivate(True, person)
             bug.subscribe(person, person)
         # Drop the notifications from celebrity_logged_in.
         pop_notifications()
         message = self.getFailureForMessage(
-            '1@bugs.launchpad.dev',
+            '4@bugs.launchpad.dev',
             from_address=removeSecurityProxy(person.preferredemail).email)
         self.assertIs(None, message)
 
     def test_inaccessible_private_bug_not_found(self):
         # Private bugs don't acknowledge their existence to non-subscribers.
         with celebrity_logged_in('admin'):
-            getUtility(IBugSet).get(1).setPrivate(
+            getUtility(IBugSet).get(4).setPrivate(
                 True, self.factory.makePerson())
-        message = self.getFailureForMessage('1@bugs.launchpad.dev')
+        message = self.getFailureForMessage('4@bugs.launchpad.dev')
         self.assertIn(
-            "There is no such bug in Launchpad: 1", message)
+            "There is no such bug in Launchpad: 4", message)
 
 
 class MaloneHandlerProcessTestCase(TestCaseWithFactory):
@@ -256,6 +253,24 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         self.assertEqual('borked\n affects fnord', bug.description)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
+
+    def test_new_bug_with_sharing_policy_proprietary(self):
+        project = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product=project)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n affects fnord',
+                subject='subject borked',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual([project.owner], list(bug.getDirectSubscribers()))
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
 
     def test_new_bug_with_one_misplaced_affects_line(self):
         # Affects commands in the wrong position are processed as the user
@@ -291,7 +306,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('unsecure code', bug.title)
-        self.assertEqual(True, bug.security_related)
+        self.assertTrue(bug.security_related)
         self.assertEqual(['ajax'], bug.tags)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
@@ -314,7 +329,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('security issue', bug.title)
-        self.assertEqual(True, bug.security_related)
+        self.assertTrue(bug.security_related)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
         recipients = set()
@@ -322,6 +337,23 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
             for recipient in notification.recipients:
                 recipients.add(recipient.person)
         self.assertContentEqual([maintainer], recipients)
+
+    def test_information_type(self):
+        project = self.factory.makeProduct(name='fnord')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='unsecure\n informationtype userdata\n affects fnord',
+                subject='unsecure code',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('unsecure code', bug.title)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
 
 
 class BugTaskCommandGroupTestCase(TestCase):
@@ -683,7 +715,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         handler = MaloneHandler()
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])
@@ -703,7 +735,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         del stub.test_emails[:]
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])

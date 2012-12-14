@@ -34,7 +34,7 @@ Combining Distribution and SourcePackageRelease:
  >>> sourcepackagerelease.name
  u'pmount'
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
+ >>> from lp.services.webapp.testing import verifyObject
  >>> dspr = DistributionSourcePackageRelease(distribution,
  ...                                         sourcepackagerelease)
  >>> verifyObject(IDistributionSourcePackageRelease, dspr)

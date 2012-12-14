@@ -36,7 +36,6 @@ Setting the translation focus
     ...     productseries=fooproject_trunk, name="pot1")
     >>> removeSecurityProxy(pot_main).messagecount = 10
     >>> pofile = factory.makePOFile("pt_BR", potemplate=pot_main)
-    >>> logout()
 
 When the translation focus is not set, Launchpad suggests the
 development focus as the current series to be translated.
@@ -45,6 +44,7 @@ It needs to be translatable.
     >>> print fooproject.translation_focus
     None
 
+    >>> logout()
     >>> browser.open(fooproject_url)
     >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
     Translation details...
@@ -59,11 +59,10 @@ won't consider it because there'll be nothing to translate.
     ...     product=fooproject,
     ...     name="untranslatable-series")
     >>> fooproject.translation_focus = fooproject_untranslatableseries
-    >>> logout()
-
     >>> print removeSecurityProxy(fooproject.translation_focus.name)
     untranslatable-series
 
+    >>> logout()
     >>> browser.open(fooproject_url)
     >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
     Translation details...

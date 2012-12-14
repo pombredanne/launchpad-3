@@ -1,24 +1,23 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
 __metaclass__ = type
 
-
 __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
-    'IHasBugHeat',
+    'IHasExpirableBugs',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
     'ISeriesBugTarget',
+    'BUG_POLICY_ALLOWED_TYPES',
+    'BUG_POLICY_DEFAULT_TYPES',
     ]
 
 
@@ -52,14 +51,21 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from lp.bugs.interfaces.bugtask import (
+from lp import _
+from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    )
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
-    IBugTask,
     IBugTaskSearch,
     )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.fields import Tag
 
 
@@ -71,6 +77,7 @@ search_tasks_params_common = {
     "search_text": copy_field(IBugTaskSearch['searchtext']),
     "status": copy_field(IBugTaskSearch['status']),
     "importance": copy_field(IBugTaskSearch['importance']),
+    "information_type": copy_field(IBugTaskSearch['information_type']),
     "assignee": Reference(schema=Interface),
     "bug_reporter": Reference(schema=Interface),
     "bug_supervisor": Reference(schema=Interface),
@@ -85,8 +92,6 @@ search_tasks_params_common = {
     "tags_combinator": copy_field(IBugTaskSearch['tags_combinator']),
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
-    "milestone_assignment": copy_field(
-        IBugTaskSearch['milestone_assignment']),
     "milestone": copy_field(IBugTaskSearch['milestone']),
     "component": copy_field(IBugTaskSearch['component']),
     "nominated_for": Reference(schema=Interface),
@@ -174,6 +179,11 @@ search_tasks_params_common = {
             u"Search for bugs that have been created since the given "
             "date."),
         required=False),
+    "created_before": Datetime(
+        title=_(
+            u"Search for bugs that were created before the given "
+            "date."),
+        required=False),
     }
 
 search_tasks_params_for_api_default = dict(
@@ -192,31 +202,29 @@ search_tasks_params_for_api_devel = dict(
         vocabulary=BugBlueprintSearch, required=False))
 
 
+BUG_POLICY_ALLOWED_TYPES = {
+    BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
+    BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
+    BugSharingPolicy.FORBIDDEN: [],
+    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY: PROPRIETARY_INFORMATION_TYPES,
+    }
+
+BUG_POLICY_DEFAULT_TYPES = {
+    BugSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BugSharingPolicy.FORBIDDEN: None,
+    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
+    }
+
+
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
 
     export_as_webservice_entry()
-
-    # XXX Tom Berger 2008-09-26, Bug #274735
-    # The following are attributes, rather than fields, and must remain
-    # so, to make sure that they are not being copied into snapshots.
-    # Eventually, we'd like to remove these attributes from the content
-    # class altogether.
-    open_bugtasks = Attribute("A list of open bugTasks for this target.")
-    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute(
-        "A list of in-progress bugTasks for this target.")
-    high_bugtasks = Attribute(
-        "A list of high importance BugTasks for this target.")
-    critical_bugtasks = Attribute(
-        "A list of critical BugTasks for this target.")
-    new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute(
-        "A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute(
-        "A list of all BugTasks ever reported for this target.")
-    has_bugtasks = Attribute(
-        "True if a BugTask has ever been reported for this target.")
 
     # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
@@ -242,18 +250,19 @@ class IHasBugs(Interface):
                     distribution=None, tags=None,
                     tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
-                    status_upstream=None, milestone_assignment=None,
-                    milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None,
-                    hardware_bus=None, hardware_vendor_id=None,
-                    hardware_product_id=None, hardware_driver_name=None,
+                    status_upstream=None, milestone=None, component=None,
+                    nominated_for=None, sourcepackagename=None,
+                    has_no_package=None, hardware_bus=None,
+                    hardware_vendor_id=None, hardware_product_id=None,
+                    hardware_driver_name=None,
                     hardware_driver_package_name=None,
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    modified_since=None, created_since=None,
+                    created_before=None, information_type=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -281,6 +290,10 @@ class IHasBugs(Interface):
         The ordered bug tasks are used to choose the most relevant bug task
         for any particular context.
         """
+
+
+class IHasExpirableBugs(Interface):
+    """Marker interface for entities supporting querying expirable bugs"""
 
 
 class IBugTarget(IHasBugs):
@@ -334,8 +347,7 @@ class IBugTarget(IHasBugs):
     def createBug(bug_params):
         """Create a new bug on this target.
 
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
+        bug_params is an instance of `CreateBugParams`.
         """
 
 # We assign the schema for an `IBugTask` attribute here
@@ -343,24 +355,6 @@ class IBugTarget(IHasBugs):
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
-
-
-class IHasBugHeat(Interface):
-    """An entity which has bug heat."""
-
-    max_bug_heat = Attribute(
-        "The current highest bug heat value for this entity.")
-
-    def setMaxBugHeat(heat):
-        """Set the max_bug_heat for this context."""
-
-    def recalculateBugHeatCache():
-        """Recalculate and set the various bug heat values for this context.
-
-        Several different objects cache max_bug_heat.
-        When DistributionSourcePackage is the target, the total_bug_heat
-        and bug_count are also cached.
-        """
 
 
 class BugDistroSeriesTargetDetails:
@@ -393,9 +387,6 @@ class IHasOfficialBugTags(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
-
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
 
     def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
@@ -464,5 +455,7 @@ class IOfficialBugTag(Interface):
 class ISeriesBugTarget(Interface):
     """An `IBugTarget` which is a series."""
 
+    series = Attribute(
+        "The product or distribution series of this series bug target.")
     bugtarget_parent = Attribute(
         "Non-series parent of this series bug target.")

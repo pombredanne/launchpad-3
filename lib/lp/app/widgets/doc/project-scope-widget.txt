@@ -8,8 +8,8 @@ we will use the Project vocabulary which allows any project to be
 selected.
 
     >>> from zope.schema import Choice
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.app.widgets.project import ProjectScopeWidget
 
     >>> empty_request = LaunchpadTestRequest()
@@ -116,13 +116,14 @@ raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no project named 'invalid'
-                              registered in Launchpad
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'There is no project named
+    &#x27;invalid&#x27; registered in Launchpad'))
 
 The same error text is returned by error():
 
     >>> print widget.error()
-    There is no project named 'invalid' registered in Launchpad
+    There is no project named &#x27;invalid&#x27; registered in Launchpad
 
 If no project name is given at all, a widget error is also raised:
 
@@ -135,7 +136,8 @@ If no project name is given at all, a widget error is also raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a project name
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'Please enter a project name'))
 
     >>> print widget.error()
     Please enter a project name
@@ -149,7 +151,8 @@ If no project name is given at all, a widget error is also raised:
     >>> selected_scope = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Please enter a project name
+    WidgetInputError: ('field.scope', u'',
+    LaunchpadValidationError(u'Please enter a project name'))
 
     >>> print widget.error()
     Please enter a project name
@@ -178,7 +181,7 @@ button, as well as displaying the product name in the project widget.
       <input type="text" value="mozilla" id="field.scope.target"
              name="field.scope.target" size="20"
              maxlength=""
-             onKeyPress="selectWidget('field.scope.option.project', event)" style=""
+             onKeyPress="selectWidget(&#x27;field.scope.option.project&#x27;, event)" style=""
              class="" />
     ...
 

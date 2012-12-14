@@ -5,17 +5,17 @@
 
 from textwrap import dedent
 
-from lp.services.messages.model.message import MessageSet
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
 from lp.code.model.codereviewcomment import quote_text_as_email
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -29,8 +29,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         target = self.factory.makeProductBranch(
             product=source.product, title='target-branch')
         self.bmp = source.addLandingTarget(source.owner, target)
-        self.submitter = self.factory.makePerson(password='password')
-        self.reviewer = self.factory.makePerson(password='password')
+        self.submitter = self.factory.makePerson()
+        self.reviewer = self.factory.makePerson()
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
     def test_createRootComment(self):

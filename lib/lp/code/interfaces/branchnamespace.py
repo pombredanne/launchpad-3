@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213,E0211
@@ -54,7 +54,7 @@ class IBranchNamespace(Interface):
 
     def getBranches(eager_load=False):
         """Return the branches in this namespace.
-        
+
         :param eager_load: If True eager load related data for the branches.
         """
 
@@ -110,34 +110,26 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
-    def areNewBranchesPrivate():
-        """Are new branches in this namespace private?
+    def getAllowedInformationTypes(who):
+        """Get the information types that a branch in this namespace can have.
 
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
+        :param who: The user making the request.
+        :return: A sequence of `InformationType`s.
         """
 
-    def canBranchesBePrivate():
-        """Can branches by the user be private in this namespace?
+    def getDefaultInformationType(who):
+        """Get the default information type for branches in this namespace.
 
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
+        :param who: The user for whom to return the information type.
+        :return: An `InformationType`.
         """
 
-    def canBranchesBePublic():
-        """Can branches by the user be public in this namespace?
-
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
-        """
-
-    def validateRegistrant(registrant):
+    def validateRegistrant(registrant, branch=None):
         """Check that the registrant can create a branch on this namespace.
 
         :param registrant: An `IPerson`.
+        :param branch: An optional `IBranch` to also check when working
+            with imported branches.
         :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
             a team, and the registrant is not in that team.
         :raises BranchCreatorNotOwner: if the namespace owner is an individual
@@ -239,26 +231,6 @@ class IBranchNamespaceSet(Interface):
         :raise InvalidNamespace: if the name is too long, too short or is
             malformed.
         :return: A dict with keys matching each component in 'namespace_name'.
-        """
-
-    def parseBranchPath(branch_path):
-        """Parse 'branch_path' into a namespace dict and a trailing path.
-
-        See `IBranchNamespaceSet.parse` for what we mean by 'namespace dict'.
-
-        Since some paths can be parsed as either package branch paths or
-        product branch paths, this method yields possible parses of the given
-        path. The order of the yielded parses is undefined and shouldn't be
-        relied on.
-
-        Note that at most one of the parses will actually be valid. This can
-        be determined by looking the objects up in the database, or by using
-        `IBranchNamespaceSet.interpret`.
-
-        :param branch_path: A path to or within a branch. This will often, but
-            not always, include a '.bzr' segment.
-        :return: An iterator that yields '(namespace_dict, branch_name,
-            trailing_path)' for all valid parses of 'branch_path'.
         """
 
     def traverse(segments):

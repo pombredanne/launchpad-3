@@ -9,7 +9,6 @@ __all__ = [
     'Transport',
     ]
 
-import httplib
 import socket
 import xmlrpclib
 
@@ -43,15 +42,6 @@ class LaunchpadFault(xmlrpclib.Fault):
         return not (self == other)
 
 
-class HTTP(httplib.HTTP):
-    """A version of httplib.HTTP with a timeout argument."""
-
-    def __init__(self, host='', port=None, strict=None,
-                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
-        self._setup(
-            self._connection_class(host, port, strict, timeout=timeout))
-
-
 class Transport(xmlrpclib.Transport):
     """An xmlrpclib transport that supports a timeout argument.
 
@@ -65,4 +55,10 @@ class Transport(xmlrpclib.Transport):
         self.timeout = timeout
 
     def make_connection(self, host):
-        return HTTP(host, timeout=self.timeout)
+        conn = xmlrpclib.Transport.make_connection(self, host)
+        # In Python 2.6 make_connection returns a legacy HTTP wrapper object
+        # around the HTTPConnection, 2.7 returns the HTTPConnection directly.
+        # No connection is yet opened so it's okay to set timeout after init.
+        real_conn = getattr(conn, "_conn", conn)
+        real_conn.timeout = self.timeout
+        return conn

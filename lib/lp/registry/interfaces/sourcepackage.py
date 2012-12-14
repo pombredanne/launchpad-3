@@ -47,7 +47,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
@@ -58,21 +58,24 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.soyuz.interfaces.component import IComponent
-from lp.translations.interfaces.hastranslationtemplates import (
-    IHasTranslationTemplates,
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
     )
+from lp.soyuz.interfaces.component import IComponent
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
     )
 
 
 class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
                            IHasOfficialBugTags, IHasCodeImports,
-                           IHasTranslationImports, IHasTranslationTemplates):
+                           IHasTranslationImports, IHasTranslationTemplates,
+                           IHasDrivers, IHasOwner):
     """Public attributes for SourcePackage."""
-
-    id = Attribute("ID")
 
     name = exported(
         TextLine(
@@ -116,13 +119,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
             description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
-
-    bugtasks = Attribute("Bug Tasks that reference this Source Package name "
-                    "in the context of this distribution.")
-
-    product = Attribute(
-        "The best guess we have as to the Launchpad Project associated with "
-        "this SourcePackage.")
 
     # This is really a reference to an IProductSeries.
     productseries = exported(
@@ -169,6 +165,12 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
 
     distribution_sourcepackage = Attribute(
         "The IDistributionSourcePackage for this source package.")
+
+    drivers = Attribute(
+        "The drivers for the distroseries for this source package.")
+
+    owner = Attribute(
+        "The owner of the distroseries for this source package.")
 
     def __getitem__(version):
         """Return the source package release with the given version in this
@@ -221,7 +223,7 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
 
-    def getSharingDetailPermissions(self):
+    def getSharingDetailPermissions():
         """Return a dictionary of user permissions for +sharing-details page.
 
         This shows whether the user can change
@@ -262,11 +264,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
         :param pocket: A `PackagePublishingPocket`.
         :return: An `IBranch`.
         """
-
-    shouldimport = Attribute("""Whether we should import this or not.
-        By 'import' we mean sourcerer analysis resulting in a manifest and a
-        set of Bazaar branches which describe the source package release.
-        The attribute is True or False.""")
 
     latest_published_component = Object(
         title=u'The component in which the package was last published.',

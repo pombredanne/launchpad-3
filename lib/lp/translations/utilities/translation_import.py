@@ -19,22 +19,23 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    )
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
-from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    )
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp import canonical_url
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationexporter import (
@@ -373,7 +374,7 @@ class FileImporter(object):
     """
 
     def __init__(self, translation_import_queue_entry,
-                 importer, logger = None):
+                 importer, logger=None):
         """Base constructor to set up common attributes and parse the imported
         file into a member variable (self.translation_file).
 
@@ -472,7 +473,7 @@ class FileImporter(object):
             validate_translation(
                 potmsgset.singular_text, potmsgset.plural_text,
                 translations, potmsgset.flags)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             self._addUpdateError(message_data, potmsgset, unicode(e))
             message.validation_status = (
                 TranslationValidationStatus.UNKNOWNERROR)
@@ -535,6 +536,10 @@ class FileImporter(object):
         sanitized_translations = sanitize_translations_from_import(
             potmsgset.singular_text, message_data.translations,
             self.pofile.language.pluralforms)
+
+        # Flush the store now because flush order rules can cause messages
+        # to be flushed before the potmsgset arrives in the database.
+        IStore(potmsgset).flush()
 
         if potmsgset.is_translation_credit:
             # Translation credits cannot be added as suggestions.
@@ -680,7 +685,7 @@ class POTFileImporter(FileImporter):
             message._translations = None
 
         if len(message.flags) > 0:
-            flags_comment = u", "+u", ".join(message.flags)
+            flags_comment = u", " + u", ".join(message.flags)
         else:
             flags_comment = u""
 

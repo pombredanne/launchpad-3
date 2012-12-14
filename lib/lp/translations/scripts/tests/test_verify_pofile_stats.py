@@ -5,10 +5,9 @@
 
 __metaclass__ = type
 
-import transaction
-
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.side import TranslationSide
 
 
@@ -25,8 +24,6 @@ class TestVerifyPOFileStats(TestCaseWithFactory):
         sides = [TranslationSide.UPSTREAM, TranslationSide.UBUNTU]
         pofiles = [
             self._makeNonemptyPOFile(side) for side in sides]
-        transaction.commit()
-        self.layer.switchDbUser(dbuser='pofilestats')
-
-        for pofile in pofiles:
-            pofile.updateStatistics()
+        with dbuser('pofilestats'):
+            for pofile in pofiles:
+                pofile.updateStatistics()

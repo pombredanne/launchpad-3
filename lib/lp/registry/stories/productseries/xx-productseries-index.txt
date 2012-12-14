@@ -23,8 +23,9 @@ The product series overview page summarises the series.
     Download RDF metadata
 
     >>> print extract_text(find_tag_by_id(content, 'description'))
-    The "trunk" series represents the primary line of development rather than
-    a stable release branch. This is sometimes also called MAIN or HEAD.
+    The &quot;trunk&quot; series represents the primary line of
+    development rather than a stable release branch. This is sometimes
+    also called MAIN or HEAD.
 
 Someone with edit permissions, such as the project owner or series driver
 can see links to change the series. Sample person is the owner of the project,
@@ -106,7 +107,7 @@ an explanation where he can push the branch.
     bzr push lp:~name12/firefox/trunk ...
 
     >>> driver_browser.getLink('link the branch to this series')
-    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
+    <Link ... url='http://launchpad.dev/firefox/trunk/+setbranch'>
 
 Distribution packaging is listed too. There is a link to the source package
 in each Ubuntu series.
@@ -145,13 +146,3 @@ There is a section that lists related links to this series
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
     >>> anon_browser.getLink('View downloads for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+download'>
-
-The involvement portlet has links to various actions, including
-submitting a new branch.
-
-    >>> user_browser.open('http://launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Submit code')
-    <Link ... url='http://code.launchpad.dev/evolution/+addbranch'>
-    >>> user_browser.getLink('Submit code').click()
-    >>> print user_browser.title
-    Register a branch : Code : Evolution

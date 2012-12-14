@@ -22,7 +22,7 @@ either:
     # Need to craft the URL manually because there's no link to it -- the
     # option can't be changed, after all.
     >>> browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+poll/never-closes4/'
     ...              '+option/20')
     >>> print "\n".join(get_feedback_messages(browser.contents))

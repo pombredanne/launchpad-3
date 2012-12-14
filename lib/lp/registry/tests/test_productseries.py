@@ -1,20 +1,31 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductSeries and ProductSeriesSet."""
 
 __metaclass__ = type
 
+from storm.exceptions import NoneError
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
+from zope.security.checker import (
+    CheckerPublic,
+    getChecker,
+    )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
+from lp.app.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    )
+from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.services import IService
+from lp.registry.enums import SharingPermission
+from lp.registry.errors import (
+    CannotPackageProprietaryProduct,
+    ProprietaryProduct,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -23,14 +34,55 @@ from lp.registry.interfaces.productseries import (
     IProductSeriesSet,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
+    ANONYMOUS,
+    celebrity_logged_in,
+    login,
+    person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+
+
+class TestProductSeries(TestCaseWithFactory):
+    """Tests for ProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_information_type_from_product(self):
+        # ProductSeries should inherit information_type from its product."""
+        owner = self.factory.makePerson()
+        information_type = InformationType.PROPRIETARY
+        product = self.factory.makeProduct(
+            owner=owner, information_type=information_type)
+        series = self.factory.makeProductSeries(product=product)
+        with person_logged_in(owner):
+            self.assertEqual(
+                IInformationType(series).information_type, information_type)
+
+    def test_private_forbids_autoimport(self):
+        # Autoimports are forbidden if products are proprietary/embargoed.
+        series = self.factory.makeProductSeries()
+        self.useContext(person_logged_in(series.product.owner))
+        for info_type in PROPRIETARY_INFORMATION_TYPES:
+            series.product.information_type = info_type
+            for mode in TranslationsBranchImportMode.items:
+                if mode == TranslationsBranchImportMode.NO_IMPORT:
+                    continue
+                with ExpectedException(ProprietaryProduct,
+                        'Translations are disabled for proprietary'
+                        ' projects.'):
+                    series.translations_autoimport_mode = mode
 
 
 class ProductSeriesReleasesTestCase(TestCaseWithFactory):
@@ -137,6 +189,28 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
             sourcepackagename=sourcepackage.sourcepackagename,
             distroseries=self.ubuntu_series)
         return sourcepackage
+
+    def test_refuses_PROPRIETARY(self):
+        """Packaging cannot be created for PROPRIETARY productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        sp = self.makeSourcePackage()
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Proprietary.'):
+            series.setPackaging(
+                sp.distroseries, sp.sourcepackagename, series.owner)
+
+    def test_refuses_EMBARGOED(self):
+        """Packaging cannot be created for EMBARGOED productseries"""
+        product = self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED)
+        sp = self.makeSourcePackage()
+        series = self.factory.makeProductSeries(product=product)
+        with ExpectedException(CannotPackageProprietaryProduct,
+            'Only Public project series can be packaged, not Embargoed.'):
+            series.setPackaging(
+                sp.distroseries, sp.sourcepackagename, series.owner)
 
     def test_setPackaging_two_packagings(self):
         # More than one sourcepackage from the same distroseries
@@ -391,8 +465,7 @@ class TestProductSeriesSet(TestCaseWithFactory):
         super(TestProductSeriesSet, self).setUp()
         self.ps_set = getUtility(IProductSeriesSet)
 
-    def _makeSeriesAndBranch(
-            self, import_mode, branch=None, link_branch=True):
+    def _makeSeriesAndBranch(self, import_mode, branch=None, link_branch=True):
         productseries = self.factory.makeProductSeries()
         productseries.translations_autoimport_mode = import_mode
         if branch is None:
@@ -430,24 +503,22 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, link_branch=False)
 
         self.assertContentEqual(
-                [],
-                self.ps_set.findByTranslationsImportBranch(branch))
+            [], self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_force_import(self):
         productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT)
 
         self.assertContentEqual(
-                [productseries],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [productseries],
+            self.ps_set.findByTranslationsImportBranch(branch, True))
 
     def test_findByTranslationsImportBranch_no_branch_force_import(self):
         productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT, link_branch=False)
 
         self.assertContentEqual(
-                [],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [], self.ps_set.findByTranslationsImportBranch(branch, True))
 
     def test_findByTranslationsImportBranch_multiple_series(self):
         productseries, branch = self._makeSeriesAndBranch(
@@ -456,8 +527,8 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
 
         self.assertContentEqual(
-                [productseries, second_series],
-                self.ps_set.findByTranslationsImportBranch(branch))
+            [productseries, second_series],
+            self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_multiple_series_force(self):
         # XXX henninge 2010-03-18 bug=521095: This will fail when the bug
@@ -468,8 +539,8 @@ class TestProductSeriesSet(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
 
         self.assertContentEqual(
-                [productseries, second_series],
-                self.ps_set.findByTranslationsImportBranch(branch, True))
+            [productseries, second_series],
+            self.ps_set.findByTranslationsImportBranch(branch, True))
 
 
 class TestProductSeriesReleases(TestCaseWithFactory):
@@ -481,23 +552,20 @@ class TestProductSeriesReleases(TestCaseWithFactory):
         super(TestProductSeriesReleases, self).setUp()
         self.product = self.factory.makeProduct()
         self.productseries = self.factory.makeProductSeries(
-                                            product=self.product)
+            product=self.product)
 
     def test_getLatestRelease(self):
         # getLatestRelease returns the most recent release.
         self.assertIs(None, self.productseries.getLatestRelease())
 
         release = self.factory.makeProductRelease(
-                        product=self.product,
-                        productseries=self.productseries)
+            product=self.product, productseries=self.productseries)
         self.assertEqual(release, self.productseries.getLatestRelease())
 
         second_release = self.factory.makeProductRelease(
-                                product=self.product,
-                                productseries=self.productseries)
+            product=self.product, productseries=self.productseries)
         self.assertEqual(
-            second_release,
-            self.productseries.getLatestRelease())
+            second_release, self.productseries.getLatestRelease())
 
 
 class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
@@ -513,8 +581,7 @@ class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
             'all_milestones',
             ]
         self.assertThat(
-            productseries,
-            DoesNotSnapshot(skipped, IProductSeries))
+            productseries, DoesNotSnapshot(skipped, IProductSeries))
 
 
 class TestWebService(WebServiceTestCase):
@@ -527,3 +594,403 @@ class TestWebService(WebServiceTestCase):
         mode = TranslationsBranchImportMode.IMPORT_TRANSLATIONS
         ws_series.translations_autoimport_mode = mode.title
         ws_series.lp_save()
+
+
+class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
+    """Test for permissions of IProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProductSeriesSecurityAdaperTestCase, self).setUp()
+        self.public_product = self.factory.makeProduct()
+        self.public_series = self.factory.makeProductSeries(
+            product=self.public_product)
+        self.proprietary_product_owner = self.factory.makePerson()
+        self.proprietary_product = self.factory.makeProduct(
+            owner=self.proprietary_product_owner,
+            information_type=InformationType.PROPRIETARY)
+        self.proprietary_series = self.factory.makeProductSeries(
+            product=self.proprietary_product)
+
+    expected_get_permissions = {
+        CheckerPublic: set((
+            'id', 'userCanView',
+            )),
+        'launchpad.AnyAllowedPerson': set((
+            'addBugSubscription', 'addBugSubscriptionFilter',
+            'addSubscription', 'removeBugSubscription',
+            )),
+        'launchpad.Edit': set(('newMilestone', )),
+        'launchpad.LimitedView': set((
+            'bugtargetdisplayname', 'bugtarget_parent', 'name',
+            'parent_subscription_target', 'product', 'productID', 'series')),
+        'launchpad.View': set((
+            '_all_specifications', '_getOfficialTagClause',
+            '_valid_specifications', 'active', 'all_milestones',
+            'answers_usage', 'blueprints_usage', 'branch',
+            'bug_reported_acknowledgement', 'bug_reporting_guidelines',
+            'bug_subscriptions', 'bug_supervisor', 'bug_tracking_usage',
+            'bugtargetname',
+            'codehosting_usage', 'createBug', 'datecreated', 'displayname',
+            'driver', 'drivers', 'enable_bugfiling_duplicate_search',
+            'getAllowedSpecificationInformationTypes',
+            'getBugSummaryContextWhereClause',
+            'getBugTaskWeightFunction', 'getCachedReleases',
+            'getCurrentTemplatesCollection', 'getCurrentTranslationFiles',
+            'getCurrentTranslationTemplates',
+            'getDefaultSpecificationInformationType',
+            'getFirstEntryToImport', 'getLatestRelease', 'getPOTemplate',
+            'getPackage', 'getPackagingInDistribution', 'getRelease',
+            'getSharingPartner', 'getSpecification', 'getSubscription',
+            'getSubscriptions', 'getTemplatesAndLanguageCounts',
+            'getTemplatesCollection', 'getTimeline',
+            'getTranslationImportQueueEntries',
+            'getTranslationTemplateByName', 'getTranslationTemplateFormats',
+            'getTranslationTemplates', 'getUbuntuTranslationFocusPackage',
+            'getUsedBugTagsWithOpenCounts',
+            'has_current_translation_templates', 'has_milestones',
+            'has_obsolete_translation_templates',
+            'has_sharing_translation_templates', 'has_translation_files',
+            'has_translation_templates', 'is_development_focus', 'milestones',
+            'official_bug_tags', 'owner', 'packagings', 'parent',
+            'personHasDriverRights', 'pillar', 'potemplate_count',
+            'productserieslanguages', 'release_files',
+            'releasefileglob', 'releases', 'releaseverstyle', 'searchTasks',
+            'setPackaging', 'sourcepackages', 'specifications',
+            'status', 'summary', 'target_type_display', 'title',
+            'translations_autoimport_mode', 'userCanAlterBugSubscription',
+            'userCanAlterSubscription', 'userHasBugSubscriptions',
+            'translations_branch', 'translations_usage', 'uses_launchpad',
+            )),
+        }
+
+    def test_get_permissions(self):
+        checker = getChecker(self.public_series)
+        self.checkPermissions(
+            self.expected_get_permissions, checker.get_permissions, 'get')
+
+    expected_set_permissions = {
+        'launchpad.Edit': set((
+            'answers_usage', 'blueprints_usage', 'branch',
+            'bug_tracking_usage', 'codehosting_usage', 'driver', 'name',
+            'owner', 'product', 'releasefileglob', 'status', 'summary',
+            'translations_autoimport_mode', 'translations_branch',
+            'translations_usage', 'uses_launchpad',
+            )),
+        'launchpad.AnyAllowedPerson': set((
+            'cvsbranch', 'cvsmodule', 'cvsroot', 'cvstarfileurl',
+            'importstatus', 'rcstype', 'svnrepository',
+            )),
+        }
+
+    def test_set_permissions(self):
+        checker = getChecker(self.public_series)
+        self.checkPermissions(
+            self.expected_set_permissions, checker.set_permissions, 'set')
+
+    def assertAccessAuthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. No exception
+        # should be raised.
+        for name in attribute_names:
+            getattr(obj, name)
+
+    def assertAccessUnauthorized(self, attribute_names, obj):
+        # Try to access the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, getattr, obj, name)
+
+    def assertChangeAuthorized(self, attribute_names, obj):
+        # Try to changes the given attributes of obj. Unauthorized
+        # should not be raised.
+        for name in attribute_names:
+            # Not all attributes declared in configure.zcml to be
+            # settable actually exist or are settable. Attempts to set
+            # them raise an AttributeError. Similary, the naive attempt
+            # to set an attribute to None may raise a NoneError
+            #
+            # Both errors can be ignored here: This method intends only
+            # to prove that Unauthorized is not raised.
+            try:
+                setattr(obj, name, None)
+            except (AttributeError, NoneError):
+                pass
+
+    def assertChangeUnauthorized(self, attribute_names, obj):
+        # Try to changes the given attributes of obj. Unauthorized
+        # should be raised.
+        for name in attribute_names:
+            self.assertRaises(Unauthorized, setattr, obj, name, None)
+
+    def test_access_for_anonymous(self):
+        # Anonymous users have access to public attributes of
+        # a series for a private or public product.
+        with person_logged_in(ANONYMOUS):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions[CheckerPublic],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_series)
+
+            # They have access to attributes requiring the permission
+            # launchpad.Viewand launchpad.LimitedView of a series for a
+            # public product...
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.public_series)
+
+            # ...but not to the same attributes of a series for s private
+            # product.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_series)
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+
+            # The cannot access other attributes of a series for
+            # public and private products.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.LimitedView',
+                                  'launchpad.View'):
+                    continue
+                self.assertAccessUnauthorized(names, self.public_series)
+                self.assertAccessUnauthorized(names, self.proprietary_series)
+
+            # They cannot change any attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeUnauthorized(names, self.public_series)
+                self.assertChangeUnauthorized(names, self.proprietary_series)
+
+    def test_access_for_regular_user(self):
+        # Regular users have access to public attributes of
+        # a series for a private or public product.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions[CheckerPublic],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions[CheckerPublic],
+                self.proprietary_series)
+
+            # They have access to attributes requiring the permissions
+            # launchpad.View, launchpad.LimitedView and
+            # launchpadAnyAllowedPerson of a series for a public product...
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.public_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.public_series)
+
+            # ...but not to the same attributes of a series for s private
+            # product.
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_series)
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+            self.assertAccessUnauthorized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_series)
+
+            # The cannot access other attributes of a series for
+            # public and private products.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.LimitedView',
+                                  'launchpad.View',
+                                  'launchpad.AnyAllowedPerson'):
+                    continue
+                self.assertAccessUnauthorized(names, self.public_series)
+                self.assertAccessUnauthorized(names, self.proprietary_series)
+
+            # They can change attributes requiring the permission
+            # launchpad.AnyAllowedPerson of a series for a public project...
+            self.assertChangeAuthorized(
+                self.expected_set_permissions['launchpad.AnyAllowedPerson'],
+                self.public_series)
+            #... but not for a private project.
+            self.assertChangeUnauthorized(
+                self.expected_set_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_series)
+
+            # They cannot change any attributes that require another
+            # permission than launchpad.AnyALlowedPerson.
+            for permission, names in self.expected_set_permissions.items():
+                if permission == 'launchpad.AnyAllowedPerson':
+                    continue
+                self.assertChangeUnauthorized(names, self.public_series)
+                self.assertChangeUnauthorized(names, self.proprietary_series)
+
+    def test_access_for_user_with_policy_grant(self):
+        # Users with a policy grant for the parent product can access
+        # properties requring the permission launchpad.LimitedView,
+        # launchpad.View or launchpad.AnyALlowedPerson of a series.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                self.proprietary_product, user, self.proprietary_product_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.View'],
+                self.proprietary_series)
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_series)
+
+            # The cannot access other attributes of a series for
+            # private products.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.View',
+                                  'launchpad.LimitedView',
+                                  'launchpad.AnyAllowedPerson'):
+                    continue
+                self.assertAccessUnauthorized(names, self.proprietary_series)
+
+            # They can change attributes requiring the permission
+            # launchpad.AnyAllowedPerson of a series for a provate project...
+            self.assertChangeAuthorized(
+                self.expected_set_permissions['launchpad.AnyAllowedPerson'],
+                self.proprietary_series)
+
+            # They cannot change any attributes that require another
+            # permission than launchpad.AnyALlowedPerson.
+            for permission, names in self.expected_set_permissions.items():
+                if permission == 'launchpad.AnyAllowedPerson':
+                    continue
+                self.assertChangeUnauthorized(names, self.proprietary_series)
+
+    def test_access_for_user_with_artifact_grant(self):
+        # Users with an artifact grant related to the parent product
+        # can access properties requring the permission launchpad.LimitedView
+        # of a series.
+        user = self.factory.makePerson()
+        with person_logged_in(self.proprietary_product_owner):
+            bug = self.factory.makeBug(
+                target=self.proprietary_product,
+                owner=self.proprietary_product_owner)
+            bug.subscribe(user, subscribed_by=self.proprietary_product_owner)
+
+        with person_logged_in(user):
+            self.assertAccessAuthorized(
+                self.expected_get_permissions['launchpad.LimitedView'],
+                self.proprietary_series)
+
+            # The cannot access other attributes of a series for
+            # private products.
+            for permission, names in self.expected_get_permissions.items():
+                if permission in (CheckerPublic, 'launchpad.LimitedView'):
+                    continue
+                self.assertAccessUnauthorized(names, self.proprietary_series)
+
+            # They cannot change any attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeUnauthorized(names, self.proprietary_series)
+
+    def test_access_for_product_owner(self):
+        # The owner of a project has access to all attributes of
+        # a product series.
+        with person_logged_in(self.proprietary_product_owner):
+            for permission, names in self.expected_get_permissions.items():
+                self.assertAccessAuthorized(names, self.proprietary_series)
+
+            # They can change all attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeAuthorized(names, self.proprietary_series)
+
+        with person_logged_in(self.public_product.owner):
+            for permission, names in self.expected_get_permissions.items():
+                self.assertAccessAuthorized(names, self.public_series)
+
+            # They can change all attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeAuthorized(names, self.public_series)
+
+    def test_access_for_lp_admins(self):
+        # Launchpad admins can access and change any attribute of a series
+        # of public and private product.
+        with celebrity_logged_in('admin'):
+            for permission, names in self.expected_get_permissions.items():
+                self.assertAccessAuthorized(names, self.public_series)
+                self.assertAccessAuthorized(names, self.proprietary_series)
+
+            # They can change all attributes.
+            for permission, names in self.expected_set_permissions.items():
+                self.assertChangeAuthorized(names, self.public_series)
+                self.assertChangeAuthorized(names, self.proprietary_series)
+
+
+class TestTimelineProductSeries(TestCaseWithFactory):
+    """Tests for TimelineProductSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_access_to_timeline_of_public_product(self):
+        # ITestTimelineProductSeries instances related to public
+        # products are publicly visible.
+        series = self.factory.makeProductSeries()
+        timeline = series.getTimeline()
+        with person_logged_in(ANONYMOUS):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)
+        with person_logged_in(self.factory.makePerson()):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)
+
+    def test_access_to_timeline_of_proprietary_product(self):
+        # ITestTimelineProductSeries instances related to proprietary
+        # products are visible only for person with a policy grant for
+        # the product.
+        owner = self.factory.makePerson()
+        user_with_policy_grant = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        series = self.factory.makeProductSeries(product=product)
+        with person_logged_in(owner):
+            timeline = series.getTimeline()
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, user_with_policy_grant, owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+
+        # Anonymous users do not have access.
+        with person_logged_in(ANONYMOUS):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                self.assertRaises(Unauthorized, getattr, timeline, name)
+        # Ordinary users do not have access.
+        with person_logged_in(self.factory.makePerson()):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                self.assertRaises(Unauthorized, getattr, timeline, name)
+        # Users with a policy grant have access.
+        with person_logged_in(user_with_policy_grant):
+            for name in (
+                'name', 'status', 'is_development_focus', 'uri', 'landmarks',
+                'product'):
+                # No exception is raised when attributes of timeline
+                # are accessed.
+                getattr(timeline, name)

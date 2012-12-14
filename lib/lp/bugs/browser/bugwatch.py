@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugWatch-related browser views."""
@@ -8,22 +8,13 @@ __all__ = [
     'BugWatchSetNavigation',
     'BugWatchActivityPortletView',
     'BugWatchEditView',
-    'BugWatchView']
-
+    'BugWatchView'
+    ]
 
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    GetitemNavigation,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -38,7 +29,16 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.services.database.constants import UTC_NOW
 from lp.services.fields import URIField
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -133,7 +133,7 @@ class BugWatchEditView(LaunchpadFormView):
         """Return whether the bug watch is unlinked."""
         return (
             len(self.context.bugtasks) == 0 and
-            self.context.getImportedBugMessages().is_empty())
+            self.context.getBugMessages().is_empty())
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):

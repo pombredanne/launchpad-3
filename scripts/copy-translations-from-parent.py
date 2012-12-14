@@ -15,11 +15,13 @@ Only current translations are copied.
 import _pythonpath
 
 import sys
+
 from zope.component import getUtility
-from canonical.config import config
+
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.copy_distroseries_translations import (
-    copy_distroseries_translations)
+    copy_distroseries_translations,
+    )
 
 
 class TranslationsCopier(LaunchpadCronScript):

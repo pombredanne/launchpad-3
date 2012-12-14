@@ -14,21 +14,20 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.testing import TestCaseWithFactory
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    monkey_patch,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
-from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage,
-    )
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
@@ -65,7 +64,6 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
             name='devel', distribution=self.foo)
         self.foo_stable = self.factory.makeDistroSeries(
             name='stable', distribution=self.foo)
-        self.foo.official_rosetta = True
         self.sourcepackagename = self.factory.makeSourcePackageName()
 
         # Two POTemplates share translations if they have the same name,
@@ -2039,12 +2037,6 @@ class TestPOFile(TestCaseWithFactory):
         self.pofile = self.factory.makePOFile('eo')
         self.potemplate = self.pofile.potemplate
 
-    def test_makeTranslatableMessage(self):
-        # TranslatableMessages can be created from the PO file
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate)
-        message = self.pofile.makeTranslatableMessage(potmsgset)
-        verifyObject(ITranslatableMessage, message)
-
     def _createMessageSet(self, testmsg):
         # Create a message set from the test data.
         potmsgset = self.factory.makePOTMsgSet(
@@ -2159,6 +2151,60 @@ class TestPOFile(TestCaseWithFactory):
         pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
             language.code, with_plural=True)
         self.assertTrue(pofile.hasPluralFormInformation())
+
+    def test_prepare_pomessage_error_message(self):
+        # The method returns subject, template_mail, and errorsdetails
+        # to make an email message about errors.
+        errors = []
+        errors.append({
+            'potmsgset': self.factory.makePOTMsgSet(
+                potemplate=self.pofile.potemplate, sequence=1),
+            'pomessage': 'purrs',
+            'error-message': 'claws error',
+            })
+        errors.append({
+            'potmsgset': self.factory.makePOTMsgSet(
+                potemplate=self.pofile.potemplate, sequence=2),
+            'pomessage': 'plays',
+            'error-message': 'string error',
+            })
+        replacements = {'numberofmessages': 5}
+        pofile = removeSecurityProxy(self.pofile)
+        data = pofile._prepare_pomessage_error_message(
+            errors, replacements)
+        subject, template_mail, errorsdetails = data
+        pot_displayname = self.pofile.potemplate.displayname
+        self.assertEqual(
+            'Translation problems - Esperanto (eo) - %s' % pot_displayname,
+            subject)
+        self.assertEqual('poimport-with-errors.txt', template_mail)
+        self.assertEqual(2, replacements['numberoferrors'])
+        self.assertEqual(3, replacements['numberofcorrectmessages'])
+        self.assertEqual(errorsdetails, replacements['errorsdetails'])
+        self.assertEqual(
+            '1. "claws error":\n\npurrs\n\n2. "string error":\n\nplays\n\n',
+            errorsdetails)
+
+    def test_prepare_pomessage_error_message_sequence_is_invalid(self):
+        # The errordetails can be contructed when the sequnce is invalid.
+        errors = [{
+            'potmsgset': self.factory.makePOTMsgSet(
+                potemplate=self.pofile.potemplate, sequence=None),
+            'pomessage': 'purrs',
+            'error-message': 'claws error',
+            }]
+        replacements = {'numberofmessages': 5}
+        pofile = removeSecurityProxy(self.pofile)
+        potmsgset = removeSecurityProxy(errors[0]['potmsgset'])
+
+        def get_sequence(pot):
+            return None
+
+        with monkey_patch(potmsgset, getSequence=get_sequence):
+            data = pofile._prepare_pomessage_error_message(
+                errors, replacements)
+        subject, template_mail, errorsdetails = data
+        self.assertEqual('-1. "claws error":\n\npurrs\n\n', errorsdetails)
 
 
 class TestPOFileUbuntuUpstreamSharingMixin:

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenID adapters and helpers."""
@@ -19,10 +19,10 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 

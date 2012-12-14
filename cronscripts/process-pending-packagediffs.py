@@ -26,8 +26,9 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
+
 
 if __name__ == '__main__':
     script = ProcessPendingPackageDiffs(

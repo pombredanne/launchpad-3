@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branch import BranchMailer
+from lp.services.config import config
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import get_msgid
+from lp.services.webapp import canonical_url
 
 
 class BMPMailer(BranchMailer):
@@ -132,7 +132,7 @@ class BMPMailer(BranchMailer):
                 # inline.
                 ctrl.addAttachment(
                     self.preview_diff.text, content_type='text/x-diff',
-                    inline=True, filename='review-diff.txt')
+                    inline=True, filename='review-diff.txt', charset='utf-8')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calculate just once."""
@@ -182,6 +182,7 @@ class BMPMailer(BranchMailer):
                 "The attached diff has been truncated due to its size.\n")
 
         params['reviews'] = self._getRequestedReviews()
+        params['commit_message'] = self._getCommitMessage()
         return params
 
     def _formatExtraInformation(self, heading, chunks):
@@ -195,6 +196,13 @@ class BMPMailer(BranchMailer):
         else:
             info = ''.join('  %s\n' % value for value in chunks)
             return '%s\n%s' % (heading, info)
+
+    def _getCommitMessage(self):
+        """Return a string describing the commit message, if any."""
+        if not self.merge_proposal.commit_message:
+            return ''
+        else:
+            return 'Commit message:\n%s\n\n' % self.merge_proposal.commit_message
 
     def _getRequestedReviews(self):
         """Return a string describing the requested reviews, if any."""

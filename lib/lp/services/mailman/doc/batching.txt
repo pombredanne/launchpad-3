@@ -18,7 +18,7 @@ Three mailing lists are created.
 
 Now we'll restart Mailman with a batch size of 1.
 
-    >>> from canonical.testing.layers import LayerProcessController
+    >>> from lp.testing.layers import LayerProcessController
     >>> from lp.services.mailman import runmailman
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=LayerProcessController.appserver_config)

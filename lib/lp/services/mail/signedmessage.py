@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for simpler handling of PGP signed email messages."""
@@ -152,6 +152,11 @@ class SignedMessage(email.Message.Message):
         """
         signature, signed_content = self._getSignatureAndSignedContent()
         return signature
+
+    @property
+    def raw_length(self):
+        """Return the length in bytes of the underlying raw form."""
+        return len(self.parsed_string)
 
 
 def strip_pgp_signature(text):

@@ -17,7 +17,6 @@ from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
 
-from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -26,6 +25,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import DuplicatePriorityError
+from lp.services.webapp.authorization import check_permission
 
 
 class IFeatureControlForm(Interface):
@@ -114,5 +114,6 @@ class FeatureControlView(LaunchpadFormView):
             # Unfortunately if the field is '', zope leaves it out of data.
             self.request.features.rule_source.parseRules(
                 data.get('feature_rules') or '')
-        except (IndexError, TypeError, ValueError, DuplicatePriorityError), e:
+        except (IndexError, TypeError, ValueError,
+                DuplicatePriorityError) as e:
             self.setFieldError('feature_rules', 'Invalid rule syntax: %s' % e)

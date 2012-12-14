@@ -21,7 +21,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.enums import RosettaImportStatus
 
 

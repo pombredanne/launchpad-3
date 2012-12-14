@@ -7,9 +7,9 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Provides
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationfileformat import (

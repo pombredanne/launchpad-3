@@ -12,13 +12,13 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import (
-    Int,
     Choice,
+    Int,
     Text,
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class INameBlacklist(Interface):

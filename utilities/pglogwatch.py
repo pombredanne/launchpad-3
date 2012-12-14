@@ -7,9 +7,11 @@
 Watch live PostgreSQL logs for interesting stuff
 """
 
-import re, sys
 from optparse import OptionParser
+import re
 import subprocess
+import sys
+
 
 def get_options(args=None):
     parser = OptionParser()

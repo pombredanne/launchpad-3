@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Bug tracker interfaces."""
 
@@ -15,6 +13,7 @@ __all__ = [
     'IBugTrackerComponent',
     'IBugTrackerComponentGroup',
     'IBugTrackerSet',
+    'IHasExternalBugTracker',
     'IRemoteBug',
     'SINGLE_PRODUCT_BUGTRACKERTYPES',
     ]
@@ -60,8 +59,7 @@ from zope.schema import (
     )
 from zope.schema.interfaces import IObject
 
-from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import patch_reference_property
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.services.fields import (
@@ -69,6 +67,7 @@ from lp.services.fields import (
     StrippedTextLine,
     URIField,
     )
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -609,6 +608,21 @@ class IBugTrackerComponentGroup(Interface):
 # IBugTrackerComponentGroup.
 patch_reference_property(
     IBugTrackerComponent, "component_group", IBugTrackerComponentGroup)
+
+
+class IHasExternalBugTracker(Interface):
+    """An object that can have an external bugtracker specified."""
+
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead. If the product doesn't belong to a
+        superproject, or if the superproject doesn't have a bug tracker,
+        return None.
+        """
 
 
 class IRemoteBug(Interface):

@@ -11,7 +11,6 @@ import urllib
 
 from BeautifulSoup import BeautifulSoup
 
-from canonical.launchpad.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     ExternalBugTracker,
@@ -26,6 +25,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.webapp import urlsplit
 
 
 class SourceForge(ExternalBugTracker):

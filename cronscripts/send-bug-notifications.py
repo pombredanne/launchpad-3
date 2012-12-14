@@ -17,15 +17,15 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from lp.services.mail.sendmail import sendmail
-from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications,
     process_deferred_notifications,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.mail.sendmail import sendmail
 from lp.services.scripts.base import LaunchpadCronScript
 
 

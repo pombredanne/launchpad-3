@@ -16,33 +16,39 @@ SpecGraph to keep track of the nodes that have been added.
     >>> from lp.blueprints.browser.specification import SpecGraph
     >>> g = SpecGraph()
     >>> g.url_pattern_for_testing = 'http://whatever/%s'
+    >>> default_target = factory.makeProduct(name='fnord')
 
     >>> class Spec(object):
     ...
     ...     def __init__(self, name,
     ...             is_complete=False, title=None, assignee=None):
     ...         self.name = name
+    ...         self.target = default_target
     ...         self.title = title or name
     ...         self.is_complete = is_complete
     ...         self.assignee = assignee
-    ...         # Use lists here to ensure that the code converts them
-    ...         # to sets explicitly, like it has to do for SelectResults.
-    ...         self.dependencies = []
-    ...         # This is a hack for testing: we can set up dependencies,
-    ...         # and simply use their "mirror image" for blocked specs.
-    ...         self.blocked_specs = self.dependencies
+    ...         # For purposes of this doc, we're only stubbing the
+    ...         # dependency methods.
+    ...         self._all_deps = []
+    ...         self._all_blocked = self._all_deps
+    ...
+    ...     def all_deps(self, user):
+    ...         return self._all_deps
+    ...
+    ...     def all_blocked(self, user):
+    ...         return self._all_blocked
 
     >>> foo = Spec('foo', title='something with " and \n in it')
     >>> root = g.newNode(foo, root=True)
 
     >>> print root
-    <foo>
+    <fnord-foo>
 
 Note that the root DOT data doesn't have a URL.  This is because we
 don't want a link to the spec we're currently looking at.
 
     >>> print root.getDOTNodeStatement()
-    "foo"
+    "fnord-foo"
         [
         "color"="red",
         "comment"="something with \" and \n in it",
@@ -51,32 +57,33 @@ don't want a link to the spec we're currently looking at.
         ]
 
     >>> print g.root_node
-    <foo>
+    <fnord-foo>
 
     >>> print root.name, root.label, root.URL, root.color
-    foo foo http://whatever/foo red
+    fnord-foo foo http://whatever/foo red
 
-    >>> g.getNode('no such name') is None
+    >>> other_spec = factory.makeSpecification()
+    >>> g.getNode(other_spec) is None
     True
 
-    >>> g.getNode('foo') is root
+    >>> g.getNode(foo) is root
     True
 
     >>> print g.listNodes()
-    Root is <foo>
-    <foo>:
+    Root is <fnord-foo>
+    <fnord-foo>:
 
     >>> foo1 = Spec('foo1')
-    >>> foo.dependencies.append(foo1)
+    >>> foo._all_deps.append(foo1)
     >>> foo2 = Spec('foo2')
-    >>> foo.dependencies.append(foo2)
+    >>> foo._all_deps.append(foo2)
     >>> foo11 = Spec('foo11')
-    >>> foo1.dependencies.append(foo11)
+    >>> foo1._all_deps.append(foo11)
     >>> foo111 = Spec('foo111')
-    >>> foo11.dependencies.append(foo111)
+    >>> foo11._all_deps.append(foo111)
 
     >>> def make_graph(dependency, blocked):
-    ...     g = SpecGraph()
+    ...     g = SpecGraph(user=None)
     ...     g.url_pattern_for_testing = 'http://whatever/%s'
     ...     g.newNode(foo, root=True)
     ...     if dependency:
@@ -92,16 +99,16 @@ don't want a link to the spec we're currently looking at.
     ...     print make_graph(dependency, blocked).getDOTGraphStatement()
 
     >>> print_graph()
-    Root is <foo>
-    <foo>:
-    <foo1>:
-        foo
-    <foo11>:
-        foo1
-    <foo111>:
-        foo11
-    <foo2>:
-        foo
+    Root is <fnord-foo>
+    <fnord-foo>:
+    <fnord-foo1>:
+        fnord-foo
+    <fnord-foo11>:
+        fnord-foo1
+    <fnord-foo111>:
+        fnord-foo11
+    <fnord-foo2>:
+        fnord-foo
 
     >>> print_graph_dot()
     digraph "deptree" {
@@ -125,14 +132,14 @@ don't want a link to the spec we're currently looking at.
         [
         "arrowhead"="normal"
         ]
-    "foo"
+    "fnord-foo"
         [
         "color"="red",
         "comment"="something with \" and \n in it",
         "label"="foo",
         "tooltip"="something with \" and \n in it"
         ]
-    "foo1"
+    "fnord-foo1"
         [
         "URL"="http://whatever/foo1",
         "color"="black",
@@ -140,7 +147,7 @@ don't want a link to the spec we're currently looking at.
         "label"="foo1",
         "tooltip"="foo1"
         ]
-    "foo11"
+    "fnord-foo11"
         [
         "URL"="http://whatever/foo11",
         "color"="black",
@@ -148,7 +155,7 @@ don't want a link to the spec we're currently looking at.
         "label"="foo11",
         "tooltip"="foo11"
         ]
-    "foo111"
+    "fnord-foo111"
         [
         "URL"="http://whatever/foo111",
         "color"="black",
@@ -156,7 +163,7 @@ don't want a link to the spec we're currently looking at.
         "label"="foo111",
         "tooltip"="foo111"
         ]
-    "foo2"
+    "fnord-foo2"
         [
         "URL"="http://whatever/foo2",
         "color"="black",
@@ -164,87 +171,71 @@ don't want a link to the spec we're currently looking at.
         "label"="foo2",
         "tooltip"="foo2"
         ]
-    "foo1" -> "foo"
-    "foo11" -> "foo1"
-    "foo111" -> "foo11"
-    "foo2" -> "foo"
+    "fnord-foo1" -> "fnord-foo"
+    "fnord-foo11" -> "fnord-foo1"
+    "fnord-foo111" -> "fnord-foo11"
+    "fnord-foo2" -> "fnord-foo"
     }
 
-Now, add a circle at the top.
+The graph grows when specifications gain more dependencies.
 
-    >>> foo1.dependencies.append(foo)
+    >>> foo1._all_deps.append(foo)
+    >>> foo111._all_deps.append(foo1)
+    >>> foo111._all_deps.append(foo)
+    >>> foo2._all_deps.append(foo1)
+    >>> foo1._all_deps.append(foo2)
     >>> print_graph()
-    Root is <foo>
-    <foo>:
-        foo1
-    <foo1>:
-        foo
-    <foo11>:
-        foo1
-    <foo111>:
-        foo11
-    <foo2>:
-        foo
-
-Now add another circle at the bottom.
-
-    >>> foo111.dependencies.append(foo1)
-    >>> print_graph()
-    Root is <foo>
-    <foo>:
-        foo1
-    <foo1>:
-        foo
-        foo111
-    <foo11>:
-        foo1
-    <foo111>:
-        foo11
-    <foo2>:
-        foo
-
-Now make it even more convoluted, for fun.
-
-    >>> foo111.dependencies.append(foo)
-    >>> foo2.dependencies.append(foo1)
-    >>> foo1.dependencies.append(foo2)
-    >>> print_graph()
-    Root is <foo>
-    <foo>:
-        foo1
-        foo111
-    <foo1>:
-        foo
-        foo111
-        foo2
-    <foo11>:
-        foo1
-    <foo111>:
-        foo11
-    <foo2>:
-        foo
-        foo1
+    Root is <fnord-foo>
+    <fnord-foo>:
+        fnord-foo1
+        fnord-foo111
+    <fnord-foo1>:
+        fnord-foo
+        fnord-foo111
+        fnord-foo2
+    <fnord-foo11>:
+        fnord-foo1
+    <fnord-foo111>:
+        fnord-foo11
+    <fnord-foo2>:
+        fnord-foo
+        fnord-foo1
 
 And finally, try checking out the blocked specs too.  Because of the
 hack earlier, we have a "mirror image" of the dependencies in the
 blocked speces.
 
     >>> print_graph(dependency=False, blocked=True)
-    Root is <foo>
-    <foo>:
-        foo1
-        foo2
-    <foo1>:
-        foo
-        foo11
-        foo2
-    <foo11>:
-        foo111
-    <foo111>:
-        foo
-        foo1
-    <foo2>:
-        foo1
+    Root is <fnord-foo>
+    <fnord-foo>:
+        fnord-foo1
+        fnord-foo2
+    <fnord-foo1>:
+        fnord-foo
+        fnord-foo11
+        fnord-foo2
+    <fnord-foo11>:
+        fnord-foo111
+    <fnord-foo111>:
+        fnord-foo
+        fnord-foo1
+    <fnord-foo2>:
+        fnord-foo1
+
+A spec with the same name, but from a different target can be a in
+the graph.
+
+    >>> test_graph = SpecGraph()
+    >>> ant_spec = factory.makeSpecification(name='ant')
+    >>> a_bat_spec = factory.makeSpecification(name='bat')
+    >>> b_bat_spec = factory.makeSpecification(name='bat')
+    >>> ignore = ant_spec.createDependency(a_bat_spec)
+    >>> ignore = ant_spec.createDependency(b_bat_spec)
+    >>> ant_node = test_graph.newNode(ant_spec, root=True)
+    >>> a_bat_node = test_graph.newNode(a_bat_spec)
+    >>> b_bat_node = test_graph.newNode(b_bat_spec)
+    >>> test_graph.getNode(b_bat_spec) is b_bat_node
+    True
 
 
 SpecificationTreeImageTag and SpecificationView
@@ -256,7 +247,7 @@ tag when the render() method is called.
     >>> from zope.component import getMultiAdapter
     >>> from lp.blueprints.browser.specification import (
     ...     SpecificationTreeImageTag)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')

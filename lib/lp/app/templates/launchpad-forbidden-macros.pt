@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   define-macro="body">
   <p>
-    Sorry, you don't have permission to access this page.
+    Sorry, you don't have permission to access this page or
+    the information in this page is not shared with you.
   </p>
   <div tal:condition="request/lp:person">
   <p>

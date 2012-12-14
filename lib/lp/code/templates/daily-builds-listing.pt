@@ -20,23 +20,17 @@
           tal:attributes="action view/form_action|request/URL">
       Show packages with a successful recipe <a
         href="https://help.launchpad.net/Packaging/SourceBuilds/GettingStarted"
-        class="sprite maybe"
-        >&nbsp;<span class="invisible-link">Tag help</span></a>build
+        class="sprite maybe action-icon">(?)</a>build
       <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
-      <noscript>
-        <input type="submit" value="Filter"/>
-      </noscript>
+      <input id="filter_form_submit" type="submit" value="Filter"/>
     </form>
 
     <script type="text/javascript">
-      function submit_filter() {
-          getElement('filter_form').submit();
-      }
-
-      function hookUpFilterSubmission () {
-          connect('field.when_completed_filter', 'onchange', submit_filter);
-      }
-      registerLaunchpadFunction(hookUpFilterSubmission);
+        LPJS.use("lp.code.util", function(Y) {
+          Y.on("domready", function(e) {
+              Y.lp.code.util.hookUpDailyBuildsFilterSubmission(Y);
+          }, window);
+        });
     </script>
 
     <tal:block tal:condition="not:dailybuilds">

@@ -7,8 +7,7 @@
   <div id="portlet-associations">
     <h2>Upstream connections</h2>
 
-    <div class="portletBody portletContent"
-         tal:define="series context/productseries">
+    <div tal:define="series context/productseries">
       <tal:has_series condition="series">
         <div tal:content="structure context/@@+upstream-connections"/>
 

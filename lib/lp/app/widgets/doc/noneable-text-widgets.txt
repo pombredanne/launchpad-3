@@ -14,7 +14,7 @@ text value to None.
 The IMilestone code_name field cannot be an empty string or a string
 composed of whitespace; the value is considered to be None.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.milestone import IMilestone
 
     >>> field = IMilestone['code_name']

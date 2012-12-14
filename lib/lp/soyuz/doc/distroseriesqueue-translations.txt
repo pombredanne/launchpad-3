@@ -25,10 +25,10 @@ uploaded into the system.
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import datadir, getPolicy
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
 # Login as an admin.
@@ -64,6 +64,7 @@ queue:
     >>> publishing_history = SourcePackagePublishingHistory(
     ...     distroseries=dapper.id,
     ...     sourcepackagerelease=source_package_release.id,
+    ...     sourcepackagename=source_package_release.sourcepackagename,
     ...     component=source_package_release.component.id,
     ...     section=source_package_release.section.id,
     ...     status=PackagePublishingStatus.PUBLISHED,

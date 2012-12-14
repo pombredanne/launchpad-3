@@ -10,11 +10,11 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.mail import stub
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestAssignmentNotification(TestCaseWithFactory):
@@ -29,8 +29,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.user = getUtility(ILaunchBag).user
         self.product = self.factory.makeProduct(owner=self.user,
                                                 name='project')
-        self.master_bug = self.factory.makeBug(product=self.product)
-        self.dup_bug = self.factory.makeBug(product=self.product)
+        self.master_bug = self.factory.makeBug(target=self.product)
+        self.dup_bug = self.factory.makeBug(target=self.product)
         self.master_bug_task = self.master_bug.getBugTask(self.product)
         self.master_bug_task_before_modification = Snapshot(
             self.master_bug_task,

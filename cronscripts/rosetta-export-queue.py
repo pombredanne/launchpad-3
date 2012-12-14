@@ -7,7 +7,7 @@
 
 import _pythonpath
 
-from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
+from lp.services.database.policy import SlaveDatabasePolicy
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.po_export_queue import process_queue
 

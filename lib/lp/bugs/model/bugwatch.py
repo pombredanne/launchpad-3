@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -20,7 +18,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import find_uris_in_text
 from pytz import utc
-# SQL imports
 from sqlobject import (
     ForeignKey,
     SQLObjectNotFound,
@@ -43,19 +40,6 @@ from zope.interface import (
     providedBy,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import (
-    urlappend,
-    urlsplit,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
@@ -77,8 +61,22 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from lp.services.messages.model.message import Message
+from lp.services.webapp import (
+    urlappend,
+    urlsplit,
+    )
 
 
 BUG_TRACKER_URL_FORMATS = {
@@ -285,19 +283,14 @@ class BugWatch(SQLBase):
             remote_comment_id=comment_id)
         return bug_message
 
+    def getBugMessages(self, clauses=[]):
+        return Store.of(self).find(
+            BugMessage, BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id, *clauses)
+
     def getImportedBugMessages(self):
         """See `IBugWatch`."""
-        store = Store.of(self)
-        # If a comment is linked to a bug watch and has a
-        # remote_comment_id, it means it's imported.
-        # XXX gmb 2008-12-09 bug 244768:
-        #     The Not() needs to be in this find() call due to bug
-        #     244768; we should remove it once that is solved.
-        return store.find(
-            BugMessage,
-            BugMessage.bug == self.bug.id,
-            BugMessage.bugwatch == self.id,
-            Not(BugMessage.remote_comment_id == None))
+        return self.getBugMessages([BugMessage.remote_comment_id != None])
 
     def addActivity(self, result=None, message=None, oops_id=None):
         """See `IBugWatch`."""
@@ -331,7 +324,7 @@ class BugWatch(SQLBase):
             self.next_check <= datetime.now(utc)):
             # If the watch is already scheduled for a time in the past
             # (or for right now) it can't be rescheduled, since it
-            # should be be checked by the next checkwatches run anyway.
+            # should be checked by the next checkwatches run anyway.
             return False
 
         if self.activity.is_empty():
@@ -431,7 +424,7 @@ class BugWatchSet(BugSetBase):
         for url in matches:
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
-            except NoBugTrackerFound, error:
+            except NoBugTrackerFound as error:
                 # We don't want to auto-create EMAILADDRESS bug trackers
                 # based on mailto: URIs in comments.
                 if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
@@ -494,6 +487,8 @@ class BugWatchSet(BugSetBase):
             remote_bug = query['issue']
         else:
             return None
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
         base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
@@ -503,9 +498,8 @@ class BugWatchSet(BugSetBase):
         bug_page = 'view.php'
         if not path.endswith(bug_page):
             return None
-        if query.get('id'):
-            remote_bug = query['id']
-        else:
+        remote_bug = query.get('id')
+        if remote_bug is None or not remote_bug.isdigit():
             return None
         base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
@@ -538,7 +532,7 @@ class BugWatchSet(BugSetBase):
 
     def parseRoundupURL(self, scheme, host, path, query):
         """Extract the RoundUp base URL and bug ID."""
-        match = re.match(r'(.*/)issue(\d+)', path)
+        match = re.match(r'(.*/)issue(\d+)$', path)
         if not match:
             return None
         base_path = match.group(1)
@@ -568,13 +562,15 @@ class BugWatchSet(BugSetBase):
 
         base_path = match.group(1)
         remote_bug = query['id']
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
     def parseTracURL(self, scheme, host, path, query):
         """Extract the Trac base URL and bug ID."""
-        match = re.match(r'(.*/)ticket/(\d+)', path)
+        match = re.match(r'(.*/)ticket/(\d+)$', path)
         if not match:
             return None
         base_path = match.group(1)
@@ -604,6 +600,8 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query['aid']
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         # There's only one global SF instance registered in Launchpad,
         # so we return that if the hostnames match.
@@ -637,6 +635,8 @@ class BugWatchSet(BugSetBase):
         # a value, so we simply use the first and only key we come
         # across as a best-effort guess.
         remote_bug = query.popitem()[0]
+        if remote_bug is None or not remote_bug.isdigit():
+            return None
 
         if host in savannah_hosts:
             return savannah_tracker.baseurl, remote_bug
@@ -668,7 +668,7 @@ class BugWatchSet(BugSetBase):
         if path != '/bug.php' or len(query) != 1:
             return None
         remote_bug = query.get('id')
-        if remote_bug is None:
+        if remote_bug is None or not remote_bug.isdigit():
             return None
         base_url = urlunsplit((scheme, host, '/', '', ''))
         return base_url, remote_bug
@@ -686,7 +686,7 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query.get('id')
-        if remote_bug is None:
+        if remote_bug is None or not remote_bug.isdigit():
             return None
 
         tracker_path = path_match.groupdict()['base_path']
@@ -707,9 +707,8 @@ class BugWatchSet(BugSetBase):
             if not bugtracker_data:
                 continue
             base_url, remote_bug = bugtracker_data
-            bugtrackerset = getUtility(IBugTrackerSet)
             # Check whether we have a registered bug tracker already.
-            bugtracker = bugtrackerset.queryByBaseURL(base_url)
+            bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(base_url)
 
             if bugtracker is not None:
                 return bugtracker, remote_bug
@@ -739,18 +738,13 @@ class BugWatchSet(BugSetBase):
 
     def bulkAddActivity(self, references,
                         result=BugWatchActivityStatus.SYNC_SUCCEEDED,
-                        message=None, oops_id=None):
+                        oops_id=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(get_bug_watch_ids(references))
-        if len(bug_watch_ids) > 0:
-            insert_activity_statement = (
-                "INSERT INTO BugWatchActivity"
-                " (bug_watch, result, message, oops_id) "
-                "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
-                " WHERE BugWatch.id IN %s")
-            IStore(BugWatch).execute(
-                insert_activity_statement % sqlvalues(
-                    result, message, oops_id, bug_watch_ids))
+        bulk.create(
+            (BugWatchActivity.bug_watch_id, BugWatchActivity.result,
+             BugWatchActivity.oops_id),
+            [(bug_watch_id, result, ensure_unicode(oops_id))
+             for bug_watch_id in set(get_bug_watch_ids(references))])
 
 
 class BugWatchActivity(StormBase):

@@ -8,8 +8,6 @@
 
   <h2>Published in</h2>
 
-  <div class="portletBody portletContent">
-
     <ul tal:condition="context/current_publishings">
       <li class="package-source"
           tal:repeat="drspr context/current_publishings">
@@ -22,6 +20,5 @@
     <p tal:condition="not: context/current_publishings">
       <i>Not published anywhere yet.</i>
     </p>
-  </div>
 </div>
 </tal:root>

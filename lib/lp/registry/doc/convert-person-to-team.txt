@@ -1,4 +1,5 @@
-= Converting people into teams =
+Converting people into teams
+============================
 
 There's a script which allows us to turn any person whose account_status is
 NOACCOUNT (which means the person has never actually logged into Launchpad)
@@ -8,7 +9,7 @@ team and the name of the team owner as arguments.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
-    >>> matsubara.isTeam()
+    >>> matsubara.is_team
     False
     >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT...
@@ -24,21 +25,21 @@ team and the name of the team owner as arguments.
     0
 
     # The script already committed its transaction but this test runs
-    # the LaunchpadFunctionalLayer which, in turn, uses the SERIALIZABLE
+    # the LaunchpadFunctionalLayer which, in turn, uses the REPEATABLE READ
     # isolation level, so we need to forcibly begin another transaction here.
     >>> import transaction; transaction.abort()
 
     # Flush the caches because our objects were changed in another
     # transaction.
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
-    >>> matsubara.isTeam()
+    >>> matsubara.is_team
     True
 
 We need to force a DB reset because the changes are done from an external
 script and the test system is not able to detect the database changes.
 
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> DatabaseLayer.force_dirty_database()

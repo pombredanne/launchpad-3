@@ -9,8 +9,8 @@ from Mailman import Errors
 from Mailman.Handlers import LPModerate
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLPModerateTestCase(MailmanTestCase):

@@ -12,9 +12,9 @@ __all__ = [
 
 import errno
 from fcntl import (
-    fcntl,
     F_GETFL,
     F_SETFL,
+    fcntl,
     )
 from os import O_NONBLOCK
 import select
@@ -171,7 +171,7 @@ class CommandSpawner:
         """Read output from `pipe_file`."""
         try:
             output = pipe_file.read()
-        except IOError, e:
+        except IOError as e:
             # "Resource temporarily unavailable"--not an error really,
             # just means there's nothing to read.
             if e.errno != errno.EAGAIN:

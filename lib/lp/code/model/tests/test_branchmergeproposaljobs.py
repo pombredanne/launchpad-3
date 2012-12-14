@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -16,12 +16,11 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Select
 from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
@@ -55,12 +54,25 @@ from lp.code.model.tests.test_diff import (
     DiffTestCase,
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    block_on_job,
+    pop_remote_notifications,
+    )
 from lp.services.osutils import override_environ
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 
@@ -170,9 +182,8 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
         self.createBzrBranch(bmp.source_branch, tree.branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.run()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.run()
 
 
 class TestUpdatePreviewDiffJob(DiffTestCase):
@@ -203,10 +214,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner([job]).runAll()
-        transaction.commit()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            JobRunner([job]).runAll()
         self.checkExampleMerge(bmp.preview_diff.text)
 
     def test_run_object_events(self):
@@ -217,10 +226,9 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        with EventRecorder() as event_recorder:
-            JobRunner([job]).runAll()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            with EventRecorder() as event_recorder:
+                JobRunner([job]).runAll()
         bmp_object_events = [
             event for event in event_recorder.events
             if (IObjectModifiedEvent.providedBy(event) and
@@ -231,7 +239,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertEqual(
             ["preview_diff"], bmp_object_events[0].edited_fields)
 
-    def test_run_branches_not_ready(self):
+    def test_run_branches_empty(self):
+        """If the branches are empty, we tell the user."""
         # If the job has been waiting for a significant period of time (15
         # minutes for now), we run the job anyway.  The checkReady method
         # then raises and this is caught as a user error by the job system,
@@ -252,6 +261,25 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
             'generating the diff for a merge proposal.  '
             'The source branch has no revisions.',
             email.get_payload(decode=True))
+
+    def test_run_branches_pending_writes(self):
+        """If the branches are being written, we retry but don't complain."""
+        eric = self.factory.makePerson(name='eric', email='eric@example.com')
+        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.factory.makeRevisionsForBranch(bmp.target_branch, count=1)
+        # Kludge a branch being a bit out of date in a way that will make
+        # pending_writes true, without anything else failing.
+        removeSecurityProxy(bmp.source_branch).last_mirrored_id = \
+            self.factory.getUniqueString()
+        job = UpdatePreviewDiffJob.create(bmp)
+        # pop_notifications()
+        JobRunner([job]).runAll()
+        emails = pop_notifications()
+        self.assertThat(emails, Equals([]))
+        self.assertThat(job.status, Equals(JobStatus.WAITING))
+        self.assertThat(job.attempt_count, Equals(1))
+        self.assertThat(job.max_retries, Equals(20))
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
@@ -299,18 +327,15 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
     def test_run(self):
         """The job runs successfully, and its results can be committed."""
         job = make_runnable_incremental_diff_job(self)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.run()
-        transaction.commit()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.run()
 
     def test_run_all(self):
         """The job can be run under the JobRunner successfully."""
         job = make_runnable_incremental_diff_job(self)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        runner = JobRunner([job])
-        runner.runAll()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            runner = JobRunner([job])
+            runner.runAll()
         self.assertEqual([job], runner.completed_jobs)
 
     def test_10_minute_lease(self):
@@ -318,9 +343,8 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.acquireLease()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
@@ -533,6 +557,15 @@ class TestReviewRequestedEmailJob(TestCaseWithFactory):
             'emailing a reviewer requesting a review',
             job.getOperationDescription())
 
+    def test_run_sends_mail(self):
+        request = self.factory.makeCodeReviewVoteReference()
+        job = ReviewRequestedEmailJob.create(request)
+        job.run()
+        (notification,) = pop_notifications()
+        self.assertIn(
+            'You have been requested to review the proposed merge',
+            notification.get_payload(decode=True))
+
 
 class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
 
@@ -557,3 +590,71 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
         self.assertEqual(
             'emailing subscribers about merge proposal changes',
             job.getOperationDescription())
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_MergeProposalNeedsReviewEmailJob(self):
+        """MergeProposalNeedsReviewEmailJob runs under Celery."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes':
+             'MergeProposalNeedsReviewEmailJob'}))
+        bmp = self.factory.makeBranchMergeProposal()
+        with block_on_job():
+            MergeProposalNeedsReviewEmailJob.create(bmp)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_UpdatePreviewDiffJob(self):
+        """UpdatePreviewDiffJob runs under Celery."""
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
+        with block_on_job():
+            UpdatePreviewDiffJob.create(bmp)
+            transaction.commit()
+        self.assertIsNot(None, bmp.preview_diff)
+
+    def test_CodeReviewCommentEmailJob(self):
+        """CodeReviewCommentEmailJob runs under Celery."""
+        comment = self.factory.makeCodeReviewComment()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
+        with block_on_job():
+            CodeReviewCommentEmailJob.create(comment)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_ReviewRequestedEmailJob(self):
+        """ReviewRequestedEmailJob runs under Celery."""
+        request = self.factory.makeCodeReviewVoteReference()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
+        with block_on_job():
+            ReviewRequestedEmailJob.create(request)
+            transaction.commit()
+        self.assertEqual(1, len(pop_remote_notifications()))
+
+    def test_MergeProposalUpdatedEmailJob(self):
+        """MergeProposalUpdatedEmailJob runs under Celery."""
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
+        with block_on_job():
+            MergeProposalUpdatedEmailJob.create(
+                bmp, 'change', bmp.registrant)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_GenerateIncrementalDiffJob(self):
+        """GenerateIncrementalDiffJob runs under Celery."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
+        with block_on_job():
+            job = make_runnable_incremental_diff_job(self)
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)

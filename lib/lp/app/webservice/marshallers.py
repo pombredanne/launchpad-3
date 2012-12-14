@@ -16,7 +16,7 @@ from lazr.restful.marshallers import (
 from zope.component import getUtility
 
 from lp.services.utils import obfuscate_email
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class TextFieldMarshaller(LazrTextFieldMarshaller):

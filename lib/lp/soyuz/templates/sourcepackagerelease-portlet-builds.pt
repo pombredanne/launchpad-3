@@ -8,8 +8,6 @@
 
   <h2>Builds</h2>
 
-  <div class="portletBody portletContent">
-
     <ul>
       <li tal:repeat="build context/builds">
         <a tal:attributes="href build/fmt:url">
@@ -24,8 +22,6 @@
         </span>
       </li>
     </ul>
-
-  </div>
 
 </div>
 </tal:root>

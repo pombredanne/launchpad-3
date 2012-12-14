@@ -89,7 +89,7 @@ Also, we can see that the message has no active translation yet:
 First, we need to ensure that we can see the distroseries translations
 page, and that it has all the data we are expecting, in terms of languages.
 
-  >>> from canonical.launchpad.testing.pages import extract_url_parameter
+  >>> from lp.testing.pages import extract_url_parameter
   >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
   ...     '+translations')
   >>> 'Translation status by language' in browser.contents

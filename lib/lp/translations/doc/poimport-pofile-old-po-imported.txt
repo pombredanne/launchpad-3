@@ -46,9 +46,9 @@ Now it's time to create the new potemplate
 
     >>> from lp.registry.model.productrelease import ProductRelease
     >>> release = ProductRelease.get(3)
-    >>> release.productseries.product.name
+    >>> release.milestone.productseries.product.name
     u'firefox'
-    >>> series = release.productseries
+    >>> series = release.milestone.productseries
     >>> subset = POTemplateSubset(productseries=series)
     >>> potemplate = subset.new(
     ...     name='firefox',

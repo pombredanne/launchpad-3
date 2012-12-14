@@ -19,16 +19,16 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
     IDistroSeriesParentSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 
 
 class DistroSeriesParent(Storm):

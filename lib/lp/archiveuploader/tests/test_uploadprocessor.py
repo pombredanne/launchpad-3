@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -17,23 +17,22 @@ import tempfile
 
 from fixtures import MonkeyPatch
 from storm.locals import Store
-import transaction
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
+from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.nascentuploadfile import DdebBinaryUploadFile
+from lp.archiveuploader.tests import (
+    datadir,
+    getPolicy,
+    )
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
+    ArchiveUploadType,
     findPolicyByName,
     IArchiveUploadPolicy,
     )
@@ -56,8 +55,14 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -90,11 +95,15 @@ from lp.soyuz.model.publishing import (
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -123,12 +132,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def switchToUploader(self):
-        transaction.commit()
-        self.layer.switchDbUser("uploader")
+        switch_dbuser("uploader")
 
     def switchToAdmin(self):
-        transaction.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
     def setUp(self):
         super(TestUploadProcessorBase, self).setUp()
@@ -174,7 +181,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         if builds is None:
             builds = self.options.builds
 
-        def getPolicy(distro, build):
+        def getUploadPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
             if builds:
@@ -186,12 +193,13 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         upload_processor = UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, builds, self.options.keep, getPolicy, txn,
-            self.log)
+            self.options.nomails, builds, self.options.keep, getUploadPolicy,
+            txn, self.log)
         self.switchToUploader()
         return upload_processor
 
-    def publishPackage(self, packagename, version, source=True, archive=None):
+    def publishPackage(self, packagename, version, source=True, archive=None,
+                       component_override=None):
         """Publish a single package that is currently NEW in the queue."""
         self.switchToAdmin()
 
@@ -208,15 +216,17 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             pubrec = queue_item.sources[0].publish(self.log)
         else:
             pubrec = queue_item.builds[0].publish(self.log)
+        if component_override:
+            pubrec.component = component_override
         self.switchToUploader()
         return pubrec
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
         log_lines = self.log.getLogBuffer()
-        self.assertTrue(line in log_lines,
-                        "'%s' is not in logged output\n\n%s"
-                        % (line, log_lines))
+        self.assertTrue(
+            line in log_lines, "'%s' is not in logged output\n\n%s" % (
+                line, log_lines))
 
     def assertRaisesAndReturnError(self, excClass, callableObj, *args,
                                    **kwargs):
@@ -228,7 +238,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         """
         try:
             callableObj(*args, **kwargs)
-        except excClass, error:
+        except excClass as error:
             return error
         else:
             if getattr(excClass, '__name__', None) is not None:
@@ -618,9 +628,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        to_addrs = [e.strip() for e in to_addrs]
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(to_addrs, [foo_bar, daniel])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
             % raw_msg)
@@ -652,9 +663,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        to_addrs = [e.strip() for e in to_addrs]
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(to_addrs, [foo_bar, daniel])
         self.assertTrue("Waiting for approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.\n"
                         "Got:\n%s" % raw_msg)
@@ -1146,7 +1158,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # at upload-time. 'foocomm' only builds in 'i386', thus only one
         # build gets created.
         foocomm_source = partner_archive.getPublishedSources(
-            name='foocomm', version='1.0-2').one()
+            name=u'foocomm', version='1.0-2').one()
         [build] = foocomm_source.sourcepackagerelease.builds
         self.assertEqual(
             build.title,
@@ -1203,6 +1215,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         Helper function to upload a partner package to a non-release
         pocket and ensure it fails."""
         # Set up the uploadprocessor with appropriate options and logger.
+        new_index = len(self.oopses)
         self.options.context = 'insecure'
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
@@ -1219,16 +1232,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
+        error_report = self.oopses[new_index]
         expected_explanation = (
             "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.assertIn(expected_explanation, error_report.value)
+        self.assertIn(expected_explanation, error_report['value'])
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
-    def disabled_per_bug_825486_testPartnerUploadToNonReleaseOrProposedPocket(self):
+    def disabled_testPartnerUploadToNonReleaseOrProposedPocket(self):
         # XXX: bug 825486 robertcollins 2011-08-13 this test is broken.
         """Test partner upload pockets.
 
@@ -1255,29 +1267,40 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
+    def assertRejectionMessage(self, uploadprocessor, msg, with_file=True):
+        expected = ''
+        for part in ('-1.dsc', '.orig.tar.gz', '-1.diff.gz'):
+            if with_file:
+                expected += 'bar_1.0%s: %s\n' % (part, msg)
+            else:
+                expected += '%s\n' % msg
+        expected += ('Further error processing not possible because of a '
+            'critical previous error.')
+        self.assertEqual(
+            expected, uploadprocessor.last_processed_upload.rejection_message)
+
     def testUploadWithUnknownSectionIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Unknown section 'badsection'\n"
-            "bar_1.0.orig.tar.gz: Unknown section 'badsection'\n"
-            "bar_1.0-1.diff.gz: Unknown section 'badsection'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
+        self.assertRejectionMessage(
+            uploadprocessor, "Unknown section 'badsection'")
+
+    def testUploadWithMalformedSectionIsRejected(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertRejectionMessage(
+            uploadprocessor,
+            'Wrong number of fields in Files line in .changes.',
+            with_file=False)
 
     def testUploadWithUnknownComponentIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Unknown component 'contrib'\n"
-            "bar_1.0.orig.tar.gz: Unknown component 'contrib'\n"
-            "bar_1.0-1.diff.gz: Unknown component 'contrib'\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
+        self.assertRejectionMessage(
+            uploadprocessor, "Unknown component 'contrib'")
 
     def testSourceUploadToBuilddPath(self):
         """Source uploads to buildd upload paths are not permitted."""
@@ -1305,7 +1328,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     # The following three tests check this.
     def checkComponentOverride(self, upload_dir_name,
                                expected_component_name):
-        """Helper function to check overridden component names.
+        """Helper function to check overridden source component names.
 
         Upload a 'bar' package from upload_dir_name, then
         inspect the package 'bar' in the NEW queue and ensure its
@@ -1331,8 +1354,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # The component contrib does not exist in the sample data, so
         # add it here.
         Component(name='contrib')
-
-        # Test it.
         self.checkComponentOverride(
             "bar_1.0-1_contrib_component", "multiverse")
 
@@ -1341,8 +1362,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # The component non-free does not exist in the sample data, so
         # add it here.
         Component(name='non-free')
-
-        # Test it.
         self.checkComponentOverride(
             "bar_1.0-1_nonfree_component", "multiverse")
 
@@ -1353,6 +1372,48 @@ class TestUploadProcessor(TestUploadProcessorBase):
         universe.
         """
         self.checkComponentOverride("bar_1.0-1", "universe")
+
+    def checkBinaryComponentOverride(self, component_override=None,
+                                     expected_component_name='universe'):
+        """Helper function to check overridden binary component names.
+
+        Upload a 'bar' package from upload_dir_name, publish it, and then
+        override the publication's component. When the binary release is
+        published, it's component correspond to the source publication's
+        component.
+
+        The original component comes from the source package contained
+        in upload_dir_name.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self.publishPackage(
+            'bar', '1.0-1', component_override=component_override)
+        [bar_original_build] = bar_source_pub.createMissingBuilds()
+
+        self.options.context = 'buildd'
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        build_uploadprocessor = self.getUploadProcessor(
+            self.layer.txn, builds=True)
+        self.processUpload(
+            build_uploadprocessor, upload_dir, build=bar_original_build)
+        [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
+        self.assertEqual(
+            bar_binary_pub.component.name, expected_component_name)
+        self.assertEqual(
+            bar_binary_pub.binarypackagerelease.component.name,
+            expected_component_name)
+
+    def testBinaryPackageDefaultComponent(self):
+        """The default component is universe."""
+        self.checkBinaryComponentOverride(None, "universe")
+
+    def testBinaryPackageSourcePublicationOverride(self):
+        """The source publication's component is used."""
+        restricted = getUtility(IComponentSet)["restricted"]
+        self.checkBinaryComponentOverride(restricted, "restricted")
 
     def testOopsCreation(self):
         """Test that an unhandled exception generates an OOPS."""
@@ -1372,10 +1433,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         processor.processUploadQueue()
 
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertEqual('SomeException', error_report.type)
-        self.assertIn("I am an explanation", error_report.tb_text)
+        error_report = self.oopses[0]
+        self.assertEqual('SomeException', error_report['type'])
+        self.assertIn("I am an explanation", error_report['tb_text'])
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
@@ -1894,7 +1954,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         should both have the PGP signature removed.
         """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor(
-        policy='insecure')
+            policy='insecure')
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         # ACCEPT the upload
@@ -1917,23 +1977,68 @@ class TestUploadProcessor(TestUploadProcessorBase):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("netapplet_1.0-1")
 
-        last_oops = ErrorReportingUtility().getLastOopsReport()
-
         [result] = self.processUpload(uploadprocessor, upload_dir)
 
         self.assertEqual(UploadStatusEnum.REJECTED, result)
         self.assertLogContains(
             "INFO Failed to parse changes file")
         self.assertEqual(len(stub.test_emails), 0)
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
 
+    def test_ddeb_upload_overrides(self):
+        # DDEBs should always be overridden to the same values as their
+        # counterpart DEB's.
+        policy = getPolicy(
+            name="sync", distro="ubuntu", distroseries="hoary")
+        policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+        uploader = NascentUpload.from_changesfile_path(
+            datadir("suite/debug_1.0-1/debug_1.0-1_i386.changes"),
+            policy, DevNullLogger())
+        uploader.process()
 
-class TestBuildUploadProcessor(TestUploadProcessorBase):
-    """Test that processing build uploads works."""
+        # The package data on disk that we just uploaded has a different
+        # priority setting between the deb and the ddeb. We can now assert
+        # that the process() method above overrode the ddeb.
+        for uploaded_file in uploader.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb = uploaded_file
+            else:
+                deb = uploaded_file
 
-    def setUp(self):
-        super(TestBuildUploadProcessor, self).setUp()
-        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        self.assertEqual("optional", ddeb.priority_name)
+        self.assertEqual(deb.priority_name, ddeb.priority_name)
+
+    def test_redirect_release_uploads(self):
+        # Setting the Distribution.redirect_release_uploads flag causes
+        # release pocket uploads to be redirected to proposed.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy="insecure")
+        self.switchToAdmin()
+        self.ubuntu.redirect_release_uploads = True
+        # Don't bother with announcements.
+        self.breezy.changeslist = None
+        self.switchToUploader()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEmail(
+            contents=["Redirecting ubuntu breezy to ubuntu breezy-proposed."],
+            recipients=[])
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
+
+        queue_item.acceptFromQueue()
+        pop_notifications()
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEmail(
+            contents=["Redirecting ubuntu breezy to ubuntu breezy-proposed."],
+            recipients=[])
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-2", exact_match=True)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
 
 
 class TestUploadHandler(TestUploadProcessorBase):
@@ -2140,7 +2245,10 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Failures should generate a message that includes the upload log URL.
         self.doFailureRecipeBuild()
         (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
+        # Python2.6 prefixes continuation lines with a \t, 2.7 uses a single
+        # space instead, try both to stay compatible (see email/generator.py
+        # Generator._write_headers for details).
+        subject = mail['Subject'].replace('\n\t', ' ').replace('\n ', ' ')
         self.assertIn('Failed to upload', subject)
         body = mail.get_payload(decode=True)
         self.assertIn('Upload Log: http', body)

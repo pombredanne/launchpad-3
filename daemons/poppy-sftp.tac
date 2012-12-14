@@ -13,16 +13,15 @@ from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
 from twisted.protocols.policies import TimeoutFactory
 from twisted.python import components
+from twisted.scripts.twistd import ServerOptions
 from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad.daemons import readyservice
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.services.config import config
+from lp.services.daemons import readyservice
 
 from lp.poppy import get_poppy_root
-from lp.poppy.twistedconfigreset import GPGHandlerConfigResetJob
 from lp.poppy.twistedftp import (
     FTPServiceFactory,
     )
@@ -31,6 +30,7 @@ from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 def make_portal():
@@ -70,9 +70,11 @@ def poppy_sftp_adapter(avatar):
     return SFTPServer(avatar, get_poppy_root())
 
 
-# Connect Python logging to Twisted's logging.
-from lp.services.twistedsupport.loggingsupport import set_up_tacfile_logging
-set_up_tacfile_logging("poppy-sftp", logging.INFO)
+# Force python logging to all go to the Twisted log.msg interface. The default
+# - output on stderr - will not be watched by anyone.
+from twisted.python import log
+stream = log.StdioOnnaStick()
+logging.basicConfig(stream=stream, level=logging.INFO)
 
 
 components.registerAdapter(
@@ -86,9 +88,15 @@ ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftp_port)
 
 # Construct an Application that has the Poppy SSH server,
 # and the Poppy FTP server.
+options = ServerOptions()
+options.parseOptions()
 application = service.Application('poppy-sftp')
+observer = set_up_oops_reporting(
+    'poppy-sftp', 'poppy', options.get('logfile'))
+application.addComponent(observer, ignoreClass=1)
 
 ftpservice.setServiceParent(application)
+
 
 def timeout_decorator(factory):
     """Add idle timeouts to a factory."""
@@ -106,12 +114,6 @@ svc = SSHService(
     factory_decorator=timeout_decorator,
     banner=config.poppy.banner)
 svc.setServiceParent(application)
-
-# We need Zope for looking up the GPG utilities.
-execute_zcml_for_scripts()
-
-# Set up the GPGHandler job
-GPGHandlerConfigResetJob().setServiceParent(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)

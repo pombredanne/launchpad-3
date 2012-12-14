@@ -12,10 +12,10 @@ import os
 
 import pytz
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
@@ -23,6 +23,10 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     MissingSymlinkInPool,
     NotInPool,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
     )
 
 
@@ -104,10 +108,6 @@ class DeathRow:
 
         Both sources and binaries are lists.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-
         sources = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
@@ -208,12 +208,6 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackagePublishingHistory,
-            SourcePackagePublishingHistory,
-            )
-
         bytes = 0
         condemned_files = set()
         condemned_records = set()
@@ -277,11 +271,11 @@ class DeathRow:
             try:
                 bytes += self._removeFile(
                     component_name, source_name, file_name)
-            except NotInPool, info:
+            except NotInPool as info:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 self.logger.debug(str(info))
-            except MissingSymlinkInPool, info:
+            except MissingSymlinkInPool as info:
                 # This one is a little more worrying, because an expected
                 # symlink has vanished from the pool/ (could be a code
                 # mistake) but there is nothing we can do about it at this

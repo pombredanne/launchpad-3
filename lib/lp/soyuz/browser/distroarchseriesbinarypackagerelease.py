@@ -9,12 +9,14 @@ __all__ = [
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
-from canonical.launchpad.webapp import (
+from lazr.restful.utils import smartquote
+
+from lp.services.webapp import (
     ApplicationMenu,
     LaunchpadView,
     Navigation,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )
@@ -44,3 +46,7 @@ class DistroArchSeriesBinaryPackageReleaseView(LaunchpadView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

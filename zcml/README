@@ -14,7 +14,7 @@ ZCML files in turn load other parts.
 
   ftesting.zcml
     Used to configure the functional testing layer.  Look in
-    canonical.testing.layers to see how it gets hooked in.
+    lp.testing.layers to see how it gets hooked in.
 
   script.zcml
     The main ZCML used for "scripts". Anything that runs in the Zopeless layer

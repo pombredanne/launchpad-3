@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -17,27 +17,20 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    reconnect_stores,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -51,6 +44,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
+    OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
@@ -70,7 +64,16 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -274,6 +277,7 @@ class SoyuzTestPublisher:
         spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
+            sourcepackagename=spr.sourcepackagename,
             component=spr.component,
             section=spr.section,
             status=status,
@@ -461,6 +465,7 @@ class SoyuzTestPublisher:
             pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,
                 priority=binarypackagerelease.priority,
@@ -554,23 +559,13 @@ class SoyuzTestPublisher:
             distroseries=source_pub.distroseries,
             source_package=source_pub.meta_sourcepackage)
 
-    def updateDistroSeriesPackageCache(
-        self, distroseries, restore_db_connection='launchpad'):
-        # XXX: EdwinGrubbs 2010-08-04 bug=396419. Currently there is no
-        # test api call to switchDbUser that works for non-zopeless layers.
-        # When bug 396419 is fixed, we can instead use
-        # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-        transaction.commit()
-        reconnect_stores(config.statistician.dbuser)
-        distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
-
-        DistroSeriesPackageCache.updateAll(
-            distroseries,
-            archive=distroseries.distribution.main_archive,
-            ztm=transaction,
-            log=DevNullLogger())
-        transaction.commit()
-        reconnect_stores(restore_db_connection)
+    def updateDistroSeriesPackageCache(self, distroseries):
+        with dbuser(config.statistician.dbuser):
+            DistroSeriesPackageCache.updateAll(
+                distroseries,
+                archive=distroseries.distribution.main_archive,
+                ztm=transaction,
+                log=DevNullLogger())
 
 
 class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
@@ -584,7 +579,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         super(TestNativePublishingBase, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
@@ -701,9 +696,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -1458,17 +1451,55 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
 
 
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version=version, architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version=version, build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version=version, build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version=version, build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
+        return (
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):
@@ -1568,6 +1599,21 @@ class TestPublishBinaries(TestCaseWithFactory):
             set((target_das_a, target_das_b)),
             set(bpph.distroarchseries for bpph in bpphs))
 
+    def test_architecture_disabled(self):
+        # An empty list is return if the DistroArchSeries was disabled.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
+        target_das.enabled = False
+        args = self.makeArgs([bpr], target_das.distroseries)
+        results = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEqual([], results)
+
     def test_does_not_duplicate(self):
         # An attempt to copy something for a second time is ignored.
         bpr = self.factory.makeBinaryPackageRelease()
@@ -1616,3 +1662,83 @@ class TestPublishBinaries(TestCaseWithFactory):
         # archive too.
         self.assertContentEqual(
             [], getUtility(IPublishingSet).publishBinaries(**args))
+
+
+class TestChangeOverride(TestNativePublishingBase):
+    """Test that changing overrides works."""
+
+    def setUpOverride(self, status=SeriesStatus.DEVELOPMENT,
+                      pocket=PackagePublishingPocket.RELEASE, binary=False,
+                      **kwargs):
+        self.distroseries.status = status
+        if binary:
+            pub = self.getPubBinaries(pocket=pocket)[0]
+        else:
+            pub = self.getPubSource(pocket=pocket)
+        return pub.changeOverride(**kwargs)
+
+    def assertCanOverride(self, status=SeriesStatus.DEVELOPMENT,
+                          pocket=PackagePublishingPocket.RELEASE, **kwargs):
+        new_pub = self.setUpOverride(status=status, pocket=pocket, **kwargs)
+        self.assertEqual(new_pub.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(new_pub.pocket, pocket)
+        if "new_component" in kwargs:
+            self.assertEqual(kwargs["new_component"], new_pub.component.name)
+        if "new_section" in kwargs:
+            self.assertEqual(kwargs["new_section"], new_pub.section.name)
+        if "new_priority" in kwargs:
+            self.assertEqual(
+                kwargs["new_priority"], new_pub.priority.name.lower())
+
+    def assertCannotOverride(self, **kwargs):
+        self.assertRaises(OverrideError, self.setUpOverride, **kwargs)
+
+    def test_changes_source(self):
+        # SPPH.changeOverride changes the properties of source publications.
+        self.assertCanOverride(new_component="universe", new_section="misc")
+
+    def test_changes_binary(self):
+        # BPPH.changeOverride changes the properties of binary publications.
+        self.assertCanOverride(
+            binary=True,
+            new_component="universe", new_section="misc", new_priority="extra")
+
+    def test_no_change(self):
+        # changeOverride does not create a new publication if the existing
+        # publication is already in the desired state.
+        self.assertIsNone(self.setUpOverride(
+            new_component="main", new_section="base"))
+        self.assertIsNone(self.setUpOverride(
+            binary=True,
+            new_component="main", new_section="base", new_priority="standard"))
+
+    def test_forbids_stable_RELEASE(self):
+        # changeOverride is not allowed in the RELEASE pocket of a stable
+        # distroseries.
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, new_component="universe")
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, binary=True, new_component="universe")
+
+    def test_allows_development_RELEASE(self):
+        # changeOverride is allowed in the RELEASE pocket of a development
+        # distroseries.
+        self.assertCanOverride(new_component="universe")
+        self.assertCanOverride(binary=True, new_component="universe")
+
+    def test_allows_stable_PROPOSED(self):
+        # changeOverride is allowed in the PROPOSED pocket of a stable
+        # distroseries.
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, new_component="universe")
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, binary=True,
+            new_component="universe")
+
+    def test_forbids_changing_archive(self):
+        # changeOverride refuses to make changes that would require changing
+        # archive.
+        self.assertCannotOverride(new_component="partner")
+        self.assertCannotOverride(binary=True, new_component="partner")

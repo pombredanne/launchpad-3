@@ -9,16 +9,16 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
@@ -60,14 +60,6 @@ class TestPillarAffiliation(TestCaseWithFactory):
         team = self.factory.makeTeam(members=[person])
         distro = self.factory.makeDistribution(driver=team, name='pting')
         self._check_affiliated_with_distro(person, distro, 'driver')
-
-    def test_no_distro_security_contact_affiliation(self):
-        # A person who is the security contact for a distro is not affiliated
-        # for simple distro affiliation checks.
-        person = self.factory.makePerson()
-        distro = self.factory.makeDistribution(security_contact=person)
-        self.assertEqual(
-            [], IHasAffiliation(distro).getAffiliationBadges([person])[0])
 
     def test_no_distro_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a distro is not affiliated
@@ -122,14 +114,6 @@ class TestPillarAffiliation(TestCaseWithFactory):
         product = self.factory.makeProduct(project=project, name='pting')
         self._check_affiliated_with_product(person, product, 'driver')
 
-    def test_no_product_security_contact_affiliation(self):
-        # A person who is the security contact for a product is is not
-        # affiliated for simple product affiliation checks.
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct(security_contact=person)
-        self.assertEqual(
-            [], IHasAffiliation(product).getAffiliationBadges([person])[0])
-
     def test_no_product_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a product is is not
         # affiliated for simple product affiliation checks.
@@ -166,7 +150,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         Store.of(product).invalidate()
         with StormStatementRecorder() as recorder:
             IHasAffiliation(product).getAffiliationBadges([person])
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_distro_affiliation_query_count(self):
         # Only 2 business queries are expected, selects from:
@@ -182,27 +166,12 @@ class TestPillarAffiliation(TestCaseWithFactory):
 
 class _TestBugTaskorBranchMixin:
 
-    def test_distro_security_contact_affiliation(self):
-        # A person who is the security contact for a distro is affiliated.
-        person = self.factory.makePerson()
-        distro = self.factory.makeDistribution(
-            security_contact=person, name='pting')
-        self._check_affiliated_with_distro(person, distro, 'security contact')
-
     def test_distro_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a distro is affiliated.
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(
             bug_supervisor=person, name='pting')
         self._check_affiliated_with_distro(person, distro, 'bug supervisor')
-
-    def test_product_security_contact_affiliation(self):
-        # A person who is the security contact for a distro is affiliated.
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct(
-            security_contact=person, name='pting')
-        self._check_affiliated_with_product(
-            person, product, 'security contact')
 
     def test_product_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a distro is affiliated.

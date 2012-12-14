@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 import unittest
 from urlparse import urlunsplit
 
@@ -20,17 +21,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.webapp import urlsplit
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -53,10 +43,20 @@ from lp.bugs.model.bugwatch import (
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import BugWatchActivityPruner
+from lp.services.database.constants import UTC_NOW
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import urlsplit
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -113,7 +113,7 @@ class ExtractBugTrackerAndBugTestBase:
         try:
             bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             # The raised exception should contain enough information so
             # that we can register a new bug tracker.
             self.assertEqual(error.base_url, self.base_url)
@@ -122,6 +122,14 @@ class ExtractBugTrackerAndBugTestBase:
         else:
             self.fail(
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
+
+    def test_invalid_bug_number(self):
+        # Replace the second digit of the remote bug id with an E, which all 
+        # parsers will reject as invalid.
+        invalid_url = re.sub(r'(\d)\d', r'\1E', self.bug_url, count=1)
+        self.assertRaises(
+            UnrecognizedBugTrackerURL,
+            self.bugwatch_set.extractBugTrackerAndBug, invalid_url)
 
 
 class MantisExtractBugTrackerAndBugTest(
@@ -340,6 +348,10 @@ class EmailAddressExtractBugTrackerAndBugTest(
             self.bugwatch_set.extractBugTrackerAndBug,
             url='this\.is@@a.bad.email.address')
 
+    def test_invalid_bug_number(self):
+        # Test does not make sense for email addresses.
+        pass
+
 
 class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
     ExtractBugTrackerAndBugTestBase, unittest.TestCase):
@@ -372,7 +384,7 @@ class TestBugWatch(TestCaseWithFactory):
         # tasks which are not conjoined and for which the bug is not a
         # duplicate.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, owner=product.owner)
+        bug = self.factory.makeBug(target=product, owner=product.owner)
         product_task = bug.getBugTask(product)
         watch = self.factory.makeBugWatch(bug=bug)
         product_task.bugwatch = watch
@@ -392,7 +404,7 @@ class TestBugWatch(TestCaseWithFactory):
         # But once the bug is marked as a duplicate,
         # bugtasks_to_update yields nothing.
         bug.markAsDuplicate(
-            self.factory.makeBug(product=product, owner=product.owner))
+            self.factory.makeBug(target=product, owner=product.owner))
         self.failUnlessEqual(
             [], list(removeSecurityProxy(watch).bugtasks_to_update))
 
@@ -583,8 +595,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # the given bug watches.
         error = BugWatchActivityStatus.PRIVATE_REMOTE_BUG
         getUtility(IBugWatchSet).bulkAddActivity(
-            self.bug_watches, error, "Forbidden", "OOPS-1234")
-        self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
+            self.bug_watches, error, "OOPS-1234")
+        self._checkActivityForBugWatches(error, None, "OOPS-1234")
 
     def test_bulkAddActivity_with_id_list(self):
         # The ids of bug watches can be passed in.
@@ -643,9 +655,8 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
         for i in range(5):
             self.bug_watch.addActivity(message="Activity %s" % i)
-        transaction.commit()
 
-        self.layer.switchDbUser('garbo')
+        switch_dbuser('garbo')
         self.pruner = BugWatchActivityPruner(BufferLogger())
         self.addCleanup(self.pruner.cleanUp)
 

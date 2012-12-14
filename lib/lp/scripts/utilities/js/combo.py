@@ -1,8 +1,16 @@
-import os
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
 import cgi
+import os
 import urlparse
 
-from jsbuild import CSSComboFile, JSComboFile
+from jsbuild import (
+    CSSComboFile,
+    JSComboFile,
+    )
 
 
 def parse_url(url):

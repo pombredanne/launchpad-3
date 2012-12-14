@@ -13,7 +13,7 @@
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPS.use('lp.registry.structural_subscription', function(Y) {
+      LPJS.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
           var config = {
               content_box: "#structural-subscription-content-box",
@@ -32,7 +32,7 @@
   <div metal:fill-slot="main">
 
     <div id="maincontent">
-      <div id="nonportlets" class="readable">
+      <div id="nonportlets">
         <div>
           <a class="sprite add" id="create-new-subscription"
              href="#">Add a subscription</a>

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -39,35 +39,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
-    GetitemNavigation,
-    StandardLaunchpadFacets,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    structured,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.url import urlappend
-from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -77,6 +52,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -91,7 +67,7 @@ from lp.registry.browser import (
     add_subscribe_link,
     MilestoneOverlayMixin,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -103,8 +79,31 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.browser_helpers import get_plural_text
+from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.url import urlappend
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
@@ -290,7 +289,6 @@ class DistroSeriesOverviewMenu(
     @enabled_with_permission('launchpad.Edit')
     def initseries(self):
         enabled = (
-             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
              not self.context.isInitializing() and
              not self.context.isInitialized())
         text = 'Initialize series'
@@ -343,7 +341,7 @@ class SeriesStatusMixin:
     def createStatusField(self):
         """Create the 'status' field.
 
-        Create the status vocabulary according the current distroseries
+        Create the status vocabulary according to the current distroseries
         status:
          * stable   -> CURRENT, SUPPORTED, OBSOLETE
          * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
@@ -436,7 +434,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -590,9 +588,10 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
         'status' field. See `createStatusField` method.
         """
         LaunchpadEditFormView.setUpFields(self)
-        is_derivitive = not self.context.distribution.full_functionality
-        has_admin = check_permission('launchpad.Admin', self.context)
-        if has_admin or is_derivitive:
+        self.is_derivative = (
+            not self.context.distribution.full_functionality)
+        self.has_admin = check_permission('launchpad.Admin', self.context)
+        if self.has_admin or self.is_derivative:
             # The user is an admin or this is an IDerivativeDistribution.
             self.form_fields = (
                 self.form_fields + self.createStatusField())
@@ -600,7 +599,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
-        if not self.context.distribution.full_functionality:
+        if self.has_admin or self.is_derivative:
             self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
@@ -686,7 +685,7 @@ class DistroSeriesAddView(LaunchpadFormView):
         ]
 
     help_links = {
-        "name": u"/+help/distribution-add-series.html#codename",
+        "name": u"/+help-registry/distribution-add-series.html#codename",
         }
 
     label = 'Add a series'
@@ -760,17 +759,8 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         """Stub for the Javascript in the page to use."""
 
     @cachedproperty
-    def is_derived_series_feature_enabled(self):
-        return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
-
-    @cachedproperty
-    def show_derivation_not_yet_available(self):
-        return not self.is_derived_series_feature_enabled
-
-    @cachedproperty
     def show_derivation_form(self):
         return (
-            self.is_derived_series_feature_enabled and
             not self.show_previous_series_empty_message and
             not self.show_already_initializing_message and
             not self.show_already_initialized_message and
@@ -783,30 +773,23 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         # The distribution already has initialized series and this
         # distroseries has no previous_series.
         return (
-            self.is_derived_series_feature_enabled and
             self.context.distribution.has_published_sources and
             self.context.previous_series is None)
 
     @cachedproperty
     def show_already_initialized_message(self):
-        return (
-            self.is_derived_series_feature_enabled and
-            self.context.isInitialized())
+        return self.context.isInitialized()
 
     @cachedproperty
     def show_already_initializing_message(self):
-        return (
-            self.is_derived_series_feature_enabled and
-            self.context.isInitializing())
+        return self.context.isInitializing()
 
     @cachedproperty
     def show_no_publisher_message(self):
         distribution = self.context.distribution
         publisherconfigset = getUtility(IPublisherConfigSet)
         pub_config = publisherconfigset.getByDistribution(distribution)
-        return (
-            self.is_derived_series_feature_enabled and
-            pub_config is None)
+        return pub_config is None
 
     @property
     def next_url(self):
@@ -880,6 +863,10 @@ class IDifferencesFormSchema(Interface):
         description=_("Select the differences for syncing."),
         required=True)
 
+    sponsored_person = Choice(
+        title=u"Person being sponsored", vocabulary='ValidPerson',
+        required=False)
+
 
 class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                                      PackageCopyingMixin,
@@ -887,9 +874,12 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     """Base class for all pages presenting differences between
     a derived series and its parent."""
     schema = IDifferencesFormSchema
-    field_names = ['selected_differences']
+    field_names = ['selected_differences', 'sponsored_person']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
     custom_widget('package_type', LaunchpadRadioWidget)
+    custom_widget(
+        'sponsored_person', PersonPickerWidget,
+        header="Select person being sponsored", show_assign_me_button=False)
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -902,14 +892,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     show_packagesets = False
     # Search vocabulary.
     search_higher_parent_option = False
-
-    def initialize(self):
-        """Redirect to the derived series if the feature is not enabled."""
-        if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
-            self.request.response.redirect(canonical_url(self.context))
-            return
-
-        super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
         # Owing to the design of Action/Actions in zope.formlib.form - actions
@@ -976,14 +958,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
-        # When syncing we *must* do it asynchronously so that a package
-        # copy job is created.  This gives the job a chance to inspect
-        # the copy and create a PackageUpload if required.
+        sponsored_person = data.get("sponsored_person")
+
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user, force_async=True):
+            person=self.user, sponsored_person=sponsored_person):
             # The copy worked so we redirect back to show the results. Include
             # the query string so that the user ends up on the same batch page
             # with the same filtering parameters as before.
@@ -1072,7 +1053,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The child doesn't have this package.  Treat that as the
             # parent being newer.
             return False
-        comparison = apt_pkg.VersionCompare(
+        comparison = apt_pkg.version_compare(
             dsd.parent_source_version, dsd.source_version)
         return comparison < 0
 
@@ -1238,7 +1219,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             "and %s, but are different somehow. "
             "Changes could be in either or both series so check the "
             "versions (and the diff if necessary) before syncing the parent "
-            'version (<a href="/+help/soyuz/derived-series-syncing.html" '
+            'version (<a href="/+help-soyuz/derived-series-syncing.html" '
             'target="help">Read more about syncing from a parent series'
             '</a>).',
             self.context.displayname,
@@ -1284,12 +1265,12 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.parent_source_version,
                 dsd.parent_series.main_archive,
                 target_distroseries.main_archive,
+                target_distroseries,
                 PackagePublishingPocket.RELEASE,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies, self.user,
-            copy_policy=PackageCopyPolicy.MASS_SYNC)
+            copies, self.user, copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

@@ -7,21 +7,22 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from mechanize import LinkNotFoundError
 import re
 
+from mechanize import LinkNotFoundError
 import soupmatchers
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
     )
-from lp.services.features.model import FeatureFlag, getFeatureStore
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchMergeQueue(BrowserTestCase):

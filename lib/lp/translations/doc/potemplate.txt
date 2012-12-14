@@ -175,7 +175,7 @@ POTemplate
 POTemplate is an object with all strings that must be translated for a
 concrete context.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.translations.interfaces.potemplate import IPOTemplate
     >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(1)
@@ -585,7 +585,7 @@ This includes the 'pt' POFile that was created earlier on the
 'evolution' product as this is sharing translations with the source
 package that this potemplate is from.
 
-    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from lp.services.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
 
@@ -606,7 +606,7 @@ The *-es.po file is indeed the Spanish translation...
 
 And GNU tar can cope with it.
 
-    >>> from canonical.launchpad.helpers import simple_popen2
+    >>> from lp.services.helpers import simple_popen2
     >>> contents = simple_popen2(['tar', 'ztf', '-'], tarfile_string)
     >>> for line in sorted(contents.splitlines()):
     ...        print line

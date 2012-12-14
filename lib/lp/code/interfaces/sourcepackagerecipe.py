@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401
@@ -19,6 +19,7 @@ __all__ = [
 
 from textwrap import dedent
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -51,7 +52,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -82,7 +83,7 @@ class ISourcePackageRecipeData(Interface):
     deb_version_template = exported(
         TextLine(
             title=_('deb-version template'), readonly=True,
-            description = _(
+            description=_(
                 'The template that will be used to generate a deb version.')))
 
     def getReferencedBranches():
@@ -104,31 +105,31 @@ class ISourcePackageRecipeView(Interface):
 
     recipe_text = exported(Text(readonly=True))
 
-    pending_builds = exported(
+    pending_builds = exported(doNotSnapshot(
         CollectionField(
             title=_("The pending builds of this recipe."),
             description=_('Pending builds of this recipe, sorted in '
                     'descending order of creation.'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
-    completed_builds = exported(
+    completed_builds = exported(doNotSnapshot(
         CollectionField(
             title=_("The completed builds of this recipe."),
             description=_('Completed builds of this recipe, sorted in '
                     'descending order of finishing (or starting if not'
                     'completed successfully).'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
-    builds = exported(
+    builds = exported(doNotSnapshot(
         CollectionField(
             title=_("All builds of this recipe."),
             description=_('All builds of this recipe, sorted in '
                     'descending order of finishing (or starting if not'
                     'completed successfully).'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
 
     last_build = exported(
         Reference(
@@ -158,6 +159,10 @@ class ISourcePackageRecipeView(Interface):
         :param pocket: the pocket that should be targeted.
         :raises: various specific upload errors if the requestor is not
             able to upload to the archive.
+        """
+
+    def containsUnbuildableSeries(archive):
+        """Does the recipe contain series that can not be built into.
         """
 
     @export_write_operation()

@@ -4,19 +4,18 @@
 __metaclass__ = type
 
 import simplejson
-
 from zope.interface import Interface
 from zope.interface.interface import InterfaceClass
 from zope.schema import Choice
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
     )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMetaClass(InterfaceClass):
@@ -84,7 +83,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'field.test_valid.item', picker_widget.input_id)
         self.assertIsNone(picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertIn("Y.lp.app.picker.create", markup)
+        self.assertIn("Y.lp.app.picker.addPicker", markup)
         self.assertIn('ValidTeamOwner', markup)
 
     def test_widget_filtered_vocabulary(self):
@@ -168,6 +167,16 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertTrue(person_picker_widget.config['show_assign_me_button'])
         # But not the remove button.
         self.assertFalse(person_picker_widget.config['show_remove_button'])
+
+    def test_create_team_link(self):
+        # The person picker widget shows a create team link.
+        field = ITest['test_valid.item']
+        bound_field = field.bind(self.context)
+
+        picker_widget = PersonPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        picker_widget.show_create_team_link = True
+        self.assertTrue(picker_widget.config['show_create_team'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

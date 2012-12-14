@@ -9,8 +9,9 @@ __all__ = [
     ]
 
 from zope.app.form.browser import DisplayWidget
-from zope.traversing.interfaces import IPathAdapter
 from zope.component import queryAdapter
+from zope.traversing.interfaces import IPathAdapter
+
 
 class LinkWidget(DisplayWidget):
     """Renders using the tal formatter for fmt:link.

@@ -8,8 +8,4 @@
       <span tal:replace="context/distribution/name">ubuntu</span>
       <span tal:replace="context/distroseries/name">hoary</span></h2>
 
-  <div class="portletBody portletContent">
-
-  </div>
-
 </div>

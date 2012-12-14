@@ -8,6 +8,6 @@
   <!-- output summary of requests for each hit -->
   <subscriber
      for="zope.app.publication.interfaces.EndRequestEvent"
-        handler="canonical.launchpad.webapp.adapter.store_sql_statements_and_request_duration"
+        handler="lp.services.webapp.adapter.store_sql_statements_and_request_duration"
         />
 </configure>

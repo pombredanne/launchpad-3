@@ -10,7 +10,7 @@ Edit IRC
 The +editircnickname provides a label and a title.
 
     >>> person = factory.makePerson(name='basil', displayname='Basil')
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> view = create_initialized_view(
     ...     person, name='+editircnicknames', form={}, principal=person)
     >>> print view.label

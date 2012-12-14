@@ -3,12 +3,6 @@ Bug Activity
 
 The bug activity page is where you find the "changelog" of a bug.
 
-    >>> # Enable the picker_enhancements feature to test the commenter name.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+source/'
     ...     'mozilla-firefox/+bug/3/+activity')
@@ -79,7 +73,8 @@ page.
     No Privileges Person (no-priv)
     ...
     #7
-    Here's a comment for testing, like.
+    Here&#x27;s a comment for testing, like.
+    ...
     --------
 
     >>> admin_browser.open(
@@ -101,46 +96,6 @@ that have been added.
     summary:
     - Nonsensical bugs are useless
     + A new title for this bug
-    --------
-
-Alterations to a bug's privacy will show up as 'visibility' changes.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl(
-    ...     "This bug report should be private").selected = True
-    >>> admin_browser.getControl("Change").click()
-
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(admin_browser.contents)
-    Foo Bar
-    ... ago
-    summary:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    visibility:
-    public => private
-    --------
-
-Changes to a bug's security_related field will be displayed as
-'security vulnerability' changes, with values of 'yes' or 'no'. Note
-that changes are grouped together if they occur at similar times, but
-are still shown in the order the changes were made.
-
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
-    >>> admin_browser.getControl("Change").click()
-
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
-    >>> print_comments(admin_browser.contents)
-    Foo Bar (name16)
-    ... ago
-    summary:
-    ...
-    security vulnerability:
-    no => yes
     --------
 
 Changes to the bug's description will simply be displayed as 'description:
@@ -169,7 +124,6 @@ added.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag3"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -189,7 +143,6 @@ made.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag4"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -304,6 +257,43 @@ If a target of a bug task is changed the old and new value will be shown.
     mozilla-firefox (Ubuntu) => linux-source-2.6.15 (Ubuntu)
     --------
 
-Clean up the feature flag.
+If a bug task is deleted the pillar no longer affected will be shown.
 
-    >>> flags.cleanUp()
+    >>> admin_browser.open("http://bugs.launchpad.dev/firefox/+bug/6")
+    >>> admin_browser.getLink(url='+distrotask').click()
+    >>> admin_browser.getControl('Distribution').value = ['ubuntu']
+    >>> admin_browser.getControl('Continue').click()
+    >>> admin_browser.open("https://bugs.launchpad.dev/ubuntu/+bug/6/+delete")
+    >>> admin_browser.getControl('Delete').click()
+    >>> print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    no longer affects:
+    ubuntu
+    --------
+
+Changes to information_type are shown.
+
+    >>> admin_browser.open(
+    ...     "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
+    >>> admin_browser.getControl("Private", index=1).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
+    >>> print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    information type:
+    Public => Private
+    --------
+
+    >>> admin_browser.open(
+    ...     "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
+    >>> admin_browser.getControl("Private", index=1).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
+    >>> print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    information type:
+    Private Security => Private
+    --------

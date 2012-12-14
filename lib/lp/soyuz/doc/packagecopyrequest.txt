@@ -12,7 +12,7 @@ Let's prepare a few things we'll need for the subsequent tests.
     >>> from lp.soyuz.interfaces.packagecopyrequest import (
     ...     IPackageCopyRequest, IPackageCopyRequestSet)
     >>> from lp.soyuz.enums import ArchivePurpose, PackageCopyStatus
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.interfaces.archive import IArchiveSet

@@ -11,22 +11,23 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.testing.pages import (
-    find_main_content,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.browser.edit import FeatureControlView
 from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
+from lp.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 
 
 class FauxForm:
@@ -43,18 +44,14 @@ class TestFeatureControlPage(BrowserTestCase):
 
         :param teams: List of teams to add the new user to.
         """
-        # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
-        # must know the password; we can't get the password for an existing
-        # user so we have to make a new one.
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
         for team in teams:
             with person_logged_in(team.teamowner):
                 team.addMember(self.user, reviewer=team.teamowner)
-        return self.getUserBrowser(url=None, user=self.user, password='test')
+        return self.getUserBrowser(url=None, user=self.user)
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
-        url = self.getFeatureRulesViewURL()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
@@ -221,4 +218,6 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertThat(
             browser.contents,
             Contains(
-                'Invalid rule syntax: duplicate priority for flag "key": 10'))
+                html_escape(
+                    'Invalid rule syntax: duplicate priority for flag "key": '
+                    '10')))

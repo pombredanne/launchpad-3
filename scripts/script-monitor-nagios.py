@@ -21,6 +21,8 @@ even though there is some code duplication.
 __metaclass__ = type
 __all__ = ['check_script']
 
+import _pythonpath
+
 from datetime import (
     datetime,
     timedelta,
@@ -29,15 +31,13 @@ from optparse import OptionParser
 import sys
 from time import strftime
 
-import _pythonpath
-
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import (
+from lp.scripts.scriptmonitor import check_script
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
-from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
@@ -102,7 +102,7 @@ def main():
             # Construct our return message
             print "All scripts ran as expected"
             return 0
-    except Exception, e:
+    except Exception as e:
         # Squeeze the exception type and stringification of the exception
         # value on to one line.
         print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))

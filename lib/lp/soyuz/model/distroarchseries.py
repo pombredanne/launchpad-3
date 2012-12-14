@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -19,31 +19,28 @@ from sqlobject import (
     )
 from storm.locals import (
     Join,
+    Or,
     SQL,
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.interfaces import (
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import DEFAULT
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -56,11 +53,7 @@ from lp.soyuz.interfaces.distroarchseries import (
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage,
-    )
 from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeries(SQLBase):
@@ -121,6 +114,8 @@ class DistroArchSeries(SQLBase):
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -176,6 +171,8 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         origin = [
             BinaryPackageRelease,
@@ -205,21 +202,18 @@ class DistroArchSeries(SQLBase):
                 )
         archives = self.distroseries.distribution.getArchiveIDList()
 
-        # Note: When attempting to convert the query below into straight
-        # Storm expressions, a 'tuple index out-of-range' error was always
-        # raised.
-        query = """
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % (quote(self), quote(archives))
+        clauses = [
+            BinaryPackagePublishingHistory.distroarchseries == self,
+            BinaryPackagePublishingHistory.archiveID.is_in(archives),
+            BinaryPackagePublishingHistory.dateremoved == None,
+            ]
         if text:
-            query += """
-            AND (BinaryPackageRelease.fti @@ ftq(%s) OR
-            BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(text), quote_like(text))
+            clauses.append(
+                Or(
+                    SQL("BinaryPackageRelease.fti @@ ftq(?)", params=(text,)),
+                    BinaryPackageName.name.contains_string(text.lower())))
         result = store.using(*origin).find(
-            find_spec, query).config(distinct=True)
+            find_spec, *clauses).config(distinct=True)
 
         if text:
             result = result.order_by("rank DESC, BinaryPackageName.name")
@@ -244,6 +238,9 @@ class DistroArchSeries(SQLBase):
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.distroarchseriesbinarypackage import (
+            DistroArchSeriesBinaryPackage,
+            )
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -273,9 +270,10 @@ class DistroArchSeries(SQLBase):
             pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """See IDistroArchSeries."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
@@ -289,9 +287,6 @@ class DistroArchSeries(SQLBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
-
-        if exclude_pocket is not None:
-            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
@@ -313,6 +308,8 @@ class DistroArchSeries(SQLBase):
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See `ICanPublishPackages`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = [
             "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -368,7 +365,7 @@ class DistroArchSeriesSet:
         return iter(DistroArchSeries.select())
 
     def get(self, dar_id):
-        """See `canonical.launchpad.interfaces.IDistributionSet`."""
+        """See `IDistributionSet`."""
         return DistroArchSeries.get(dar_id)
 
     def count(self):

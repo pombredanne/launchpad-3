@@ -207,7 +207,7 @@ For a user without any preferred languages, English will be returned.
     >>> person = factory.makePerson()
     >>> print person.languages
     []
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> languageset_view = create_initialized_view(language_set, '+index',
     ...     layer=TranslationsLayer)
     >>> print languageset_view.user_languages

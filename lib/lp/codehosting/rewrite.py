@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the dynamic RewriteMap used to serve branches over HTTP.
@@ -8,16 +8,17 @@ import time
 
 from bzrlib import urlutils
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started,
-    set_request_started,
-    )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.services.utils import iter_split
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 
 
 __all__ = ['BranchRewriter']
@@ -55,15 +56,19 @@ class BranchRewriter:
                 branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
-                    return branch_id, '/' + second, "HIT"
-        branch_id, trailing = getUtility(IBranchLookup).getIdAndTrailingPath(
-            location, from_slave=True)
-        if branch_id is None:
-            return None, None, "MISS"
-        else:
-            unique_name = location[1:-len(trailing)]
-            self._cache[unique_name] = (branch_id, self._now())
-            return branch_id, trailing, "MISS"
+                    return branch_id, second, "HIT"
+        lookup = getUtility(IBranchLookup)
+        branch, trailing = lookup.getByHostingPath(location.lstrip('/'))
+        if branch is not None:
+            try:
+                branch_id = branch.id
+            except Unauthorized:
+                pass
+            else:
+                unique_name = location[1:-len(trailing)]
+                self._cache[unique_name] = (branch_id, self._now())
+                return branch_id, trailing, "MISS"
+        return None, None, "MISS"
 
     def rewriteLine(self, resource_location):
         """Rewrite 'resource_location' to a more concrete location.
@@ -108,7 +113,8 @@ class BranchRewriter:
                 branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
                     resource_location)
                 if branch_id is None:
-                    if resource_location.startswith('/' + BRANCH_ID_ALIAS_PREFIX):
+                    if resource_location.startswith(
+                            '/' + BRANCH_ID_ALIAS_PREFIX):
                         r = 'NULL'
                     else:
                         r = self._codebrowse_url(resource_location)

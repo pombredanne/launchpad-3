@@ -29,7 +29,6 @@ Each builder has a number of properties exposed:
     ...
     active
     builderok
-    description
     failnotes
     failure_count
     manual

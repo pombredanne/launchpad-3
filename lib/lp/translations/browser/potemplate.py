@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -25,47 +25,28 @@ __all__ = [
     'BaseSeriesTemplatesView',
     ]
 
-import cgi
 import datetime
 import operator
 import os.path
 
 from lazr.restful.utils import smartquote
-from storm.info import ClassAlias
+import pytz
 from storm.expr import (
     And,
     Or,
     )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
-import pytz
 
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
     LaunchpadEditFormView,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
+    ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
-from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -82,8 +63,31 @@ from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.helpers import is_tar_filename
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from lp.services.webapp.publisher import (
+    LaunchpadView,
+    RedirectionView,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -102,6 +106,7 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.model.potemplate import POTemplate
 
 
 class POTemplateNavigation(Navigation):
@@ -230,15 +235,11 @@ class POTemplateMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class POTemplateSubsetView:
+class POTemplateSubsetView(RedirectionView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        # We are not using this context directly, only for traversals.
-        self.request.response.redirect('../+translations')
+        super(POTemplateSubsetView, self).__init__(
+            '../+translations', request)
 
 
 class POTemplateView(LaunchpadView,
@@ -467,7 +468,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     '<a href="%s/+imports">Translation Import Queue</a>',
                         canonical_url(self.context.translationtarget)))
 
-        elif helpers.is_tar_filename(filename):
+        elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             (num, conflicts) = (
                 translation_import_queue.addOrUpdateEntriesFromTarball(
@@ -493,9 +494,9 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' % (
-                        num, plural_s, plural_s, itthey,
-                        canonical_url(self.context.translationtarget))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                    num, plural_s, plural_s, itthey,
+                    canonical_url(self.context.translationtarget)))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -510,10 +511,12 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                             "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
                             "different templates.", len(conflicts))
+                        conflict_str = structured(
+                            "</li><li>".join(["%s" % len(conflicts)]),
+                            *conflicts)
                         ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
+                            "<ul><li>%s</li></ul>", conflict_str)
                     self.request.response.addWarningNotification(
                         structured(
                         "%s  This makes it "
@@ -961,8 +964,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             .joinOuter(Product, And(
                 Product.id == ProductSeries.productID,
                 Or(
-                    Product._translations_usage == ServiceUsage.LAUNCHPAD,
-                    Product._translations_usage == ServiceUsage.EXTERNAL)))
+                    Product.translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product.translations_usage == ServiceUsage.EXTERNAL)))
             .joinOuter(OtherTemplate, And(
                 OtherTemplate.productseriesID == ProductSeries.id,
                 OtherTemplate.name == POTemplate.name))
@@ -970,7 +973,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
                 SourcePackageName.id == POTemplate.sourcepackagenameID))
 
         return join.select(POTemplate, Packaging, ProductSeries, Product,
-            OtherTemplate, SourcePackageName)
+            OtherTemplate, SourcePackageName).order_by(
+                SourcePackageName.name, POTemplate.priority, POTemplate.name)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -981,7 +985,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
     def _renderSourcePackage(self, template):
         """Render the `SourcePackageName` for `template`."""
         if self.is_distroseries:
-            return cgi.escape(template.sourcepackagename.name)
+            return html_escape(template.sourcepackagename.name)
         else:
             return None
 
@@ -992,7 +996,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :param url: The cached URL for `template`.
         :return: HTML for a link to `template`.
         """
-        text = '<a href="%s">%s</a>' % (url, cgi.escape(template.name))
+        text = '<a href="%s">%s</a>' % (url, html_escape(template.name))
         if not template.iscurrent:
             text += ' (inactive)'
         return text
@@ -1009,15 +1013,17 @@ class BaseSeriesTemplatesView(LaunchpadView):
         if sourcepackagename is None:
             sourcepackagename = template.sourcepackagename
         # Build the edit link.
-        escaped_source = cgi.escape(sourcepackagename.name)
+        escaped_source = html_escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
-        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+        edit_link = (
+            '<a class="sprite edit action-icon" href="%s">Edit</a>' %
+            details_url)
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
-            escaped_series = cgi.escape(productseries.name)
-            escaped_template = cgi.escape(template.name)
+            escaped_series = html_escape(productseries.name)
+            escaped_template = html_escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
             return (edit_link + '<a href="%s">%s/%s</a>'

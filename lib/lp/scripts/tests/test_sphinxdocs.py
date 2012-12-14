@@ -8,8 +8,9 @@ __metaclass__ = type
 import os
 
 import sphinx
+from testtools.content import text_content
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.utils import run_capturing_output
 from lp.testing import TestCase
 
@@ -17,7 +18,6 @@ from lp.testing import TestCase
 class TestSphinxDocumentation(TestCase):
     """Is our Sphinx documentation building correctly?"""
 
-    # XXX: SteveKowalik 2011-02-24 bug=721166 Keep failing spuriously.
     def test_docs_build_without_error(self):
         # The Sphinx documentation must build without errors or warnings.
         #
@@ -30,7 +30,7 @@ class TestSphinxDocumentation(TestCase):
         returncode, stdout, stderr = run_capturing_output(
             sphinx.main,
             ['sphinx-build', '-d', '%s/doctrees' % output_dir,
-             '-aNq', doc_dir, '%s/html' % output_dir])
+             '-aNqW', doc_dir, '%s/html' % output_dir])
+        self.addDetail('stdout', text_content(stdout))
+        self.addDetail('stderr', text_content(stderr))
         self.assertEqual(0, returncode)
-        self.assertEqual('Making output directory...\n', stderr)
-        self.assertEqual('', stdout)

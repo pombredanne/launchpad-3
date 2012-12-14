@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -14,6 +14,7 @@ __all__ = [
 
 import datetime
 
+from lazr.delegates import delegates
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
@@ -32,19 +33,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
@@ -58,24 +46,19 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import get_bug_tags
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.productrelease import IProductReleaseSet
@@ -89,9 +72,21 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.packaging import PackagingUtil
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -123,14 +118,16 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
-                    HasMilestonesMixin, HasSpecificationsMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
+                    HasSpecificationsMixin, HasTranslationImportsMixin,
+                    HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
-        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        IBugSummaryDimension, IProductSeries, IServiceUsage,
         ISeriesBugTarget)
+
+    delegates(ISpecificationTarget, 'product')
 
     _table = 'ProductSeries'
 
@@ -151,11 +148,23 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+
+    def validate_autoimport_mode(self, attr, value):
+        # Perform the normal validation for None
+        if value is None:
+            return value
+        if (self.product.private and
+            value != TranslationsBranchImportMode.NO_IMPORT):
+            raise ProprietaryProduct('Translations are disabled for'
+                                     ' proprietary projects.')
+        return value
+
     translations_autoimport_mode = EnumCol(
         dbName='translations_autoimport_mode',
         notNull=True,
         schema=TranslationsBranchImportMode,
-        default=TranslationsBranchImportMode.NO_IMPORT)
+        default=TranslationsBranchImportMode.NO_IMPORT,
+        storm_validator=validate_autoimport_mode)
     translations_branch = ForeignKey(
         dbName='translations_branch', foreignKey='Branch', notNull=False,
         default=None)
@@ -170,6 +179,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def pillar(self):
         """See `IBugTarget`."""
         return self.product
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
 
     @property
     def answers_usage(self):
@@ -228,6 +242,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         result = result.order_by(Desc('datereleased'))
         return DecoratedResultSet(result, decorate)
 
+    @cachedproperty
+    def _cached_releases(self):
+        return self.releases
+
+    def getCachedReleases(self):
+        """See `IProductSeries`."""
+        return self._cached_releases
+
     @property
     def release_files(self):
         """See `IProductSeries`."""
@@ -259,11 +281,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bugtarget_parent(self):
         """See `ISeriesBugTarget`."""
         return self.parent
-
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.product.max_bug_heat
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -302,24 +319,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return ret
 
     @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    @property
     def is_development_focus(self):
         """See `IProductSeries`."""
         return self == self.product.development_focus
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 
@@ -439,7 +443,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
         results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = results.prejoin(['_assignee', '_approver', '_drafter'])
         return results
 
     def _customizeSearchParams(self, search_params):
@@ -454,23 +458,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See `IHasBugs`."""
         return self.product.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         return BugSummary.productseries_id == self.id
-
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.product.getSpecification(name)
 
     def getLatestRelease(self):
         """See `IProductRelease.`"""
@@ -525,7 +517,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(
+        pkg = PackagingUtil.createPackaging(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=self,
@@ -543,11 +535,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return history
 
     def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+                     code_name=None, tags=None):
         """See IProductSeries."""
-        return Milestone(
+        milestone = Milestone(
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
+        if tags:
+            milestone.setTags(tags.split())
+        return milestone
 
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
@@ -696,6 +691,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def userCanView(self, user):
+        """See `IproductSeriesPublic`."""
+        # Deleate the permission check to the parent product.
+        return self.product.userCanView(user)
 
 
 class TimelineProductSeries:

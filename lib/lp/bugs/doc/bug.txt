@@ -90,13 +90,14 @@ we will register a handler to observe the event.
 The event can be seen when we file a bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.app.enums import InformationType
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
+    >>> jukebox = factory.makeProduct()
     >>> params = CreateBugParams(
     ...     owner=steve_harris, title="Oh I hate this song",
-    ...     comment="Janick keeps playing Mr Blobby.")
-    >>> jukebox = factory.makeProduct()
-    >>> params.setBugTarget(product=jukebox)
+    ...     comment="Janick keeps playing Mr Blobby.",
+    ...     target=jukebox)
 
     >>> bug = bugset.createBug(params)
     New bug created: Oh I hate this song
@@ -112,40 +113,10 @@ parameter is available to override the user recorded in the event.
     >>> params = CreateBugParams(
     ...     owner=steve_harris, filed_by=rod_smallwood,
     ...     title="Steve really hates this song",
-    ...     comment="He thinks Janick is doing it, but it's really me.")
-    >>> params.setBugTarget(product=jukebox)
+    ...     comment="He thinks Janick is doing it, but it's really me.",
+    ...     target=jukebox)
     >>> bug = bugset.createBug(params)
     New bug created: Steve really hates this song
-              Owner: steve-harris
-           Filed by: rod-smallwood
-
-However, some circumstances demand that we defer notification, most
-specifically when we do not yet have a target. A variant,
-createBugWithoutTarget(), exists to allow for this. No notifications
-are sent, but an event is returned to make explicit the contract that
-the caller is responsible for notifying other components of bug
-creation.
-
-    >>> params = CreateBugParams(
-    ...     owner=steve_harris, filed_by=rod_smallwood,
-    ...     title="Janick is making strange noises again",
-    ...     comment="But maybe it's Bruce throat warbling?")
-    >>> bug, event = bugset.createBugWithoutTarget(params)
-
-    >>> print event
-    <security proxied lazr...ObjectCreatedEvent instance at ...>
-
-Once the first bugtask has been created, the event should be sent. We
-need to log in here because the event object is security proxied.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug.addTask(owner=params.owner, target=jukebox)
-    <BugTask ...>
-
-    >>> from zope.event import notify
-    >>> notify(event)
-    New bug created: Janick is making strange noises again
               Owner: steve-harris
            Filed by: rod-smallwood
 
@@ -163,50 +134,12 @@ Interface check
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IBug, firefox_crashes)
     True
 
 (We grab the object directly from the database here to avoid it being
 security proxied, which doesn't make sense to test here.)
-
-
-Searching for Bugs
-------------------
-
-To search for bugs matching specific criteria, use IBugSet.searchAsUser:
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-    >>> def current_user():
-    ...     return getUtility(ILaunchBag).user
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> firefox = productset.get(4)
-    >>> firefox_test_bug = bugset.get(3)
-    >>> firefox_master_bug = factory.makeBug(product=firefox)
-    >>> firefox_test_bug.markAsDuplicate(firefox_master_bug)
-    >>> flush_database_updates()
-
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_master_bug, user=current_user())
-    >>> print dups_of_bug_six.count()
-    1
-    >>> dups_of_bug_six[0].id
-    3
-
-    >>> firefox_test_bug.markAsDuplicate(None)
-    >>> flush_database_updates()
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=current_user())
-    >>> print dups_of_bug_six.count()
-    0
-
-    >>> login(ANONYMOUS)
 
 
 Absolute URLs
@@ -215,7 +148,8 @@ Absolute URLs
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
+    >>> login(ANONYMOUS)
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 
@@ -233,6 +167,11 @@ Marking Bugs Private
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
+
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
 
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
@@ -315,14 +254,18 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.bugs.model.bug import Bug
+    >>> from lp.services.database.lpstorm import IStore
+
     >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
+    >>> taskset = getUtility(IBugTaskSet)
     >>> def hidden_bugs():
     ...     found_bugs = set(
-    ...         bug.id for bug in bugset.searchAsUser(
-    ...             user=current_user()))
+    ...         task.bug.id for task in taskset.search(
+    ...             BugTaskSearchParams(current_user())))
     ...     return sorted(all_bugs - found_bugs)
 
     >>> login("test@canonical.com")
@@ -347,28 +290,18 @@ admin as well:
     >>> hidden_bugs()
     []
 
-If a bug is private, bugtask assignees can see the bug.  Previously
-sample person could not see bug 14.  But after making him the
-assignee it is visible.
-
-    >>> bug14 = bugset.get(14)
-    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
-    >>> login("test@canonical.com")
-    >>> hidden_bugs()
-    []
-
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
 
-    >>> blackhole_trash_folder = bugset.get(2)
+    >>> reflow_problems_bug = bugset.get(4)
 
 And again, let's fake setting the bug private:
 
-    >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
-    >>> blackhole_trash_folder.setPrivate(True, current_user())
+    >>> old_state = Snapshot(reflow_problems_bug, providing=IBug)
+    >>> reflow_problems_bug.setPrivate(True, current_user())
     True
     >>> bug_set_private = ObjectModifiedEvent(
-    ...     blackhole_trash_folder, old_state,
+    ...     reflow_problems_bug, old_state,
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
@@ -381,22 +314,22 @@ the Cc list:
     >>> personset = getUtility(IPersonSet)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = blackhole_trash_folder.subscribe(
+    >>> subscription = reflow_problems_bug.subscribe(
     ...     ubuntu_team, ubuntu_team)
 
 Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
     >>> login("jeff.waugh@ubuntulinux.com")
 
-    >>> old_title = blackhole_trash_folder.title
-    >>> blackhole_trash_folder.title = "new title"
-    >>> blackhole_trash_folder.title
+    >>> old_title = reflow_problems_bug.title
+    >>> reflow_problems_bug.title = "new title"
+    >>> reflow_problems_bug.title
     u'new title'
-    >>> blackhole_trash_folder.title = old_title
-    >>> blackhole_trash_folder.title
-    u'Blackhole Trash folder'
+    >>> reflow_problems_bug.title = old_title
+    >>> reflow_problems_bug.title
+    u'Reflow problems with complex page layouts'
 
-Bug #2 is visible to him in searches. Note that bugs #6 and #14 are
+Bug #4 is visible to him in searches. Note that bugs #6 and #14 are
 hidden from him.
 
     >>> hidden_bugs()
@@ -411,16 +344,17 @@ of this bug) though:
 Trying to access a property of this bug will again raise an
 Unauthorized:
 
-    >>> blackhole_trash_folder.title
+    >>> reflow_problems_bug.title
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'title', 'launchpad.View')
 
-And, as you might have guessed, bug #2 is invisible in searches, in
+And, as you might have guessed, bug #4 is invisible in searches, in
 addition to bugs #6 and #14:
 
     >>> hidden_bugs()
-    [2, 6, 14]
+    [4, 6, 14]
+
 
 
 Filing Public vs. Private Bugs
@@ -432,10 +366,13 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset.get(4)
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
-    ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
+    ...     target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> public_bug = bugset.get(added_bug.id)
 
@@ -444,8 +381,7 @@ passing both a comment /and/ a msg would have raised an AssertionError:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     msg="foo foo foo", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    ...     msg="foo foo foo", owner=foobar, target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
     ...
@@ -476,8 +412,7 @@ When a private bug is filed:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
-    ...     private=True)
-    >>> params.setBugTarget(product=firefox)
+    ...     information_type=InformationType.USERDATA, target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
 
@@ -485,11 +420,6 @@ When a private bug is filed:
 
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
-
-Since it's private, there are no indirect subscribers.
-
-    >>> private_bug.getIndirectSubscribers()
-    []
 
 It's up to the submitter to subscribe the maintainer, if they so choose.
 
@@ -506,14 +436,12 @@ sourcepackage. E.g.
     >>> evolution = spnset.get(9)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     owner=foobar, private=True)
-    >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
+    ...     owner=foobar, information_type=InformationType.USERDATA,
+    ...     target=ubuntu.getSourcePackage(evolution))
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
-    >>> private_bug.getIndirectSubscribers()
-    []
 
 
 Prevent reporter from being subscribed to filed bugs
@@ -770,7 +698,7 @@ Marking as duplicate.
 
     >>> print firefox_bug.duplicateof
     None
-    >>> firefox_bug.markAsDuplicate(firefox_master_bug)
+    >>> firefox_bug.markAsDuplicate(factory.makeBug())
 
     >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])
@@ -786,7 +714,7 @@ Adding an attachment.
 
     >>> from StringIO import StringIO
     >>> from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.services.messages.interfaces.message import IMessageSet
 
@@ -1054,10 +982,10 @@ not permit expiration.
 The thunderbird project does not use Launchpad to track bugs.
 Incomplete, unattended bug reports cannot ever expire for this project.
 
-    >>> # create_old_bug creates an bug with a bugtask that is eligible for
-    >>> # expiration, so long as the pillar object has enabled bug expiration.
-    >>> # Every change to a bug or bugtask must be synced back to the
-    >>> # database to test can_expire.
+create_old_bug creates an bug with a bugtask that is eligible for expiration,
+so long as the pillar object has enabled bug expiration. Every change to a
+bug or bugtask must be synced back to the database to test can_expire.
+
     >>> from lp.bugs.tests.bug import create_old_bug
 
     >>> upstream_bugtask = create_old_bug('bug a', 1, thunderbird)
@@ -1408,7 +1336,7 @@ and a user and returns the set of Bugs for those BugTasks.
     >>> from operator import attrgetter
     >>> bug_tasks = [
     ...     factory.makeBug(
-    ...         product=firefox, title="New bug %s" % i).bugtasks[0]
+    ...         target=firefox, title="New bug %s" % i).bugtasks[0]
     ...     for i in range(5)]
 
     >>> bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(

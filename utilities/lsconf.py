@@ -11,17 +11,18 @@ __metatype__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from operator import attrgetter
+from optparse import OptionParser
 import os
 import sys
-from optparse import OptionParser
-from operator import attrgetter
 from textwrap import dedent
 
-import canonical.config
 from lazr.config import ImplicitTypeSchema
 
+import lp.services.config
 
-_schema_dir = os.path.abspath(os.path.dirname(canonical.config.__file__))
+
+_schema_dir = os.path.abspath(os.path.dirname(lp.services.config.__file__))
 _root = os.path.dirname(os.path.dirname(os.path.dirname(_schema_dir)))
 
 
@@ -125,7 +126,7 @@ def main(argv=None):
     parser = get_option_parser()
     (options, arguments) = parser.parse_args(args=argv[1:])
     if len(arguments) == 0:
-        canonical_config = canonical.config.config
+        canonical_config = lp.services.config.config
         if options.instance_name:
             canonical_config.setInstance(options.instance_name)
         canonical_config._getConfig()

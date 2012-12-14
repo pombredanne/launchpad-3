@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImport."""
 
@@ -34,18 +32,13 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchType,
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    NON_CVS_RCS_TYPES,
     RevisionControlSystems,
     )
 from lp.code.errors import (
@@ -63,6 +56,12 @@ from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.config import config
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImport(SQLBase):
@@ -73,8 +72,7 @@ class CodeImport(SQLBase):
     _defaultOrder = ['id']
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    branch = ForeignKey(dbName='branch', foreignKey='Branch',
-                        notNull=True)
+    branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -114,12 +112,11 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
-            RevisionControlSystems.HG:
-                config.codeimport.default_interval_hg,
             RevisionControlSystems.BZR:
                 config.codeimport.default_interval_bzr,
             }
-        seconds = default_interval_dict[self.rcs_type]
+        # The default can be removed when HG is fully purged.
+        seconds = default_interval_dict.get(self.rcs_type, 21600)
         return timedelta(seconds=seconds)
 
     import_job = Reference("<primary key>", "CodeImportJob.code_importID",
@@ -148,13 +145,6 @@ class CodeImport(SQLBase):
         if job is not None:
             if job.state == CodeImportJobState.PENDING:
                 CodeImportJobWorkflow().deletePendingJob(self)
-            else:
-                # When we have job killing, we might want to kill a running
-                # job.
-                pass
-        else:
-            # No job, so nothing to do.
-            pass
 
     results = SQLMultipleJoin(
         'CodeImportResult', joinColumn='code_import',
@@ -239,7 +229,6 @@ class CodeImport(SQLBase):
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
                 self.import_job, requester)
-        return None
 
 
 class CodeImportSet:
@@ -254,11 +243,7 @@ class CodeImportSet:
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
             assert url is None
-        elif rcs_type in (RevisionControlSystems.SVN,
-                          RevisionControlSystems.BZR_SVN,
-                          RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG,
-                          RevisionControlSystems.BZR):
+        elif rcs_type in NON_CVS_RCS_TYPES:
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:

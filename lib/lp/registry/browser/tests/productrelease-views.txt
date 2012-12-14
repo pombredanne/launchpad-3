@@ -20,7 +20,7 @@ A new ProductRelease can be created using ProductReleaseAddView.
 The view explains what that the user is creating a release, and lists
 the other releases for the series. There are no other releases yet.
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> view = create_initialized_view(naked_milestone, '+addrelease')
     >>> print view.label
     Create a new release for App
@@ -102,7 +102,7 @@ Creating a release for a series
 It is possible to create a release directly from a series, the release's
 milestone can be created via an AJAX command.
 
-The view collects the the required release fields, and adds fields to to
+The view collects the required release fields, and adds fields to to
 set the milestone.
 
     >>> view = create_initialized_view(series, '+addrelease', principal=owner)
@@ -120,12 +120,12 @@ set the milestone.
 The rendered template includes a script that adds a js-action link to
 show a formoverlay that updates the milestone_for_release field.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        LPS.use(... 'lp.registry.milestoneoverlay'...
+        LPJS.use(... 'lp.registry.milestoneoverlay'...
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var series_uri = '/app/simple';
             ...

@@ -20,9 +20,8 @@ from xmlrpclib import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.lazr.timeout import SafeTransportWithTimeout
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucher,
@@ -33,6 +32,7 @@ from lp.services.salesforce.interfaces import (
     SVPNotAllowedException,
     SVPNotFoundException,
     )
+from lp.services.timeout import SafeTransportWithTimeout
 
 
 def fault_mapper(func):
@@ -46,7 +46,7 @@ def fault_mapper(func):
     def decorator(*args, **kwargs):
         try:
             results = func(*args, **kwargs)
-        except Fault, fault:
+        except Fault as fault:
             exception = errorcode_map.get(fault.faultCode,
                                           SalesforceVoucherProxyException)
             raise exception(fault.faultString)
@@ -93,7 +93,8 @@ class SalesforceVoucherProxy:
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
-        self.xmlrpc_transport = SafeTransportWithTimeout()
+        self.xmlrpc_transport = SafeTransportWithTimeout(
+            config.commercial.voucher_proxy_timeout / 1000.0)
 
     @cachedproperty
     def url(self):

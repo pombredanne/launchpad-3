@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Policy management for the upload handler."""
@@ -29,10 +29,10 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import ArchivePurpose
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -76,7 +76,8 @@ class AbstractUploadPolicy:
 
     name = 'abstract'
     options = None
-    accepted_type = None # Must be defined in subclasses.
+    accepted_type = None  # Must be defined in subclasses.
+    redirect_warning = None
 
     def __init__(self):
         """Prepare a policy..."""
@@ -202,6 +203,20 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     name = 'insecure'
     accepted_type = ArchiveUploadType.SOURCE_ONLY
 
+    def setDistroSeriesAndPocket(self, dr_name):
+        """Set the distroseries and pocket from the provided name.
+
+        The insecure policy redirects uploads to a different pocket if
+        Distribution.redirect_release_uploads is set.
+        """
+        super(InsecureUploadPolicy, self).setDistroSeriesAndPocket(dr_name)
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
+            self.distro.redirect_release_uploads and
+            self.pocket == PackagePublishingPocket.RELEASE):
+            self.pocket = PackagePublishingPocket.PROPOSED
+            self.redirect_warning = "Redirecting %s to %s-proposed." % (
+                self.distroseries, self.distroseries)
+
     def rejectPPAUploads(self, upload):
         """Insecure policy allows PPA upload."""
         return False
@@ -213,8 +228,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         size quota.Binary upload will be skipped to avoid unnecessary hassle
         dealing with FAILEDTOUPLOAD builds.
         """
-        # Skip the check for binary uploads.
-        if upload.binaryful:
+        # Skip the check for binary uploads or archives with no quota.
+        if upload.binaryful or self.archive.authorized_size is None:
             return
 
         # Calculate the incoming upload total size.
@@ -248,30 +263,37 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is targeted to any PPA, checks if the upload is within
-        the allowed quota.
+        Also check if the upload is within the allowed quota.
         """
-        if upload.is_ppa:
-            self.checkArchiveSizeQuota(upload)
-        else:
-            if self.pocket == PackagePublishingPocket.SECURITY:
-                upload.reject(
-                    "This upload queue does not permit SECURITY uploads.")
+        self.checkArchiveSizeQuota(upload)
+        # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+        # to SECURITY will not be built.  See
+        # BuildPackageJob.postprocessCandidate.
+        if self.pocket == PackagePublishingPocket.SECURITY:
+            upload.reject(
+                "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
-        """The insecure policy only auto-approves RELEASE pocket stuff.
+        """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
 
         PPA uploads are always auto-approved.
-        Other uploads (to main archives) are only auto-approved if the
-        distroseries is not FROZEN (note that we already performed the
-        IDistroSeries.canUploadToPocket check in the checkUpload base method).
+        RELEASE and PROPOSED pocket uploads (to main archives) are only
+        auto-approved if the distroseries is in a non-FROZEN state
+        pre-release.  (We already performed the IArchive.canModifySuite
+        check in the checkUpload base method, which will deny RELEASE
+        uploads post-release, but it doesn't hurt to repeat this for that
+        case.)
         """
         if upload.is_ppa:
             return True
 
-        if self.pocket == PackagePublishingPocket.RELEASE:
-            if (self.distroseries.status !=
-                SeriesStatus.FROZEN):
+        auto_approve_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if self.pocket in auto_approve_pockets:
+            if (self.distroseries.isUnstable() and
+                self.distroseries.status != SeriesStatus.FROZEN):
                 return True
         return False
 
@@ -310,6 +332,16 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         elif not upload.sourceful and not upload.binaryful:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
+
+    def autoApprove(self, upload):
+        """Check that all custom files in this upload can be auto-approved."""
+        if upload.is_ppa:
+            return True
+        if upload.binaryful:
+            for custom_file in upload.changes.custom_files:
+                if not custom_file.autoApprove():
+                    return False
+        return True
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

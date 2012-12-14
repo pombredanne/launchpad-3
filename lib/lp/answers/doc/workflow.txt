@@ -100,7 +100,7 @@ date of the question (which defaults to 'now').
 We now have the IQuestionMessage that was added to the question messages
 history.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.answers.interfaces.questionmessage import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True
@@ -602,7 +602,7 @@ the message they create and a ObjectModifiedEvent for the question.
     # Register an event listener that will print events it receives.
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lp.answers.interfaces.question import IQuestion
 
     >>> def print_event(object, event):

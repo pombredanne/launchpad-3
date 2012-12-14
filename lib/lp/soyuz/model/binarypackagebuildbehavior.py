@@ -14,13 +14,13 @@ __all__ = [
 from twisted.internet import defer
 from zope.interface import implements
 
-from canonical.launchpad.webapp import urlappend
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp import urlappend
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,

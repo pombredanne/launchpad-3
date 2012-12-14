@@ -20,7 +20,7 @@
     <div class="top-portlet">
       <span style="float:right;"
         tal:content="structure view/menu:overview/edit/fmt:icon-link" />
-      <p style="max-width: 100%; margin-top: .5em;">
+      <p>
          <tal:title content="context/title">Bob the builder</tal:title>
          builds
          <tal:arch content="context/processor/title">Intel 386</tal:arch>

@@ -37,7 +37,7 @@ To demonstrate its use we'll create a sample schema and view class:
 
 We can then create a harness to drive the view:
 
-  >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+  >>> from lp.testing.deprecated import LaunchpadFormHarness
   >>> context = HarnessTest()
   >>> harness = LaunchpadFormHarness(context, HarnessTestView)
 
@@ -115,7 +115,7 @@ it.
     >>> harness.request
     <...LaunchpadTestRequest...
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> class FormHarnessTestRequest(LaunchpadTestRequest):
     ...     pass
     >>> harness = LaunchpadFormHarness(context, HarnessTestView,

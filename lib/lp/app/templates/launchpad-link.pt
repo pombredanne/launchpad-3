@@ -3,12 +3,12 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
 <tal:comment condition="nothing">
-The disabled link is invisble since it has display:none, and it
+The disabled link is invisble since it has the "hidden" class, and it
 only appears when devmode is on, so that tests can more easily
 verify that links are disabled.
 </tal:comment>
 <li tal:condition="not: context/enabled"
-    style="display:none;">
+    class="hidden">
   <strong
       tal:attributes="class string:menu-link-${context/name}-disabled;"><tal:link-text
       replace="structure context/escapedtext">Disabled text</tal:link-text>

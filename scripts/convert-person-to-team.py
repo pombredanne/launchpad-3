@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to convert a person into a team.
@@ -13,10 +13,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces.account import AccountStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ConvertPersonToTeamScript(LaunchpadScript):
@@ -50,4 +52,3 @@ class ConvertPersonToTeamScript(LaunchpadScript):
 if __name__ == '__main__':
     script = ConvertPersonToTeamScript('convert-person-to-team')
     script.lock_and_run()
-

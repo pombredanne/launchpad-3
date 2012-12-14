@@ -1,13 +1,14 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for writing tests that use feature flags."""
 
 __metaclass__ = type
-__all__ = ['active_features']
+__all__ = ['FeatureFixture']
 
 
 from fixtures import Fixture
+from lazr.restful.utils import get_current_browser_request
 
 from lp.services.features import (
     get_relevant_feature_controller,
@@ -18,6 +19,7 @@ from lp.services.features.rulesource import (
     Rule,
     StormFeatureRuleSource,
     )
+from lp.services.features.scopes import ScopesFromRequest
 
 
 class FeatureFixture(Fixture):
@@ -37,13 +39,19 @@ class FeatureFixture(Fixture):
     The values are restored when the block exits.
     """
 
-    def __init__(self, features_dict):
+    def __init__(self, features_dict, full_feature_rules=None,
+            override_scope_lookup=None):
         """Constructor.
 
         :param features_dict: A dictionary-like object with keys and values
             that are flag names and those flags' settings.
+        :param override_scope_lookup: If non-None, an argument that takes
+            a scope name and returns True if it matches.  If not specified, 
+            scopes are looked up from the current request.
         """
         self.desired_features = features_dict
+        self.full_feature_rules = full_feature_rules
+        self.override_scope_lookup = override_scope_lookup
 
     def setUp(self):
         """Set the feature flags that this fixture is responsible for."""
@@ -55,8 +63,15 @@ class FeatureFixture(Fixture):
         rule_source.setAllRules(self.makeNewRules())
 
         original_controller = get_relevant_feature_controller()
+
+        def scope_lookup(scope_name):
+            request = get_current_browser_request()
+            return ScopesFromRequest(request).lookup(scope_name)
+
+        if self.override_scope_lookup:
+            scope_lookup = self.override_scope_lookup
         install_feature_controller(
-            FeatureController(lambda _: True, rule_source))
+            FeatureController(scope_lookup, rule_source))
         self.addCleanup(install_feature_controller, original_controller)
 
     def makeNewRules(self):
@@ -76,5 +91,10 @@ class FeatureFixture(Fixture):
                 value=unicode(value))
             for flag_name, value in self.desired_features.iteritems()
                 if value is not None]
+
+        if self.full_feature_rules is not None:
+            new_rules.extend(
+                Rule(**rule_spec)
+                for rule_spec in self.full_feature_rules)
 
         return new_rules

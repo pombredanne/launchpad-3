@@ -18,12 +18,6 @@ from bzrlib.patches import (
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
@@ -35,10 +29,20 @@ from lp.code.model.diff import (
     PreviewDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login,
     login_person,
+    monkey_patch,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 
@@ -172,6 +176,30 @@ class TestDiff(DiffTestCase):
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
 
+    def test_getDiffTimeout(self):
+        # The time permitted to get the diff from the librarian may be None,
+        # or 2. If there is not 2 seconds left in the request, the number will
+        # will 0.01 smaller or the actual remaining time.
+        content = ''.join(unified_diff('', "1234567890" * 10))
+        diff = self._create_diff(content)
+        value = None
+
+        def fake():
+            return value
+
+        from lp.code.model import diff as diff_module
+        with monkey_patch(diff_module, get_request_remaining_seconds=fake):
+            self.assertIs(
+                LIBRARIAN_SERVER_DEFAULT_TIMEOUT, diff._getDiffTimeout())
+            value = 3.1
+            self.assertEqual(2.0, diff._getDiffTimeout())
+            value = 1.11
+            self.assertEqual(1.1, diff._getDiffTimeout())
+            value = 0.11
+            self.assertEqual(0.1, diff._getDiffTimeout())
+            value = 0.01
+            self.assertEqual(0.01, diff._getDiffTimeout())
+
 
 class TestDiffInScripts(DiffTestCase):
 
@@ -259,10 +287,18 @@ class TestDiffInScripts(DiffTestCase):
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
             Diff.generateDiffstat(self.diff_bytes))
 
+    def test_generateDiffstat_with_CR(self):
+        diff_bytes = (
+            "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+            "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
+            "@@ -1,1 +1,1 @@\n"
+            " a\r-b\r c\r+d\r+e\r+f\r")
+        self.assertEqual({'foo': (0, 0)}, Diff.generateDiffstat(diff_bytes))
+
     def test_fromFileSetsDiffstat(self):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
-        self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
-                         diff.diffstat)
+        self.assertEqual(
+            {'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)}, diff.diffstat)
 
     def test_fromFileAcceptsBinary(self):
         diff_bytes = "Binary files a\t and b\t differ\n"

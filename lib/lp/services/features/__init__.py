@@ -116,12 +116,12 @@ flag in the thread default controller.
 
 To simply check a boolean::
 
-    if features.getFeatureFlag('soyuz.derived_series_ui.enabled'):
+    if features.getFeatureFlag('example_flag.enabled'):
         ...
 
 and if you want to use the value ::
 
-     value = features.getFeatureFlag('soyuz.derived_series_ui.enabled')
+     value = features.getFeatureFlag('example_flag.enabled')
      if value:
         print value
 
@@ -181,8 +181,12 @@ other environments that have no explicit setup and teardown::
 
 import threading
 
+from lazr.restful.utils import safe_hasattr
+
 
 __all__ = [
+    'currentScope',
+    'defaultFlagValue',
     'get_relevant_feature_controller',
     'getFeatureFlag',
     'install_feature_controller',
@@ -203,9 +207,17 @@ def install_feature_controller(controller):
     per_thread.features = controller
 
 
+def uninstall_feature_controller():
+    """Remove, if it exists, the current feature controller from this thread.
+
+    This function is used to create a pristine environment in tests.
+    """
+    if safe_hasattr(per_thread, 'features'):
+        del per_thread.features
+
+
 def get_relevant_feature_controller():
     """Get a `FeatureController` for this thread."""
-
     # The noncommittal name "relevant" is because this function may change to
     # look things up from the current request or some other mechanism in
     # future.
@@ -220,6 +232,23 @@ def getFeatureFlag(flag):
     if features is None:
         return None
     return features.getFlag(flag)
+
+
+def currentScope(flag):
+    """Get the current scope of the flag for this thread's scopes."""
+    # Workaround for bug 631884 - features have two homes, threads and
+    # requests.
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.currentScope(flag)
+
+
+def defaultFlagValue(flag):
+    features = get_relevant_feature_controller()
+    if features is None:
+        return None
+    return features.defaultFlagValue(flag)
 
 
 def make_script_feature_controller(script_name):

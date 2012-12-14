@@ -5,14 +5,19 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import (
+from lp.bugs.interfaces.bugnomination import (
+    NominationError,
+    NominationSeriesObsoleteError,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import (
+    celebrity_logged_in,
     login,
     login_person,
     logout,
+    TestCaseWithFactory,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bugnomination import NominationError
-from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class AddNominationTestMixin:
@@ -47,6 +52,14 @@ class AddNominationTestMixin:
         self.bug.addNomination(self.bug_supervisor, self.series)
         self.assertTrue(len(self.bug.getNominations()), 1)
 
+    def test_bugsupervisor_addNominationFor_with_existing_nomination(self):
+        # A bug cannot be nominated twice for the same series.
+        login_person(self.bug_supervisor)
+        self.bug.addNomination(self.bug_supervisor, self.series)
+        self.assertTrue(len(self.bug.getNominations()), 1)
+        self.assertRaises(NominationError,
+            self.bug.addNomination, self.user, self.series)
+
     def test_owner_addNominationFor_series(self):
         # A bug may be nominated for a series of a product with an
         # exisiting task by the product's owner.
@@ -64,7 +77,7 @@ class TestBugAddNominationProductSeries(
             official_malone=True, bug_supervisor=self.bug_supervisor,
             owner=self.owner)
         self.series = self.factory.makeProductSeries(product=self.product)
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         self.milestone = self.factory.makeMilestone(productseries=self.series)
 
 
@@ -82,3 +95,11 @@ class TestBugAddNominationDistroSeries(
         self.bug.addTask(self.bug_supervisor, self.distro)
         self.milestone = self.factory.makeMilestone(
             distribution=self.distro)
+
+    def test_bugsupervisor_addNominationFor_with_obsolete_distroseries(self):
+        # A bug cannot be nominated for an obsolete series.
+        with celebrity_logged_in('admin'):
+            self.series.status = SeriesStatus.OBSOLETE
+        login_person(self.bug_supervisor)
+        self.assertRaises(NominationSeriesObsoleteError,
+            self.bug.addNomination, self.user, self.series)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -43,7 +43,7 @@ from zope.schema import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -97,6 +97,7 @@ DAYS_IN_HALF_YEAR = 366 / 2
 # Period after which entries with certain statuses are culled from the
 # queue.
 translation_import_queue_entry_age = {
+    RosettaImportStatus.APPROVED: timedelta(days=DAYS_IN_HALF_YEAR),
     RosettaImportStatus.DELETED: timedelta(days=3),
     RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
     RosettaImportStatus.IMPORTED: timedelta(days=3),
@@ -399,7 +400,8 @@ class ITranslationImportQueue(Interface):
     @operation_parameters(
         status=copy_field(ITranslationImportQueueEntry['status']))
     @operation_returns_collection_of(IHasTranslationImports)
-    def getRequestTargets(status=None):
+    @call_with(user=REQUEST_USER)
+    def getRequestTargets(user,  status=None):
         """List `Product`s and `DistroSeries` with pending imports.
 
         :arg status: Filter by `RosettaImportStatus`.

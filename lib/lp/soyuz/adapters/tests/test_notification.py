@@ -6,42 +6,44 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from email.utils import formataddr
-from storm.store import Store
 from textwrap import dedent
+
+from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
+from lp.services.mail.sendmail import format_address_for_person
+from lp.services.propertycache import get_property_cache
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
-    get_recipients,
     fetch_information,
+    get_upload_notification_recipients,
     is_auto_sync_upload,
-    reject_changes_file,
-    person_to_email,
     notify,
+    person_to_email,
+    reject_changes_file,
     )
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
     )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 
@@ -193,7 +195,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         removeSecurityProxy(
             bpr.build.source_package_release).changelog = changelog
         self.layer.txn.commit()
-        archive = self.factory.makeArchive()
+        person = self.factory.makePerson(name='archiver')
+        archive = self.factory.makeArchive(owner=person, name='ppa')
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
@@ -216,8 +219,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             If you don't understand why your files were rejected please send an email
             to launchpad-users@lists.launchpad.net for help (requires membership).
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)
@@ -231,8 +234,8 @@ class TestNotification(TestCaseWithFactory):
     def test_fetch_information_changes(self):
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Foo Bar <foo.bar@canonical.com>',
-            'Maintainer': 'Foo Bar <foo.bar@canonical.com>',
+            'Changed-By': 'Foo Bar <foo.bar@example.com>',
+            'Maintainer': 'Foo Bar <foo.bar@example.com>',
             'Changes': ' * Foo!',
             }
         info = fetch_information(
@@ -246,7 +249,7 @@ class TestNotification(TestCaseWithFactory):
             info['maintainer_displayname'],
             ]
         for field in fields:
-            self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
+            self.assertEqual('Foo Bar <foo.bar@example.com>', field)
 
     def test_fetch_information_spr(self):
         creator = self.factory.makePerson(displayname=u"foø")
@@ -331,7 +334,7 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         uploader = self.factory.makePerson()
-        removeSecurityProxy(uploader).preferredemail = None
+        get_property_cache(uploader).preferredemail = None
         email = '%s <foo@example.com>' % uploader.displayname
         changes = {'Changed-By': email, 'Maintainer': email}
         logger = BufferLogger()
@@ -365,64 +368,67 @@ class TestNotification(TestCaseWithFactory):
                     distroseries=distroseries, component=component))
         archive.newComponentUploader(maintainer, component)
         archive.newComponentUploader(changer, component)
-        return get_recipients(
+        return get_upload_notification_recipients(
             blamer, archive, distroseries, logger=None, changes=changes)
 
-    def test_get_recipients_good_emails(self):
-        # Test get_recipients with good email addresses..
+    def test_get_upload_notification_recipients_good_emails(self):
+        # Test get_upload_notification_recipients with good email addresses..
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer@canonical.com>',
-            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, maintainer, changer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person)
+            for person in (blamer, maintainer, changer)]
+        self.assertContentEqual(expected, recipients)
 
-    def test_get_recipients_bad_maintainer_email(self):
+    def test_get_upload_notification_recipients_bad_maintainer_email(self):
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer@canonical.com>',
-            'Maintainer': 'Maintainer <maintainer at canonical.com>',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer at example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, changer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person) for person in (blamer, changer)]
+        self.assertContentEqual(expected, recipients)
 
-    def test_get_recipients_bad_changedby_email(self):
-        # Test get_recipients with invalid changedby email address.
+    def test_get_upload_notification_recipients_bad_changedby_email(self):
+        # Test get_upload_notification_recipients with invalid changedby
+        # email address.
         blamer = self.factory.makePerson()
         maintainer = self.factory.makePerson(
-            'maintainer@canonical.com', displayname='Maintainer')
+            'maintainer@example.com', displayname='Maintainer')
         changer = self.factory.makePerson(
-            'changer@canonical.com', displayname='Changer')
+            'changer@example.com', displayname='Changer')
         changes = {
             'Date': '2001-01-01',
-            'Changed-By': 'Changer <changer at canonical.com>',
-            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changed-By': 'Changer <changer at example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
         recipients = self._run_recipients_test(
             changes, blamer, maintainer, changer)
-        expected = [format_address_for_person(p)
-                    for p in (blamer, maintainer)]
-        self.assertEqual(expected, recipients)
+        expected = [
+            format_address_for_person(person)
+            for person in (blamer, maintainer)]
+        self.assertContentEqual(expected, recipients)
 
     def test_assemble_body_handles_no_preferred_email_for_changer(self):
         # If changer has no preferred email address,

@@ -7,7 +7,7 @@ Create some teams.
     >>> devs = factory.makeTeam(person)
     >>> adjutants = factory.makeTeam(person)
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> dev1 = factory.makePerson()
     >>> ignored = devs.addMember(dev1, person)
 

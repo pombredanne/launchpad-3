@@ -9,9 +9,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
@@ -21,10 +18,15 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.testing import login_as
+from lp.testing import (
+    login,
+    login_as,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 # XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
 # TestCaseWithFactory.
@@ -35,10 +37,8 @@ class TestDistributionMirror(unittest.TestCase):
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
-        self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'releases-mirror')
-        self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'archive-mirror')
+        self.cdimage_mirror = mirrorset.getByName('releases-mirror')
+        self.archive_mirror = mirrorset.getByName('archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 

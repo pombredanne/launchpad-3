@@ -11,7 +11,8 @@ import _pythonpath
 
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.verify_pofile_stats import (
-    VerifyPOFileStatsProcess)
+    VerifyPOFileStatsProcess,
+    )
 
 
 class VerifyPOFileStats(LaunchpadCronScript):

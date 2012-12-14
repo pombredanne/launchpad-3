@@ -13,7 +13,7 @@ special data needed for the layout.
 
 The view has a provides a list of featured projects and a top project.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    >>> from lp.services.webapp.interfaces import ILaunchpadRoot
 
     >>> root = getUtility(ILaunchpadRoot)
     >>> view = create_initialized_view(root, name='index.html')

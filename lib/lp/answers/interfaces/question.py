@@ -18,8 +18,8 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    exported,
     export_write_operation,
+    exported,
     operation_for_version,
     operation_parameters,
     REQUEST_USER,
@@ -29,7 +29,6 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -44,12 +43,12 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from lp.answers.interfaces.faq import IFAQ
+from lp import _
 from lp.answers.enums import (
     QuestionPriority,
     QuestionStatus,
     )
+from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.person import IPerson

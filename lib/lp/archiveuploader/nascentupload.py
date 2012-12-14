@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -23,7 +23,6 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -33,6 +32,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DdebBinaryUploadFile,
     DebBinaryUploadFile,
     SourceUploadFile,
+    UdebBinaryUploadFile,
     UploadError,
     UploadWarning,
     )
@@ -41,6 +41,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -137,6 +138,9 @@ class NascentUpload:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
 
+        if policy.redirect_warning is not None:
+            self.warn(policy.redirect_warning)
+
         # Make sure the changes file name is well-formed.
         self.run_and_reject_on_error(self.changes.checkFileName)
 
@@ -164,20 +168,16 @@ class NascentUpload:
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
 
-        if (len(self.changes.files) == 1 and
-            isinstance(self.changes.files[0], CustomUploadFile)):
-            self.logger.debug("Single Custom Upload detected.")
-        else:
-            policy.validateUploadType(self)
+        policy.validateUploadType(self)
 
-            if self.sourceful and not self.changes.dsc:
-                self.reject(
-                    "Unable to find the DSC file in the source upload.")
+        if self.sourceful and not self.changes.dsc:
+            self.reject("Unable to find the DSC file in the source upload.")
 
-            # Apply the overrides from the database. This needs to be done
-            # before doing component verifications because the component
-            # actually comes from overrides for packages that are not NEW.
-            self.find_and_apply_overrides()
+        # Apply the overrides from the database. This needs to be done
+        # before doing component verifications because the component
+        # actually comes from overrides for packages that are not NEW.
+        self.find_and_apply_overrides()
+        self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -347,9 +347,11 @@ class NascentUpload:
                     unmatched_ddebs[ddeb_key] = uploaded_file
 
         for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+            is_deb = isinstance(uploaded_file, DebBinaryUploadFile)
+            is_udeb = isinstance(uploaded_file, UdebBinaryUploadFile)
+            is_ddeb = isinstance(uploaded_file, DdebBinaryUploadFile)
+            # We need exactly a DEB or UDEB, not a DDEB.
+            if (is_deb or is_udeb) and not is_ddeb:
                 try:
                     matching_ddeb = unmatched_ddebs.pop(
                         (uploaded_file.package + '-dbgsym',
@@ -365,9 +367,23 @@ class NascentUpload:
                 "Orphaned debug packages: %s" % ', '.join(
                     '%s %s (%s)' % d for d in unmatched_ddebs))
 
+    def _overrideDDEBSs(self):
+        """Make sure that any DDEBs in the upload have the same overrides
+        as their counterpart DEBs.  This method needs to be called *after*
+        _matchDDEBS.
+
+        This is required so that domination can supersede both files in
+        lockstep.
+        """
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                if uploaded_file.deb_file is not None:
+                    self._overrideBinaryFile(uploaded_file,
+                                             uploaded_file.deb_file)
     #
     # Helpers for warnings and rejections
     #
+
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -375,10 +391,10 @@ class NascentUpload:
         """
         try:
             callable()
-        except UploadError, error:
-            self.reject("".join(error.args).encode("utf8"))
-        except UploadWarning, error:
-            self.warn("".join(error.args).encode("utf8"))
+        except UploadError as error:
+            self.reject("".join(error.args))
+        except UploadWarning as error:
+            self.warn("".join(error.args))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -398,9 +414,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject("".join(error.args).encode("utf8"))
+                self.reject("".join(error.args))
             elif isinstance(error, UploadWarning):
-                self.warn("".join(error.args).encode("utf8"))
+                self.warn("".join(error.args))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -637,7 +653,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
+        if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -697,7 +713,9 @@ class NascentUpload:
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,
             override.pocket.name))
+        self._overrideBinaryFile(uploaded_file, override)
 
+    def _overrideBinaryFile(self, uploaded_file, override):
         uploaded_file.component_name = override.component.name
         uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to
@@ -705,10 +723,11 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def processUnknownFile(self, uploaded_file):
+    def processUnknownFile(self, uploaded_file, override=None):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
-        Here we use the override policy defined in UnknownOverridePolicy.
+        Here we use the override, if specified, or simply default to the policy
+        defined in UnknownOverridePolicy.
 
         In the case of a PPA, files are not touched.  They are always
         overridden to 'main' at publishing time, though.
@@ -731,7 +750,10 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
-        # Apply the component override and default to universe.
+        # Use the specified override, or delegate to UnknownOverridePolicy.
+        if override:
+            uploaded_file.component_name = override.component.name
+            return
         component_name_override = UnknownOverridePolicy.getComponentOverride(
             uploaded_file.component_name)
         uploaded_file.component_name = component_name_override
@@ -741,6 +763,9 @@ class NascentUpload:
 
         Anything not yet in the DB gets tagged as 'new' and won't count
         towards the permission check.
+
+        XXX: wallyworld 2012-11-01 bug=1073755: This work should be done using
+        override polices defined in lp.soyuz.adapters.overrides.py
         """
         self.logger.debug("Finding and applying overrides.")
 
@@ -801,7 +826,16 @@ class NascentUpload:
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
-                    self.processUnknownFile(uploaded_file)
+                    # Check the current source publication's component.
+                    # If there is a corresponding source publication, we will
+                    # use the component from that, otherwise default mappings
+                    # are used.
+                    spph = None
+                    try:
+                        spph = uploaded_file.findCurrentSourcePublication()
+                    except UploadError:
+                        pass
+                    self.processUnknownFile(uploaded_file, spph)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -841,14 +875,14 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
-        except QueueInconsistentStateError, e:
+        except QueueInconsistentStateError as e:
             # A QueueInconsistentStateError is expected if the rejection
             # is a routine rejection due to a bad package upload.
             # Log at info level so LaunchpadCronScript doesn't generate an
             # OOPS.
             func = self.logger.info
             return self._reject_with_logging(e, notify, func)
-        except Exception, e:
+        except Exception as e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
@@ -889,10 +923,10 @@ class NascentUpload:
             # state.
             pass
 
-        changes_file_object = open(self.changes.filepath, "r")
-        self.queue_root.notify(summary_text=self.rejection_message,
-            changes_file_object=changes_file_object, logger=self.logger)
-        changes_file_object.close()
+        with open(self.changes.filepath, "r") as changes_file_object:
+            self.queue_root.notify(
+                summary_text=self.rejection_message,
+                changes_file_object=changes_file_object, logger=self.logger)
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
@@ -938,7 +972,7 @@ class NascentUpload:
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
-            ancestry = package_upload_source.getSourceAncestry()
+            ancestry = package_upload_source.getSourceAncestryForDiffs()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(

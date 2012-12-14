@@ -25,15 +25,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -45,6 +36,16 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConduct,
     ISignedCodeOfConductSet,
     )
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import DataDownloadView
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
@@ -132,34 +133,25 @@ class CodeOfConductView(LaunchpadView):
         return self.context.title
 
 
-class CodeOfConductDownloadView:
+class CodeOfConductDownloadView(DataDownloadView):
     """Download view class for CoC page.
 
-    This view does not use a template, but uses a __call__ method
-    that returns a file to the browser.
+    This view provides a text file with "Content-disposition: attachment",
+    causing browsers to download rather than display it.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    content_type = 'text/plain'
 
-    def __call__(self):
-        """Set response headers to download an attachment, and return
-        CoC file data.
-        """
+    def getBody(self):
         # Use the context attribute 'content' as data to return.
         # Avoid open the CoC file again.
-        content = self.context.content
+        return self.context.content
 
+    @property
+    def filename(self):
         # Build a fancy filename:
         # - Use title with no spaces and append '.txt'
-        filename = self.context.title.replace(' ', '') + '.txt'
-
-        self.request.response.setHeader('Content-Type', 'application/text')
-        self.request.response.setHeader('Content-Length', len(content))
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment; filename="%s"' % filename)
-        return content
+        return self.context.title.replace(' ', '') + '.txt'
 
 
 class CodeOfConductSetView(LaunchpadView):

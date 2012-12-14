@@ -27,7 +27,7 @@ revisions, at least in Branch5 and older branches.
 Interfaces
 ----------
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.code.enums import BranchType
     >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -141,7 +141,7 @@ and -, +, _ and @ are allowed after that.
     ...     registrant=registrant)
     Traceback (most recent call last):
       ...
-    LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
+    LaunchpadValidationError: Invalid branch name &#x27;invalid name!&#x27;.  Branch ...
 
 
 Determining the recently changed, registered and imported branches
@@ -172,7 +172,7 @@ database.  We don't want any of the branches in the sample data to mess
 up our tests, so we clear the last_scanned data in all existing
 branches.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> store.find(Branch).set(last_scanned=None)
@@ -312,7 +312,7 @@ BranchSubscriptionNotificationLevel.
     >>> set(branch.subscribers) == set([branch.owner, subscriber])
     True
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> print canonical_url(subscription)
     http://code...dev/~user/product/subscribed/+subscription/subscriber
 
@@ -377,8 +377,8 @@ taken into consideration with branch deletion.
 
 The current references to the branch table are shown here.
 
-    >>> from canonical.database import postgresql
-    >>> from canonical.database.sqlbase import cursor
+    >>> from lp.services.database import postgresql
+    >>> from lp.services.database.sqlbase import cursor
     >>> cur = cursor()
     >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
 

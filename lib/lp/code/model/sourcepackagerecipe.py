@@ -1,13 +1,10 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401,W1001
 
 """Implementation of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
 __all__ = [
-    'get_buildable_distroseries_set',
     'SourcePackageRecipe',
     ]
 
@@ -39,16 +36,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
@@ -65,28 +52,31 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
+from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormexpr import Greatest
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.model.archive import Archive
-
-
-def get_buildable_distroseries_set(user):
-    ppas = getUtility(IArchiveSet).getPPAsForUser(user)
-    supported_distros = set([ppa.distribution for ppa in ppas])
-    # Now add in Ubuntu.
-    supported_distros.add(getUtility(ILaunchpadCelebrities).ubuntu)
-    distros = getUtility(IDistroSeriesSet).search()
-
-    buildables = []
-    for distro in distros:
-        if distro.active and distro.distribution in supported_distros:
-            buildables.append(distro)
-    return buildables
 
 
 def recipe_modified(recipe, event):
@@ -158,7 +148,7 @@ class SourcePackageRecipe(Storm):
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=True)
 
-    @property
+    @cachedproperty
     def _recipe_data(self):
         return Store.of(self).find(
             SourcePackageRecipeData,
@@ -172,6 +162,21 @@ class SourcePackageRecipe(Storm):
     @property
     def base_branch(self):
         return self._recipe_data.base_branch
+
+    @staticmethod
+    def preLoadDataForSourcePackageRecipes(sourcepackagerecipes):
+        # Load the referencing SourcePackageRecipeData.
+        spr_datas = load_referencing(
+            SourcePackageRecipeData,
+            sourcepackagerecipes, ['sourcepackage_recipe_id'])
+        # Load the related branches.
+        load_related(Branch, spr_datas, ['base_branch_id'])
+        # Store the SourcePackageRecipeData in the sourcepackagerecipes
+        # objects.
+        for spr_data in spr_datas:
+            cache = get_property_cache(spr_data.sourcepackage_recipe)
+            cache._recipe_data = spr_data
+        SourcePackageRecipeData.preLoadReferencedBranches(spr_datas)
 
     def setRecipeText(self, recipe_text):
         parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
@@ -257,6 +262,11 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
+    def containsUnbuildableSeries(self, archive):
+        buildable_distros = set(
+            BuildableDistroSeries.findSeries(archive.owner))
+        return len(set(self.distroseries).difference(buildable_distros)) >= 1
+
     def requestBuild(self, archive, requester, distroseries,
                      pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
@@ -264,7 +274,7 @@ class SourcePackageRecipe(Storm):
         if not archive.is_ppa:
             raise NonPPABuildRequest
 
-        buildable_distros = get_buildable_distroseries_set(archive.owner)
+        buildable_distros = BuildableDistroSeries.findSeries(archive.owner)
         if distroseries not in buildable_distros:
             raise BuildNotAllowedForDistro(self, distroseries)
 
@@ -297,7 +307,10 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe`."""
         builds = []
         self.is_stale = False
-        for distroseries in self.distroseries:
+        buildable_distros = set(BuildableDistroSeries.findSeries(
+            self.daily_build_archive.owner))
+        build_for = set(self.distroseries).intersection(buildable_distros)
+        for distroseries in build_for:
             try:
                 build = self.requestBuild(
                     self.daily_build_archive, self.owner,

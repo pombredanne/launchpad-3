@@ -10,7 +10,7 @@ __all__ = [
 
 from lazr.restful.utils import smartquote
 
-from canonical.launchpad.webapp import (
+from lp.services.webapp import (
     ApplicationMenu,
     GetitemNavigation,
     LaunchpadView,

@@ -25,15 +25,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAlias,
-    ILibraryFileAliasSet,
-    )
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.services.fields import KEEP_SAME_IMAGE
+from lp.services.librarian.interfaces import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    )
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class LaunchpadFileWidget(FileWidget):
@@ -138,7 +138,7 @@ class ImageChangeWidget(SimpleInputWidget):
             self._image = form.getOne(self.image_widget.name)
             try:
                 self.context.validate(self._image)
-            except ValidationError, v:
+            except ValidationError as v:
                 self._error = WidgetInputError(self.name, self.label, v)
                 raise self._error
             self._image.seek(0)

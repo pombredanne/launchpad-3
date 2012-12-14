@@ -5,13 +5,13 @@
 
 
 import hashlib
-from Mailman.Queue import XMLRPCRunner
 
 from Mailman import (
     Errors,
     mm_cfg,
     )
 from Mailman.Logging.Syslog import syslog
+from Mailman.Queue import XMLRPCRunner
 
 
 def process(mlist, msg, msgdata):
@@ -48,7 +48,7 @@ def process(mlist, msg, msgdata):
     # processing at this handler.
     try:
         is_member = proxy.isRegisteredInLaunchpad(sender)
-    except Exception, error:
+    except Exception as error:
         XMLRPCRunner.handle_proxy_error(error, msg, msgdata)
     # This handler can just return if the sender is a member of Launchpad.
     if is_member:

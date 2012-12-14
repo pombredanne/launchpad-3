@@ -10,7 +10,7 @@ IMilestone.
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries('1.0')
     >>> owner = firefox_1_0.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.9')
     >>> from datetime import datetime
     >>> from pytz import UTC
@@ -24,7 +24,7 @@ The driver for the release's milestone target cannot change the release, but
 the driver of the milestone's series_target is a release manager and can
 make changes.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> driver = factory.makePerson(name='driver')
     >>> firefox_109.milestone.target.driver = driver
@@ -32,18 +32,18 @@ make changes.
     >>> release_manager = factory.makePerson(name='release-manager')
     >>> firefox_109.milestone.series_target.driver = release_manager
 
-    >>> login_person(driver)
+    >>> ignored = login_person(driver)
     >>> check_permission('launchpad.Edit', firefox_109)
     False
 
-    >>> login_person(release_manager)
+    >>> ignored = login_person(release_manager)
     >>> check_permission('launchpad.Edit', firefox_109)
     True
 
 A product release can be deleted using its destroySelf() method, as long
 as it doesn't have any IProductReleaseFiles associated with it.
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> firefox_109.files.count()
     0
     >>> firefox_109.destroySelf()

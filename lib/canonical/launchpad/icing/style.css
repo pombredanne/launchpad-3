@@ -22,16 +22,31 @@
 ...
 */
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'Ubuntu Mono', monospace;
+    margin: 1em 0;
+    }
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
+    top: 0;
+    }
 
 /* === Fonts and colors === */
 
-.unavailable {color: #999; background: none;}
+.unavailable {
+    color: #999;
+    background: none;
+}
 
-.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
-
-/* Using colored text as you wish. */
-.green {color: green;}
-.red {color: red;}
+.duplicate-details p {
+    padding: 0em;
+    margin-top: 0em;
+    margin-bottom: 0.2em;
+}
 
 .helpwanted {
     background-color: #fafca9;
@@ -39,17 +54,40 @@
     padding: 0.5em;
     padding-left: 3em;
 }
+
 .whiteboard {
-  color: #666;
+    color: #666;
 }
+
 /* When shown as in a definition description, indent slightly. */
 dd .whiteboard {
-  padding-left: 1em;
+    padding-left: 1em;
 }
 
 form.primary.search {
-  margin-bottom: 2em;
+    margin-bottom: 2em;
 }
+
+div#bugs-search-form.dynamic_bug_listing {
+    margin-bottom: 10px;
+    padding: 3px 0;
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: #EBEBEB;
+}
+
+form.primary.search.dynamic_bug_listing {
+    margin-bottom: 0;
+}
+
+form.primary.search.dynamic_bug_listing h3 {
+    margin-top: 5px;
+}
+
+form.primary.search.dynamic_bug_listing p {
+    margin: 3px 0;
+}
+
 @media print {
   .notforprint {display:none;}
 }
@@ -216,7 +254,7 @@ a.bg-image {
   border-top: 1px solid #ddd;
 }
 .from-superseded {background-color: #ffffcc;}
-.adminHiddenComment {background-color:yellow;}
+.adminHiddenComment {background-color:gray;}
 
 /* --- Overview --- */
 
@@ -239,6 +277,60 @@ div#branch-description {
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
+
+ul.latest-ppa-updates li {
+    padding: 3px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    }
+table#packages_list tr.superseded, tr.blacklisted {
+    background-color: #eee;
+    }
+ul.latest-ppa-updates li:nth-child(odd) {
+    /* The following could be generalised for use to the following selector:
+       .side .portlet li.nth-child(odd)
+       if needed. */
+    border-top: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    background-color: #eeeeff;
+    }
+ul.latest-ppa-updates li.FULLYBUILT {
+    background-image: url('/@@/yes');
+    }
+ul.latest-ppa-updates li.FULLYBUILT_PENDING {
+    background-image: url('/@@/build-success-publishing');
+    }
+ul.latest-ppa-updates li.NEEDSBUILD {
+    background-image: url('/@@/build-needed');
+    }
+ul.latest-ppa-updates li.FAILEDTOBUILD {
+    background-image: url('/@@/build-failed');
+    }
+ul.latest-ppa-updates li.BUILDING {
+    background-image: url('/@@/processing');
+    }
+
+.package-diff-status span.COMPLETED {
+    background-image: url('/@@/packagediff-ok');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+     }
+.package-diff-status span.PENDING {
+    background-image: url('/@@/packagediff-loading');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.FAILED {
+    background-image: url('/@@/packagediff-failed');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.request-derived-diff {
+    background-image: url('/@@/packagediff-unknown');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+
 #sources-list-entries {
   border: 1px solid gray;
   padding: 0.3em;
@@ -299,6 +391,30 @@ p.update-failure-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
     color: #666;
+}
+
+a.action-icon.standalone.update-in-progress-message {
+    display: inline-block;
+    margin-left: inherit;
+    margin-top: -10px;
+    width: 1px;
+    height: 16px;
+    vertical-align: text-top;
+    text-indent: 3px;
+    overflow: hidden;
+}
+
+button.update-in-progress-message {
+    background: buttonface none;
+    padding-left: inherit;
+    color: inherit;
+}
+
+button.update-in-progress-message:after {
+    background: url("/@@/spinner") center left no-repeat;
+    content: "\00A0";
+    margin-left: 6px;
+    padding-right: 12px;
 }
 
 a.update-retry {
@@ -369,11 +485,8 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    -khtml-border-radius: 5px;
+    font-family: 'Ubuntu Mono', monospace;
+    border-radius: 5px;
 }
 
 div.logtail p {
@@ -413,6 +526,17 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
+table.code {
+    margin-bottom: 1em;
+    }
+table.code th {
+    text-align: left;
+    font-weight: bold;
+    }
+table.code th, table.code td {
+    padding-right: 3em;
+    }
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -428,9 +552,7 @@ div.ppa-packaging-tmp-actions .portlet {
   padding-right: 1em;
   padding-top: 0.2em;
   padding-bottom: 0.2em;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
 .pending-update h3 {
@@ -465,7 +587,7 @@ table.diff {
    background-color: white;
    margin-bottom: 0.5em;
 }
-table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .text { padding-left: 0.5em; }
 table.diff .line-no {
   text-align: right;
   background-color: #f6f6f6;
@@ -509,6 +631,13 @@ dl.reviews dd {
 
 /* === Bugs === */
 
+tr.bug-branch-summary td {
+    padding: 0px 6px;
+    }
+tr.bug-branch-summary td.first {
+    padding-left: 0px;
+    }
+
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
 
@@ -550,12 +679,6 @@ button.spinner {
   background-image: url(/@@/spinner) !important;
 }
 
-/* This lets us have a help link sprite and a normal link sprite on the same
-   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
-div#mute-link-container a.sprite {
-  width: auto;
-}
-
 /* Gives us some room after the description of the user's subscription. */
 div#current_user_subscription {
     padding-bottom: 8px;
@@ -577,6 +700,75 @@ div#current_user_subscription a.sprite {
 /* In translation forms, single-line text fields occupy nearly all of the
 available width, just like multi-line fields (see "textarea" above): */
 input.translate {width: 90%; max-width: 60em;}
+
+
+
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+    }
+
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+    }
+table.translation-stats td {
+    text-align: center;
+    }
+table.translation-stats td.template-name {
+    text-align: left;
+    }
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    }
+table.translation-stats tfoot th {
+    text-align: left;
+    }
+table.translation-stats tfoot td {
+    text-align: center;
+    }
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+    float: right;
+    }
+div.translation-help-links div {
+    clear: both;
+    }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
+    }
+
+
 
 /* ====== Content area styles ====== */
 
@@ -701,13 +893,6 @@ div.popupTitle {
   font-weight: bold;
 }
 
-/* From nice_pre in tales.py */
-pre.wrap {
-  white-space: -moz-pre-wrap;
-  white-space: -o-pre-wrap;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
 
 /* Don't add styles here.
 A chronologically-ordered style sheet is hard to maintain and debug.

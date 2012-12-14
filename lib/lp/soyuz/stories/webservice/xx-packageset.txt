@@ -14,7 +14,7 @@ correctness of exposing package sets on the web services API.
 The actual package set *functionality* is tested in much greater detail
 here:
 
-    lib/lp/soyuz/doc/packageset.txt
+    lb/lp/soyuz/tests/test_packageset.py
 
 Please refer to the tests contained in the file above if you are really
 interested in package sets and the complete functionality they offer.
@@ -83,9 +83,40 @@ Here's an example with a funny URL concoted by a "smart" user.
     HTTP/1.1 404 Not Found
     ...
 
+Let's create another set.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'shortlived', description=u'An ephemeral packageset',
+    ...     owner=name12['self_link'])
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+We can modify it, and even give it away.
+
+    >>> from simplejson import dumps
+    >>> name16 = webservice.get("/~name16").jsonBody()
+    >>> patch = {u'name': 'renamed',
+    ...          u'description': u'Repurposed packageset',
+    ...          u'owner_link': name16['self_link']}
+    >>> response = webservice.patch(
+    ...     '/package-sets/hoary/shortlived', 'application/json', dumps(patch))
+    >>> print response
+    HTTP/1.1 301 Moved Permanently
+    ...
+
+And then delete it.
+
+    >>> response = webservice.delete(
+    ...     '/package-sets/hoary/renamed', {}, api_version='devel')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
 Populate the 'umbrella' package set with source packages.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.database.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -573,6 +604,7 @@ Let's see what we've got:
     package_set_name: u'firefox'
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~name12'
+    pocket: None
     resource_type_link: ...
     self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary'
     source_package_name: None

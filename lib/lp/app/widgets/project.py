@@ -16,14 +16,15 @@ from zope.app.form.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
+    WidgetInputError,
     )
 from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class ProjectScopeWidget(BrowserWidget, InputWidget):
@@ -87,17 +88,20 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
             return None
         elif scope == 'project':
             if not self.request.form_ng.getOne(self.target_widget.name):
-                self._error = LaunchpadValidationError(
-                    'Please enter a project name')
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError('Please enter a project name'))
                 raise self._error
             try:
                 return self.target_widget.getInputValue()
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                      "%s.target" % self.name)
-                self._error = LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad" % entered_name)
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no project named '%s' registered in"
+                        " Launchpad" % entered_name))
                 raise self._error
         elif self.required:
             raise UnexpectedFormData("No valid option was selected.")

@@ -3,7 +3,7 @@
 BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
-   >>> from canonical.launchpad.webapp.testing import verifyObject
+   >>> from lp.services.webapp.testing import verifyObject
    >>> from lp.soyuz.interfaces.binarypackagerelease import (
    ...     IBinaryPackageRelease,
    ...     )

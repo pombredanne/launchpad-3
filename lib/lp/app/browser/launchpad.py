@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -6,12 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'DoesNotExistView',
+    'ExceptionHierarchy',
     'Hierarchy',
-    'IcingContribFolder',
     'IcingFolder',
+    'iter_view_registrations',
     'LaunchpadImageFolder',
-    'LaunchpadGraphics',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
@@ -24,9 +23,7 @@ __all__ = [
 
 
 import cgi
-from datetime import (
-    timedelta,
-    )
+from datetime import timedelta
 import operator
 import os
 import re
@@ -37,6 +34,7 @@ from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryAdapter,
     )
@@ -45,67 +43,33 @@ from zope.datetime import (
     parseDatetimetz,
     )
 from zope.i18nmessageid import Message
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
-from canonical.config import config
-from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm,
-    IBazaarApplication,
-    IRosettaApplication,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.layers import WebServiceLayer
-from canonical.launchpad.webapp import (
-    canonical_name,
-    canonical_url,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb,
-    ILaunchBag,
-    ILaunchpadRoot,
-    INavigationMenu,
-    )
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import (
+from lp import _
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.folder import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-# XXX SteveAlexander 2005-09-22: this is imported here because there is no
-#     general timedelta to duration format adapter available.  This should
-#     be factored out into a generally available adapter for both this
-#     code and for TALES namespace code to use.
-#     Same for MenuAPI.
 from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
-    PageTemplateContextsAPI,
     )
 from lp.app.errors import (
     GoneError,
@@ -114,6 +78,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -127,8 +92,10 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -138,12 +105,42 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName,
+    IProduct,
     IProductSet,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.helpers import intOrZero
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import utc_now
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -157,6 +154,7 @@ from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.interfaces.translations import IRosettaApplication
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -226,7 +224,7 @@ class LinkView(LaunchpadView):
             value.append(self.sprite_class)
             value.append(self.context.icon)
         if self.context.hidden:
-            value.append('invisible-link')
+            value.append('hidden')
         return " ".join(value)
 
     @property
@@ -316,13 +314,6 @@ class Hierarchy(LaunchpadView):
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
-            if title is None or title == '':
-                template = getattr(view, 'template', None)
-                if template is None:
-                    template = view.index
-                template_api = PageTemplateContextsAPI(
-                    dict(context=obj, template=template, view=view))
-                title = template_api.pagetitle()
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
             breadcrumb = Breadcrumb(None)
@@ -342,6 +333,14 @@ class Hierarchy(LaunchpadView):
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
         return len(self.items) > 1 and not has_major_heading
+
+
+class ExceptionHierarchy(Hierarchy):
+
+    @property
+    def objects(self):
+        """Return an empty list because the traversal is not safe or sane."""
+        return []
 
 
 class Macro:
@@ -619,12 +618,11 @@ class LaunchpadRootNavigation(Navigation):
         target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchLookup).getByLPPath(path)
-            branch, trailing = branch_data
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
             target_url = canonical_url(branch)
-            if trailing is not None:
+            if trailing != '':
                 target_url = urlappend(target_url, trailing)
-        except (NoLinkedBranch), e:
+        except (NoLinkedBranch) as e:
             # A valid ICanHasLinkedBranch target exists but there's no
             # branch or it's not visible.
 
@@ -637,7 +635,7 @@ class LaunchpadRootNavigation(Navigation):
             self.request.response.addNotification(
                 "The target %s does not have a linked branch." % path)
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError), e:
+                InvalidProductName, NotFoundError) as e:
             # If are aren't arriving at this invalid branch URL from another
             # page then we just raise a NotFoundError to generate a 404,
             # otherwise we end up in a bad recursion loop. The target url will
@@ -663,6 +661,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
         'bugs': IMaloneApplication,
@@ -736,8 +735,8 @@ class LaunchpadRootNavigation(Navigation):
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person.is_team
-                    and not check_permission('launchpad.View', person)):
+                if (person.is_team and
+                    not check_permission('launchpad.LimitedView', person)):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
@@ -766,7 +765,33 @@ class LaunchpadRootNavigation(Navigation):
 
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=False)
-        if pillar is not None and check_permission('launchpad.View', pillar):
+
+        if pillar is None:
+            return None
+
+        if IProduct.providedBy(pillar):
+            if not pillar.active:
+                # Emergency brake for public but inactive products:
+                # These products should not be shown to ordinary users.
+                # The root problem is that many views iterate over products,
+                # inactive products included, and access attributes like
+                # name, displayname or call canonical_url(product) --
+                # and finally throw the data away, if the product is
+                # inactive. So we cannot make these attributes inaccessible
+                # for inactive public products. On the other hand, we
+                # require the permission launchpad.View to protect private
+                # products.
+                # This means that we cannot simply check if the current
+                # user has the permission launchpad.View for an inactive
+                # product.
+                user = getUtility(ILaunchBag).user
+                if user is None:
+                    return None
+                user = IPersonRoles(user)
+                if (not user.in_commercial_admin and not user.in_admin and
+                    not user.in_registry_experts):
+                    return None
+        if check_permission('launchpad.LimitedView', pillar):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
@@ -863,15 +888,6 @@ class LaunchpadImageFolder(ExportedImageFolder):
         config.root, 'lib/canonical/launchpad/images/')
 
 
-class IcingContribFolder(ExportedFolder):
-    """Export the contrib icing."""
-
-    export_subdirectories = True
-
-    folder = os.path.join(
-        config.root, 'lib/canonical/launchpad/icing-contrib/')
-
-
 class LaunchpadTourFolder(ExportedFolder):
     """Export a launchpad tour folder.
 
@@ -917,6 +933,15 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ()
 
 
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProjectGroup')
+
+
 class AppFrontPageSearchView(LaunchpadFormView):
 
     schema = IAppFrontPageSearchForm
@@ -934,10 +959,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
     def scope_error(self):
         """The error message for the scope widget."""
         return self.getFieldError('scope')
-
-
-class LaunchpadGraphics(LaunchpadView):
-    label = page_title = 'Overview of Launchpad graphics and icons'
 
 
 def get_launchpad_views(cookies):
@@ -967,24 +988,12 @@ def get_launchpad_views(cookies):
     return views
 
 
-class DoesNotExistView:
-    """A view that simply raises NotFound when rendered.
+def iter_view_registrations(cls):
+    """Iterate through the AdapterRegistrations of a view.
 
-    Useful to register as a view that shouldn't appear on a particular
-    virtual host.
+    The input must be the final registered form of the class, which is
+    typically a SimpleViewClass variant.
     """
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def publishTraverse(self, request, name):
-        """See `IBrowserPublisher`."""
-        return self
-
-    def browserDefault(self, request):
-        """See `IBrowserPublisher`."""
-        return self, ()
-
-    def __call__(self):
-        raise NotFound(self.context, self.__name__)
+    for registration in getGlobalSiteManager().registeredAdapters():
+        if registration.factory == cls:
+            yield registration

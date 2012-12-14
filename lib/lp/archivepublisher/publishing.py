@@ -17,12 +17,10 @@ import os
 import shutil
 
 from debian.deb822 import (
-    Release,
     _multivalued,
+    Release,
     )
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -41,11 +39,19 @@ from lp.archivepublisher.utils import (
     RepositoryIndexFile,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.librarian.client import LibrarianClient
+from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
     )
 
 # Use this as the lock file name for all scripts that may manipulate
@@ -157,8 +163,7 @@ class I18nIndex(_multivalued):
         return fixed_field_lengths
 
     def _get_size_field_length(self, key):
-        lengths = [len(str(item['size'])) for item in self[key]]
-        return max(lengths)
+        return max(len(str(item['size'])) for item in self[key])
 
 
 class Publisher(object):
@@ -235,19 +240,42 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.series:
+        if self.archive.purpose in (
+            ArchivePurpose.PRIMARY,
+            ArchivePurpose.PARTNER,
+            ):
+            # For PRIMARY and PARTNER archives, skip OBSOLETE and FUTURE
+            # series.  We will never want to publish anything in them, so it
+            # isn't worth thinking about whether they have pending
+            # publications.
+            consider_series = [
+                series
+                for series in self.distro.series
+                if series.status not in (
+                    SeriesStatus.OBSOLETE,
+                    SeriesStatus.FUTURE,
+                    )]
+        else:
+            # Other archives may have reasons to continue building at least
+            # for OBSOLETE series.  For example, a PPA may be continuing to
+            # provide custom builds for users who haven't upgraded yet.
+            consider_series = self.distro.series
+
+        for distroseries in consider_series:
             for pocket in self.archive.getPockets():
-                if (self.allowed_suites and not (distroseries.name, pocket) in
-                    self.allowed_suites):
+                allowed = (
+                    not self.allowed_suites or
+                    (distroseries.name, pocket) in self.allowed_suites)
+                if allowed:
+                    more_dirt = distroseries.publish(
+                        self._diskpool, self.log, self.archive, pocket,
+                        is_careful=force_publishing)
+
+                    self.dirty_pockets.update(more_dirt)
+
+                else:
                     self.log.debug(
-                        "* Skipping %s/%s" % (distroseries.name, pocket.name))
-                    continue
-
-                more_dirt = distroseries.publish(
-                    self._diskpool, self.log, self.archive, pocket,
-                    is_careful=force_publishing)
-
-                self.dirty_pockets.update(more_dirt)
+                        "* Skipping %s/%s", distroseries.name, pocket.name)
 
     def A2_markPocketsWithDeletionsDirty(self):
         """An intermediate step in publishing to detect deleted packages.
@@ -256,9 +284,6 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
-        from lp.soyuz.model.publishing import (
-            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
@@ -389,8 +414,7 @@ class Publisher(object):
             source_index_root, self._config.temproot, 'Sources')
 
         for spp in distroseries.getSourcePackagePublishing(
-            PackagePublishingStatus.PUBLISHED, pocket=pocket,
-            component=component, archive=self.archive):
+                pocket, component, self.archive):
             stanza = spp.getIndexStanza().encode('utf8') + '\n\n'
             source_index.write(stanza)
 
@@ -416,8 +440,7 @@ class Publisher(object):
                 di_index_root, self._config.temproot, 'Packages')
 
             for bpp in distroseries.getBinaryPackagePublishing(
-                archtag=arch.architecturetag, pocket=pocket,
-                component=component, archive=self.archive):
+                    arch.architecturetag, pocket, component, self.archive):
                 stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
                 if (bpp.binarypackagerelease.binpackageformat in
                     (BinaryPackageFormat.DEB, BinaryPackageFormat.DDEB)):
@@ -481,6 +504,28 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
+    def _writeReleaseFile(self, suite, release_data):
+        """Write a Release file to the archive.
+
+        :param suite: The name of the suite whose Release file is to be
+            written.
+        :param release_data: A `debian.deb822.Release` object to write
+            to the filesystem.
+        """
+        location = os.path.join(self._config.distsroot, suite)
+        if not file_exists(location):
+            os.makedirs(location)
+        with open(os.path.join(location, "Release"), "w") as release_file:
+            release_data.dump(release_file, "utf-8")
+
+    def _syncTimestamps(self, suite, all_files):
+        """Make sure the timestamps on all files in a suite match."""
+        location = os.path.join(self._config.distsroot, suite)
+        paths = [os.path.join(location, path) for path in all_files]
+        latest_timestamp = max(os.stat(path).st_mtime for path in paths)
+        for path in paths:
+            os.utime(path, (latest_timestamp, latest_timestamp))
+
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -525,8 +570,7 @@ class Publisher(object):
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
             "%a, %d %b %Y %k:%M:%S UTC")
-        release_file["Architectures"] = " ".join(
-            sorted(list(all_architectures)))
+        release_file["Architectures"] = " ".join(sorted(all_architectures))
         release_file["Components"] = " ".join(
             reorder_components(all_components))
         release_file["Description"] = drsummary
@@ -535,7 +579,7 @@ class Publisher(object):
             release_file["NotAutomatic"] = "yes"
             release_file["ButAutomaticUpgrades"] = "yes"
 
-        for filename in sorted(list(all_files), key=os.path.dirname):
+        for filename in sorted(all_files, key=os.path.dirname):
             entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
@@ -552,12 +596,8 @@ class Publisher(object):
                 "name": filename,
                 "size": len(entry)})
 
-        f = open(os.path.join(
-            self._config.distsroot, suite, "Release"), "w")
-        try:
-            release_file.dump(f, "utf-8")
-        finally:
-            f.close()
+        self._writeReleaseFile(suite, release_file)
+        all_files.add("Release")
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -567,6 +607,11 @@ class Publisher(object):
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(suite)
+        all_files.add("Release.gpg")
+
+        # Make sure all the timestamps match, to make it easier to insert
+        # caching headers on mirrors.
+        self._syncTimestamps(suite, all_files)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
@@ -593,12 +638,9 @@ class Publisher(object):
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        f = open(os.path.join(self._config.distsroot, suite,
-                              component, arch_path, "Release"), "w")
-        try:
+        with open(os.path.join(self._config.distsroot, suite,
+                               component, arch_path, "Release"), "w") as f:
             release_file.dump(f, "utf-8")
-        finally:
-            f.close()
 
     def _writeSuiteSource(self, distroseries, pocket, component,
                           all_series_files):
@@ -684,11 +726,8 @@ class Publisher(object):
             self.log.debug("Failed to find " + full_name)
             return None
 
-        in_file = open(full_name, 'r')
-        try:
+        with open(full_name, 'r') as in_file:
             return in_file.read()
-        finally:
-            in_file.close()
 
     def deleteArchive(self):
         """Delete the archive.
@@ -713,7 +752,7 @@ class Publisher(object):
                 continue
             try:
                 shutil.rmtree(directory)
-            except (shutil.Error, OSError), e:
+            except (shutil.Error, OSError) as e:
                 self.log.warning(
                     "Failed to delete directory '%s' for archive "
                     "'%s/%s'\n%s" % (

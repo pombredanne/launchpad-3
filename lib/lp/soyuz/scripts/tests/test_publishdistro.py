@@ -10,11 +10,10 @@ import os
 import shutil
 import subprocess
 import sys
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -22,6 +21,7 @@ from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -37,8 +37,10 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.publishdistro import PublishDistro
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPublishDistro(TestNativePublishingBase):
@@ -56,9 +58,9 @@ class TestPublishDistro(TestNativePublishingBase):
         publish_distro = PublishDistro(test_args=args)
         publish_distro.logger = BufferLogger()
         publish_distro.txn = self.layer.txn
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         publish_distro.main()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def runPublishDistroScript(self):
         """Run publish-distro.py, returning the result and output."""

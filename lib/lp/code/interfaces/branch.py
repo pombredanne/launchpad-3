@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -25,7 +25,6 @@ __all__ = [
     'WrongNumberOfReviewTypeArguments',
     ]
 
-from cgi import escape
 import httplib
 import re
 
@@ -53,6 +52,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -68,11 +68,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.launchpad.webapp.menu import structured
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp import _
+from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
@@ -94,14 +91,21 @@ from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.services.config import config
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     URIField,
     Whiteboard,
     )
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
+from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -151,7 +155,7 @@ class BranchURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
-        from canonical.launchpad.webapp import canonical_url
+        from lp.services.webapp import canonical_url
         from lazr.uri import URI
 
         # Can't use super-- this derives from an old-style class
@@ -162,13 +166,14 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(launchpad_domain)})
+                mapping={'domain': html_escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
 
         for hostname in get_blacklisted_hostnames():
             if uri.underDomain(hostname):
                 message = _(
-                    'Launchpad cannot mirror branches from %s.' % hostname)
+                    'Launchpad cannot mirror branches from %s.'
+                    % html_escape(hostname))
                 raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
@@ -178,7 +183,7 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(constraint_text)})
+                mapping={'domain': html_escape(constraint_text)})
             raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -194,8 +199,8 @@ class BranchURIField(URIField):
             message = _(
                 'The bzr branch <a href="${url}">${branch}</a> is '
                 'already registered with this URL.',
-                mapping={'url': canonical_url(branch),
-                         'branch': escape(branch.displayname)})
+                mapping={'url': html_escape(canonical_url(branch)),
+                         'branch': html_escape(branch.displayname)})
             raise LaunchpadValidationError(structured(message))
 
 
@@ -247,11 +252,22 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-
-    explicitly_private = Bool(
-        title=_("Explicitly Private"),
-        description=_("This branch is explicitly marked private as opposed "
-        "to being private because it is stacked on a private branch."))
+    # Defines whether *this* branch is private. A branch may have
+    # explicitly private set false but still be considered private because it
+    # is stacked on a private branch. This attribute is read-only. The value
+    # is guarded by setPrivate().
+    explicitly_private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this branch.')))
 
 
 class IBranchAnyone(Interface):
@@ -292,9 +308,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
-            vocabulary='UserTeamsParticipationPlusSelf',
-            description=_("Either yourself or a team you are a member of. "
-                          "This controls who can modify the branch.")))
+            vocabulary='AllUserTeamsParticipationPlusSelf',
+            description=_("Either yourself or an exclusive team you are a "
+                          "member of. This controls who can modify the "
+                          "branch.")))
 
     # Distroseries and sourcepackagename are exported together as
     # the sourcepackage.
@@ -635,6 +652,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
+    def getStackedOnBranches():
+        """The branches on which this one is stacked."""
+
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
         """Return the matching mainline branch revision objects.
@@ -784,7 +804,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_write_operation()
     @operation_for_version('beta')
     def subscribe(person, notification_level, max_diff_lines,
-                  code_review_level, subscribed_by):
+                  code_review_level, subscribed_by,
+                  check_stacked_visibility=True):
         """Subscribe this person to the branch.
 
         :param person: The `Person` to subscribe.
@@ -962,12 +983,16 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
+    def getAllowedInformationTypes(who):
+        """Get a list of acceptable `InformationType`s for this branch.
 
-class IBranchEditableAttributes(Interface):
-    """IBranch attributes that can be edited.
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
+        """
 
-    These attributes need launchpad.View to see, and launchpad.Edit to change.
-    """
+
+class IBranchModerateAttributes(Interface):
+    """IBranch attributes that can be edited by more than one community."""
 
     name = exported(
         TextLine(
@@ -981,10 +1006,48 @@ class IBranchEditableAttributes(Interface):
         PublicPersonChoice(
             title=_('Review Team'),
             required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
+            vocabulary='ValidBranchReviewer',
+            description=_("The reviewer of a branch is the person or "
+                          "exclusive team that is responsible for reviewing "
+                          "proposals and merging into this branch.")))
+
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the changes in this branch.')))
+
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.DEVELOPMENT))
+
+
+class IBranchModerate(Interface):
+    """IBranch methods that can be edited by more than one community."""
+
+    @operation_parameters(
+        information_type=copy_field(IBranchPublic['information_type']),
+        )
+    @call_with(who=REQUEST_USER, verify_policy=True)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
+        """
+
+
+class IBranchEditableAttributes(Interface):
+    """IBranch attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
 
     url = exported(
         BranchURIField(
@@ -1008,17 +1071,6 @@ class IBranchEditableAttributes(Interface):
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
             vocabulary=BranchType))
-
-    description = exported(
-        Text(
-            title=_('Description'), required=False,
-            description=_(
-                'A short description of the changes in this branch.')))
-
-    lifecycle_status = exported(
-        Choice(
-            title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.DEVELOPMENT))
 
     branch_format = exported(
         Choice(
@@ -1163,7 +1215,8 @@ class IMergeQueueable(Interface):
 
 
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
-              IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
+              IBranchEditableAttributes, IBranchModerate,
+              IBranchModerateAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -1179,18 +1232,7 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
             description=_(
                 "This branch is visible only to its subscribers.")))
 
-    # Defines whether *this* branch is private. A branch may have
-    # explicitly private set false but still be considered private because it
-    # is stacked on a private branch. This attribute is read-only. The value
-    # is guarded by setPrivate().
-    explicitly_private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "Make this branch visible only to its subscribers.")))
-
-    @mutator_for(explicitly_private)
+    @mutator_for(IBranchPublic['explicitly_private'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
@@ -1339,6 +1381,51 @@ class IBranchSet(Interface):
             eager load related objects (products, code imports etc).
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose branch visibility is being "
+                    "checked."),
+            schema=IPerson),
+        branch_names=List(value_type=Text(),
+            title=_('List of branch unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBranchVisibilityInfo(user, person, branch_names):
+        """Return the named branches visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param person: The person whose branch visibility we wish to check.
+        :param branch_names: The unique names of the branches to check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_branches: a list of the unique names of the branches which
+        the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript. It is not
+        designed to efficiently scale to handle requests for large numbers of
+        branches.
+        """
+
+    @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision, visible_by_user=None):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        :param visible_by_user: The user to whom the proposals must be
+            visible.  If None, only public proposals will be returned.
+        """
+
 
 class IBranchListingQueryOptimiser(Interface):
     """Interface for a helper utility to do efficient queries for branches.
@@ -1442,15 +1529,26 @@ class BzrIdentityMixin:
         return sorted(links)
 
 
-def user_has_special_branch_access(user):
-    """Admins and bazaar experts have special access.
+def user_has_special_branch_access(user, branch=None):
+    """Admins and vcs-import members have have special access.
 
     :param user: A 'Person' or None.
+    :param branch: A branch or None when checking collection access.
     """
     if user is None:
         return False
-    celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin)
+    roles = IPersonRoles(user)
+    if roles.in_admin:
+        return True
+    if branch is None:
+        return False
+    code_import = branch.code_import
+    if code_import is None:
+        return False
+    return (
+        roles.in_vcs_imports
+        or (IPersonRoles(branch.owner).in_vcs_imports
+            and user.inTeam(code_import.registrant)))
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,

@@ -1,11 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
 __metaclass__ = type
 __all__ = [
+    'LicensesModifiedEvent',
     'Product',
     'ProductSet',
     'ProductWithLicenses',
@@ -15,6 +15,7 @@ __all__ = [
 import calendar
 import datetime
 import httplib
+import itertools
 import operator
 
 from lazr.delegates import delegates
@@ -37,7 +38,6 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Not,
     Or,
@@ -54,31 +54,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -86,40 +61,54 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import (
+    Question,
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
 from lp.app.enums import (
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    NotFoundError,
+    ServiceUsageForbidden,
+    )
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
-    SpecificationFilter,
-    SpecificationImplementationStatus,
-    )
+from lp.app.interfaces.services import IService
+from lp.app.model.launchpad import InformationTypeMixin
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
+    get_specification_filters,
     HasSpecificationsMixin,
     Specification,
+    SPECIFICATION_POLICY_ALLOWED_TYPES,
+    SPECIFICATION_POLICY_DEFAULT_TYPES,
+    visible_specification_query,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
+from lp.bugs.interfaces.bugtarget import (
+    BUG_POLICY_ALLOWED_TYPES,
+    BUG_POLICY_DEFAULT_TYPES,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
@@ -130,7 +119,8 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
+from lp.code.model.branch import Branch
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
@@ -138,17 +128,43 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    INCLUSIVE_TEAM_POLICY,
+    SpecificationSharingPolicy,
+    )
+from lp.registry.errors import (
+    CannotChangeInformationType,
+    CommercialSubscribersOnly,
+    ProprietaryProduct,
+    VoucherAlreadyRedeemed,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
+    validate_person_or_closed_team,
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
+    ILicensesModifiedEvent,
     IProduct,
     IProductSet,
     License,
     LicenseStatus,
+    )
+from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrantFlat,
     )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -160,6 +176,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
+from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.pillar import HasAliasMixin
@@ -168,15 +185,35 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
@@ -188,8 +225,17 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+class LicensesModifiedEvent(ObjectModifiedEvent):
+    """See `ILicensesModifiedEvent`."""
+    implements(ILicensesModifiedEvent)
+
+    def __init__(self, product, user=None):
+        super(LicensesModifiedEvent, self).__init__(
+            product, product, [], user)
+
+
 def get_license_status(license_approved, project_reviewed, licenses):
-    """Decide the license status for an `IProduct`.
+    """Decide the licence status for an `IProduct`.
 
     :return: A LicenseStatus enum value.
     """
@@ -199,23 +245,19 @@ def get_license_status(license_approved, project_reviewed, licenses):
     # enough for us for the project to freely use Launchpad.
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
-    if len(licenses) == 0:
-        # We don't know what the license is.
-        return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
-        # Notice the difference between the License and LicenseStatus.
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
         if project_reviewed:
-            # The OTHER_OPEN_SOURCE license was not manually approved
+            # The OTHER_OPEN_SOURCE licence was not manually approved
             # by setting license_approved to true.
             return LicenseStatus.PROPRIETARY
         else:
             # The OTHER_OPEN_SOURCE is pending review.
             return LicenseStatus.UNREVIEWED
     else:
-        # The project has at least one license and does not have
-        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        # The project has at least one licence and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a licence.
         return LicenseStatus.OPEN_SOURCE
 
 
@@ -259,10 +301,10 @@ class ProductWithLicenses:
 
     @classmethod
     def composeLicensesColumn(cls, for_class=None):
-        """Compose a Storm column specification for licenses.
+        """Compose a Storm column specification for licences.
 
         Use this to render a list of `Product` linkes without querying
-        licenses for each one individually.
+        licences for each one individually.
 
         It lets you prefetch the licensing information in the same
         query that fetches a `Product`.  Just add the column spec
@@ -295,21 +337,43 @@ class UnDeactivateable(Exception):
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
 
+bug_policy_default = {
+    InformationType.PUBLIC: BugSharingPolicy.PUBLIC,
+    InformationType.PROPRIETARY: BugSharingPolicy.PROPRIETARY,
+    InformationType.EMBARGOED: BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+}
+
+
+branch_policy_default = {
+    InformationType.PUBLIC: BranchSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED: BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: BranchSharingPolicy.PROPRIETARY,
+}
+
+
+specification_policy_default = {
+    InformationType.PUBLIC: SpecificationSharingPolicy.PUBLIC,
+    InformationType.EMBARGOED:
+        SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+    InformationType.PROPRIETARY: SpecificationSharingPolicy.PROPRIETARY,
+}
+
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
+              KarmaContextMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin, HasAliasMixin,
+              StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+              OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, InformationTypeMixin,
+              TranslationPolicyMixin):
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        ILaunchpadUsage, IProduct, IServiceUsage)
+        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -318,7 +382,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person,
+        storm_validator=validate_person_or_closed_team,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -328,10 +392,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_person,
         notNull=False,
-        default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -378,12 +438,141 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_blueprints', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
-    official_rosetta = BoolCol(
-        dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    max_bug_heat = Int()
-    date_next_suggest_packaging = UtcDateTimeCol(default=None)
+
+    @property
+    def date_next_suggest_packaging(self):
+        """See `IProduct`
+
+        Returns None; exists only to maintain API compatability.
+        """
+        return None
+
+    @date_next_suggest_packaging.setter  # pyflakes:ignore
+    def date_next_suggest_packaging(self, value):
+        """See `IProduct`
+
+        Ignores supplied value; exists only to maintain API compatability.
+        """
+        pass
+
+    def _valid_product_information_type(self, attr, value):
+        for exception in self.checkInformationType(value):
+            raise exception
+        return value
+
+    def checkInformationType(self, value):
+        """Check whether the information type change should be permitted.
+
+        Iterate through exceptions explaining why the type should not be
+        changed.  Has the side-effect of creating a commercial subscription if
+        permitted.
+        """
+        if value not in PUBLIC_PROPRIETARY_INFORMATION_TYPES:
+            yield CannotChangeInformationType('Not supported for Projects.')
+        if value in PROPRIETARY_INFORMATION_TYPES:
+            if self.answers_usage == ServiceUsage.LAUNCHPAD:
+                yield CannotChangeInformationType('Answers is enabled.')
+        if self._SO_creating or value not in PROPRIETARY_INFORMATION_TYPES:
+            return
+        # Additional checks when transitioning an existing product to a
+        # proprietary type
+        # All specs located by an ALL search are public.
+        public_specs = self.specifications(
+            None, filter=[SpecificationFilter.ALL])
+        if not public_specs.is_empty():
+            # Unlike bugs and branches, specifications cannot be USERDATA or a
+            # security type.
+            yield CannotChangeInformationType(
+                'Some blueprints are public.')
+        store = Store.of(self)
+        non_proprietary_bugs = store.find(Bug,
+            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
+            BugTask.bug == Bug.id, BugTask.product == self.id)
+        if not non_proprietary_bugs.is_empty():
+            yield CannotChangeInformationType(
+                'Some bugs are neither proprietary nor embargoed.')
+        # Default returns all public branches.
+        non_proprietary_branches = store.find(
+            Branch, Branch.product == self.id,
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        )
+        if not non_proprietary_branches.is_empty():
+            yield CannotChangeInformationType(
+                'Some branches are neither proprietary nor embargoed.')
+        questions = store.find(Question, Question.product == self.id)
+        if not questions.is_empty():
+            yield CannotChangeInformationType('This project has questions.')
+        templates = store.find(
+            POTemplate, ProductSeries.product == self.id,
+            POTemplate.productseries == ProductSeries.id)
+        if not templates.is_empty():
+            yield CannotChangeInformationType('This project has translations.')
+        if not self.getTranslationImportQueueEntries().is_empty():
+            yield CannotChangeInformationType(
+                'This project has queued translations.')
+        import_productseries = store.find(
+            ProductSeries,
+            ProductSeries.product == self.id,
+            ProductSeries.translations_autoimport_mode !=
+            TranslationsBranchImportMode.NO_IMPORT)
+        if not import_productseries.is_empty():
+            yield CannotChangeInformationType(
+                'Some product series have translation imports enabled.')
+        if not self.packagings.is_empty():
+            yield CannotChangeInformationType('Some series are packaged.')
+        if self.translations_usage == ServiceUsage.LAUNCHPAD:
+            yield CannotChangeInformationType('Translations are enabled.')
+        # Proprietary check works only after creation, because during
+        # creation, has_commercial_subscription cannot give the right value
+        # and triggers an inappropriate DB flush.
+
+        # If you're changing the license, and setting a PROPRIETARY
+        # information type, yet you don't have a subscription, you get one
+        # when the license is set.
+
+        # Create the complimentary commercial subscription for the product.
+        self._ensure_complimentary_subscription()
+
+        # If you have a commercial subscription, but it's not current, you
+        # cannot set the information type to a PROPRIETARY type.
+        if not self.has_current_commercial_subscription:
+            yield CommercialSubscribersOnly(
+                'A valid commercial subscription is required for private'
+                ' Projects.')
+        if (self.bug_supervisor is not None and
+            self.bug_supervisor.membership_policy in INCLUSIVE_TEAM_POLICY):
+            yield CannotChangeInformationType(
+                'Bug supervisor has inclusive membership.')
+
+    _information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC,
+        dbName="information_type",
+        storm_validator=_valid_product_information_type)
+
+    def _get_information_type(self):
+        return self._information_type or InformationType.PUBLIC
+
+    def _set_information_type(self, value):
+        old_info_type = self._information_type
+        self._information_type = value
+        # Make sure that policies are updated to grant permission to the
+        # maintainer as required for the Product.
+        # However, only on edits. If this is a new Product it's handled
+        # already.
+        if not self._SO_creating:
+            if (old_info_type == InformationType.PUBLIC and
+                value != InformationType.PUBLIC):
+                self.setBranchSharingPolicy(branch_policy_default[value])
+                self.setBugSharingPolicy(bug_policy_default[value])
+                self.setSpecificationSharingPolicy(
+                    specification_policy_default[value])
+            self._ensurePolicies([value])
+
+    information_type = property(_get_information_type, _set_information_type)
+
+    security_contact = None
 
     @property
     def pillar(self):
@@ -403,7 +592,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def official_anything(self):
-        return True in (self.official_malone, self.official_rosetta,
+        return True in (self.official_malone,
+                        self.translations_usage == ServiceUsage.LAUNCHPAD,
                         self.official_blueprints, self.official_answers,
                         self.official_codehosting)
 
@@ -415,10 +605,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName="blueprints_usage", notNull=True,
         schema=ServiceUsage,
         default=ServiceUsage.UNKNOWN)
-    _translations_usage = EnumCol(
+
+    def validate_translations_usage(self, attr, value):
+        if value == ServiceUsage.LAUNCHPAD and self.private:
+            raise ProprietaryProduct(
+                "Translations are not supported for proprietary products.")
+        return value
+
+    translations_usage = EnumCol(
         dbName="translations_usage", notNull=True,
         schema=ServiceUsage,
-        default=ServiceUsage.UNKNOWN)
+        default=ServiceUsage.UNKNOWN,
+        storm_validator=validate_translations_usage)
 
     @property
     def codehosting_usage(self):
@@ -459,8 +657,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True, default=False)
     project_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
-    private_bugs = BoolCol(
-        dbName='private_bugs', notNull=True, default=False)
+    private_bugs = False
+    bug_sharing_policy = EnumCol(
+        enum=BugSharingPolicy, notNull=False, default=None)
+    branch_sharing_policy = EnumCol(
+        enum=BranchSharingPolicy, notNull=False, default=None)
+    specification_sharing_policy = EnumCol(
+        enum=SpecificationSharingPolicy, notNull=False,
+        default=SpecificationSharingPolicy.PUBLIC)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -489,7 +693,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
             # Clear the project_reviewed and license_approved flags
-            # if the license changes.
+            # if the licence changes.
             self._resetLicenseReview()
         return value
 
@@ -497,16 +701,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                              storm_validator=_validate_license_info)
 
     def _validate_license_approved(self, attr, value):
-        """Ensure license approved is only applied to the correct licenses."""
+        """Ensure licence approved is only applied to the correct licences."""
         if not self._SO_creating:
             licenses = list(self.licenses)
             if value:
                 if (License.OTHER_PROPRIETARY in licenses
                     or [License.DONT_KNOW] == licenses):
                     raise ValueError(
-                        "Projects without a license or have "
+                        "Projects without a licence or have "
                         "'Other/Proprietary' may not be approved.")
-                # Approving a license implies it has been reviewed.  Force
+                # Approving a licence implies it has been reviewed.  Force
                 # `project_reviewed` to be True.
                 self.project_reviewed = True
         return value
@@ -515,9 +719,120 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
+        if (var not in [enum.PUBLIC, enum.FORBIDDEN] and
+            not self.has_current_commercial_subscription):
+            raise CommercialSubscribersOnly(
+                "A current commercial subscription is required to use "
+                "proprietary %s." % kind)
+        if self.information_type != InformationType.PUBLIC:
+            if InformationType.PUBLIC in allowed_types[var]:
+                raise ProprietaryProduct(
+                    "The project is %s." % self.information_type.title)
+        required_policies = set(allowed_types[var]).intersection(
+            set(PRIVATE_INFORMATION_TYPES))
+        self._ensurePolicies(required_policies)
+
+    def setBranchSharingPolicy(self, branch_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            branch_sharing_policy, BranchSharingPolicy, 'branches',
+            BRANCH_POLICY_ALLOWED_TYPES)
+        self.branch_sharing_policy = branch_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def setBugSharingPolicy(self, bug_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            bug_sharing_policy, BugSharingPolicy, 'bugs',
+            BUG_POLICY_ALLOWED_TYPES)
+        self.bug_sharing_policy = bug_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def setSpecificationSharingPolicy(self, specification_sharing_policy):
+        """See `IProductEditRestricted`."""
+        self._prepare_to_set_sharing_policy(
+            specification_sharing_policy, SpecificationSharingPolicy,
+            'specifications', SPECIFICATION_POLICY_ALLOWED_TYPES)
+        self.specification_sharing_policy = specification_sharing_policy
+        self._pruneUnusedPolicies()
+
+    def getAllowedBugInformationTypes(self):
+        """See `IProduct.`"""
+        return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+
+    def getDefaultBugInformationType(self):
+        """See `IProduct.`"""
+        return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+
+    def getAllowedSpecificationInformationTypes(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_ALLOWED_TYPES[
+                self.specification_sharing_policy]
+        return [InformationType.PUBLIC]
+
+    def getDefaultSpecificationInformationType(self):
+        """See `ISpecificationTarget`."""
+        if self.specification_sharing_policy is not None:
+            return SPECIFICATION_POLICY_DEFAULT_TYPES[
+                self.specification_sharing_policy]
+        return InformationType.PUBLIC
+
+    def _ensurePolicies(self, information_types):
+        # Ensure that the product has access policies for the specified
+        # information types.
+        aps = getUtility(IAccessPolicySource)
+        existing_policies = aps.findByPillar([self])
+        existing_types = set([
+            access_policy.type for access_policy in existing_policies])
+        # Create the missing policies.
+        required_types = set(information_types).difference(existing_types)
+        policies = itertools.product((self,), required_types)
+        policies = getUtility(IAccessPolicySource).create(policies)
+
+        # Add the maintainer to the policies.
+        grants = []
+        for p in policies:
+            grants.append((p, self.owner, self.owner))
+        getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def _pruneUnusedPolicies(self):
+        allowed_bug_types = set(
+            BUG_POLICY_ALLOWED_TYPES.get(
+                self.bug_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_branch_types = set(
+            BRANCH_POLICY_ALLOWED_TYPES.get(
+                self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_specification_types = set(
+            SPECIFICATION_POLICY_ALLOWED_TYPES.get(
+                self.specification_sharing_policy, [InformationType.PUBLIC])
+        )
+        allowed_types = allowed_bug_types.union(allowed_branch_types)
+        allowed_types = allowed_types.union(allowed_specification_types)
+        allowed_types.add(self.information_type)
+        # Fetch all APs, and after filtering out ones that are forbidden
+        # by the bug, branch, and specification policies, the APs that have no
+        # APAs are unused and can be deleted.
+        ap_source = getUtility(IAccessPolicySource)
+        access_policies = set(ap_source.findByPillar([self]))
+        apa_source = getUtility(IAccessPolicyArtifactSource)
+        unused_aps = [
+            ap for ap in access_policies
+            if ap.type not in allowed_types
+            and apa_source.findByPolicy([ap]).is_empty()]
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+        ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
+
+    @property
+    def has_current_commercial_subscription(self):
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return (self.commercial_subscription
+            and self.commercial_subscription.date_expires > now)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -547,6 +862,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      month=new_month,
                                      day=new_day)
             return new_date
+
+        # The voucher may already have been redeemed or marked as redeemed
+        # pending notification being sent to Salesforce.
+        voucher_expr = (
+            "trim(leading 'pending-' "
+            "from CommercialSubscription.sales_system_id)")
+        already_redeemed = Store.of(self).find(
+            CommercialSubscription,
+            SQL(voucher_expr) == unicode(voucher)).any()
+        if already_redeemed:
+            raise VoucherAlreadyRedeemed(
+                "Voucher %s has already been redeemed for %s"
+                      % (voucher, already_redeemed.product.displayname))
 
         if current_datetime is None:
             current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
@@ -583,7 +911,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def qualifies_for_free_hosting(self):
         """See `IProduct`."""
         if self.license_approved:
-            # The license was manually approved for free hosting.
+            # The licence was manually approved for free hosting.
             return True
         elif License.OTHER_PROPRIETARY in self.licenses:
             # Proprietary licenses need a subscription without
@@ -592,15 +920,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         elif (self.project_reviewed and
               (License.OTHER_OPEN_SOURCE in self.licenses or
                self.license_info not in ('', None))):
-            # We only know that an unknown open source license
+            # We only know that an unknown open source licence
             # requires a subscription after we have reviewed it
             # when we have not set license_approved to True.
             return False
         elif len(self.licenses) == 0:
-            # The owner needs to choose a license.
+            # The owner needs to choose a licence.
             return False
         else:
-            # The project has only valid open source license(s).
+            # The project has only valid open source licence(s).
             return True
 
     @property
@@ -650,7 +978,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.license_approved, self.project_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
-        """When the license is modified, it must be reviewed again."""
+        """When the licence is modified, it must be reviewed again."""
         self.project_reviewed = False
         self.license_approved = False
 
@@ -663,6 +991,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._answers_usage
 
     def _set_answers_usage(self, val):
+        if val == ServiceUsage.LAUNCHPAD:
+            if self.information_type in PROPRIETARY_INFORMATION_TYPES:
+                raise ServiceUsageForbidden(
+                    "Answers not allowed for non-public projects.")
         self._answers_usage = val
         if val == ServiceUsage.LAUNCHPAD:
             self.official_answers = True
@@ -694,26 +1026,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         _set_blueprints_usage,
         doc="Indicates if the product uses the blueprints service.")
 
-    def _get_translations_usage(self):
-        if self._translations_usage != ServiceUsage.UNKNOWN:
-            # If someone has set something with the enum, use it.
-            return self._translations_usage
-        elif self.official_rosetta:
-            return ServiceUsage.LAUNCHPAD
-        return self._translations_usage
-
-    def _set_translations_usage(self, val):
-        self._translations_usage = val
-        if val == ServiceUsage.LAUNCHPAD:
-            self.official_rosetta = True
-        else:
-            self.official_rosetta = False
-
-    translations_usage = property(
-        _get_translations_usage,
-        _set_translations_usage,
-        doc="Indicates if the product uses the translations service.")
-
     @cachedproperty
     def _cached_licenses(self):
         """Get the licenses as a tuple."""
@@ -727,7 +1039,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_project_reviewed=True):
-        """Set the licenses from a tuple of license enums.
+        """Set the licences from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
         """
@@ -736,20 +1048,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if licenses == old_licenses:
             return
         # Clear the project_reviewed and license_approved flags
-        # if the license changes.
+        # if the licence changes.
         # ProductSet.createProduct() passes in reset_project_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
-        # project_reviewed & licenses at the same time.
+        # project_reviewed & licences at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
-        # $product/+edit doesn't require a license if a license hasn't
-        # already been set, but updateContextFromData() updates all the
-        # fields, so we have to avoid this assertion when the attribute
-        # isn't actually being changed.
-        assert len(licenses) != 0, "licenses argument must not be empty"
+        if len(licenses) == 0:
+            raise ValueError('licenses argument must not be empty.')
         for license in licenses:
             if license not in License:
-                raise AssertionError("%s is not a License" % license)
+                raise ValueError("%s is not a License." % license)
 
         for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self,
@@ -759,8 +1068,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
+        if (License.OTHER_PROPRIETARY in licenses
+            and self.commercial_subscription is None):
+            self._ensure_complimentary_subscription()
+
+        notify(LicensesModifiedEvent(self))
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _ensure_complimentary_subscription(self):
+        """Create a complementary commercial subscription for the product"""
+        if not self.commercial_subscription:
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            now = datetime.datetime.now(pytz.UTC)
+            date_expires = now + datetime.timedelta(days=30)
+            sales_system_id = 'complimentary-30-day-%s' % now
+            whiteboard = (
+                "Complimentary 30 day subscription. -- Launchpad %s" %
+                now.date().isoformat())
+            subscription = CommercialSubscription(
+                product=self, date_starts=now, date_expires=date_expires,
+                registrant=lp_janitor, purchaser=lp_janitor,
+                sales_system_id=sales_system_id, whiteboard=whiteboard)
+            get_property_cache(self).commercial_subscription = subscription
 
     def _getOwner(self):
         """Get the owner."""
@@ -806,12 +1136,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """Customize `search_params` for this product.."""
         search_params.setProduct(self)
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
-
-    series = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    _series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
+
+    @cachedproperty
+    def series(self):
+        return self._series
 
     @property
     def active_or_packaged_series(self):
@@ -847,7 +1177,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def name_with_project(self):
-        """See lib.canonical.launchpad.interfaces.IProduct"""
+        """See `IProduct`"""
         if self.project and self.project.name != self.name:
             return self.project.name + ": " + self.name
         return self.name
@@ -898,26 +1228,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage,
             )
-        store = IStore(Packaging)
-        origin = [
-            Packaging,
-            Join(SourcePackageName,
-                 Packaging.sourcepackagename == SourcePackageName.id),
-            Join(ProductSeries, Packaging.productseries == ProductSeries.id),
-            Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
-            Join(Distribution, DistroSeries.distribution == Distribution.id),
-            ]
-        result = store.using(*origin).find(
-            (SourcePackageName, Distribution),
-            ProductSeries.product == self)
-        result = result.order_by(SourcePackageName.name, Distribution.name)
-        result.config(distinct=True)
-
+        dsp_info = get_distro_sourcepackages([self])
         return [
             DistributionSourcePackage(
                 sourcepackagename=sourcepackagename,
                 distribution=distro)
-            for sourcepackagename, distro in result]
+            for sourcepackagename, distro, product_id in dsp_info]
 
     @cachedproperty
     def ubuntu_packages(self):
@@ -950,15 +1266,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(product=self)
-        return BugSet().createBug(bug_params)
+        return results
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -995,6 +1307,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQ.new(
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=self)
+
+    def findReferencedOOPS(self, start_date, end_date):
+        """See `IHasOOPSReferences`."""
+        return list(referenced_oops(
+            start_date, end_date, "product=%(product)s", {'product': self.id}
+            ))
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""
@@ -1124,20 +1442,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # automatically shared.
         return True
 
-    @property
-    def has_any_specifications(self):
-        """See `IHasSpecifications`."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 
@@ -1175,48 +1480,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        base = 'Specification.product = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
+        tables, clauses = visible_specification_query(user)
+        clauses.append(Specification.product == self)
+        clauses.extend(get_specification_filters(filter))
         if prejoin_people:
-            results = self._preload_specifications_people(query)
+            results = self._preload_specifications_people(tables, clauses)
         else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
-        results.order_by(order)
+            tableset = Store.of(self).using(*tables)
+            results = tableset.find(Specification, *clauses)
+        results.order_by(order).config(distinct=True)
         if quantity is not None:
             results = results[:quantity]
         return results
@@ -1256,22 +1528,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
 
-    # XXX: jcsackett 2010-08-23 bug=620494
-    # The second clause in the order_by in this method is a bandaid
-    # on a sorting issue caused by date vs datetime conflicts in the
-    # database. A fix is coming out, but this deals with the edge
-    # case responsible for the referenced bug.
     def getMilestonesAndReleases(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        result = store.find(
-            (Milestone, ProductRelease),
-            And(ProductRelease.milestone == Milestone.id,
-                Milestone.productseries == ProductSeries.id,
-                ProductSeries.product == self))
-        return result.order_by(
-            Desc(ProductRelease.datereleased),
-            Desc(Milestone.name))
+
+        def strip_product_id(row):
+            return row[0], row[1]
+
+        return DecoratedResultSet(
+            get_milestones_and_releases([self]), strip_product_id)
 
     def packagedInDistros(self):
         return IStore(Distribution).find(
@@ -1281,12 +1545,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.distroseriesID == DistroSeries.id,
             DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
-
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""
@@ -1331,7 +1589,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.branch import Branch
         store = Store.of(self)
         return store.find(
             SourcePackageRecipe,
@@ -1358,6 +1615,177 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         return weight_function
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this product."""
+        return set()
+
+    def userCanView(self, user):
+        """See `IProductPublic`."""
+        if getFeatureFlag('disclosure.private_project.traversal_override'):
+            return True
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+        if not IPersonRoles.providedBy(user):
+            user = IPersonRoles(user)
+        if user.in_commercial_admin or user.in_admin:
+            self._known_viewers.add(user.id)
+            return True
+        if getUtility(IService, 'sharing').checkPillarAccess(
+            [self], self.information_type, user):
+            self._known_viewers.add(user.id)
+            return True
+        return False
+
+
+def get_precached_products(products, need_licences=False, need_projects=False,
+                        need_series=False, need_releases=False,
+                        role_names=None, need_role_validity=False):
+    """Load and cache product information.
+
+    :param products: the products for which to pre-cache information
+    :param need_licences: whether to cache license information
+    :param need_projects: whether to cache project information
+    :param need_series: whether to cache series information
+    :param need_releases: whether to cache release information
+    :param role_names: the role names to cache eg bug_supervisor
+    :param need_role_validity: whether to cache validity information
+    :return: a list of products
+    """
+
+    # Circular import.
+    from lp.registry.model.projectgroup import ProjectGroup
+
+    product_ids = set(obj.id for obj in products)
+    if not product_ids:
+        return
+    products_by_id = dict((product.id, product) for product in products)
+    caches = dict((product.id, get_property_cache(product))
+        for product in products)
+    for cache in caches.values():
+        if not safe_hasattr(cache, 'commercial_subscription'):
+            cache.commercial_subscription = None
+        if need_licences and  not safe_hasattr(cache, '_cached_licenses'):
+            cache._cached_licenses = []
+        if not safe_hasattr(cache, 'distrosourcepackages'):
+            cache.distrosourcepackages = []
+        if need_series and not safe_hasattr(cache, 'series'):
+            cache.series = []
+
+    from lp.registry.model.distributionsourcepackage import (
+        DistributionSourcePackage,
+        )
+
+    distrosourcepackages = get_distro_sourcepackages(products)
+    for sourcepackagename, distro, product_id in distrosourcepackages:
+        cache = caches[product_id]
+        dsp = DistributionSourcePackage(
+                        sourcepackagename=sourcepackagename,
+                        distribution=distro)
+        cache.distrosourcepackages.append(dsp)
+
+    if need_series:
+        series_caches = {}
+        for series in IStore(ProductSeries).find(
+            ProductSeries,
+            ProductSeries.productID.is_in(product_ids)):
+            series_cache = get_property_cache(series)
+            if (need_releases and
+                not safe_hasattr(series_cache, '_cached_releases')):
+                series_cache._cached_releases = []
+
+            series_caches[series.id] = series_cache
+            cache = caches[series.productID]
+            cache.series.append(series)
+        if need_releases:
+            release_caches = {}
+            all_releases = []
+            milestones_and_releases = get_milestones_and_releases(products)
+            for milestone, release, product_id in milestones_and_releases:
+                release_cache = get_property_cache(release)
+                release_caches[release.id] = release_cache
+                if not safe_hasattr(release_cache, 'files'):
+                    release_cache.files = []
+                all_releases.append(release)
+                series_cache = series_caches[milestone.productseries.id]
+                series_cache._cached_releases.append(release)
+
+            prs = getUtility(IProductReleaseSet)
+            files = prs.getFilesForReleases(all_releases)
+            for file in files:
+                release_cache = release_caches[file.productrelease.id]
+                release_cache.files.append(file)
+
+    for subscription in IStore(CommercialSubscription).find(
+        CommercialSubscription,
+        CommercialSubscription.productID.is_in(product_ids)):
+        cache = caches[subscription.productID]
+        cache.commercial_subscription = subscription
+    if need_licences:
+        for license in IStore(ProductLicense).find(
+            ProductLicense,
+            ProductLicense.productID.is_in(product_ids)):
+            cache = caches[license.productID]
+            if not license.license in cache._cached_licenses:
+                cache._cached_licenses.append(license.license)
+    if need_projects:
+        bulk.load_related(ProjectGroup, products_by_id.values(), ['projectID'])
+    bulk.load_related(ProductSeries, products_by_id.values(),
+        ['development_focusID'])
+    if role_names is not None:
+        person_ids = set()
+        for attr_name in role_names:
+            person_ids.update(map(
+                lambda x: getattr(x, attr_name + 'ID'),
+                products_by_id.values()))
+        person_ids.discard(None)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=need_role_validity))
+    return products
+
+
+# XXX: jcsackett 2010-08-23 bug=620494
+# The second clause in the order_by in this method is a bandaid
+# on a sorting issue caused by date vs datetime conflicts in the
+# database. A fix is coming out, but this deals with the edge
+# case responsible for the referenced bug.
+def get_milestones_and_releases(products):
+    """Bulk load the milestone and release information for the products."""
+    store = IStore(Product)
+    product_ids = [product.id for product in products]
+    result = store.find(
+        (Milestone, ProductRelease, ProductSeries.productID),
+        And(ProductRelease.milestone == Milestone.id,
+            Milestone.productseries == ProductSeries.id,
+            ProductSeries.productID.is_in(product_ids)))
+    return result.order_by(
+        Desc(ProductRelease.datereleased),
+        Desc(Milestone.name))
+
+
+def get_distro_sourcepackages(products):
+    """Bulk load the source package information for the products."""
+    store = IStore(Packaging)
+    origin = [
+        Packaging,
+        Join(SourcePackageName,
+             Packaging.sourcepackagename == SourcePackageName.id),
+        Join(ProductSeries, Packaging.productseries == ProductSeries.id),
+        Join(DistroSeries, Packaging.distroseries == DistroSeries.id),
+        Join(Distribution, DistroSeries.distribution == Distribution.id),
+        ]
+    product_ids = [product.id for product in products]
+    result = store.using(*origin).find(
+        (SourcePackageName, Distribution, ProductSeries.productID),
+        ProductSeries.productID.is_in(product_ids))
+    result = result.order_by(SourcePackageName.name, Distribution.name)
+    result.config(distinct=True)
+    return result
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1374,25 +1802,50 @@ class ProductSet:
 
     def __iter__(self):
         """See `IProductSet`."""
-        return iter(self.all_active)
+        return iter(self.get_all_active(None))
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
-    def latest(self, quantity=5):
-        if quantity is None:
-            return self.all_active
-        else:
-            return self.all_active[:quantity]
+    @classmethod
+    def latest(cls, user, quantity=5):
+        """See `IProductSet`."""
+        result = cls.get_all_active(user)
+        if quantity is not None:
+            result = result[:quantity]
+        return result
 
-    @property
-    def all_active(self):
-        return self.get_all_active()
+    @staticmethod
+    def getProductPrivacyFilter(user):
+        if user is not None:
+            roles = IPersonRoles(user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
+        granted_products = And(
+            AccessPolicyGrantFlat.grantee_id == TeamParticipation.teamID,
+            TeamParticipation.person == user,
+            AccessPolicyGrantFlat.policy == AccessPolicy.id,
+            AccessPolicy.product == Product.id,
+            AccessPolicy.type == Product._information_type)
+        return Or(Product._information_type == InformationType.PUBLIC,
+                  Product._information_type == None,
+                  Product.id.is_in(Select(Product.id, granted_products)))
 
-    def get_all_active(self, eager_load=True):
-        result = IStore(Product).find(Product, Product.active
-            ).order_by(Desc(Product.datecreated))
+    @classmethod
+    def get_users_private_products(cls, user):
+        """List the non-public products the user owns."""
+        result = IStore(Product).find(
+            Product,
+            Product._owner == user,
+            Product._information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
+        return result
+
+    @classmethod
+    def get_all_active(cls, user, eager_load=True):
+        clause = cls.getProductPrivacyFilter(user)
+        result = IStore(Product).find(Product, Product.active,
+                    clause).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
 
@@ -1439,12 +1892,24 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None,
+                      information_type=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
         if licenses is None:
             licenses = set()
+        if information_type is None:
+            information_type = InformationType.PUBLIC
+        if information_type in PROPRIETARY_INFORMATION_TYPES:
+            # This check is skipped in _valid_product_information_type during
+            # creation, so done here.  It predicts whether a commercial
+            # subscription will be generated based on the selected license,
+            # duplicating product._setLicenses
+            if License.OTHER_PROPRIETARY not in licenses:
+                raise CommercialSubscribersOnly(
+                    'A valid commercial subscription is required for private'
+                    ' Projects.')
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1454,10 +1919,18 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
+            bug_supervisor=bug_supervisor, driver=driver,
+            information_type=information_type)
 
+        # Set up the product licence.
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
+        product.setBugSharingPolicy(bug_policy_default[information_type])
+        product.setBranchSharingPolicy(
+            branch_policy_default[information_type])
+        product.setSpecificationSharingPolicy(
+            specification_policy_default[information_type])
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1466,21 +1939,19 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
-
         return product
 
-    def forReview(self, search_text=None, active=None,
+    def forReview(self, user, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None, created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
                   subscription_modified_before=None):
         """See lp.registry.interfaces.product.IProductSet."""
 
-        conditions = []
+        conditions = [self.getProductPrivacyFilter(user)]
 
         if project_reviewed is not None:
             conditions.append(Product.project_reviewed == project_reviewed)
@@ -1494,8 +1965,10 @@ class ProductSet:
         if search_text is not None and search_text.strip() != '':
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
-                Product.name = lower(%(text)s)
-                ''' % sqlvalues(text=search_text)))
+                Product.name = %(text)s OR
+                strpos(lower(Product.license_info), %(text)s) > 0 OR
+                strpos(lower(Product.reviewer_whiteboard), %(text)s) > 0
+                ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
@@ -1557,156 +2030,78 @@ class ProductSet:
                     subscription_modified_before)
             needs_join = True
 
-        if needs_join:
+        if needs_join or has_subscription:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
 
-        or_conditions = []
-        if license_info_is_empty is True:
-            # Match products whose license_info doesn't contain
-            # any non-space characters.
-            or_conditions.append("Product.license_info IS NULL")
-            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
-        elif license_info_is_empty is False:
-            # license_info contains something besides spaces.
-            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
-        elif license_info_is_empty is None:
-            # Don't restrict result if license_info_is_empty is None.
-            pass
-        else:
-            raise AssertionError('license_info_is_empty invalid: %r'
-                                 % license_info_is_empty)
-
-        has_license_subquery = '''%s (
-            SELECT 1
-            FROM ProductLicense
-            WHERE ProductLicense.product = Product.id
-            LIMIT 1
-            )
-            '''
-        if has_zero_licenses is True:
-            # The subquery finds zero rows.
-            or_conditions.append(has_license_subquery % 'NOT EXISTS')
-        elif has_zero_licenses is False:
-            # The subquery finds at least one row.
-            or_conditions.append(has_license_subquery % 'EXISTS')
-        elif has_zero_licenses is None:
-            # Don't restrict results if has_zero_licenses is None.
-            pass
-        else:
-            raise AssertionError('has_zero_licenses is invalid: %r'
-                                 % has_zero_licenses)
+        if has_subscription is False:
+            conditions.append(SQL('''
+                NOT EXISTS (
+                    SELECT 1
+                    FROM CommercialSubscription
+                    WHERE CommercialSubscription.product = Product.id
+                    LIMIT 1)
+                '''))
 
         if licenses is not None and len(licenses) > 0:
-            or_conditions.append('''EXISTS (
+            conditions.append(SQL('''EXISTS (
                 SELECT 1
                 FROM ProductLicense
                 WHERE ProductLicense.product = Product.id
                     AND license IN %s
                 LIMIT 1
                 )
-                ''' % sqlvalues(tuple(licenses)))
-
-        if len(or_conditions) != 0:
-            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
+                ''' % sqlvalues(tuple(licenses))))
 
         result = IStore(Product).find(
             Product, *conditions).config(
                 distinct=True).order_by(
                     Product.datecreated, Product.displayname)
-        return result
 
-    def search(self, text=None):
+        def eager_load(products):
+            return get_precached_products(
+                products, role_names=['_owner', 'registrant'],
+                need_role_validity=True, need_licences=True,
+                need_series=True, need_releases=True)
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    @classmethod
+    def _request_user_search(cls):
+        return cls.search(getUtility(ILaunchBag).user)
+
+    @classmethod
+    def search(cls, user=None, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        # Circular...
-        from lp.registry.model.projectgroup import ProjectGroup
-        conditions = []
-        conditions = [Product.active]
+        conditions = [Product.active,
+                      cls.getProductPrivacyFilter(user)]
         if text:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
         result = IStore(Product).find(Product, *conditions)
 
-        def eager_load(rows):
-            product_ids = set(obj.id for obj in rows)
-            if not product_ids:
-                return
-            products = dict((product.id, product) for product in rows)
-            caches = dict((product.id, get_property_cache(product))
-                for product in rows)
-            for cache in caches.values():
-                if not safe_hasattr(cache, 'commercial_subscription'):
-                    cache.commercial_subscription = None
-                if not safe_hasattr(cache, '_cached_licenses'):
-                    cache._cached_licenses = []
-            for subscription in IStore(CommercialSubscription).find(
-                CommercialSubscription,
-                CommercialSubscription.productID.is_in(product_ids)):
-                cache = caches[subscription.productID]
-                cache.commercial_subscription = subscription
-            for license in IStore(ProductLicense).find(
-                ProductLicense,
-                ProductLicense.productID.is_in(product_ids)):
-                cache = caches[license.productID]
-                cache._cached_licenses.append(license.license)
-            for cache in caches.values():
-                cache._cached_licenses = tuple(sorted(cache._cached_licenses))
-            bulk.load_related(ProjectGroup, products.values(), ['projectID'])
-            bulk.load_related(ProductSeries, products.values(),
-                ['development_focusID'])
-            # Only need the objects for canonical_url, no need for validity.
-            bulk.load_related(Person, products.values(),
-                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID',
-                 'security_contactID'])
-        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+        def eager_load(products):
+            return get_precached_products(
+                products, need_licences=True, need_projects=True,
+                role_names=[
+                    '_owner', 'registrant', 'bug_supervisor', 'driver'])
 
-    def search_sqlobject(self, text):
-        """See `IProductSet`"""
-        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
-        queries.append('Product.active IS TRUE')
-        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
-            % sqlvalues(text)
-        return Product.select(query)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getTranslatables(self):
         """See `IProductSet`"""
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
-        # this query is using _translations_usage, but there's no cleaner
-        # way to deal with it. Once the bug above is resolved, this should
-        # should be fixed to use translations_usage.
         results = IStore(Product).find(
             (Product, Person),
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
         # the cache.
         return DecoratedResultSet(results, operator.itemgetter(0))
-
-    def featuredTranslatables(self, maximumproducts=8):
-        """See `IProductSet`"""
-        return Product.select('''
-            id IN (
-                SELECT DISTINCT product_id AS id
-                FROM (
-                    SELECT Product.id AS product_id, random() AS place
-                    FROM Product
-                    JOIN ProductSeries ON
-                        ProductSeries.Product = Product.id
-                    JOIN POTemplate ON
-                        POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.translations_usage = %s
-                    ORDER BY place
-                ) AS randomized_products
-                LIMIT %s
-            )
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
-            distinct=True,
-            orderBy='Product.title')
 
     @cachedproperty
     def stats(self):

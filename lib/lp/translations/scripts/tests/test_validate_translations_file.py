@@ -10,7 +10,7 @@ import os.path
 from textwrap import dedent
 from unittest import TestCase
 
-from canonical.launchpad.ftests.script import run_script
+from lp.testing.script import run_script
 import lp.translations
 from lp.translations.scripts.validate_translations_file import (
     UnknownFileType,

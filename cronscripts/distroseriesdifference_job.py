@@ -11,11 +11,11 @@ import _pythonpath
 
 from lp.services.features import getFeatureFlag
 from lp.services.job.runner import JobCronScript
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
     )
 
 

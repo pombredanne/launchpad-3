@@ -1,43 +1,46 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
     MassSyncCopyPolicy,
     )
-from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
     )
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestCopyPolicy(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def _getUploadCriteria(self, archive_purpose):
+    def _getUploadCriteria(self, archive_purpose, status=None, pocket=None):
         archive = self.factory.makeArchive(purpose=archive_purpose)
         distroseries = self.factory.makeDistroSeries()
-        pocket = self.factory.getAnyPocket()
+        if status is not None:
+            distroseries.status = status
+        if pocket is None:
+            pocket = self.factory.getAnyPocket()
         return archive, distroseries, pocket
 
-    def assertApproved(self, archive_purpose, method):
+    def assertApproved(self, archive_purpose, method,
+                       status=None, pocket=None):
         archive, distroseries, pocket = self._getUploadCriteria(
-            archive_purpose)
-        approved = method(archive, distroseries, pocket)
-        self.assertTrue(approved)
+            archive_purpose, status=status, pocket=pocket)
+        self.assertTrue(method(archive, distroseries, pocket))
 
-    def assertUnapproved(self, archive_purpose, method):
+    def assertUnapproved(self, archive_purpose, method,
+                         status=None, pocket=None):
         archive, distroseries, pocket = self._getUploadCriteria(
-            archive_purpose)
-        approved = method(archive, distroseries, pocket)
-        self.assertFalse(approved)
+            archive_purpose, status=status, pocket=pocket)
+        self.assertFalse(method(archive, distroseries, pocket))
 
     def test_insecure_holds_new_distro_package(self):
         cp = InsecureCopyPolicy()
@@ -48,30 +51,41 @@ class TestCopyPolicy(TestCaseWithFactory):
         self.assertApproved(ArchivePurpose.PPA, cp.autoApproveNew)
 
     def test_insecure_approves_known_distro_package_to_unfrozen_release(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        distroseries = self.factory.makeDistroSeries()
-        pocket = PackagePublishingPocket.RELEASE
         cp = InsecureCopyPolicy()
-        approve = cp.autoApprove(archive, distroseries, pocket)
-        self.assertTrue(approve)
+        self.assertApproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove,
+            pocket=PackagePublishingPocket.RELEASE)
 
     def test_insecure_holds_copy_to_updates_pocket_in_frozen_series(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        distroseries = self.factory.makeDistroSeries()
-        distroseries.status = SeriesStatus.FROZEN
-        pocket = PackagePublishingPocket.UPDATES
         cp = InsecureCopyPolicy()
-        approve = cp.autoApprove(archive, distroseries, pocket)
-        self.assertFalse(approve)
+        self.assertUnapproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove, status=SeriesStatus.FROZEN,
+            pocket=PackagePublishingPocket.UPDATES)
 
     def test_insecure_holds_copy_to_release_pocket_in_frozen_series(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        distroseries = self.factory.makeDistroSeries()
-        pocket = PackagePublishingPocket.RELEASE
-        distroseries.status = SeriesStatus.FROZEN
         cp = InsecureCopyPolicy()
-        approve = cp.autoApprove(archive, distroseries, pocket)
-        self.assertFalse(approve)
+        self.assertUnapproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove, status=SeriesStatus.FROZEN,
+            pocket=PackagePublishingPocket.RELEASE)
+
+    def test_insecure_approves_copy_to_proposed_in_unfrozen_series(self):
+        cp = InsecureCopyPolicy()
+        self.assertApproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+    def test_insecure_holds_copy_to_proposed_in_frozen_series(self):
+        cp = InsecureCopyPolicy()
+        self.assertUnapproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove, status=SeriesStatus.FROZEN,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+    def test_insecure_holds_copy_to_proposed_in_current_series(self):
+        cp = InsecureCopyPolicy()
+        self.assertUnapproved(
+            ArchivePurpose.PRIMARY, cp.autoApprove,
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED)
 
     def test_insecure_approves_existing_ppa_package(self):
         cp = InsecureCopyPolicy()

@@ -39,7 +39,7 @@ view, because that bug has no patch attachments.
     ... def make_bug(
     ...     title, product, importance=BugTaskImportance.UNDECIDED,
     ...     status=BugTaskStatus.NEW):
-    ...     bug = factory.makeBug(title=title, product=product)
+    ...     bug = factory.makeBug(title=title, target=product)
     ...     transaction.commit()
     ...     bug.default_bugtask.transitionToImportance(
     ...         importance, product.owner)
@@ -255,9 +255,11 @@ Bugs in a product series show up in the patches view for that series.
     ...         bugtask.transitionToImportance(importance, ubuntu_distro.owner)
     ...     if status is not None:
     ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
+    >>> login(ANONYMOUS)
     >>> patchy_product_series = patchy_product.getSeries('trunk')
     >>> make_bugtask(bug=bug_a, target=patchy_product_series)
     >>> make_bugtask(bug=bug_c, target=patchy_product_series)
+    >>> logout()
     >>> anon_browser.open(
     ...     'https://bugs.launchpad.dev/patchy-product-1/trunk/+patches')
     >>> show_patches_view(anon_browser.contents)

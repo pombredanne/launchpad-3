@@ -5,12 +5,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'GenericBranchCollection',
+    'GenericBranchMergeQueueCollection',
     ]
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.interfaces.branchmergequeue import (
     user_has_special_merge_queue_access,
     )
@@ -20,6 +19,7 @@ from lp.code.interfaces.branchmergequeuecollection import (
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branchmergequeue import BranchMergeQueue
+from lp.services.database.lpstorm import IMasterStore
 
 
 class GenericBranchMergeQueueCollection:

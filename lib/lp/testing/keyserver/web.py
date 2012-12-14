@@ -38,10 +38,9 @@ import os
 from time import sleep
 
 from twisted.web.resource import Resource
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import (
+from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     MoreThanOneGPGKeyFound,
@@ -199,7 +198,7 @@ class SubmitKey(Resource):
         try:
             key = gpghandler.importPublicKey(keytext)
         except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
-                MoreThanOneGPGKeyFound), err:
+                MoreThanOneGPGKeyFound) as err:
             return SUBMIT_KEY_PAGE % {'banner': str(err)}
 
         filename = '0x%s.get' % key.fingerprint

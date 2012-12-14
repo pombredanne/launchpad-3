@@ -19,7 +19,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 
 
@@ -40,9 +40,6 @@ class IBinaryPackageNameSet(Interface):
 
     def getAll():
         """return an iselectresults representing all package names"""
-
-    def findByName(name):
-        """Find binarypackagenames by its name or part of it"""
 
     def queryByName(name):
         """Return a binary package name.

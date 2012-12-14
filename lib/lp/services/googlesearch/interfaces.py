@@ -23,7 +23,7 @@ from zope.schema import (
     URI,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class ISearchResult(Interface):

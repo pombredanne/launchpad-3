@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
-from logging import DEBUG
 import os.path
 import subprocess
 import sys

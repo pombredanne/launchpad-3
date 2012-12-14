@@ -16,17 +16,17 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKey,
     IGPGKeySet,
     )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.gpg.interfaces import IGPGHandler
 
 
 class GPGKey(SQLBase):

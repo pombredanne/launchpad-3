@@ -13,10 +13,10 @@ __all__ = [
 
 from email.Utils import parseaddr
 from httplib import BadStatusLine
-from urllib2 import URLError
-from xml.dom import minidom
 import re
 import string
+from urllib2 import URLError
+from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
@@ -24,12 +24,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import (
-    urlappend,
-    urlparse,
-    )
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
@@ -54,7 +48,13 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.services import encoding
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.url import (
+    urlappend,
+    urlparse,
+    )
 
 
 class Bugzilla(ExternalBugTracker):
@@ -88,7 +88,7 @@ class Bugzilla(ExternalBugTracker):
             # We try calling Bugzilla.version() on the remote
             # server because it's the most lightweight method there is.
             remote_version = proxy.Bugzilla.version()
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             # 'Client' is a hangover. Either Bugzilla or the Perl
             # XML-RPC lib in use returned it as faultCode. It's wrong,
             # but it's known wrongness, so we recognize it here.
@@ -96,7 +96,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ProtocolError, error:
+        except xmlrpclib.ProtocolError as error:
             # We catch 404s, which occur when xmlrpc.cgi doesn't exist
             # on the remote server, and 500s, which sometimes occur when
             # an invalid request is made to the remote server. We allow
@@ -130,7 +130,7 @@ class Bugzilla(ExternalBugTracker):
             # We try calling Launchpad.plugin_version() on the remote
             # server because it's the most lightweight method there is.
             proxy.Launchpad.plugin_version()
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             # 'Client' is a hangover. Either Bugzilla or the Perl
             # XML-RPC lib in use returned it as faultCode. It's wrong,
             # but it's known wrongness, so we recognize it here.
@@ -138,7 +138,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ProtocolError, error:
+        except xmlrpclib.ProtocolError as error:
             # We catch 404s, which occur when xmlrpc.cgi doesn't exist
             # on the remote server, and 500s, which sometimes occur when
             # the Launchpad Plugin isn't installed. Everything else we
@@ -200,7 +200,7 @@ class Bugzilla(ExternalBugTracker):
         version_xml = self._getPage('xml.cgi?id=1')
         try:
             document = self._parseDOMString(version_xml)
-        except xml.parsers.expat.ExpatError, e:
+        except xml.parsers.expat.ExpatError as e:
             raise BugTrackerConnectError(self.baseurl,
                 "Failed to parse output when probing for version: %s" % e)
         bugzilla = document.getElementsByTagName("bugzilla")
@@ -318,7 +318,7 @@ class Bugzilla(ExternalBugTracker):
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
 
-        This method is overriden so that Bugzilla version issues can be
+        This method is overridden so that Bugzilla version issues can be
         accounted for.
         """
         if self.version is None:
@@ -381,16 +381,19 @@ class Bugzilla(ExternalBugTracker):
             buglist_page = 'buglist.cgi'
             data = {
                 'form_name': 'buglist.cgi',
-                'bug_id_type': 'include',
                 'columnlist':
                     ('id,product,bug_status,resolution,'
                      'priority,bug_severity'),
                 'bug_id': ','.join(bug_ids),
                 }
             if self.version < (2, 17, 1):
-                data.update({'format': 'rdf'})
+                data['format'] = 'rdf'
             else:
-                data.update({'ctype': 'rdf'})
+                data['ctype'] = 'rdf'
+            if self.version >= (3, 6, 0):
+                data['bugidtype'] = 'include'
+            else:
+                data['bug_id_type'] = 'include'
             bug_tag = 'bz:bug'
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
@@ -403,7 +406,7 @@ class Bugzilla(ExternalBugTracker):
 
         try:
             document = self._parseDOMString(buglist_xml)
-        except xml.parsers.expat.ExpatError, e:
+        except xml.parsers.expat.ExpatError as e:
             raise UnparsableBugData(
                 "Failed to parse XML description for %s bugs %s: %s"
                 % (self.baseurl, bug_ids, e))
@@ -533,7 +536,7 @@ def needs_authentication(func):
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             # Catch authentication errors only.
             if fault.faultCode != 410:
                 raise
@@ -604,7 +607,7 @@ class BugzillaAPI(Bugzilla):
         """
         try:
             self.xmlrpc_proxy.User.login(self.credentials)
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             raise BugTrackerAuthenticationError(
                 self.baseurl,
                 "Fault %s: %s" % (fault.faultCode, fault.faultString))
@@ -934,12 +937,12 @@ class BugzillaLPPlugin(BugzillaAPI):
         try:
             self.xmlrpc_proxy.Launchpad.login(
                 {'token': token_text})
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             message = 'XML-RPC Fault: %s "%s"' % (
                 fault.faultCode, fault.faultString)
             raise BugTrackerAuthenticationError(
                 self.baseurl, message)
-        except xmlrpclib.ProtocolError, error:
+        except xmlrpclib.ProtocolError as error:
             message = 'Protocol error: %s "%s"' % (
                 error.errcode, error.errmsg)
             raise BugTrackerAuthenticationError(

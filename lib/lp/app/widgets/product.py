@@ -12,7 +12,6 @@ __all__ = [
     'ProductNameWidget',
     ]
 
-import cgi
 import math
 
 from lazr.restful.interface import copy_field
@@ -29,10 +28,6 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.widgets.itemswidgets import (
@@ -52,6 +47,10 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.services.fields import StrippedTextLine
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vhosts import allvhosts
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -179,10 +178,10 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if project is None or project.bugtracker is None:
             project_bugtracker_caption = "Somewhere else"
         else:
-            project_bugtracker_caption = (
-                'In the %s bug tracker (<a href="%s">%s</a>)</label>' % (
-                    project.displayname, canonical_url(project.bugtracker),
-                    cgi.escape(project.bugtracker.title)))
+            project_bugtracker_caption = structured(
+                'In the %s bug tracker (<a href="%s">%s</a>)</label>',
+                project.displayname, canonical_url(project.bugtracker),
+                project.bugtracker.title).escapedtext
         project_bugtracker_arguments = dict(
             index=1, text=self._renderLabel(project_bugtracker_caption, 1),
             value="project", name=self.name, cssClass=self.cssClass)
@@ -268,8 +267,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
     """A CheckBox widget with a custom template.
 
     The allow_pending_license is provided so that $product/+edit
-    can display radio buttons to show that the license field is
-    optional for pre-existing products that have never had a license set.
+    can display radio buttons to show that the licence field is
+    optional for pre-existing products that have never had a licence set.
     """
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
@@ -311,7 +310,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=E1002
         super(LicenseWidget, self).__init__(field, vocabulary, request)
-        # We want to put the license_info widget inside the licenses widget's
+        # We want to put the license_info widget inside the licences widget's
         # HTML, for better alignment and JavaScript dynamism.  This is
         # accomplished by ghosting the form's license_info widget (see
         # lp/registry/browser/product.py and the GhostWidget implementation
@@ -331,9 +330,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
             context=field.context)
         self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
-        # selected licenses in the category.  The actual count doesn't matter,
-        # since if it's greater than 0 it will start opened.  NOte that we
-        # always want the recommended licenses to be opened, so we initialize
+        # selected licences in the category.  The actual count doesn't matter,
+        # since if it's greater than 0 it will start opened.  Note that we
+        # always want the recommended licences to be opened, so we initialize
         # its value to 1.
         self.recommended_count = 1
         self.more_count = 0
@@ -343,7 +342,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
-        # in the URL to the license, which is stored in the DBItem's
+        # in the URL to the licence, which is stored in the DBItem's
         # description.
         # pylint: disable-msg=E1002
         value = super(LicenseWidget, self).textForValue(term)
@@ -351,8 +350,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return value
         else:
             return structured(
-                '%s&nbsp;<a href="%s" class="sprite external-link">'
-                '<span class="invisible-link">view license</span></a>'
+                '%s&nbsp;<a href="%s" class="sprite external-link action-icon"'
+                '>view licence</a>'
                 % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):
@@ -380,7 +379,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         if self.items_by_category is None:
             self.items_by_category = {}
         # When allow_pending_license is set, we'll see a radio button labeled
-        # "I haven't specified the license yet".  In that case, do not show
+        # "I haven't specified the licence yet".  In that case, do not show
         # the "I don't know" option.
         if self.allow_pending_license and value == 'DONT_KNOW':
             return
@@ -405,7 +404,11 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def _renderTable(self, category, column_count=1):
         # The tables are wrapped in divs, since IE8 does not respond
         # to setting the table's height to zero.
-        html = ['<div id="%s"><table>' % category]
+        attribute_name = category + '_count'
+        attr_count = getattr(self, attribute_name)
+        klass = 'expanded' if attr_count > 0 else ''
+        html = [
+            '<div id="%s" class="hide-on-load %s"><table>' % (category, klass)]
         rendered_items = self.items_by_category[category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):

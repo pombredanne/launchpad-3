@@ -8,13 +8,13 @@
 from testtools.matchers import MatchesRegex
 import transaction
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.tests.test_branchmergeproposaljobs import (
     make_runnable_incremental_diff_job,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestMergeProposalJobScript(TestCaseWithFactory):
@@ -40,7 +40,8 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
             '\tworkers: 0\n'
             'INFO    \tworkers: 0\n'
             '(.|\n)*'
-            'INFO    Running GenerateIncrementalDiffJob \(ID %d\).\n'
+            'INFO    Running '
+            '<GENERATE_INCREMENTAL_DIFF job for merge .*?> \(ID %d\).\n'
             '(.|\n)*'
             'INFO    STOPPING: \'\'\n'
             'Main loop terminated.\n'

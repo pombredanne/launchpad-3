@@ -1,7 +1,6 @@
-# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
@@ -17,7 +16,7 @@ from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
-    Select,
+    Join,
     Store,
     )
 from zope.component import getUtility
@@ -26,39 +25,27 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.buildmaster.enums import BuildStatus
-from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranchSet,
-    )
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasCodeImportsMixin,
     HasMergeProposalsMixin,
     )
-from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch,
+    SeriesSourcePackageBranchSet,
+    )
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -66,16 +53,24 @@ from lp.registry.interfaces.sourcepackage import (
     ISourcePackage,
     ISourcePackageFactory,
     )
-from lp.registry.model.packaging import Packaging
+from lp.registry.model.hasdrivers import HasDriversMixin
+from lp.registry.model.packaging import (
+    Packaging,
+    PackagingUtil,
+    )
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     PackageUploadCustomFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
@@ -193,9 +188,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
-class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
+class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin,
+                    HasDriversMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -204,7 +200,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
         ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
@@ -228,18 +224,6 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         return '<%s %r %r %r>' % (self.__class__.__name__,
             self.distribution, self.distroseries, self.sourcepackagename)
 
-    def _get_ubuntu(self):
-        # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
-        # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        # and not need this method. However, importd currently depends
-        # on SourcePackage methods that require the ubuntu celebrity,
-        # and given it does not execute_zcml_for_scripts, we are forced
-        # here to do this hack instead of using components. Ideally,
-        # imports is rewritten to not use SourcePackage, or it
-        # initializes the component architecture correctly.
-        from lp.registry.model.distribution import Distribution
-        return Distribution.byName("ubuntu")
-
     def _getPublishingHistory(self, version=None, include_status=None,
                               exclude_status=None, order_by=None):
         """Build a query and return a list of SourcePackagePublishingHistory.
@@ -251,7 +235,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         clauses.append(
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
-                   SourcePackageRelease.sourcepackagename = %s AND
+                   SourcePackagePublishingHistory.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distroseries = %s AND
                    SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(
@@ -386,21 +370,22 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
         The results are ordered by descending version.
         """
-        subselect = Select(
-            SourcePackageRelease.id, And(
+        return IStore(SourcePackageRelease).using(
+            SourcePackageRelease,
+            Join(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id)
+            ).find(
+                SourcePackageRelease,
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
                 SourcePackagePublishingHistory.distroseries ==
                     self.distroseries,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
-                    self.sourcepackagename,
-                SourcePackagePublishingHistory.archiveID.is_in(
-                    self.distribution.all_distro_archive_ids)))
-
-        return IStore(SourcePackageRelease).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
-                SourcePackageRelease.version))
+                SourcePackagePublishingHistory.sourcepackagename ==
+                    self.sourcepackagename
+            ).config(distinct=True).order_by(
+                Desc(SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -428,32 +413,17 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `ISourcePackage`"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
-        # parent distroseries, and when we hit Ubuntu, we look backwards in
-        # time through Ubuntu series till we find packaging information or
-        # blow past the Warty Warthog.
+        # parent distroseries.
 
-        # see if there is a direct packaging
         result = self.direct_packaging
         if result is not None:
             return result
 
-        ubuntu = self._get_ubuntu()
-        # if we are an ubuntu sourcepackage, try the previous series of
-        # ubuntu
-        if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.priorReleasedSeries()
-            previous_ubuntu_series = ubuntuseries.first()
-            if previous_ubuntu_series is not None:
-                sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                                   distroseries=previous_ubuntu_series)
-                return sp.packaging
-        # if we have a parent distroseries, try that
+        # If we have a parent distroseries, try that.
         if self.distroseries.previous_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                distroseries=self.distroseries.previous_series)
             return sp.packaging
-        # capitulate
-        return None
 
     @property
     def published_by_pocket(self):
@@ -509,10 +479,6 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IHasBugs`."""
         return self.distroseries.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return self.distroseries.getUsedBugTags()
-
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
                                      include_tags=None):
         """See IBugTarget."""
@@ -524,28 +490,24 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.distribution_sourcepackage.max_bug_heat
+    def drivers(self):
+        """See `IHasDrivers`."""
+        return self.distroseries.drivers
 
-    def createBug(self, bug_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        # We don't currently support opening a new bug directly on an
-        # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targeted to be fixed in a specific distroseries + sourcepackage.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a source package in a "
-            "specific distribution series, because series are meant for "
-            "\"targeting\" a fix to a specific series. It's possible that "
-            "we may change this behaviour to allow filing a bug on a "
-            "distribution series source package in the not-too-distant "
-            "future. For now, you probably meant to file the bug on the "
-            "distro-wide (i.e. not series-specific) source package.")
+    @property
+    def owner(self):
+        """See `IHasOwner`."""
+        return self.distroseries.owner
 
     @property
     def pillar(self):
         """See `IBugTarget`."""
         return self.distroseries.distribution
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self.distroseries
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -564,7 +526,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             # Delete the current packaging and create a new one so
             # that the translation sharing jobs are started.
             self.direct_packaging.destroySelf()
-        Packaging(
+        PackagingUtil.createPackaging(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             productseries=productseries, owner=owner,
@@ -639,13 +601,13 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # binary_only parameter as a source package can only have
         # binary builds.
 
-        clauseTables = ['SourcePackageRelease',
+        clauseTables = ['SourcePackageRelease', 'PackageBuild',
                         'SourcePackagePublishingHistory']
 
         condition_clauses = ["""
         BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
@@ -686,17 +648,17 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
-            orderBy = ["-BuildFarmJob.date_created"]
+            orderBy = [Desc("BuildFarmJob.date_created")]
         else:
-            orderBy = ["-BuildFarmJob.date_finished"]
+            orderBy = [Desc("BuildFarmJob.date_finished")]
 
         # Fallback to ordering by -id as a tie-breaker.
-        orderBy.append("-id")
+        orderBy.append(Desc("id"))
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        return BinaryPackageBuild.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables, orderBy=orderBy)
+        return IStore(BinaryPackageBuild).using(clauseTables).find(
+            BinaryPackageBuild, *condition_clauses).order_by(*orderBy)
 
     @property
     def latest_published_component(self):

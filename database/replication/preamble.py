@@ -9,15 +9,15 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import time
 
-import _pythonpath
+from lp.services import scripts
+from lp.services.config import config
+from lp.services.database.sqlbase import connect
 import replication.helpers
-
-from canonical.config import config
-from canonical.database.sqlbase import connect
-from canonical.launchpad import scripts
 
 
 if __name__ == '__main__':

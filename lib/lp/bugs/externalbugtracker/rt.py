@@ -10,8 +10,6 @@ import email
 import urllib
 import urllib2
 
-from canonical.config import config
-from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
@@ -25,8 +23,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.url import urlparse
 
 
 class RequestTracker(ExternalBugTracker):
@@ -85,7 +85,7 @@ class RequestTracker(ExternalBugTracker):
         # can't.
         try:
             self._logIn(opener)
-        except (urllib2.HTTPError, urllib2.URLError), error:
+        except (urllib2.HTTPError, urllib2.URLError) as error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
@@ -110,7 +110,7 @@ class RequestTracker(ExternalBugTracker):
         query_url = '%s/%s' % (self.baseurl, ticket_url)
         try:
             bug_data = self.urlopen(query_url)
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             raise BugTrackerConnectError(ticket_url, error.message)
 
         # We use the first line of the response to ensure that we've
@@ -146,7 +146,7 @@ class RequestTracker(ExternalBugTracker):
         try:
             bug_data = self.urlopen(query_url, urllib.urlencode(
                 request_params))
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             raise BugTrackerConnectError(query_url, error.message)
 
         # We use the first line of the response to ensure that we've

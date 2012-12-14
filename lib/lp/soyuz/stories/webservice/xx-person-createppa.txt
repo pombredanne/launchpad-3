@@ -10,8 +10,8 @@
   >>> logout()
   >>> ppa_owner = webservice.get(url).jsonBody()
 
-  >>> from canonical.launchpad.testing.pages import webservice_for_person
-  >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+  >>> from lp.testing.pages import webservice_for_person
+  >>> from lp.services.webapp.interfaces import OAuthPermission
   >>> ppa_owner_webservice = webservice_for_person(
   ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
 

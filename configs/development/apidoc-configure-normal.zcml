@@ -24,7 +24,7 @@
          vhost. -->
     <adapter
         for="zope.interface.Interface
-             canonical.launchpad.webapp.servers.APIDocBrowserRequest"
+             lp.services.webapp.servers.APIDocBrowserRequest"
         provides="zope.traversing.browser.interfaces.IAbsoluteURL"
         factory="zope.traversing.browser.AbsoluteURL"
         />
@@ -39,21 +39,21 @@
       />
 
     <utility
-        component="canonical.launchpad.systemhomes.apidocroot"
-        provides="canonical.launchpad.webapp.interfaces.IAPIDocRoot" />
+        component="lp.systemhomes.apidocroot"
+        provides="lp.services.webapp.interfaces.IAPIDocRoot" />
 
-    <adapter factory="canonical.launchpad.webapp.authentication.TemporaryPrincipalAnnotations" />
+    <adapter factory="lp.services.webapp.authentication.TemporaryPrincipalAnnotations" />
     <adapter
-      factory="canonical.launchpad.webapp.authentication.TemporaryUnauthenticatedPrincipalAnnotations" />
+      factory="lp.services.webapp.authentication.TemporaryUnauthenticatedPrincipalAnnotations" />
 
-    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
+    <class class="lp.services.webapp.servers.LaunchpadBrowserRequest">
       <implements interface="zope.app.apidoc.browser.skin.APIDOC" />
     </class>
 
     <!-- apidoc.lp.dev breaks if we make IAPIDocRoot subclass ISite, so we
       need to register this view here. -->
     <view
-        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot"
+        for="lp.services.webapp.interfaces.IAPIDocRoot"
         type="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
         name=""
         factory="zope.browserresource.resources.Resources"
@@ -62,7 +62,7 @@
         />
 
     <browser:defaultView
-        for="canonical.launchpad.webapp.interfaces.IAPIDocRoot"
+        for="lp.services.webapp.interfaces.IAPIDocRoot"
         name="++apidoc++"
         />
 
@@ -99,13 +99,7 @@
     <apidoc:bookchapter
         id="dbpolicy"
         title="Storm Stores and Database Policies"
-        doc_path="../../lib/canonical/launchpad/doc/db-policy.txt"
-        parent="lp"
-        />
-    <apidoc:bookchapter
-        id="memcachetales"
-        title="Memcache Tales Expressions"
-        doc_path="../../lib/lp/services/memcache/doc/tales-cache.txt"
+        doc_path="../../lib/lp/services/database/doc/db-policy.txt"
         parent="lp"
         />
     <apidoc:bookchapter
@@ -123,7 +117,7 @@
     <apidoc:bookchapter
         id="profiling"
         title="Profiling"
-        doc_path="../../lib/canonical/launchpad/doc/profiling.txt"
+        doc_path="../../lib/lp/services/profile/profiling.txt"
         parent="lp"
         />
 

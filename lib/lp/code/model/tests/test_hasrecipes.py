@@ -7,9 +7,9 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestIHasRecipes(TestCaseWithFactory):

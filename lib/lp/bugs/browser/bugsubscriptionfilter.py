@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for bug subscription filters."""
@@ -11,22 +11,22 @@ __all__ = [
 
 from zope.app.form.browser import TextWidget
 
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 def bug_notification_level_description_mapping(displayname):
@@ -70,6 +70,13 @@ class BugSubscriptionFilterView(LaunchpadView):
     # in particular, if no importances are checked, or no statuses.
     filters_everything = False
 
+    def _add_english_condition(self, conditions, variable, description):
+        if len(variable) > 0:
+            conditions.append(
+                u"the %s is %s" % (description, english_list(
+                    (kind.title for kind in sorted(variable)),
+                    conjunction=u"or")))
+
     @property
     def conditions(self):
         """Descriptions of the bug subscription filter's conditions."""
@@ -80,24 +87,18 @@ class BugSubscriptionFilterView(LaunchpadView):
                 'the bug')
             conditions.append(
                 mapping[bug_notification_level].lower()[:-1])
-        statuses = self.context.statuses
-        if len(statuses) > 0:
-            conditions.append(
-                u"the status is %s" % english_list(
-                    (status.title for status in sorted(statuses)),
-                    conjunction=u"or"))
-        importances = self.context.importances
-        if len(importances) > 0:
-            conditions.append(
-                u"the importance is %s" % english_list(
-                    (importance.title for importance in sorted(importances)),
-                    conjunction=u"or"))
+        self._add_english_condition(
+            conditions, self.context.statuses, 'status')
+        self._add_english_condition(
+            conditions, self.context.importances, 'importance')
         tags = self.context.tags
         if len(tags) > 0:
             conditions.append(
                 u"the bug is tagged with %s" % english_list(
                     sorted(tags), conjunction=(
                         u"and" if self.context.find_all_tags else u"or")))
+        self._add_english_condition(
+            conditions, self.context.information_types, 'information type')
         return conditions
 
 
@@ -110,6 +111,7 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
         "description",
         "statuses",
         "importances",
+        "information_types",
         "tags",
         "find_all_tags",
         )
@@ -117,10 +119,12 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
     custom_widget("description", TextWidget, displayWidth=50)
     custom_widget("statuses", LabeledMultiCheckBoxWidget)
     custom_widget("importances", LabeledMultiCheckBoxWidget)
+    custom_widget("information_types", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
 
-    target = None # Define in concrete subclass to be the target of the
+    # Define in concrete subclass to be the target of the
     # structural subscription that we are modifying.
+    target = None
 
     # This is used by the AdvancedSubscriptionMixin.
     current_user_subscription = None

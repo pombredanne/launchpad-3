@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -11,8 +11,9 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from lazr.delegates import delegates
 from operator import itemgetter
+
+from lazr.delegates import delegates
 from storm.expr import (
     And,
     Desc,
@@ -20,14 +21,9 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
@@ -209,46 +205,20 @@ class DistroSeriesSourcePackageRelease:
     @property
     def publishing_history(self):
         """See `IDistroSeriesSourcePackage`."""
-        # sqlvalues bails on security proxied objects.
-        archive_ids = removeSecurityProxy(
-            self.distroseries.distribution.all_distro_archive_ids)
-        return SourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            archive IN %s AND
-            sourcepackagerelease = %s
-            """ % sqlvalues(
-                    self.distroseries,
-                    archive_ids,
-                    self.sourcepackagerelease),
-            orderBy='-datecreated')
+        res = Store.of(self.distroseries).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distroseries.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease)
+        return res.order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
 
     @property
     def current_publishing_record(self):
         """An internal property used by methods of this class to know where
         this release is or was published.
         """
-        pub_hist = self.publishing_history
-        try:
-            return pub_hist[0]
-        except IndexError:
-            return None
-
-    @property
-    def current_published(self):
-        """See `IDistroArchSeriesSourcePackage`."""
-        # Retrieve current publishing info
-        published_status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED]
-        current = SourcePackagePublishingHistory.selectFirst("""
-        distroseries = %s AND
-        archive IN %s AND
-        sourcepackagerelease = %s AND
-        status IN %s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease,
-                        published_status),
-            orderBy=['-datecreated', '-id'])
-
-        return current
+        return self.publishing_history.first()

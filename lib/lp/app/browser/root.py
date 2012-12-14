@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -21,17 +21,7 @@ from zope.schema import TextLine
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.timeout import urlfetch
+from lp import _
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     action,
@@ -48,11 +38,20 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.timeout import urlfetch
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -67,6 +66,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
+    has_watermark = False
 
     @staticmethod
     def _get_day_of_year():
@@ -130,12 +130,20 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def blueprint_count(self):
         """The total blueprint count in all of Launchpad."""
-        return getUtility(ISpecificationSet).specification_count
+        return getUtility(ISpecificationSet).specificationCount(self.user)
 
     @property
     def answer_count(self):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
+
+    @property
+    def show_whatslaunchpad(self):
+        """True if introduction to Launchpad should be displayed.
+
+        Shown when not logged in or if blog is disabled.
+        """
+        return self.user is None or not getFeatureFlag("app.root_blog.enabled")
 
     def getRecentBlogPosts(self):
         """Return the parsed feed of the most recent blog posts.

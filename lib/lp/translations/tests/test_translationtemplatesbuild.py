@@ -6,27 +6,27 @@
 __metaclass__ = type
 
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSource,
     )
+from lp.services.config import config
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
     )
-from lp.translations.model.translationtemplatesbuild import (
-    TranslationTemplatesBuild,
-    )
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
+    )
+from lp.translations.model.translationtemplatesbuild import (
+    TranslationTemplatesBuild,
     )
 
 
@@ -55,11 +55,10 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # The branch scanner creates TranslationTemplatesBuilds.  It has
         # the database privileges it needs for that.
         branch = self.factory.makeBranch()
-        transaction.commit()
-        self.layer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         utility = getUtility(ITranslationTemplatesBuildSource)
         build_farm_job = self._makeBuildFarmJob()
-        specific_job = utility.create(build_farm_job, branch)
+        utility.create(build_farm_job, branch)
 
         # Writing the new objects to the database violates no access
         # restrictions.
@@ -73,7 +72,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
 
-        translationtemplatesbuildjob = jobset.create(branch)
+        jobset.create(branch)
 
         builds = list(source.findByBranch(branch))
         self.assertEqual(1, len(builds))
@@ -122,6 +121,21 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = source.create(build_farm_job, branch)
 
         self.assertEqual(build, source.getByBuildFarmJob(build_farm_job))
+
+    def test_getByBuildFarmJobs(self):
+        source = getUtility(ITranslationTemplatesBuildSource)
+        build_farm_jobs = []
+        builds = []
+        for i in xrange(10):
+            build_farm_job = self._makeBuildFarmJob()
+            branch = self.factory.makeBranch()
+            build = source.create(build_farm_job, branch)
+            build_farm_jobs.append(build_farm_job)
+            builds.append(build)
+
+        self.assertContentEqual(
+            builds,
+            source.getByBuildFarmJobs(build_farm_jobs))
 
     def test_getByBuildFarmJob_returns_none_if_not_found(self):
         source = getUtility(ITranslationTemplatesBuildSource)

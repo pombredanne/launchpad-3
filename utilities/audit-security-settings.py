@@ -11,9 +11,10 @@ Usage hint:
 """
 __metatype__ = type
 
+import _pythonpath
+
 import os
 
-import _pythonpath
 from lp.scripts.utilities.settingsauditor import SettingsAuditor
 
 

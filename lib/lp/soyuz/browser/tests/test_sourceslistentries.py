@@ -12,13 +12,13 @@ __all__ = [
     'TestSourcesListComment',
     ]
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries,
     SourcesListEntriesView,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestDefaultSelectedSeries(TestCaseWithFactory):

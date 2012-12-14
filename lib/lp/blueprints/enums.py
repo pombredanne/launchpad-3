@@ -14,6 +14,7 @@ __all__ = [
     'SpecificationPriority',
     'SpecificationSort',
     'SprintSpecificationStatus',
+    'SpecificationWorkItemStatus',
     ]
 
 
@@ -35,10 +36,10 @@ class SpecificationImplementationStatus(DBEnumeratedType):
     feature.
 
     Note that some of the states associated with this schema correlate
-    to a "not started" definition. See Specification.started_clause for
-    further information, and make sure that it is updated (together with
-    the relevant database checks) if additional states are added that
-    are also "not started".
+    to a "not started" definition. See spec_started_clause for further
+    information, and make sure that it is updated (together with the relevant
+    database checks) if additional states are added that are also "not
+    started".
     """
     # The `UNKNOWN` state is considered "not started"
     UNKNOWN = DBItem(0, """
@@ -333,13 +334,6 @@ class SpecificationFilter(DBEnumeratedType):
         to which the person has subscribed.
         """)
 
-    FEEDBACK = DBItem(110, """
-        Feedback
-
-        This indicates that the list should include all the specifications
-        which the person has been asked to provide specific feedback on.
-        """)
-
 
 class SpecificationSort(EnumeratedType):
     """The scheme to sort the results of a specifications query.
@@ -510,4 +504,32 @@ class SprintSpecificationStatus(DBEnumeratedType):
         This spec has been submitted for consideration by the meeting
         organisers. It has not yet been accepted or declined for the
         agenda.
+        """)
+
+
+class SpecificationWorkItemStatus(DBEnumeratedType):
+    TODO = DBItem(0, """
+        Todo
+
+        A work item that's not done yet.
+        """)
+    DONE = DBItem(1, """
+        Done
+
+        A work item that's done.
+        """)
+    POSTPONED = DBItem(2, """
+        Postponed
+
+        A work item that has been postponed.
+        """)
+    INPROGRESS = DBItem(3, """
+        In progress
+
+        A work item that is inprogress.
+        """)
+    BLOCKED = DBItem(4, """
+        Blocked
+
+        A work item that is blocked.
         """)

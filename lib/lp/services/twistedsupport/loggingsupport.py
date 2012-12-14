@@ -8,11 +8,8 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadLogFile',
-    'OOPSLoggingObserver',
-    'log_oops_from_failure',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
-    'set_up_tacfile_logging',
     ]
 
 
@@ -23,6 +20,8 @@ import os
 import signal
 import sys
 
+import oops_twisted
+from oops_twisted import OOPSObserver
 from twisted.python import (
     log,
     logfile,
@@ -31,81 +30,38 @@ from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
 from zope.interface import implements
 
-from canonical.launchpad.scripts import logger
-from canonical.launchpad.webapp import errorlog
-from canonical.librarian.utils import copy_and_close
+from lp.services.librarian.utils import copy_and_close
+from lp.services.scripts import logger
+from lp.services.webapp import errorlog
 
 
-class OOPSLoggingObserver(log.PythonLoggingObserver):
-    """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
-    # XXX: JonathanLange 2008-12-23 bug=314959: As best as I can tell, this
-    # ought to be a log *handler*, not a feature of the bridge from
-    # Twisted->Python logging. Ask Michael about this.
-
-    def emit(self, eventDict):
-        """See `PythonLoggingObserver.emit`."""
-        if eventDict.get('isError', False) and 'failure' in eventDict:
-            try:
-                failure = eventDict['failure']
-                request = log_oops_from_failure(failure)
-                self.logger.info(
-                    "Logged OOPS id %s: %s: %s",
-                    request.oopsid, failure.type.__name__, failure.value)
-            except:
-                self.logger.exception("Error reporting OOPS:")
-        else:
-            log.PythonLoggingObserver.emit(self, eventDict)
-
-
-def log_oops_from_failure(failure, URL=None, **args):
-    request = errorlog.ScriptRequest(args.items(), URL=URL)
-    errorlog.globalErrorUtility.raising(
-        (failure.type, failure.value, failure.getTraceback()),
-        request)
-    return request
-
-
-def set_up_logging_for_script(options, name):
+def set_up_logging_for_script(options, name, logfile):
     """Create a `Logger` object and configure twisted to use it.
 
     This also configures oops reporting to use the section named
     'name'."""
     logger_object = logger(options, name)
-    set_up_oops_reporting(name, name, mangle_stdout=True)
+    observer = set_up_oops_reporting(name, name, logfile)
+    log.startLoggingWithObserver(observer)
     return logger_object
 
 
-def set_up_tacfile_logging(name, level):
-    """Create a `Logger` object for use in tac files.
-
-    This is preferable to use over `set_up_logging_for_script` for .tac
-    files since there's no options to pass through.  The logger object
-    is connected to Twisted's log and returned.
-
-    :param name: The logger instance name.
-    :param level: The log level to use, eg. logging.INFO or logging.DEBUG
-    """
-    logger = logging.getLogger(name)
-    channel = logging.StreamHandler(log.StdioOnnaStick())
-    channel.setLevel(level)
-    channel.setFormatter(logging.Formatter('%(message)s'))
-    logger.addHandler(channel)
-    logger.setLevel(level)
-    return logger
-
-
-def set_up_oops_reporting(configuration, name, mangle_stdout=True):
+def set_up_oops_reporting(name, configuration, logfile):
     """Set up OOPS reporting by starting the Twisted logger with an observer.
 
+    :param name: The name of the logger to use for oops reporting.
     :param configuration: The name of the config section to use for oops
         reporting.
-    :param name: The name of the logger to use for oops reporting.
-    :param mangle_stdout: If True, send stdout and stderr to the logger.
-        Defaults to False.
+    :param logfile: File to log output to.
     """
-    errorlog.globalErrorUtility.configure(configuration)
-    log.startLoggingWithObserver(
-        OOPSLoggingObserver(loggerName=name).emit, mangle_stdout)
+    errorlog.globalErrorUtility.configure(
+        configuration,
+        config_factory=oops_twisted.Config,
+        publisher_adapter=oops_twisted.defer_publisher)
+    log_observer = RotatableFileLogObserver(logfile)
+    oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
+        log_observer)
+    return oops_observer
 
 
 class LaunchpadLogFile(DailyLogFile):

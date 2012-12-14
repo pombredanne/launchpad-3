@@ -1,15 +1,25 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.bugs.browser.bug import BugView
-from lp.testing import TestCaseWithFactory
+from lp.app.enums import InformationType
+from lp.bugs.browser.bug import (
+    BugInformationTypePortletView,
+    BugView,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestBugView(TestCaseWithFactory):
@@ -52,3 +62,46 @@ class TestBugView(TestCaseWithFactory):
             ['patch'],
             [attachment['attachment'].title
              for attachment in self.view.patches])
+
+
+class TestBugInformationTypePortletView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugInformationTypePortletView, self).setUp()
+        login('test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.view = BugInformationTypePortletView(
+            self.bug, LaunchpadTestRequest())
+
+    def test_information_type(self):
+        self.bug.transitionToInformationType(
+            InformationType.USERDATA, self.bug.owner)
+        self.assertEqual(
+            self.bug.information_type.title, self.view.information_type)
+        self.assertEqual(
+            self.bug.information_type.description,
+            self.view.information_type_description)
+
+    def test_information_type_css_class(self):
+        self.bug.transitionToInformationType(
+            InformationType.USERDATA, self.bug.owner)
+        self.assertEqual('sprite private', self.view.information_type_css)
+        self.bug.transitionToInformationType(
+            InformationType.PUBLICSECURITY, self.bug.owner)
+        self.assertEqual('sprite public', self.view.information_type_css)
+
+    def test_proprietary_excluded_for_normal_projects(self):
+        # The Proprietary information type isn't in the JSON request cache for
+        # normal projects without proprietary bugs configured.
+        self.view.initialize()
+        cache = IJSONRequestCache(self.view.request)
+        expected = [
+            InformationType.PUBLIC.name,
+            InformationType.PUBLICSECURITY.name,
+            InformationType.PRIVATESECURITY.name,
+            InformationType.USERDATA.name]
+        self.assertContentEqual(expected, [
+            type['value']
+            for type in cache.objects['information_type_data'].values()])

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=C0324
 
@@ -10,6 +10,8 @@ from datetime import (
     )
 
 from pytz import utc
+from storm.sqlobject import SQLObjectNotFound
+from storm.store import Store
 from zope import component
 from zope.component import (
     getGlobalSiteManager,
@@ -18,15 +20,6 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -40,6 +33,11 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     get_builder_data,
     )
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -50,6 +48,10 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_job(test, name, processor='386'):
@@ -83,7 +85,7 @@ def nth_builder(test, bq, n):
     builder = None
     builders = test.builders.get(builder_key(bq), [])
     try:
-        for builder in builders[n-1:]:
+        for builder in builders[n - 1:]:
             if builder.builderok:
                 break
     except IndexError:
@@ -541,6 +543,45 @@ class TestBuilderData(SingleArchBuildsBase):
         free_count = removeSecurityProxy(bq)._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(1, free_count)
+
+
+class TestBuildCancellation(TestCaseWithFactory):
+    """Test cases for cancelling builds."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestBuildCancellation, self).setUp()
+        self.builder = self.factory.makeBuilder()
+
+    def _makeBuildQueue(self, job):
+        return BuildQueue(
+            job=job, lastscore=9999,
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            estimated_duration=timedelta(seconds=69), virtualized=True)
+
+    def assertCancelled(self, build, buildqueue):
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+        self.assertIs(None, buildqueue.specific_job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, buildqueue.id)
+
+    def test_binarypackagebuild_cancel(self):
+        build = self.factory.makeBinaryPackageBuild()
+        buildpackagejob = build.makeJob()
+        bq = self._makeBuildQueue(buildpackagejob.job)
+        Store.of(build).add(bq)
+        bq.markAsBuilding(self.builder)
+        bq.cancel()
+
+        self.assertCancelled(buildpackagejob.build, bq)
+
+    def test_recipebuild_cancel(self):
+        bq = self.factory.makeSourcePackageRecipeBuildJob()
+        build = bq.specific_job.build
+        bq.markAsBuilding(self.builder)
+        bq.cancel()
+
+        self.assertCancelled(build, bq)
 
 
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
@@ -1371,3 +1412,19 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
+
+
+class TestBuildQueueManual(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makeBuildQueue(self):
+        """Produce a `BuildQueue` object to test."""
+        return self.factory.makeSourcePackageRecipeBuildJob()
+
+    def test_manualScore_prevents_rescoring(self):
+        # Manually-set scores are fixed.
+        buildqueue = self._makeBuildQueue()
+        initial_score = buildqueue.lastscore
+        buildqueue.manualScore(initial_score + 5000)
+        buildqueue.score()
+        self.assertEqual(initial_score + 5000, buildqueue.lastscore)

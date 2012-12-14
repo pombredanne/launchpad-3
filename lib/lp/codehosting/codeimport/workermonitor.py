@@ -22,15 +22,15 @@ from twisted.python import failure
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
-from lp.services.twistedsupport.loggingsupport import log_oops_from_failure
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import IFileUploadClient
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
+from lp.services.webapp import errorlog
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -141,11 +141,24 @@ class CodeImportWorkerMonitor:
         self._access_policy = access_policy
 
     def _logOopsFromFailure(self, failure):
-        request = log_oops_from_failure(
-            failure, code_import_job_id=self._job_id, URL=self._branch_url)
-        self._logger.info(
-            "Logged OOPS id %s: %s: %s",
-            request.oopsid, failure.type.__name__, failure.value)
+        config = errorlog.globalErrorUtility._oops_config
+        context = {
+            'twisted_failure': failure,
+            'http_request': errorlog.ScriptRequest(
+                [('code_import_job_id', self._job_id)], self._branch_url),
+            }
+        report = config.create(context)
+
+        def log_oops_if_published(ids):
+            if ids:
+                self._logger.info(
+                    "Logged OOPS id %s: %s: %s",
+                    report['id'], report.get('type', 'No exception type'),
+                    report.get('value', 'No exception value'))
+
+        d = config.publish(report)
+        d.addCallback(log_oops_if_published)
+        return d
 
     def _trap_nosuchcodeimportjob(self, failure):
         failure.trap(xmlrpc.Fault)
@@ -284,7 +297,8 @@ class CodeImportWorkerMonitor:
         if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
-            self._logOopsFromFailure(reason)
+            self._logger.info(
+                "Import failed: %s: %s" % (reason.type, reason.value))
         else:
             self._logger.info('Import succeeded.')
         return self.finishJob(status)

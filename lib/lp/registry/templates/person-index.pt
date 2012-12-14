@@ -56,11 +56,9 @@
   tal:define="overview_menu context/menu:overview">
   <tal:is-valid-person tal:condition="context/is_valid_person">
 
-    <div
-      class="description"
-      tal:condition="view/homepage_content"
-      tal:content="structure view/homepage_content"
-    />
+    <div class="description">
+      <tal:widget replace="structure view/description_widget" />
+   </div>
     <ul class="horizontal">
       <tal:comment condition="nothing">
         This link name is different from the menu, since it refers
@@ -70,11 +68,22 @@
         tal:define="link context/menu:overview/related_software_summary"
         tal:condition="link/enabled">
         <a class="sprite info" tal:attributes="href link/fmt:url">
-          Related software and packages
+          Related packages
+        </a>
+      </li>
+      <li
+        tal:define="link context/menu:overview/projects"
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related projects
         </a>
       </li>
       <li
         tal:define="link context/menu:overview/oauth_tokens"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link context/menu:overview/manage_vouchers"
         tal:condition="link/enabled"
         tal:content="structure link/fmt:link" />
     </ul>
@@ -96,8 +105,6 @@
 
       </div>
     </div>
-
-    <div tal:content="structure context/@@+portlet-map" />
   </tal:is-valid-person>
 
   <div id="not-lp-user-or-team"

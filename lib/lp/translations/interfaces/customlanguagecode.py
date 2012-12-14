@@ -22,7 +22,7 @@ from zope.schema import (
     )
 from zope.schema.interfaces import IObject
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName

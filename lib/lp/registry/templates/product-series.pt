@@ -31,15 +31,13 @@
           content="structure view/batched_series/@@+navigation-links-upper" />
       </div>
       <div tal:repeat="series batch">
-        <tal:cache content="cache:public, 1 hour, series/name">
-          <div style="margin-top: 1em;
-                      border-bottom: 1px solid #ccc; max-width: 60em;"
-            tal:define="is_focus series/is_development_focus"
-            tal:attributes="class string:${series/css_class} series;
-                            id series/name/fmt:css-id/series-;">
-            <tal:status replace="structure series/series/@@+status" />
-          </div>
-        </tal:cache>
+        <div style="margin-top: 1em;
+                    border-bottom: 1px solid #ccc; max-width: 60em;"
+          tal:define="is_focus series/is_development_focus"
+          tal:attributes="class string:${series/css_class} series;
+                          id series/name/fmt:css-id/series-;">
+          <tal:status replace="structure series/series/@@+status" />
+        </div>
       </div>
       <div class="lesser">
         <tal:navigation

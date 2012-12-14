@@ -10,11 +10,13 @@ import _pythonpath
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.config import config
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.services.config import config
 from lp.services.mail.incoming import handleMail
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessMail(LaunchpadCronScript):
@@ -25,7 +27,7 @@ class ProcessMail(LaunchpadCronScript):
     def main(self):
         try:
             handleMail(self.txn)
-        except ComponentLookupError, lookup_error:
+        except ComponentLookupError as lookup_error:
             if lookup_error.args[0] != IMailBox:
                 raise
             raise LaunchpadScriptFailure(

@@ -10,20 +10,20 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.testing.codeimporthelpers import make_running_import
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import CodeImportResultStatus
 from lp.code.model.codeimportjob import CodeImportJob
+from lp.code.tests.codeimporthelpers import make_running_import
 from lp.code.xmlrpc.codeimportscheduler import CodeImportSchedulerAPI
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp import canonical_url
 from lp.testing import (
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class TestCodeImportSchedulerAPI(TestCaseWithFactory):

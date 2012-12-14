@@ -10,7 +10,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage

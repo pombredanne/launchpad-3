@@ -20,8 +20,6 @@ __all__ = [
     'UnableToFetchCDImageFileList',
     ]
 
-from cgi import escape
-
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -54,8 +52,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.services.fields import (
@@ -63,6 +60,10 @@ from lp.services.fields import (
     PublicPersonChoice,
     URIField,
     Whiteboard,
+    )
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
     )
 from lp.services.worlddata.interfaces.country import ICountry
 
@@ -266,7 +267,7 @@ class DistroMirrorURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
-        from canonical.launchpad.webapp import canonical_url
+        from lp.services.webapp import canonical_url
         from lazr.uri import URI
 
         super(DistroMirrorURIField, self)._validate(value)
@@ -285,8 +286,8 @@ class DistroMirrorURIField(URIField):
             message = _(
                 'The distribution mirror <a href="${url}">${mirror}</a> '
                 'is already registered with this URL.',
-                mapping={'url': canonical_url(mirror),
-                         'mirror': escape(mirror.title)})
+                mapping={'url': html_escape(canonical_url(mirror)),
+                         'mirror': html_escape(mirror.title)})
             raise LaunchpadValidationError(structured(message))
 
 

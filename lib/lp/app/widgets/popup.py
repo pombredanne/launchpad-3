@@ -7,10 +7,8 @@
 
 __metaclass__ = type
 
-import cgi
-import simplejson
-
 from lazr.restful.utils import safe_hasattr
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase,
@@ -18,12 +16,14 @@ from zope.app.form.browser.itemswidgets import (
     )
 from zope.schema.interfaces import IChoice
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.vocabulary import get_person_picker_entry_metadata
-from lp.services.features import getFeatureFlag
+from lp.app.browser.vocabulary import (
+    get_person_picker_entry_metadata,
+    vocabulary_filters,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
@@ -40,6 +40,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     assign_me_text = 'Pick me'
     remove_person_text = 'Remove person'
     remove_team_text = 'Remove team'
+    show_create_team_link = False
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -93,7 +94,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken': cgi.escape(self.formToken, quote=True),
+            'formToken': self.formToken,
             'name': self.input_id,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
@@ -101,11 +102,12 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             'style': self.style,
             'cssClass': self.cssClass,
             }
-        return """<input type="text" value="%(formToken)s" id="%(name)s"
+        return structured(
+            """<input type="text" value="%(formToken)s" id="%(name)s"
                          name="%(name)s" size="%(displayWidth)s"
                          maxlength="%(displayMaxWidth)s"
                          onKeyPress="%(onKeyPress)s" style="%(style)s"
-                         class="%(cssClass)s" />""" % d
+                         class="%(cssClass)s" />""", **d).escapedtext
 
     @property
     def selected_value(self):
@@ -141,7 +143,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             show_assign_me_button=self.show_assign_me_button,
             vocabulary_name=self.vocabulary_name,
             vocabulary_filters=self.vocabulary_filters,
-            input_element=self.input_id)
+            input_element=self.input_id,
+            show_widget_id=self.show_widget_id,
+            show_create_team=self.show_create_team_link)
 
     @property
     def json_config(self):
@@ -168,24 +172,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                 "The %r.%s interface attribute doesn't have its "
                 "vocabulary specified."
                 % (choice.context, choice.__name__))
-        # Only IHugeVocabulary's have filters.
-        if not IHugeVocabulary.providedBy(choice.vocabulary):
-            return []
-        supported_filters = choice.vocabulary.supportedFilters()
-        # If we have no filters or just the ALL filter, then no filtering
-        # support is required.
-        filters = []
-        if (len(supported_filters) == 0 or
-           (len(supported_filters) == 1
-            and supported_filters[0].name == 'ALL')):
-            return filters
-        for filter in supported_filters:
-            filters.append({
-                'name': filter.name,
-                'title': filter.title,
-                'description': filter.description,
-                })
-        return filters
+        return vocabulary_filters(choice.vocabulary)
 
     @property
     def vocabulary_name(self):
@@ -217,12 +204,16 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def chooseLink(self):
         if self.nonajax_uri is None:
-            css = 'unseen'
+            css = 'hidden'
         else:
             css = ''
         return ('<span class="%s">(<a id="%s" href="%s">'
-                'Find&hellip;</a>)</span>') % (
-            css, self.show_widget_id, self.nonajax_uri or '#')
+                'Find&hellip;</a>)%s</span>') % (
+            css, self.show_widget_id, self.nonajax_uri or '#',
+            self.extraChooseLink() or '')
+
+    def extraChooseLink(self):
+        return None
 
     @property
     def nonajax_uri(self):
@@ -235,31 +226,20 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 class PersonPickerWidget(VocabularyPickerWidget):
 
-    include_create_team_link = False
     show_assign_me_button = True
     show_remove_button = False
-
-    @property
-    def picker_type(self):
-        # This is a method for now so we can block the use of the new
-        # person picker js behind our picker_enhancments feature flag.
-        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            picker_type = 'person'
-        else:
-            picker_type = 'default'
-        return picker_type
+    picker_type = 'person'
 
     @property
     def selected_value_metadata(self):
         val = self._getFormValue()
         return get_person_picker_entry_metadata(val)
 
-    def chooseLink(self):
-        link = super(PersonPickerWidget, self).chooseLink()
-        if self.include_create_team_link:
-            link += ('or (<a href="/people/+newteam">'
+    def extraChooseLink(self):
+        if self.show_create_team_link:
+            return ('or (<a href="/people/+newteam">'
                      'Create a new team&hellip;</a>)')
-        return link
+        return None
 
     @property
     def nonajax_uri(self):
@@ -275,10 +255,8 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
         >Register an external bug tracker&hellip;</a>)
         """
 
-    def chooseLink(self):
-        link = super(BugTrackerPickerWidget, self).chooseLink()
-        link += self.link_template
-        return link
+    def extraChooseLink(self):
+        return self.link_template
 
     @property
     def nonajax_uri(self):

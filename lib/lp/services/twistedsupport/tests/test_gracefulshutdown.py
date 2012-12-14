@@ -13,9 +13,8 @@ from twisted.internet.protocol import (
     )
 from twisted.web import http
 
-from lp.testing import TestCase
-
 from lp.services.twistedsupport import gracefulshutdown
+from lp.testing import TestCase
 
 
 class TestConnTrackingFactoryWrapper(TestCase):

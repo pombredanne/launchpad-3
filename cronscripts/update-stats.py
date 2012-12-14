@@ -8,15 +8,14 @@
 # This script updates the cached stats in the system
 
 import _pythonpath
+
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 
 
 class StatUpdater(LaunchpadCronScript):

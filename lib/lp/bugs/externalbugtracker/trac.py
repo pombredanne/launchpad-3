@@ -19,9 +19,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.url import urlappend
 from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
@@ -44,7 +41,10 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.url import urlappend
 
 # Symbolic constants used for the Trac LP plugin.
 LP_PLUGIN_BUG_IDS_ONLY = 0
@@ -70,14 +70,14 @@ class Trac(ExternalBugTracker):
         auth_url = urlappend(base_auth_url, 'check')
         try:
             response = self.urlopen(auth_url)
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             # If the error is HTTP 401 Unauthorized then we're
             # probably talking to the LP plugin.
             if error.code == 401:
                 return TracLPPlugin(self.baseurl)
             else:
                 return self
-        except urllib2.URLError, error:
+        except urllib2.URLError as error:
             return self
         else:
             # If the response contains a trac_auth cookie then we're
@@ -301,7 +301,7 @@ def needs_authentication(func):
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
-        except xmlrpclib.ProtocolError, error:
+        except xmlrpclib.ProtocolError as error:
             # Catch authentication errors only.
             if error.errcode != 403:
                 raise
@@ -376,7 +376,7 @@ class TracLPPlugin(Trac):
 
         try:
             self._fetchPage(auth_url)
-        except BugTrackerConnectError, e:
+        except BugTrackerConnectError as e:
             raise BugTrackerAuthenticationError(self.baseurl, e.error)
 
     @ensure_no_transaction
@@ -489,7 +489,7 @@ class TracLPPlugin(Trac):
         try:
             timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
                 remote_bug)
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             # Deal with "Ticket does not exist" faults. We re-raise
             # anything else, since they're a sign of a bigger problem.
             if fault.faultCode == FAULT_TICKET_NOT_FOUND:
@@ -520,7 +520,7 @@ class TracLPPlugin(Trac):
         try:
             self._server.launchpad.set_launchpad_bug(
                 remote_bug, launchpad_bug_id)
-        except xmlrpclib.Fault, fault:
+        except xmlrpclib.Fault as fault:
             # Deal with "Ticket does not exist" faults. We re-raise
             # anything else, since they're a sign of a bigger problem.
             if fault.faultCode == FAULT_TICKET_NOT_FOUND:

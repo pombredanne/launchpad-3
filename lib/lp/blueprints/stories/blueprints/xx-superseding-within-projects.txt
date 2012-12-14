@@ -1,5 +1,5 @@
-
-== Superseeding blueprints ==
+Superseeding blueprints
+=======================
 
 Bueprints can only be superseded by other blueprints in the same project.
 The user interface code for the superseding form passes blueprints by their
@@ -37,7 +37,7 @@ project with an identical name, which was registered earlier.
 
     >>> browser.open('http://blueprints.launchpad.dev/redfish/' +
     ...     '+spec/another-unique-blueprint/+supersede')
-    >>> browser.getControl('Superseded by').displayValue = ['A unique Blueprint']
+    >>> browser.getControl('Superseded by').value = 'a-unique-blueprint'
     >>> browser.getControl('Continue').click()
 
     >>> 'This blueprint has been superseded' in browser.contents

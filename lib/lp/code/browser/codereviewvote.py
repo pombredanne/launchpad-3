@@ -8,10 +8,7 @@ __metaclass__ = type
 
 from zope.interface import Interface
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -21,6 +18,7 @@ from lp.code.errors import (
     UserHasExistingReview,
     )
 from lp.services.fields import PublicPersonChoice
+from lp.services.webapp import canonical_url
 
 
 class ReassignSchema(Interface):
@@ -28,7 +26,7 @@ class ReassignSchema(Interface):
 
     reviewer = PublicPersonChoice(title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
-            vocabulary='ValidPersonOrTeam')
+            vocabulary='ValidBranchReviewer')
 
 
 class CodeReviewVoteReassign(LaunchpadFormView):
@@ -55,5 +53,5 @@ class CodeReviewVoteReassign(LaunchpadFormView):
         if reviewer is not None:
             try:
                 self.context.validateReasignReview(reviewer)
-            except (ReviewNotPending, UserHasExistingReview), e:
+            except (ReviewNotPending, UserHasExistingReview) as e:
                 self.addError(str(e))

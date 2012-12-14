@@ -5,8 +5,7 @@ source package are allowed to be proposed for merging into product branches
 and vice versa.
 
     >>> login(ANONYMOUS)
-    >>> eric = factory.makePerson(
-    ...     name="eric", password="test", email="eric@example.com")
+    >>> eric = factory.makePerson(name="eric", email="eric@example.com")
     >>> b1 = factory.makePackageBranch(owner=eric)
     >>> b2 = factory.makeProductBranch(owner=eric)
     >>> b1_url = canonical_url(b1)
@@ -38,7 +37,7 @@ with a product branch.
 
 Linking the packages makes this possible.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> b1.sourcepackage.setPackaging(b2.product.development_focus, eric)
     >>> logout()
 

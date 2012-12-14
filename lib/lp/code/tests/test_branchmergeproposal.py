@@ -7,7 +7,6 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.tests.test_branch import PermissionTest
 from lp.registry.interfaces.person import IPersonSet
@@ -17,6 +16,7 @@ from lp.testing import (
     run_with_login,
     with_celebrity_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestEditMergeProposal(PermissionTest):

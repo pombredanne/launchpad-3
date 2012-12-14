@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -28,6 +28,7 @@ from zope.schema import (
     Bool,
     Date,
     Datetime,
+    Dict,
     Int,
     List,
     Object,
@@ -35,7 +36,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.version import valid_debian_version
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.interfaces.archive import IArchive
@@ -97,6 +98,9 @@ class IBinaryPackageRelease(Interface):
         title=_("New Binary."),
         description=_("True if there binary version was never published for "
                       "the architeture it was built for. False otherwise."))
+
+    # This is a dictionary for fast retrieval over the webservice.
+    properties = Dict(title=_("The properties of this binary."))
 
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build

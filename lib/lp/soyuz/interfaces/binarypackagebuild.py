@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -27,6 +27,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     )
 from lazr.restful.fields import Reference
@@ -41,7 +42,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -118,6 +119,12 @@ class IBinaryPackageBuildView(IPackageBuild):
             title=_("Can Be Retried"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be retried.")))
+
+    can_be_cancelled = exported(
+        Bool(
+            title=_("Can Be Cancelled"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be cancelled.")))
 
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
@@ -223,6 +230,22 @@ class IBinaryPackageBuildEdit(Interface):
         non-scored BuildQueue entry is created for it.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
+    def cancel():
+        """Cancel the build if it is either pending or in progress.
+
+        Call the can_be_cancelled() method prior to this one to find out if
+        cancelling the build is possible.
+
+        If the build is in progress, it is marked as CANCELLING until the
+        buildd manager terminates the build and marks it CANCELLED. If the
+        build is not in progress, it is marked CANCELLED immediately and is
+        removed from the build queue.
+
+        If the build is not in a cancellable state, this method is a no-op.
+        """
+
 
 class IBinaryPackageBuildAdmin(Interface):
     """A Build interface for items requiring launchpad.Admin."""
@@ -292,12 +315,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
 
-    def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSeries
-
-        Pending means that buildstate is NEEDSBUILD.
-        """
-
     def getBuildsForBuilder(builder_id, status=None, name=None,
                             arch_tag=None):
         """Return build records touched by a builder.
@@ -335,14 +352,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
-        """
-
-    def retryDepWaiting(distroarchseries):
-        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
-
-        This method will update all the dependency lines of all MANUALDEPWAIT
-        records in the given architecture and those with all dependencies
-        satisfied at this point will be automatically retried and re-scored.
         """
 
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
@@ -393,14 +402,9 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         builds in question where they exist.
         """
 
-    def calculateCandidates(archseries):
-        """Return the BuildQueue records for the given archseries's Builds.
+    def preloadBuildsData(builds):
+        """Prefetch the data related to the builds.
 
-        Returns a selectRelease of BuildQueue items for sorted by descending
-        'lastscore' for Builds within the given archseries.
-
-        'archseries' argument should be a list of DistroArchSeries and it is
-        asserted to not be None/empty.
         """
 
 

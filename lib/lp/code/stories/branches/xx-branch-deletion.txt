@@ -7,23 +7,22 @@ branches that have been created in error.
 
     >>> from lp.code.enums import BranchType
     >>> login(ANONYMOUS)
-    >>> alice = factory.makePerson(name="alice", password="test",
-    ...                            email="alice@example.com")
+    >>> alice = factory.makePerson(name="alice", email="alice@example.com")
     >>> product = factory.makeProduct(
     ...     name='earthlynx', displayname="Earth Lynx", owner=alice)
     >>> branch = factory.makeProductBranch(
     ...     product=product, branch_type=BranchType.HOSTED)
     >>> productseries = factory.makeProductSeries(
     ...     product=product, branch=branch)
-    >>> login_person(alice)
+    >>> ignored = login_person(alice)
     >>> product.development_focus = productseries
+    >>> delete_branch = factory.makeProductBranch(
+    ...     name='to-delete', owner=alice,
+    ...     product=product, branch_type=BranchType.HOSTED)
     >>> logout()
 
     >>> browser = setupBrowser(auth="Basic alice@example.com:test")
-    >>> browser.open('http://code.launchpad.dev/earthlynx')
-    >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Name').value = 'to-delete'
-    >>> browser.getControl('Register Branch').click()
+    >>> browser.open('http://code.launchpad.dev/~alice/earthlynx/to-delete')
     >>> print browser.title
     to-delete : Code : Earth Lynx
 
@@ -57,10 +56,11 @@ the branch has been deleted.
 If the branch is junk, then the user is taken back to the code listing for
 the deleted branch's owner.
 
-    >>> browser.open('http://code.launchpad.dev/~alice')
-    >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Name').value = 'to-delete'
-    >>> browser.getControl('Register Branch').click()
+    >>> ignored = login_person(alice)
+    >>> delete_branch = factory.makePersonalBranch(
+    ...     name='to-delete', owner=alice)
+    >>> logout()
+    >>> browser.open('http://code.launchpad.dev/~alice/+junk/to-delete')
     >>> browser.getLink('Delete branch').click()
     >>> browser.getControl('Delete').click()
     >>> print browser.url

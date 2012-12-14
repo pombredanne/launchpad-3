@@ -22,6 +22,12 @@
                   replace="context/target/displayname">Firefox</tal:target>
                 does not use Launchpad to track bugs.
               </tal:uses-malone>
+              <tal:uses-answers
+                condition="not: context/pillar/answers_usage/enumvalue:LAUNCHPAD">
+                <tal:target
+                  replace="context/target/displayname">Firefox</tal:target>
+                does not use Launchpad for support questions.
+              </tal:uses-answers>
               This bug may be valid in other locations, or it is not valid in
               any locations. Only one location must be valid for a bug to be
               convertible to a question.

@@ -16,6 +16,9 @@ __all__ = [
      'ILanguageSet',
      ]
 
+# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
+# import bugs.  Break this up into a per-package thing.
+from lp import _schema_circular_imports
 from lp.services.worlddata.interfaces.country import (
     ICountry,
     ICountrySet,
@@ -24,7 +27,6 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-from canonical.launchpad.interfaces import _schema_circular_imports
+
+
 _schema_circular_imports

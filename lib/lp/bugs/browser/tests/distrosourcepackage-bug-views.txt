@@ -5,7 +5,7 @@
 Simple searching is possible on the distro source package bug view page.
 
   >>> from zope.component import getMultiAdapter, getUtility
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 

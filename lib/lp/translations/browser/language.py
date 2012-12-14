@@ -21,16 +21,6 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -41,6 +31,16 @@ from lp.app.browser.tales import LanguageFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
@@ -327,7 +327,7 @@ class LanguageAdminView(LaunchpadEditFormView):
         """Validate plural expression and number of plural forms."""
         try:
             make_friendly_plural_forms(pluralexpression, pluralforms)
-        except BadPluralExpression, e:
+        except BadPluralExpression as e:
             self.setFieldError('pluralexpression', str(e))
 
     def validate(self, data):

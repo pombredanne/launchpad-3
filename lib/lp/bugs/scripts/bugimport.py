@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XML bug importer
@@ -6,7 +6,6 @@
 This code can import an XML bug dump into Launchpad.  The XML format
 is described in the RELAX-NG schema 'doc/bug-export.rnc'.
 """
-
 
 __metaclass__ = type
 
@@ -21,35 +20,44 @@ import datetime
 import logging
 import os
 import time
-
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import cElementTree as ET
+from xml.etree import cElementTree
 
 import pytz
-
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.messages.interfaces.message import IMessageSet
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.adapters.bug import convert_to_information_type
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.bugs.interfaces.bugwatch import IBugWatchSet, NoBugTrackerFound
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.bugs.scripts.bugexport import BUGS_XMLNS
+from lp.registry.enums import BugSharingPolicy
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.services.database.constants import UTC_NOW
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
@@ -136,6 +144,10 @@ class BugImporter:
         # duplicates of this bug.
         self.pending_duplicates = {}
 
+        # We can't currently sensibly import into non-PUBLIC products.
+        if self.product:
+            assert self.product.bug_sharing_policy == BugSharingPolicy.PUBLIC
+
     def getPerson(self, node):
         """Get the Launchpad user corresponding to the given XML node"""
         if node is None:
@@ -168,8 +180,11 @@ class BugImporter:
             person = None
 
         if person is None:
-            address = getUtility(IEmailAddressSet).getByEmail(email)
-            if address is None:
+            person = getUtility(IPersonSet).getByEmail(
+                    email,
+                    filter_status=False)
+
+            if person is None:
                 self.logger.debug('creating person for %s' % email)
                 # Has the short name been taken?
                 if name is not None and (
@@ -184,26 +199,6 @@ class BugImporter:
                         rationale=PersonCreationRationale.BUGIMPORT,
                         comment=('when importing bugs for %s' %
                                  self.product.displayname)))
-            elif address.personID is None:
-                # The user has an Account and and EmailAddress linked
-                # to that account.
-                assert address.accountID is not None, (
-                    "Email address not linked to an Account: %s " % email)
-                self.logger.debug(
-                    'creating person from account for %s' % email)
-                if name is not None and (
-                    person_set.getByName(name) is not None):
-                    # The short name is already taken, so we'll pass
-                    # None to createPerson(), which will take care of
-                    # creating a unique one.
-                    name = None
-                person = address.account.createPerson(
-                    rationale=PersonCreationRationale.BUGIMPORT,
-                    name=name, comment=('when importing bugs for %s' %
-                                        self.product.displayname))
-            else:
-                # EmailAddress and Person are in different stores.
-                person = person_set.get(address.personID)
 
             self.person_id_cache[email] = person.id
 
@@ -258,7 +253,7 @@ class BugImporter:
 
     def importBugs(self, ztm):
         """Import bugs from a file."""
-        tree = ET.parse(self.bugs_filename)
+        tree = cElementTree.parse(self.bugs_filename)
         root = tree.getroot()
         assert root.tag == '{%s}launchpad-bugs' % BUGS_XMLNS, (
             "Root element is wrong: %s" % root.tag)
@@ -297,6 +292,8 @@ class BugImporter:
 
         private = get_value(bugnode, 'private') == 'True'
         security_related = get_value(bugnode, 'security_related') == 'True'
+        information_type = convert_to_information_type(
+            private, security_related)
 
         if owner is None:
             owner = self.bug_importer
@@ -304,15 +301,8 @@ class BugImporter:
         msg = self.createMessage(commentnode, defaulttitle=title)
 
         bug = self.product.createBug(CreateBugParams(
-            msg=msg,
-            datecreated=datecreated,
-            title=title,
-            private=private or security_related,
-            security_related=security_related,
-            owner=owner))
-        # Security related bugs must be created private, so we set it
-        # correctly after creation.
-        bug.setPrivate(private, owner)
+            msg=msg, datecreated=datecreated, title=title,
+            information_type=information_type, owner=owner))
         bugtask = bug.bugtasks[0]
         self.logger.info('Creating Launchpad bug #%d', bug.id)
 
@@ -322,15 +312,11 @@ class BugImporter:
 
         # Process remaining comments
         for commentnode in comments:
-            msg = self.createMessage(commentnode,
-                                     defaulttitle=bug.followup_subject())
+            msg = self.createMessage(
+                commentnode, defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 
-        # set up bug
-        private = get_value(bugnode, 'private') == 'True'
-        security_related = get_value(bugnode, 'security_related') == 'True'
-        bug.setPrivacyAndSecurityRelated(private, security_related, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
@@ -354,7 +340,7 @@ class BugImporter:
             try:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
-            except NoBugTrackerFound, exc:
+            except NoBugTrackerFound as exc:
                 self.logger.debug(
                     'Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(

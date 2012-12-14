@@ -1,12 +1,17 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
 from datetime import datetime
 
 from zope.app.form.interfaces import ConversionError
 from zope.schema import Field
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.date import DateTimeWidget
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestDateTimeWidget(TestCase):
@@ -33,7 +38,7 @@ class TestDateTimeWidget(TestCase):
         fmt = "%Y-%m-%d"
         try:
             datetime.strptime(test_str, fmt)
-        except (ValueError,), e:
+        except ValueError as e:
             self.assertTrue('unconverted data' in str(e))
 
     def test_whitespace_does_not_trick_validation(self):

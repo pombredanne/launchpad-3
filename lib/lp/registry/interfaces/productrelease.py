@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Product release interfaces."""
 
@@ -40,7 +38,10 @@ from lazr.restful.fields import (
     )
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bytes,
     Choice,
@@ -50,10 +51,10 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.version import sane_version
+from lp.services.config import config
 from lp.services.fields import (
     ContentNameField,
     PersonChoice,
@@ -185,7 +186,7 @@ class IProductReleaseFilePublic(Interface):
     productrelease = exported(
         ReferenceChoice(title=_('Project release'),
                         description=_("The parent product release."),
-                        schema=Interface, # Defined later.
+                        schema=Interface,  # Defined later.
                         required=True,
                         vocabulary='ProductRelease'),
         exported_as='project_release')
@@ -254,14 +255,16 @@ class IProductReleaseEditRestricted(Interface):
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.
+        :raises: InvalidFilename if the filename is invalid or a duplicate
+            of a file previously added to the release.
         """
 
     @export_write_operation()
     @export_operation_as('delete')
     def destroySelf():
-        """Delete this product release.
+        """Delete this release.
 
-        This method must not be used if this product release has any
+        This method must not be used if this release has any
         release files associated with it.
         """
 
@@ -284,35 +287,22 @@ class IProductReleasePublic(Interface):
     version = exported(
         ProductReleaseVersionField(
             title=_('Version'),
-            description= u'The specific version number assigned to this '
+            description=u'The specific version number assigned to this '
             'release. Letters and numbers are acceptable, for releases like '
             '"1.2rc3".',
-            constraint=sane_version)
+            constraint=sane_version, readonly=True)
         )
 
     owner = exported(
         PersonChoice(
-            title=u"The owner of this release.",
+            title=u"The registrant of this release.",
             required=True,
             vocabulary='ValidOwner',
-            description=_("The person or team who owns  his product release.")
+            description=_("The person or who registered this release.")
             )
         )
 
-    productseries = Choice(
-        title=_('Release series'), readonly=True,
-        vocabulary='FilteredProductSeries')
-
-    codename = TextLine(
-        title=u'Code name', required=False, readonly=True,
-        description=_('The release code-name. This is deprecated, '
-                      'since it was moved to the milestone.'))
-
-    summary = Text(
-        title=_("Summary"), required=False, readonly=True,
-        description=_('A brief summary of the release highlights, to '
-                      'be shown at the top of the release page, and in '
-                      'listings.'))
+    productseries = Attribute("This release's parent series.")
 
     release_notes = exported(
         Text(
@@ -345,7 +335,7 @@ class IProductReleasePublic(Interface):
         )
 
     product = exported(
-        Reference(title=u'The upstream project of this release.',
+        Reference(title=u'The project that made this release.',
                   schema=Interface, readonly=True),
          exported_as="project")
 
@@ -377,6 +367,8 @@ class IProductReleasePublic(Interface):
 
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
+    def hasReleaseFile(name):
+        """Does the release have a file that matches the name?"""
 
 
 class IProductRelease(IProductReleaseEditRestricted,

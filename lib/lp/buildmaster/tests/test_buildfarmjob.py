@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBuildFarmJob`."""
@@ -16,11 +16,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -34,9 +29,14 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
     login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -144,6 +144,12 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.failUnless(self.build_farm_job.date_started is None)
 
+    def test_jobCancel(self):
+        # Cancelling a job sets its status to CANCELLED.
+        self.build_farm_job.jobStarted()
+        self.build_farm_job.jobCancel()
+        self.assertEqual(BuildStatus.CANCELLED, self.build_farm_job.status)
+
     def test_title(self):
         # The default title simply uses the job type's title.
         self.assertEqual(
@@ -175,7 +181,7 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         # date_created can be passed optionally when creating a
         # bulid farm job to ensure we don't get identical timestamps
         # when transactions are committed.
-        ten_years_ago = datetime.now(pytz.UTC) - timedelta(365*10)
+        ten_years_ago = datetime.now(pytz.UTC) - timedelta(365 * 10)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD,
             date_created=ten_years_ago)

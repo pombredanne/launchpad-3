@@ -1,29 +1,24 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
 
 __metaclass__ = type
 
-from datetime import (
-    timedelta,
-)
+__all__ = [
+    'CurrentSourceReleasesMixin',
+    ]
+
+from logging import getLogger
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.utils import utc_now
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -40,36 +35,38 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ANONYMOUS,
+    login,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
 
 
-class TestDistroSeriesCurrentSourceReleases(TestCase):
-    """Test for DistroSeries.getCurrentSourceReleases()."""
+class CurrentSourceReleasesMixin:
+    """Mixin class for current source release tests.
 
-    layer = LaunchpadFunctionalLayer
-    release_interface = IDistroSeriesSourcePackageRelease
-
+    Used by tests of DistroSeries and Distribution.  The mixin must not extend
+    TestCase or it will be run by other modules when imported.
+    """
     def setUp(self):
         # Log in as an admin, so that we can create distributions.
-        super(TestDistroSeriesCurrentSourceReleases, self).setUp()
+        super(CurrentSourceReleasesMixin, self).setUp()
         login('foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.factory = self.publisher.factory
         self.development_series = self.publisher.setUpDefaultDistroSeries()
         self.distribution = self.development_series.distribution
-        self.published_package = self.test_target.getSourcePackage(
+        self.published_package = self.target.getSourcePackage(
             self.publisher.default_package_name)
         login(ANONYMOUS)
-
-    @property
-    def test_target(self):
-        return self.development_series
 
     def assertCurrentVersion(self, expected_version, package_name=None):
         """Assert the current version of a package is the expected one.
@@ -81,8 +78,8 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         """
         if package_name is None:
             package_name = self.publisher.default_package_name
-        package = self.test_target.getSourcePackage(package_name)
-        releases = self.test_target.getCurrentSourceReleases(
+        package = self.target.getSourcePackage(package_name)
+        releases = self.target.getCurrentSourceReleases(
             [package.sourcepackagename])
         self.assertEqual(releases[package].version, expected_version)
 
@@ -96,7 +93,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         # source package is used as the key, with
         # a DistroSeriesSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
-        releases = self.test_target.getCurrentSourceReleases(
+        releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
         self.assertTrue(self.published_package in releases)
         self.assertTrue(self.release_interface.providedBy(
@@ -169,6 +166,18 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
             [foo_package.sourcepackagename, bar_package.sourcepackagename])
         self.assertEqual(releases[foo_package].version, '0.9')
         self.assertEqual(releases[bar_package].version, '1.0')
+
+
+class TestDistroSeriesCurrentSourceReleases(
+    CurrentSourceReleasesMixin, TestCase):
+    """Test for DistroSeries.getCurrentSourceReleases()."""
+
+    layer = LaunchpadFunctionalLayer
+    release_interface = IDistroSeriesSourcePackageRelease
+
+    @property
+    def target(self):
+        return self.development_series
 
 
 class TestDistroSeries(TestCaseWithFactory):
@@ -270,36 +279,6 @@ class TestDistroSeries(TestCaseWithFactory):
         job = job_source.create(distroseries, [parent_distroseries.id])
         self.assertEqual(job, distroseries.getInitializationJob())
 
-    def test_priorReleasedSeries(self):
-        # Make sure that previousReleasedSeries returns all series with a
-        # release date less than the contextual series,
-        # ordered by descending date.
-        distro = self.factory.makeDistribution()
-        # Make an unreleased series.
-        self.factory.makeDistroSeries(distribution=distro)
-        ds1 = self.factory.makeDistroSeries(distribution=distro)
-        ds2 = self.factory.makeDistroSeries(distribution=distro)
-        ds3 = self.factory.makeDistroSeries(distribution=distro)
-        ds4 = self.factory.makeDistroSeries(distribution=distro)
-
-        now = utc_now()
-        older = now - timedelta(days=5)
-        oldest = now - timedelta(days=10)
-        newer = now + timedelta(days=15)
-        removeSecurityProxy(ds1).datereleased = oldest
-        removeSecurityProxy(ds2).datereleased = older
-        removeSecurityProxy(ds3).datereleased = now
-        removeSecurityProxy(ds4).datereleased = newer
-
-        # The data set up here is 5 distroseries. where one is unreleased,
-        # ds1 and ds2 are released and in the past and ds4 is released but
-        # in the future compared to ds3.
-
-        prior = ds3.priorReleasedSeries()
-        self.assertEqual(
-            [ds2, ds1],
-            list(prior))
-
     def test_getDifferenceComments_gets_DistroSeriesDifferenceComments(self):
         distroseries = self.factory.makeDistroSeries()
         dsd = self.factory.makeDistroSeriesDifference(
@@ -307,6 +286,43 @@ class TestDistroSeries(TestCaseWithFactory):
         comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
+
+    def checkLegalPocket(self, status, pocket):
+        distroseries = self.factory.makeDistroSeries(status=status)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, pocket=pocket)
+        return removeSecurityProxy(distroseries).checkLegalPocket(
+            spph, False, getLogger())
+
+    def test_checkLegalPocket_allows_unstable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_unstable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_forbids_unstable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
+
+    def test_checkLegalPocket_forbids_stable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_stable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_allows_stable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
@@ -324,22 +340,21 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        hot_package = self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', bugs=50)
         # Create a second SPPH for 'hot', to verify that duplicates are
         # eliminated in the queries.
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=hot_package.sourcepackagename,
             distroseries=self.series,
             component=self.universe_component, section_name='web')
-        self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
+        self.makeSeriesPackage('hot-translatable', bugs=25, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
         self.linkPackage('linked')
         transaction.commit()
         login(ANONYMOUS)
 
-    def makeSeriesPackage(self, name,
-                          is_main=False, heat=None, messages=None,
+    def makeSeriesPackage(self, name, is_main=False, bugs=None, messages=None,
                           is_translations=False):
         # Make a published source package.
         if is_main:
@@ -356,10 +371,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
-        if heat is not None:
-            bugtask = self.factory.makeBugTask(
-                target=source_package, owner=self.user)
-            bugtask.bug.setHeat(heat)
+        if bugs is not None:
+            dsp = removeSecurityProxy(
+                source_package.distribution_sourcepackage)
+            dsp.bug_count = bugs
         if messages is not None:
             template = self.factory.makePOTemplate(
                 distroseries=self.series, sourcepackagename=sourcepackagename,

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -13,12 +13,7 @@ import transaction
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.app.enums import InformationType
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -36,9 +31,15 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 
@@ -91,6 +92,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
+        bmp.commit_message = 'commit message'
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
         update_trigger_modified_fields(bmp.source_branch)
@@ -111,6 +113,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         expected = dedent("""\
         Baz Qux has proposed merging %(source)s into %(target)s.
 
+        Commit message:
+        %(commit_message)s
+
         Requested reviews:
           %(reviewer)s
 
@@ -122,6 +127,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """) % {
             'source': bmp.source_branch.bzr_identity,
             'target': bmp.target_branch.bzr_identity,
+            'commit_message': bmp.commit_message,
             'reviewer': reviewer.unique_displayname,
             'bmp': canonical_url(bmp),
             'reason': reason.getReason()}
@@ -141,6 +147,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         reviewer_id = mailer._format_user_address(reviewer)
         self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
+
+    def test_forCreation_without_commit_message(self):
+        """If there is no commit message, email should say 'None Specified.'"""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bmp.commit_message = None
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertNotIn('Commit message:', ctrl.body)
 
     def test_forCreation_with_bugs(self):
         """If there are related bugs, include 'Related bugs'."""
@@ -219,9 +233,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         private_bug = self.factory.makeBug(
-            title='I am a private bug',
-            owner=private_bug_owner,
-            private=True)
+            title='I am a private bug', owner=private_bug_owner,
+            information_type=InformationType.USERDATA)
         private_bugtask = private_bug.default_bugtask
         with person_logged_in(private_bug_owner):
             bmp.source_branch.linkBug(private_bug, bmp.registrant)
@@ -347,7 +360,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text, attachment.get_payload(decode=True))
@@ -373,7 +387,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         (attachment,) = ctrl.attachments
-        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual(
+            'text/x-diff; charset="utf-8"', attachment['Content-Type'])
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))
@@ -491,8 +506,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
                          'who were implicitly subscribed to their branches.')
         email = emails[0]
         self.assertEqual('[Merge] '
-            'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
-            'lp://dev/~mary/super-product/bar', email['subject'])
+            'lp://dev/~bob/super-product/fix-foo-for-bar into\n'
+            ' lp://dev/~mary/super-product/bar',
+            email['subject'].replace('\n\t', '\n '))
         bmp = job.branch_merge_proposal
         expected = dedent("""\
             The proposal to merge %(source)s into %(target)s has been updated.

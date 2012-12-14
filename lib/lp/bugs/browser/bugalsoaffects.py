@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,7 +17,6 @@ from lazr.enum import (
     Item,
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
-from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError
@@ -30,18 +29,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -85,9 +81,12 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.services.features import getFeatureFlag
+from lp.registry.model.product import Product
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -175,7 +174,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     def validateStep(self, data):
         if data.get('product'):
             try:
-                validate_target(self.context.bug, data.get('product'))
+                validate_new_target(self.context.bug, data.get('product'))
             except IllegalTarget as e:
                 self.setFieldError('product', e[0])
             return
@@ -194,7 +193,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
             structured("""
                 There is no project in Launchpad named "%s". Please
                 <a href="/projects"
-                onclick="LPS.use('event').Event.simulate(
+                onclick="LPJS.use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
                          return false;"
                 >search for it</a> as it may be
@@ -287,10 +286,10 @@ class BugTaskCreationStep(AlsoAffectsStep):
         else:
             task_target = data['distribution']
             if data.get('sourcepackagename') is not None:
-                task_target = task_target.getSourcePackage(
-                    data['sourcepackagename'])
+                task_target = data['sourcepackagename']
+        # The new target has already been validated so don't do it again.
         self.task_added = self.context.bug.addTask(
-            getUtility(ILaunchBag).user, task_target)
+            getUtility(ILaunchBag).user, task_target, validate_target=False)
         task_added = self.task_added
 
         if extracted_bug is not None:
@@ -344,9 +343,22 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(task_added)
 
 
+class IAddDistroBugTaskForm(IAddBugTaskForm):
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+                      "Leave blank if you are not sure."),
+        vocabulary='DistributionSourcePackage')
+
+
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
+
+    @property
+    def schema(self):
+        return IAddBugTaskForm
 
     custom_widget(
         'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
@@ -355,17 +367,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
-
-    def setUpFields(self):
-        super(DistroBugTaskCreationStep, self).setUpFields()
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            # Replace the default field with a field that uses the better
-            # vocabulary.
-            self.form_fields = self.form_fields.omit('sourcepackagename')
-            new_sourcepackagename = copy_field(
-                IAddBugTaskForm['sourcepackagename'],
-                vocabulary='DistributionSourcePackage')
-            self.form_fields += form.Fields(new_sourcepackagename)
 
     @property
     def initial_values(self):
@@ -393,17 +394,18 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             # Add a hidden field to fool LaunchpadFormView into thinking we
             # submitted the action it expected when in fact we're submiting
             # something else to indicate the user has confirmed.
-            confirm_button = (
+            confirm_button = structured(
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
-                % self.continue_action.__name__)
-            self.notifications.append(_(dedent("""
-                %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, the %s status will not update automatically.
-                %s""" % (cgi.escape(target.displayname),
-                         cgi.escape(target.displayname),
-                         confirm_button))))
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />',
+                self.continue_action.__name__)
+            self.notifications.append(structured(
+                dedent("""
+                    %s doesn't use Launchpad as its bug tracker. Without a bug
+                    URL to watch, the %s status will not update automatically.
+                    %s"""),
+                target.displayname, target.displayname,
+                confirm_button).escapedtext)
             return None
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
@@ -441,14 +443,22 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 distribution.displayname, entered_package,
                 binary_tracking)
             self.setFieldError('sourcepackagename', error)
-        else:
+        elif not IDistributionSourcePackage.providedBy(sourcepackagename):
             try:
                 target = distribution
                 if sourcepackagename:
                     target = target.getSourcePackage(sourcepackagename)
-                validate_new_target(self.context.bug, target)
+                # The validity of the source package has already been checked
+                # by the bug target widget.
+                validate_new_target(
+                    self.context.bug, target, check_source_package=False)
+                if sourcepackagename:
+                    data['sourcepackagename'] = target
             except IllegalTarget as e:
-                self.setFieldError('sourcepackagename', e[0])
+                if sourcepackagename:
+                    self.setFieldError('sourcepackagename', e[0])
+                else:
+                    self.setFieldError('distribution', e[0])
 
         super(DistroBugTaskCreationStep, self).validateStep(data)
 
@@ -501,8 +511,8 @@ class LinkUpstreamHowOptions(EnumeratedType):
 #    mailing lists."
 
     UNLINKED_UPSTREAM = Item(
-        """I just want to register that it is upstream right now; \
-           I don't have any way to link it.
+        """I want to add this upstream project to the bug report, but someone\
+        must find or report this bug in the upstream bug tracker.
 
         Launchpad will record that.
         """)
@@ -653,12 +663,13 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         if data.get('add_packaging', False):
             # Create a packaging link so that Launchpad will suggest the
             # upstream project to the user.
-            packaging_util = getUtility(IPackagingUtil)
-            packaging_util.createPackaging(
-                productseries=data['product'].development_focus,
-                sourcepackagename=self.context.target.sourcepackagename,
-                distroseries=self.context.target.distribution.currentseries,
-                packaging=PackagingType.PRIME, owner=self.user)
+            series = self.context.target.distribution.currentseries
+            if series:
+                getUtility(IPackagingUtil).createPackaging(
+                    productseries=data['product'].development_focus,
+                    sourcepackagename=self.context.target.sourcepackagename,
+                    distroseries=series, packaging=PackagingType.PRIME,
+                    owner=self.user)
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
     @property
@@ -701,7 +712,7 @@ class BugTrackerCreationStep(AlsoAffectsStep):
         bug_url = data.get('bug_url').strip()
         try:
             getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
         self.next_step = self._next_step
@@ -783,9 +794,9 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
             name_matches = removeSecurityProxy(
-                getUtility(IProductSet).search_sqlobject(
+                getUtility(IProductSet).search(self.user,
                 self.request.form.get('field.name')))
-            products = bugtracker.products.intersect(name_matches)
+            products = name_matches.find(Product.bugtracker == bugtracker.id)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:

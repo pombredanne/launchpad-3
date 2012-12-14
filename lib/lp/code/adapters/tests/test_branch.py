@@ -5,15 +5,15 @@
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.testing import (
     EventRecorder,
+    login,
     TestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBranchMergeProposalDelta(TestCase):
@@ -45,8 +45,7 @@ class TestBranchMergeProposalDelta(TestCase):
     def test_Modification(self):
         """When there are modifications, the delta reflects them."""
         registrant = self.factory.makePerson(
-            displayname='Baz Qux', email='baz.qux@example.com',
-            password='test')
+            displayname='Baz Qux', email='baz.qux@example.com')
         merge_proposal = self.factory.makeBranchMergeProposal(
             registrant=registrant)
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)

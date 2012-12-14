@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -11,15 +11,19 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import datetime
 import os
 import tempfile
 
+import pytz
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -44,6 +48,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
+        if chroot is None:
+            distroarchseries = self._getDistroArchSeries()
+            raise CannotBuild("Unable to find a chroot for %s" %
+                              distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
         d = self._builder.slave.cacheFile(logger, chroot)
 
@@ -111,6 +119,35 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             if len(raw_slave_status) >= 4:
                 status['filemap'] = raw_slave_status[3]
 
+    def setBuildStatus(self, status):
+        self.build.status = status
+
+    @staticmethod
+    def getLogFromSlave(templates_build, queue_item):
+        """See `IPackageBuild`."""
+        SLAVE_LOG_FILENAME = 'buildlog'
+        builder = queue_item.builder
+        d = builder.transferSlaveFileToLibrarian(
+            SLAVE_LOG_FILENAME,
+            templates_build.buildfarmjob.getLogFileName(),
+            False)
+        return d
+
+    @staticmethod
+    def storeBuildInfo(build, queue_item, build_status):
+        """See `IPackageBuild`."""
+        def got_log(lfa_id):
+            build.build.log = lfa_id
+            build.build.builder = queue_item.builder
+            build.build.date_started = queue_item.date_started
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            build.build.date_finished = datetime.datetime.now(pytz.UTC)
+
+        d = build.getLogFromSlave(build, queue_item)
+        return d.addCallback(got_log)
+
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
 
@@ -139,6 +176,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
+                self.setBuildStatus(BuildStatus.FULLYBUILT)
                 return
 
             tarball_file = open(filename)
@@ -152,15 +190,23 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         queue_item.specific_job.branch, tarball, logger)
                     logger.debug("Upload complete.")
             finally:
+                self.setBuildStatus(BuildStatus.FULLYBUILT)
                 tarball_file.close()
                 os.remove(filename)
 
-        if build_status == 'OK':
-            logger.debug("Processing successful templates build.")
-            filemap = slave_status.get('filemap')
-            d = self._readTarball(queue_item, filemap, logger)
-            d.addCallback(got_tarball)
-            d.addCallback(clean_slave)
-            return d
+        def build_info_stored(ignored):
+            if build_status == 'OK':
+                self.setBuildStatus(BuildStatus.UPLOADING)
+                logger.debug("Processing successful templates build.")
+                filemap = slave_status.get('filemap')
+                d = self._readTarball(queue_item, filemap, logger)
+                d.addCallback(got_tarball)
+                d.addCallback(clean_slave)
+                return d
 
-        return clean_slave(None)
+            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
+            return clean_slave(None)
+
+        d = self.storeBuildInfo(self, queue_item, build_status)
+        d.addCallback(build_info_stored)
+        return d

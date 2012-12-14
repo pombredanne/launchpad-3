@@ -1,16 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import __builtin__
 import atexit
 import itertools
 from operator import attrgetter
 import types
 
-import __builtin__
-
 
 original_import = __builtin__.__import__
-database_root = 'canonical.launchpad.database'
 naughty_imports = set()
 
 # Silence bogus warnings from Hardy's python-pkg-resources package.
@@ -23,38 +21,6 @@ def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
 
-permitted_database_imports = text_lines_to_set("""
-    canonical.archivepublisher.deathrow
-    canonical.archivepublisher.domination
-    canonical.archivepublisher.ftparchive
-    canonical.archivepublisher.publishing
-    lp.codehosting.inmemory
-    canonical.launchpad.browser.branchlisting
-    lp.code.browser.branchlisting
-    canonical.launchpad.browser.librarian
-    canonical.launchpad.feed.branch
-    lp.code.feed.branch
-    canonical.launchpad.interfaces.person
-    lp.scripts.garbo
-    canonical.launchpad.vocabularies.dbobjects
-    lp.registry.vocabularies
-    canonical.librarian.client
-    canonical.librarian.db
-    doctest
-    """)
-
-
-warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.scripts.ftpmaster
-    canonical.launchpad.scripts.gina.handlers
-    canonical.launchpad.browser.distroseries
-    canonical.launchpad.scripts.builddmaster
-    lp.translations.scripts.po_import
-    canonical.launchpad.systemhomes
-    canonical.rosetta
-    """)
-
-
 # Sometimes, third-party modules don't export all of their public APIs through
 # __all__. The following dict maps from such modules to a list of attributes
 # that are allowed to be imported, whether or not they are in __all__.
@@ -65,6 +31,7 @@ valid_imports_not_in_all = {
     'openid.fetchers': set(['Urllib2Fetcher']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
+    'testtools.testresult.real': set(['_details_to_str']),
     'twisted.internet.threads': set(['deferToThreadPool']),
     'zope.component': set(
         ['adapter',
@@ -75,27 +42,51 @@ valid_imports_not_in_all = {
     }
 
 
+unsafe_parts = set(['browser', 'feed', 'xmlrpc', 'widgets'])
+
+dubious = [
+    'lp.answers.browser.question',
+    'lp.app.browser.vocabulary',
+    'lp.blueprints.browser.sprint',
+    'lp.bugs.browser.bug',
+    'lp.bugs.browser.bugalsoaffects',
+    'lp.bugs.browser.bugsubscription',
+    'lp.bugs.browser.bugtarget',
+    'lp.bugs.browser.bugtask',
+    'lp.bugs.browser.person',
+    'lp.code.browser.branchlisting',
+    'lp.code.browser.sourcepackagerecipe',
+    'lp.registry.browser.distroseries',
+    'lp.registry.browser.distroseriesdifference',
+    'lp.registry.browser.milestone',
+    'lp.registry.browser.pillar',
+    'lp.registry.browser.person',
+    'lp.registry.browser.project',
+    'lp.registry.browser.sourcepackage',
+    'lp.soyuz.browser.archive',
+    'lp.soyuz.browser.builder',
+    'lp.soyuz.browser.queue',
+    'lp.translations.browser.potemplate',
+    'lp.translations.browser.serieslanguage',
+    'lp.translations.browser.sourcepackage',
+    'lp.translations.browser.translationlinksaggregator',
+    'lp.translations.browser.translationtemplatesbuild',
+    ]
+
+
 def database_import_allowed_into(module_path):
-    """Return True if database code is allowed to be imported into the given
-    module path.  Otherwise, returns False.
+    """Return True if model code can be imported into the module path.
 
     It is allowed if:
         - The import was made with the __import__ hook.
-        - The importer is from within canonical.launchpad.database.
         - The importer is a 'test' module.
-        - The importer is in the set of permitted_database_imports.
-        - The importer is within a model module or package.
-
-    Note that being in the set of warned_database_imports does not make
-    the import allowed.
-
+        - The importer is in a nodule that does not face users.
+        - The import is recognised to be dubious, but not a priority to fix.
     """
-    if (module_path == '__import__ hook' or
-        module_path.startswith('canonical.launchpad.database') or
-        '.model' in module_path or
-        is_test_module(module_path)):
-        return True
-    return module_path in permitted_database_imports
+    module_parts = set(module_path.split('.'))
+    return (unsafe_parts.isdisjoint(module_parts)
+        or is_test_module(module_path)
+        or module_path in dubious)
 
 
 def is_test_module(module_path):
@@ -104,9 +95,7 @@ def is_test_module(module_path):
     Otherwise returns False.
     """
     name_splitted = module_path.split('.')
-    return ('tests' in name_splitted or
-            'ftests' in name_splitted or
-            'testing' in name_splitted)
+    return ('tests' in name_splitted or 'testing' in name_splitted)
 
 
 class attrsgetter:
@@ -165,9 +154,7 @@ class NotInModuleAllPolicyViolation(JackbootError):
 
 
 class NotFoundPolicyViolation(JackbootError):
-    """import of zope.exceptions.NotFoundError into
-    canonical.launchpad.database.
-    """
+    """import of zope.exceptions.NotFoundError into lp models modules."""
 
     def __init__(self, import_into):
         JackbootError.__init__(self, import_into, '')
@@ -181,7 +168,6 @@ class NotFoundPolicyViolation(JackbootError):
 # The names of the arguments form part of the interface of __import__(...),
 # and must not be changed, as code may choose to invoke __import__ using
 # keyword arguments - e.g. the encodings module in Python 2.6.
-# pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports
 
@@ -222,25 +208,17 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
         import_into = '__import__ hook'
 
     # Check the "NotFoundError" policy.
-    if (import_into.startswith('canonical.launchpad.database') and
-        name == 'zope.exceptions'):
+    if ('.model.' in import_into and name == 'zope.exceptions'):
         if fromlist and 'NotFoundError' in fromlist:
             raise NotFoundPolicyViolation(import_into)
 
     # Check the database import policy.
-    if (name.startswith(database_root) and
-        not database_import_allowed_into(import_into)):
+    if '.model.' in name and not database_import_allowed_into(import_into):
         error = DatabaseImportPolicyViolation(import_into, name)
         naughty_imports.add(error)
-        # Raise an error except in the case of browser.traversers.
-        # This exception to raising an error is only temporary, until
-        # browser.traversers is cleaned up.
-        if import_into not in warned_database_imports:
-            raise error
 
     # Check the import from __all__ policy.
-    if fromlist is not None and (
-        import_into.startswith('canonical') or import_into.startswith('lp')):
+    if fromlist is not None and import_into.startswith('lp'):
         # We only want to warn about "from foo import bar" violations in our
         # own code.
         fromlist = list(fromlist)

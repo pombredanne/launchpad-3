@@ -14,7 +14,7 @@ The class that implements ExternalBugTracker is called Bugzilla.
     >>> from lp.bugs.externalbugtracker import Bugzilla
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> external_bugzilla = Bugzilla('http://example.com')
     >>> verifyObject(IExternalBugTracker, external_bugzilla)
@@ -24,7 +24,7 @@ The Bugzilla ExternalBugTracker works differently depending on which
 version of Bugzilla it is talking to. If it's a version we can't parse,
 UnparsableBugTrackerVersion is raised:
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
@@ -434,8 +434,9 @@ The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
 update:
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
     ...           bug_watch.remotestatus,
@@ -444,8 +445,8 @@ update:
     3224:  None
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
-    INFO:...Didn't find bug u'304070' on
+    INFO Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
+    INFO Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> for bug_watch in gnome_bugzilla.watches:
@@ -489,7 +490,7 @@ Then updateBugWatches() will make one request per bug watch:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 7 watches for 7 bugs on http://bugzilla.gnome.org/bugs
+    INFO Updating 7 watches for 7 bugs on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
@@ -497,7 +498,7 @@ Then updateBugWatches() will make one request per bug watch:
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
-    INFO:...:Didn't find bug u'304070' on
+    INFO Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
@@ -543,9 +544,9 @@ updateBugWatches() issues only one request to update all watches:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 207 watches for 207 bugs...
+    INFO Updating 207 watches for 207 bugs...
     CALLED _postPage()
-    INFO:...:Didn't find bug u'304070' on
+    INFO Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> remote_statuses = dict(
@@ -565,7 +566,7 @@ updateBugWatches() issues only one request to update all watches:
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> gnome_bugzilla.watches_needing_update.count()
     0
@@ -580,7 +581,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(external_bugzilla, [bug_watch])
-    INFO:...:Updating 1 watches for 1 bugs on http://bugzilla.gnome.org/bugs
+    INFO Updating 1 watches for 1 bugs on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
 
@@ -617,7 +618,7 @@ synced:
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
+    INFO Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -640,7 +641,7 @@ status mapping.
     ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
+    INFO Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -669,7 +670,7 @@ same remote bug, both will of course be updated.
     >>> bug_watch2_id = bug_watch2.id
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
-    INFO:...:Updating 2 watches for 1 bugs on https://bugzilla.mozilla.org
+    INFO Updating 2 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus

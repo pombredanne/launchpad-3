@@ -17,7 +17,11 @@ from bzrlib.transport import get_transport
 
 from devscripts import get_launchpad_root
 from devscripts.sourcecode import (
-    find_branches, interpret_config, parse_config_file, plan_update)
+    find_branches,
+    interpret_config,
+    parse_config_file,
+    plan_update,
+    )
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -120,6 +124,15 @@ class TestInterpretConfiguration(unittest.TestCase):
         self.assertRaises(
             AssertionError,
             interpret_config, [['key', 'value', 'extra']], False)
+
+    def test_use_http(self):
+        # If use_http=True is passed to interpret_config, all lp: branch
+        # URLs will be transformed into http:// URLs.
+        config = interpret_config(
+            [['key', 'lp:~sabdfl/foo/trunk']], False, use_http=True)
+        expected_url = 'http://bazaar.launchpad.net/~sabdfl/foo/trunk'
+        self.assertEqual(expected_url, config['key'][0])
+
 
 class TestPlanUpdate(unittest.TestCase):
     """Tests for how to plan the update."""

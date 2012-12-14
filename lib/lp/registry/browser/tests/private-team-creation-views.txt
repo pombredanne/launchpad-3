@@ -1,4 +1,5 @@
-= Private Team Creation =
+Private Team Creation
+=====================
 
 Private teams may only be created by commercial admins
 (launchpad.Commercial permission).  This permission is controlled in
@@ -43,7 +44,7 @@ And real admins see the visibility widget too.
     >>> 'visibility' in [field.__name__ for field in view.form_fields]
     True
 
-When creating a private team, the team subscription policy must be
+When creating a private team, the team membership policy must be
 'Restricted.'
 
     >>> login('foo.bar@canonical.com')
@@ -51,10 +52,9 @@ When creating a private team, the team subscription policy must be
     >>> form = {
     ...     'field.name': 'super-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
@@ -68,17 +68,16 @@ When creating a private team, the team subscription policy must be
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
 When the inputs are correct the admin can successfully create the team.
 
     >>> form = {
     ...     'field.name': 'super-secret2',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
@@ -98,11 +97,10 @@ Commercial admins can create a team too.
     >>> form = {
     ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.renewal_policy': 'NONE',
+    ...     'field.membership_policy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'ONDEMAND',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
@@ -129,10 +127,9 @@ team get the normal error message.
     >>> form = {
     ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
@@ -155,10 +152,9 @@ taken by a private team get the blacklist message.
     >>> form = {
     ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.actions.create': 'Create',
     ...     }
@@ -171,10 +167,13 @@ taken by a private team get the blacklist message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    The name 'secret-team' has been blocked by the Launchpad administrators.
+    The name &#x27;secret-team&#x27; has been blocked by the Launchpad
+    administrators.  Contact Launchpad Support if you want to use this
+    name.
 
 
-= Private Team Editing =
+Private Team Editing
+--------------------
 
 The same as when creating a new team, only commercial admins are given
 the option of changing a team's visibility.
@@ -202,10 +201,9 @@ And a private team must have restricted membership.
     >>> form = {
     ...     'field.name': 'super-secret3',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.save': 'Save',
@@ -219,9 +217,10 @@ And a private team must have restricted membership.
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
-= Visibility transitions =
+Visibility transitions
+----------------------
 
 A team can only change visibility if the new state will not leak any
 data or put the team into an inconsistent state.  The rules are:
@@ -236,10 +235,9 @@ Private teams cannot be made public.
     >>> form = {
     ...     'field.name': 'super-secret-two',
     ...     'field.displayname': 'New Display Name',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PUBLIC',
     ...     'field.actions.save': 'Save',
@@ -283,17 +281,11 @@ those permitted by private teams.
     ...         BranchSubscriptionNotificationLevel,
     ...         CodeReviewNotificationLevel)
     ...     branch = factory.makeBranch()
-    ...     subscription = branch.subscribe(
+    ...     branch.subscribe(
     ...         team,
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,
     ...         CodeReviewNotificationLevel.STATUS, team_owner)
-    ...     # A branch visibility rule.
-    ...     from lp.code.enums import BranchVisibilityRule
-    ...     from lp.registry.interfaces.product import IProductSet
-    ...     evolution = getUtility(IProductSet).getByName('evolution')
-    ...     evolution.setBranchVisibilityTeamPolicy(
-    ...         team, BranchVisibilityRule.PRIVATE)
     ...     # A PPA.
     ...     from lp.soyuz.enums import ArchivePurpose
     ...     from lp.soyuz.interfaces.archive import IArchiveSet
@@ -324,13 +316,11 @@ those permitted by private teams.
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
-    >>> # Now let's create a bunch of allowable artifacts.
     >>> createTeamArtifacts(team, foo_bar)
 
-    >>> # With all of those artifacts in place we can still transition to private.
     >>> form = {
     ...     'field.visibility': 'PRIVATE',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -348,18 +338,14 @@ change to Private.
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
-    >>> # Now let's create a bunch of allowable artifacts.
     >>> createTeamArtifacts(team, foo_bar)
 
-    >>> # Create a forbidden artifact.  Private teams cannot own bug trackers.
     >>> bug_tracker = factory.makeBugTracker()
     >>> bug_tracker.owner = team
 
-    >>> # With the addtion of hte bug tracker artifact the team will not
-    >>> # be allowed to transition to Private.
     >>> form = {
     ...     'field.visibility': 'PRIVATE',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -372,7 +358,9 @@ change to Private.
     This team cannot be converted to Private since it is referenced by a
     bugtracker.
 
-= Use of 'private-' prefix =
+
+Use of 'private-' prefix
+------------------------
 
 Commercial admins can create private projects with the 'private-' prefix.
 
@@ -380,10 +368,9 @@ Commercial admins can create private projects with the 'private-' prefix.
     >>> form = {
     ...     'field.name': 'private-super-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
@@ -404,10 +391,9 @@ users will get a blacklist message.
     >>> form = {
     ...     'field.name': 'private-top-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
@@ -421,5 +407,6 @@ users will get a blacklist message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    The name 'private-top-secret' has been blocked by the Launchpad
-    administrators.
+    The name &#x27;private-top-secret&#x27; has been blocked by the
+    Launchpad administrators. Contact Launchpad Support if you want to
+    use this name.

@@ -1,2 +1,0 @@
-To report bugs by e-mail, you need to sign the message with an OpenPGP key
-that is registered in Launchpad.

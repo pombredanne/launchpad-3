@@ -15,10 +15,10 @@ from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.services.webapp.testing import verifyObject
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
     TranslationSide,

@@ -13,7 +13,7 @@
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPS.use('lp.registry.structural_subscription', 'lp.bugs.subscription',
+      LPJS.use('lp.registry.structural_subscription', 'lp.bugs.subscription',
               function(Y) {
           var ss_module = Y.lp.registry.structural_subscription;
           var info_module = Y.lp.bugs.subscription;
@@ -49,7 +49,7 @@
   <div metal:fill-slot="main">
 
     <div id="maincontent">
-      <div id="nonportlets" class="readable">
+      <div id="nonportlets">
         <div id="subscription-description-box"></div>
         <div id="subscription-listing"></div>
 

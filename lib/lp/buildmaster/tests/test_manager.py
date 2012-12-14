@@ -8,37 +8,22 @@ import signal
 import time
 import xmlrpclib
 
+from lpbuildd.tests import BuilddSlaveTestSetup
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 import transaction
-
 from twisted.internet import (
     defer,
     reactor,
     task,
     )
-from twisted.internet.task import (
-    deferLater,
-    )
+from twisted.internet.task import deferLater
 from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.buildd.tests import BuilddSlaveTestSetup
-from canonical.config import config
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from lp.services.log.logger import BufferLogger
-from canonical.testing.layers import (
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -48,7 +33,10 @@ from lp.buildmaster.manager import (
     NewBuildersScanner,
     SlaveScanner,
     )
-from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.builder import (
+    Builder,
+    BuilderSlave,
+    )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
@@ -57,13 +45,23 @@ from lp.buildmaster.tests.mock_slaves import (
     OkSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
+    ANONYMOUS,
+    login,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
@@ -82,8 +80,6 @@ class TestSlaveScannerScan(TestCase):
         'bob' builder.
         """
         super(TestSlaveScannerScan, self).setUp()
-        self.slave = self.useFixture(BuilddSlaveTestSetup())
-
         # Creating the required chroots needed for dispatching.
         test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -141,14 +137,13 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
 
         # Run 'scan' and check its result.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
@@ -186,7 +181,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
@@ -212,6 +207,7 @@ class TestSlaveScannerScan(TestCase):
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
+        self.useFixture(BuilddSlaveTestSetup())
 
         # Sampledata builder is enabled and is assigned to an active job.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -226,7 +222,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -253,7 +249,8 @@ class TestSlaveScannerScan(TestCase):
 
         login('foo.bar@canonical.com')
         builder.builderok = True
-        builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(BuildingSlave(build_id='8-1')))
         transaction.commit()
         login(ANONYMOUS)
 
@@ -261,7 +258,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
@@ -270,7 +267,7 @@ class TestSlaveScannerScan(TestCase):
     def test_scan_with_nothing_to_dispatch(self):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
@@ -279,7 +276,7 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.manual = True
         scanner = self._getScanner()
         d = scanner.scan()
@@ -290,7 +287,7 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.builderok = False
         scanner = self._getScanner()
         d = scanner.scan()
@@ -302,7 +299,8 @@ class TestSlaveScannerScan(TestCase):
     def test_scan_of_broken_slave(self):
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(BrokenSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
         builder.failure_count = 0
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
@@ -397,7 +395,7 @@ class TestSlaveScannerScan(TestCase):
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
         self._resetBuilder(builder)
         self.assertEqual(0, builder.failure_count)
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         builder.vm_host = "fake_vm_host"
 
         scanner = self._getScanner()
@@ -418,6 +416,114 @@ class TestSlaveScannerScan(TestCase):
             build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
             self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
 
+        return d.addCallback(check)
+
+    def test_cancelling_a_build(self):
+        # When scanning an in-progress build, if its state is CANCELLING
+        # then the build should be stopped and moved to the CANCELLED state.
+
+        # Set up a building slave with a fake resume method so we can see
+        # if it got called later.
+        slave = BuildingSlave(build_id="8-1")
+        call_counter = FakeMethod()
+
+        def fake_resume():
+            call_counter()
+            return defer.succeed((None, None, 0))
+        slave.resume = fake_resume
+
+        # Set the sample data builder building with the slave from above.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        login('foo.bar@canonical.com')
+        builder.builderok = True
+        # For now, we can only cancel virtual builds.
+        builder.virtualized = True
+        builder.vm_host = "fake_vm_host"
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        transaction.commit()
+        login(ANONYMOUS)
+        buildqueue = builder.currentjob
+        self.assertBuildingJob(buildqueue, builder)
+
+        # Now set the build to CANCELLING.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.CANCELLING
+
+        # Run 'scan' and check its results.
+        switch_dbuser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = scanner.scan()
+
+        # The build state should be cancelled and we should have also
+        # called the resume() method on the slave that resets the virtual
+        # machine.
+        def check_cancelled(ignore, builder, buildqueue):
+            self.assertEqual(1, call_counter.call_count)
+            self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+        d.addCallback(check_cancelled, builder, buildqueue)
+        return d
+
+
+class TestCancellationChecking(TestCaseWithFactory):
+    """Unit tests for the checkCancellation method."""
+
+    layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+
+    def setUp(self):
+        super(TestCancellationChecking, self).setUp()
+        builder_name = BOB_THE_BUILDER_NAME
+        self.builder = getUtility(IBuilderSet)[builder_name]
+        self.builder.virtualized = True
+        self.scanner = SlaveScanner(builder_name, BufferLogger())
+        self.scanner.builder = self.builder
+        self.scanner.logger.name = 'slave-scanner'
+
+    def test_ignores_nonvirtual(self):
+        # If the builder is nonvirtual make sure we return False.
+        self.builder.virtualized = False
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_ignores_no_buildqueue(self):
+        # If the builder has no buildqueue associated,
+        # make sure we return False.
+        buildqueue = self.builder.currentjob
+        buildqueue.reset()
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_ignores_build_not_cancelling(self):
+        # If the active build is not in a CANCELLING state, ignore it.
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.BUILDING
+        d = self.scanner.checkCancellation(self.builder)
+        return d.addCallback(self.assertFalse)
+
+    def test_cancelling_build_is_cancelled(self):
+        # If a build is CANCELLING, make sure True is returned and the
+        # slave was resumed.
+        call_counter = FakeMethod()
+
+        def fake_resume():
+            call_counter()
+            return defer.succeed((None, None, 0))
+        slave = OkSlave()
+        slave.resume = fake_resume
+        self.builder.vm_host = "fake_vm_host"
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.status = BuildStatus.CANCELLING
+
+        def check(result):
+            self.assertEqual(1, call_counter.call_count)
+            self.assertTrue(result)
+            self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+        d = self.scanner.checkCancellation(self.builder)
         return d.addCallback(check)
 
 
@@ -602,7 +708,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
         increase if the process is logging to this file.
     """
     last_size = None
-    for poll in range(poll_repeat+1):
+    for poll in range(poll_repeat + 1):
         try:
             statinfo = os.stat(filepath)
             if last_size is None:
@@ -646,7 +752,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
         # new file is created.
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         os.rename(logfilepath, rotated_logfilepath)
         self.assertTrue(is_file_growing(rotated_logfilepath))
         self.assertFalse(os.access(logfilepath, os.F_OK))
@@ -662,7 +768,7 @@ class TestBuilddManagerScript(TestCaseWithFactory):
         # 1000000 bytes but this is deactivated for the buildd manager.
         test_setup = BuilddManagerTestSetup()
         logfilepath = test_setup.logfile
-        rotated_logfilepath = logfilepath+'.1'
+        rotated_logfilepath = logfilepath + '.1'
         # Prefill the log file to just under 1000000 bytes.
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)

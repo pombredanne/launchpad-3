@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common registry browser helpers and mixins."""
@@ -22,23 +22,24 @@ import os
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.launchpadform import (
+from lp.app.browser.folder import ExportedFolder
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.lazr import ExportedFolder
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import (
+    canonical_url,
+    DataDownloadView,
+    LaunchpadView,
+    )
 
 
 class StatusCount:
@@ -92,13 +93,13 @@ class MilestoneOverlayMixin:
 
     @property
     def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
+        """The milestone table will be hidden if there are no milestones."""
         if self.context.has_milestones:
             return 'listing'
         else:
-            # The page can remove the 'unseen' class to make the table
+            # The page can remove the 'hidden' class to make the table
             # visible.
-            return 'listing unseen'
+            return 'listing hidden'
 
     @property
     def milestone_row_uri_template(self):
@@ -118,7 +119,7 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            LPS.use(
+            LPJS.use(
                 'node', 'lp.registry.milestoneoverlay',
                 'lp.registry.milestonetable',
                 function (Y) {
@@ -158,22 +159,25 @@ class RegistryDeleteViewMixin:
         """The context's URL."""
         return canonical_url(self.context)
 
-    def _getBugtasks(self, target):
+    def _getBugtasks(self, target, ignore_privacy=False):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
             params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=self.user)
+            params = BugTaskSearchParams(
+                milestone=target, user=self.user,
+                ignore_privacy=ignore_privacy)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
     def _getSpecifications(self, target):
         """Return the list `ISpecification`s associated to the target."""
         if IProductSeries.providedBy(target):
-            return list(target.all_specifications)
+            return list(target._all_specifications)
         else:
-            return list(target.specifications)
+            user = getUtility(ILaunchBag).user
+            return list(target.getSpecifications(user))
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
@@ -233,11 +237,15 @@ class RegistryDeleteViewMixin:
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
         self._unsubscribe_structure(milestone)
-        for bugtask in self._getBugtasks(milestone):
-            if bugtask.conjoined_master is not None:
-                Store.of(bugtask).remove(bugtask.conjoined_master)
+        # We need to remove the milestone from every bug, even those the
+        # current user can't see/change, otherwise we can't delete the
+        # milestone, since it's still referenced.
+        for bugtask in self._getBugtasks(milestone, ignore_privacy=True):
+            nb = removeSecurityProxy(bugtask)
+            if nb.conjoined_master is not None:
+                Store.of(bugtask).remove(nb.conjoined_master)
             else:
-                bugtask.milestone = None
+                nb.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
         self._deleteRelease(milestone.product_release)
@@ -271,17 +279,15 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class BaseRdfView:
+class BaseRdfView(DataDownloadView):
     """A view that sets its mime-type to application/rdf+xml."""
 
     template = None
     filename = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    content_type = 'application/rdf+xml'
 
-    def __call__(self):
+    def getBody(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
 
         Render the page template to produce RDF output.
@@ -289,10 +295,6 @@ class BaseRdfView:
 
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment; filename=%s.rdf' % (
-             self.filename))
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata

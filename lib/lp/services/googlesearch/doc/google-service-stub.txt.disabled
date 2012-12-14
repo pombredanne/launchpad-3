@@ -5,7 +5,7 @@ XML documents for a pre-determined set of URLs.
 
 The service is available at a URL pulled from the service config:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> test_url = config.google.site
     >>> print test_url
     http://launchpad.dev.../cse

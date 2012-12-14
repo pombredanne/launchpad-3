@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for handling mailing lists."""
@@ -10,25 +10,23 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from textwrap import TextWrapper
 from urllib import quote
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
     )
 from lp.registry.interfaces.person import ITeam
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.escaping import html_escape
 
 
 class HeldMessageView(LaunchpadView):
-    """A little helper view for for held messages."""
+    """A little helper view for held messages."""
 
     def __init__(self, context, request):
         super(HeldMessageView, self).__init__(context, request)
@@ -44,11 +42,7 @@ class HeldMessageView(LaunchpadView):
         self.subject = self.details.subject
         self.date = self.details.date
         self.widget_name = 'field.' + quote(self.message_id)
-        # The author field is very close to what the details has, except that
-        # the view wants to include a link to the person's overview page.
-        self.author = '<a href="%s">%s</a>' % (
-            canonical_url(self.details.author),
-            escape(self.details.sender))
+        self.author = PersonFormatterAPI(self.details.author).link(None)
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -99,7 +93,7 @@ class HeldMessageView(LaunchpadView):
         """
         # Escape the text so that there's no chance of cross-site scripting,
         # then split into lines.
-        text_lines = escape(self.details.body).splitlines()
+        text_lines = html_escape(self.details.body).splitlines()
         # Strip off any whitespace only lines from the start of the message.
         text_lines.reverse()
         while len(text_lines) > 0:
@@ -151,7 +145,7 @@ class enabled_with_active_mailing_list:
 
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
-            if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
+            if not ITeam.providedBy(obj.context) or not obj.context.is_team:
                 link.enabled = False
             mailing_list = getUtility(IMailingListSet).get(obj.context.name)
             if mailing_list is None or not mailing_list.is_usable:

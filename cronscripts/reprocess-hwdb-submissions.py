@@ -26,9 +26,10 @@ submissions that cannot be processed retain the status INVALID.
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.hardwaredb.scripts.hwdbsubmissions import (
-    reprocess_invalid_submissions)
+    reprocess_invalid_submissions,
+    )
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class HWDBSubmissionProcessor(LaunchpadCronScript):
@@ -68,7 +69,7 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
         try:
             start_file = open(self.options.start_file, 'r+')
             start_id = start_file.read().strip()
-        except IOError, error:
+        except IOError as error:
             self.logger.error(
                 'Cannot access file %s: %s' % (
                     self.options.start_file, error))

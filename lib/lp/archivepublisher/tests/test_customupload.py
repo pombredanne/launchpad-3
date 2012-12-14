@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `CustomUploads`."""
@@ -46,7 +46,7 @@ class TestCustomUpload(unittest.TestCase):
         """
         # Setup a bogus `CustomUpload` object with the 'targetdir' pointing
         # to the directory created for the test.
-        custom_processor = CustomUpload(None, None, None)
+        custom_processor = CustomUpload()
         custom_processor.targetdir = self.test_dir
 
         # Let's create 4 entries named as valid versions.
@@ -57,7 +57,7 @@ class TestCustomUpload(unittest.TestCase):
         self.assertEntries(['1.0', '1.1', '1.2', '1.3'])
 
         # `fixCurrentSymlink` will keep only the latest 3 and create a
-        # 'current' symbolic link the the highest one.
+        # 'current' symbolic link the highest one.
         custom_processor.fixCurrentSymlink()
         self.assertEntries(['1.1', '1.2', '1.3', 'current'])
         self.assertEqual(
@@ -79,10 +79,10 @@ class TestTarfileVerification(TestCase):
     def setUp(self):
         TestCase.setUp(self)
         self.tarfile_path = "/tmp/_verify_extract"
-        self.tarfile_name = os.path.join(
-            self.tarfile_path, "test_tarfile.tar")
-        self.custom_processor = CustomUpload(None, self.tarfile_name, None)
+        self.tarfile_name = os.path.join(self.tarfile_path, "test_tarfile.tar")
+        self.custom_processor = CustomUpload()
         self.custom_processor.tmpdir = self.makeTemporaryDirectory()
+        self.custom_processor.tarfile_path = self.tarfile_name
 
     def createTarfile(self):
         self.tar_fileobj = cStringIO.StringIO()

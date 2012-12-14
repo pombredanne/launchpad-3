@@ -5,12 +5,10 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.enums import SpecificationDefinitionStatus
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications,
-    )
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import DoesNotSnapshot
 
 
@@ -27,7 +25,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
         self.factory.makeSpecification(product=product, name="spec1")
         self.factory.makeSpecification(product=product, name="spec2")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], product.all_specifications)
+            ["spec1", "spec2"], product._all_specifications)
 
     def test_product_valid_specifications(self):
         product = self.factory.makeProduct()
@@ -36,7 +34,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product, name="spec2",
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], product.valid_specifications)
+            ["spec1"], product._valid_specifications)
 
     def test_distribution_all_specifications(self):
         distribution = self.factory.makeDistribution()
@@ -45,7 +43,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
         self.factory.makeSpecification(
             distribution=distribution, name="spec2")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], distribution.all_specifications)
+            ["spec1", "spec2"], distribution._all_specifications)
 
     def test_distribution_valid_specifications(self):
         distribution = self.factory.makeDistribution()
@@ -55,7 +53,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             distribution=distribution, name="spec2",
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], distribution.valid_specifications)
+            ["spec1"], distribution._valid_specifications)
 
     def test_distroseries_all_specifications(self):
         distroseries = self.factory.makeDistroSeries(name='maudlin')
@@ -70,10 +68,10 @@ class HasSpecificationsTests(TestCaseWithFactory):
             distribution=distribution, name="spec3")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            distroseries.all_specifications)
+            distroseries._all_specifications)
 
     # XXX: salgado, 2010-11-25, bug=681432: Test disabled because
-    # DistroSeries.valid_specifications is broken.
+    # DistroSeries._valid_specifications is broken.
     def disabled_test_distroseries_valid_specifications(self):
         distroseries = self.factory.makeDistroSeries(name='maudlin')
         distribution = distroseries.distribution
@@ -91,7 +89,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             distribution=distribution, name="spec4")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            distroseries.valid_specifications)
+            distroseries._valid_specifications)
 
     def test_productseries_all_specifications(self):
         product = self.factory.makeProduct()
@@ -103,7 +101,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product, name="spec2", goal=productseries)
         self.factory.makeSpecification(product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], productseries.all_specifications)
+            ["spec1", "spec2"], productseries._all_specifications)
 
     def test_productseries_valid_specifications(self):
         product = self.factory.makeProduct()
@@ -118,7 +116,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.factory.makeSpecification(product=product, name="spec4")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], productseries.valid_specifications)
+            ["spec1", "spec2"], productseries._valid_specifications)
 
     def test_projectgroup_all_specifications(self):
         projectgroup = self.factory.makeProject()
@@ -135,7 +133,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product3, name="spec3")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            projectgroup.all_specifications)
+            projectgroup._all_specifications)
 
     def test_projectgroup_valid_specifications(self):
         projectgroup = self.factory.makeProject()
@@ -152,7 +150,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product3, name="spec3")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            projectgroup.valid_specifications)
+            projectgroup._valid_specifications)
 
     def test_person_all_specifications(self):
         person = self.factory.makePerson(name="james-w")
@@ -165,7 +163,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
         self.factory.makeSpecification(
             product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], person.all_specifications)
+            ["spec1", "spec2"], person._all_specifications)
 
     def test_person_valid_specifications(self):
         person = self.factory.makePerson(name="james-w")
@@ -178,7 +176,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
         self.factory.makeSpecification(
             product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], person.valid_specifications)
+            ["spec1"], person._valid_specifications)
 
 
 class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):

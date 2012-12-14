@@ -7,10 +7,20 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.productrelease import IProductReleaseSet
-from lp.testing import TestCaseWithFactory
+from lp.registry.errors import InvalidFilename
+from lp.registry.interfaces.productrelease import (
+    IProductReleaseSet,
+    UpstreamFileType,
+    )
+from lp.services.database.lpstorm import IStore
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class ProductReleaseSetTestcase(TestCaseWithFactory):
@@ -45,3 +55,37 @@ class ProductReleaseSetTestcase(TestCaseWithFactory):
         release = self.product_release_set.getBySeriesAndVersion(
             series, '0.0.1')
         self.assertStatementCount(0, getattr, release, 'milestone')
+
+
+class ProductReleaseFileTestcase(TestCaseWithFactory):
+    """Tests for ProductReleaseFile."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_hasReleaseFile(self):
+        release = self.factory.makeProductRelease()
+        release_file = self.factory.makeProductReleaseFile(release=release)
+        file_name = release_file.libraryfile.filename
+        self.assertTrue(release.hasReleaseFile(file_name))
+        self.assertFalse(release.hasReleaseFile('pting'))
+
+    def test_addReleaseFile(self):
+        release = self.factory.makeProductRelease()
+        maintainer = release.milestone.product.owner
+        with person_logged_in(maintainer):
+            release_file = release.addReleaseFile(
+                'pting.txt', 'test', 'text/plain', maintainer,
+                file_type=UpstreamFileType.README, description='desc')
+        self.assertEqual('desc', release_file.description)
+        self.assertEqual(UpstreamFileType.README, release_file.filetype)
+        self.assertEqual('pting.txt', release_file.libraryfile.filename)
+        self.assertEqual('text/plain', release_file.libraryfile.mimetype)
+
+    def test_addReleaseFile_duplicate(self):
+        release_file = self.factory.makeProductReleaseFile()
+        release = release_file.productrelease
+        library_file = release_file.libraryfile
+        maintainer = release.milestone.product.owner
+        with person_logged_in(maintainer):
+            self.assertRaises(
+                InvalidFilename, release.addReleaseFile,
+                library_file.filename, 'test', 'text/plain', maintainer)

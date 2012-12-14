@@ -83,9 +83,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import valid_name
@@ -93,6 +92,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
+from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 

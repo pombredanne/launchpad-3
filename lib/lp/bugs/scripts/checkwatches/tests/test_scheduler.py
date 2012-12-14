@@ -14,7 +14,6 @@ from pytz import utc
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus,
     IBugWatchSet,
@@ -22,6 +21,7 @@ from lp.bugs.interfaces.bugwatch import (
 from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugWatchScheduler(TestCaseWithFactory):

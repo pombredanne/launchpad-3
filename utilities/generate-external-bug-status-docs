@@ -21,11 +21,10 @@
 import _pythonpath
 
 import codecs
-import sys
-
 from datetime import datetime
 from itertools import chain
 from optparse import OptionParser
+import sys
 
 from lp.bugs.externalbugtracker import BUG_TRACKER_CLASSES
 

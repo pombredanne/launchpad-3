@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import codecs
 import logging
+from logging.handlers import WatchedFileHandler
 import os
 from StringIO import StringIO
 import sys
@@ -15,7 +16,6 @@ import tempfile
 from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event
 
-from canonical.launchpad.scripts import WatchedFileHandler
 from lp.services.sshserver.accesslog import LoggingManager
 from lp.testing import TestCase
 

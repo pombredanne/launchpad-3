@@ -1,52 +1,75 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
 
 __metaclass__ = type
 
+import datetime
+
+from fixtures import FakeLogger
 from lazr.lifecycle.snapshot import Snapshot
+import pytz
 import soupmatchers
 from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
+    MatchesAll,
     MatchesAny,
     Not,
     )
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    )
+from lp.registry.errors import (
+    InclusiveTeamLinkageError,
+    NoSuchDistroSeries,
+    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.tests.test_distroseries import (
-    TestDistroSeriesCurrentSourceReleases,
-    )
+from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
+    WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
+from lp.translations.enums import TranslationPermission
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -57,6 +80,28 @@ class TestDistribution(TestCaseWithFactory):
         # The pillar category is correct.
         distro = self.factory.makeDistribution()
         self.assertEqual("Distribution", distro.pillar_category)
+
+    def test_sharing_policies(self):
+        # The sharing policies are PUBLIC.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, distro.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PUBLIC, distro.bug_sharing_policy)
+
+    def test_owner_cannot_be_open_team(self):
+        """Distro owners cannot be open teams."""
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
+            self.assertRaises(
+                InclusiveTeamLinkageError, self.factory.makeDistribution,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Distro owners can be exclusive teams."""
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
+            self.factory.makeDistribution(owner=closed_team)
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -96,7 +141,8 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagename='binary-package', dateremoved=UTC_NOW)
+            binarypackagename='binary-package',
+            status=PackagePublishingStatus.SUPERSEDED)
         with ExpectedException(NotFoundError, ".*Binary package.*"):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'binary-package')
@@ -211,9 +257,56 @@ class TestDistribution(TestCaseWithFactory):
             Unauthorized,
             setattr, distro, "package_derivatives_email", "foo")
 
+    def test_implements_interfaces(self):
+        # Distribution fully implements its interfaces.
+        distro = removeSecurityProxy(self.factory.makeDistribution())
+        expected_interfaces = [
+            IHasOOPSReferences,
+            ]
+        provides_all = MatchesAll(*map(Provides, expected_interfaces))
+        self.assertThat(distro, provides_all)
+
+    def test_distribution_creation_creates_accesspolicies(self):
+        # Creating a new distribution also creates AccessPolicies for it.
+        distro = self.factory.makeDistribution()
+        ap = getUtility(IAccessPolicySource).findByPillar((distro,))
+        expected = [
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
+    def test_getAllowedBugInformationTypes(self):
+        # All distros currently support just the non-proprietary
+        # information types.
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            self.factory.makeDistribution().getAllowedBugInformationTypes())
+
+    def test_getDefaultBugInformationType(self):
+        # The default information type for distributions is always PUBLIC.
+        self.assertEqual(
+            InformationType.PUBLIC,
+            self.factory.makeDistribution().getDefaultBugInformationType())
+
+    def test_getAllowedSpecificationInformationTypes(self):
+        # All distros currently support only public specifications.
+        distro = self.factory.makeDistribution()
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            distro.getAllowedSpecificationInformationTypes()
+            )
+
+    def test_getDefaultSpecificationInformtationType(self):
+        # All distros currently support only Public by default
+        # specifications.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            InformationType.PUBLIC,
+            distro.getDefaultSpecificationInformationType())
+
 
 class TestDistributionCurrentSourceReleases(
-    TestDistroSeriesCurrentSourceReleases):
+    CurrentSourceReleasesMixin, TestCase):
     """Test for Distribution.getCurrentSourceReleases().
 
     This works in the same way as
@@ -225,7 +318,7 @@ class TestDistributionCurrentSourceReleases(
     release_interface = IDistributionSourcePackageRelease
 
     @property
-    def test_target(self):
+    def target(self):
         return self.distribution
 
     def test_which_distroseries_does_not_matter(self):
@@ -339,7 +432,7 @@ class DistroSnapshotTestCase(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution(name="boobuntu")
 
     def test_snapshot(self):
-        """Snapshots of products should not include marked attribues.
+        """Snapshots of distributions should not include marked attribues.
 
         Wrap an export with 'doNotSnapshot' to force the snapshot to not
         include that attribute.
@@ -369,6 +462,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(
             'admin@canonical.com')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         """ Verify that an admin sees the +addseries link."""
@@ -491,3 +587,73 @@ class DistributionSet(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(derived_series=other_series)
         distroset = getUtility(IDistributionSet)
         self.assertEqual(1, len(list(distroset.getDerivedDistributions())))
+
+
+class TestDistributionTranslations(TestCaseWithFactory):
+    """A TestCase for accessing distro translations-related attributes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rosetta_expert(self):
+        # Ensure rosetta-experts can set Distribution attributes
+        # related to translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('rosetta_experts'):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = group
+            distro.translationpermission = TranslationPermission.CLOSED
+
+    def test_translation_group_owner(self):
+        # Ensure TranslationGroup owner for a Distribution can modify
+        # all attributes related to distribution translations.
+        distro = self.factory.makeDistribution()
+        new_series = self.factory.makeDistroSeries(distribution=distro)
+        group = self.factory.makeTranslationGroup()
+        with celebrity_logged_in('admin'):
+            distro.translationgroup = group
+
+        new_group = self.factory.makeTranslationGroup()
+        with person_logged_in(group.owner):
+            distro.translations_usage = ServiceUsage.LAUNCHPAD
+            distro.translation_focus = new_series
+            distro.translationgroup = new_group
+            distro.translationpermission = TranslationPermission.CLOSED
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_oops_references_matching_distro(self):
+        # The distro layer provides the context restriction, so we need to
+        # check we can access context filtered references - e.g. on question.
+        oopsid = "OOPS-abcdef1234"
+        distro = self.factory.makeDistribution()
+        self.factory.makeQuestion(
+            title="Crash with %s" % oopsid, target=distro)
+        transaction.commit()
+        ws_distro = self.wsObject(distro, distro.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [oopsid],
+            ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
+        self.failUnlessEqual(
+            [],
+            ws_distro.findReferencedOOPS(
+                start_date=now + day, end_date=now + day))
+
+    def test_oops_references_different_distro(self):
+        # The distro layer provides the context restriction, so we need to
+        # check the filter is tight enough - other contexts should not work.
+        oopsid = "OOPS-abcdef1234"
+        self.factory.makeQuestion(title="Crash with %s" % oopsid)
+        distro = self.factory.makeDistribution()
+        transaction.commit()
+        ws_distro = self.wsObject(distro, distro.owner)
+        now = datetime.datetime.now(tz=pytz.utc)
+        day = datetime.timedelta(days=1)
+        self.failUnlessEqual(
+            [],
+            ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))

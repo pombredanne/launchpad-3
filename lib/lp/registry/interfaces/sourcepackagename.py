@@ -21,7 +21,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 
 
@@ -57,9 +57,6 @@ class ISourcePackageNameSet(Interface):
 
     def getAll():
         """return an iselectresults representing all package names"""
-
-    def findByName(name):
-        """Find sourcepackagenames by its name or part of it"""
 
     def queryByName(name):
         """Get a sourcepackagename by its name atttribute.

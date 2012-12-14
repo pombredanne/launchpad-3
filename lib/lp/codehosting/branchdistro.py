@@ -27,8 +27,6 @@ from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
@@ -43,6 +41,8 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterStore
 
 
 def switch_branches(prefix, scheme, old_db_branch, new_db_branch):

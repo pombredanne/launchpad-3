@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'NewRevision',
+    'NewMainlineRevisions',
     'RevisionsRemoved',
     'TipChanged',
     ]
@@ -32,18 +32,17 @@ class ScannerEvent(ObjectEvent):
         self.bzr_branch = bzr_branch
 
 
-class INewRevision(IObjectEvent):
+class INewMainlineRevisions(IObjectEvent):
     """A new revision has been found in the branch."""
 
 
-class NewRevision(ScannerEvent):
+class NewMainlineRevisions(ScannerEvent):
     """A new revision has been found in the branch."""
 
-    implements(INewRevision)
+    implements(INewMainlineRevisions)
 
-    def __init__(self, db_branch, bzr_branch, db_revision, bzr_revision,
-                 revno):
-        """Construct a `NewRevision` event.
+    def __init__(self, db_branch, bzr_branch, bzr_revisions):
+        """Construct a `NewRevisions` event.
 
         :param db_branch: The database branch.
         :param bzr_branch: The Bazaar branch.
@@ -53,13 +52,7 @@ class NewRevision(ScannerEvent):
             mainline.
         """
         ScannerEvent.__init__(self, db_branch, bzr_branch)
-        self.db_revision = db_revision
-        self.bzr_revision = bzr_revision
-        self.revno = revno
-
-    def isMainline(self):
-        """Is the new revision a mainline one?"""
-        return self.revno is not None
+        self.bzr_revisions = bzr_revisions
 
 
 class ITipChanged(IObjectEvent):

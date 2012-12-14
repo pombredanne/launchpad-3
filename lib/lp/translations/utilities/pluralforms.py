@@ -74,7 +74,7 @@ def make_plural_function(expression):
 
     try:
         function = gettext.c2py(expression)
-    except (ValueError, SyntaxError), e:
+    except (ValueError, SyntaxError) as e:
         raise BadPluralExpression(e.args[0])
 
     return function

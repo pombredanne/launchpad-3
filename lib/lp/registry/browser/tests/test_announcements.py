@@ -10,11 +10,11 @@ from datetime import datetime
 from lxml import html
 from pytz import utc
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     normalize_whitespace,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

@@ -11,7 +11,10 @@ __all__ = [
     ]
 
 
-from collections import defaultdict, namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+    )
 from operator import attrgetter
 
 from lp.bugs.interfaces.bugtarget import IHasBugs

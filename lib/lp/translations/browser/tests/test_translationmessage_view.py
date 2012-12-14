@@ -14,29 +14,28 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.errors import UnexpectedFormData
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     anonymous_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.views import create_view
-from lp.translations.enums import TranslationPermission
 from lp.translations.browser.translationmessage import (
     contains_translations,
+    convert_translationmessage_to_submission,
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     revert_unselected_translations,
     )
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    )
+from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer
@@ -479,3 +478,33 @@ class TestHelpers(TestCaseWithFactory):
             {1: u''},
             revert_unselected_translations(
                 new_translations, current_message, []))
+
+class TestBadSubmission(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getSubmission(self, good=True):
+        original_translations = {0: self.getUniqueString()}
+        pofile = self.factory.makePOFile()
+        current = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        message = self.factory.makeSuggestion(pofile=pofile)
+        if good:
+            message.setPOFile(pofile)
+        submission = convert_translationmessage_to_submission(
+            message=message,
+            current_message=current,
+            plural_form=0,
+            pofile=pofile,
+            legal_warning_needed=False)
+        return submission
+
+    def test_submission_traversable_guard(self):
+        # If a submission doesn't have a sequence greater than 1, it's not
+        # traversable.
+        bad_sub = self.getSubmission(good=False)
+        self.assertEqual(0, bad_sub.translationmessage.sequence)
+        self.assertFalse(bad_sub.is_traversable)
+
+        good_sub = self.getSubmission()
+        self.assertNotEqual(0, good_sub.translationmessage.sequence)
+        self.assertTrue(good_sub.is_traversable)

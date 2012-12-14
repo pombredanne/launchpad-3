@@ -3,7 +3,7 @@ Translations Relicensing
 
 When Karl visits +translate page for the first time, he is sent
 to a form to indicate whether he agrees to license his translations
-under the revised BSD license.
+under the revised BSD licence.
 
     >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'

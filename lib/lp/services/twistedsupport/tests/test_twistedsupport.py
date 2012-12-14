@@ -9,7 +9,6 @@ from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 from twisted.internet import defer
 from twisted.internet.task import Clock
 

@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.schema import Object
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.question import IQuestion
 from lp.bugs.interfaces.buglink import IBugLink
 

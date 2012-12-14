@@ -7,20 +7,20 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    login_person,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -102,17 +102,15 @@ class DistroSourcePackageEditViewPermissionTestCase(EditViewPermissionBase):
     def setupTarget(self):
         self.d_owner = self.factory.makePerson()
         login_person(self.d_owner)
-        self.distro = self.factory.makeDistribution(name='youbuntu',
-                                                    owner=self.d_owner)
+        self.distro = self.factory.makeDistribution(
+            name='youbuntu', owner=self.d_owner)
         self.target = self.factory.makeDistributionSourcePackage(
             distribution=self.distro)
-        self.supervisor_team = self.factory.makeTeam(
-            owner=self.d_owner)
+        self.supervisor_team = self.factory.makeTeam(owner=self.d_owner)
         self.supervisor_member = self.factory.makePerson()
         self.supervisor_team.addMember(
             self.supervisor_member, self.d_owner)
-        self.distro.setBugSupervisor(
-            self.supervisor_team, self.d_owner)
+        self.distro.bug_supervisor = self.supervisor_team
 
     def test_bug_supervisor_can_edit(self):
         login_person(self.supervisor_member)

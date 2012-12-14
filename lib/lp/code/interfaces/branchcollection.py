@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211, E0213
@@ -50,6 +50,9 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
+    def is_empty():
+        """Is this collection empty?"""
+
     def ownerCounts():
         """Return the number of different branch owners.
 
@@ -68,6 +71,9 @@ class IBranchCollection(Interface):
         :param eager_load: If True trigger eager loading of all the related
             objects in the collection.
         """
+
+    def getBranchIds():
+        """Return a result set of all branch ids in this collection."""
 
     def getMergeProposals(statuses=None, for_branches=None,
                           target_branch=None, eager_load=False):
@@ -154,6 +160,15 @@ class IBranchCollection(Interface):
         with a sourcepackage.
         """
 
+    def isPrivate():
+        """Restrict the collection to private branches."""
+
+    def isExclusive():
+        """Restrict the collection to branches owned by exclusive people."""
+
+    def isSeries():
+        """Restrict the collection to branches those linked to series."""
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
@@ -208,6 +223,9 @@ class IBranchCollection(Interface):
 
         :param since: If supplied, ignore merge proposals before this date.
         """
+
+    def withIds(*branch_ids):
+        """Restrict the collection to branches with the specified ids."""
 
 
 class IAllBranches(IBranchCollection):

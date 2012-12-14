@@ -11,8 +11,9 @@ Cron job to run daily to check all of the BugWatches
 
 import _pythonpath
 
-from canonical.config import config
 from lp.bugs.scripts.checkwatches import CheckWatchesCronScript
+from lp.services.config import config
+
 
 if __name__ == '__main__':
     script = CheckWatchesCronScript(

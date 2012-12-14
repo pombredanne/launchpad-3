@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.utils."""
@@ -6,12 +6,16 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
 import itertools
 import os
 import sys
 
+from fixtures import TempDir
 from pytz import UTC
 from testtools.matchers import (
     Equals,
@@ -23,13 +27,17 @@ from testtools.matchers import (
 from lp.services.utils import (
     AutoDecorate,
     base,
-    compress_hash,
     CachingIterator,
+    compress_hash,
     decorate_with,
     docstring_dedent,
     file_exists,
     iter_split,
+    load_bz2_pickle,
+    obfuscate_structure,
     run_capturing_output,
+    save_bz2_pickle,
+    total_seconds,
     traceback_info,
     utc_now,
     )
@@ -127,11 +135,11 @@ class TestIterateSplit(TestCase):
         self.assertEqual([('one', '')], list(iter_split('one', '/')))
         self.assertEqual([], list(iter_split('', '/')))
         self.assertEqual(
-            [('one/two', ''), ('one', 'two')],
+            [('one/two', ''), ('one', '/two')],
             list(iter_split('one/two', '/')))
         self.assertEqual(
-            [('one/two/three', ''), ('one/two', 'three'),
-             ('one', 'two/three')],
+            [('one/two/three', ''), ('one/two', '/three'),
+             ('one', '/two/three')],
             list(iter_split('one/two/three', '/')))
 
 
@@ -329,3 +337,65 @@ class TestUTCNow(TestCase):
         new_now = datetime.utcnow().replace(tzinfo=UTC)
         self.assertThat(now, GreaterThanOrEqual(old_now))
         self.assertThat(now, LessThanOrEqual(new_now))
+
+
+class TestBZ2Pickle(TestCase):
+    """Tests for `save_bz2_pickle` and `load_bz2_pickle`."""
+
+    def test_save_and_load(self):
+        data = {1: 2, "room": 101}
+        tempdir = self.useFixture(TempDir()).path
+        tempfile = os.path.join(tempdir, "dump")
+        save_bz2_pickle(data, tempfile)
+        self.assertEqual(data, load_bz2_pickle(tempfile))
+
+
+class TestObfuscateStructure(TestCase):
+
+    def test_obfuscate_string(self):
+        """Strings are obfuscated."""
+        obfuscated = obfuscate_structure('My address is a@example.com')
+        self.assertEqual(
+            'My address is <email address hidden>', obfuscated)
+
+    def test_obfuscate_list(self):
+        """List elements are obfuscated."""
+        obfuscated = obfuscate_structure(['My address is a@example.com'])
+        self.assertEqual(
+            ['My address is <email address hidden>'], obfuscated)
+
+    def test_obfuscate_tuple(self):
+        """Tuple elements are obfuscated."""
+        obfuscated = obfuscate_structure(('My address is a@example.com',))
+        self.assertEqual(
+            ['My address is <email address hidden>'], obfuscated)
+
+    def test_obfuscate_dict_key(self):
+        """Dictionary keys are obfuscated."""
+        obfuscated = obfuscate_structure(
+            {'My address is a@example.com': 'foo'})
+        self.assertEqual(
+            {'My address is <email address hidden>': 'foo'}, obfuscated)
+
+    def test_obfuscate_dict_value(self):
+        """Dictionary values are obfuscated."""
+        obfuscated = obfuscate_structure(
+            {'foo': 'My address is a@example.com'})
+        self.assertEqual(
+            {'foo': 'My address is <email address hidden>'}, obfuscated)
+
+    def test_recursion(self):
+        """Values are obfuscated recursively."""
+        obfuscated = obfuscate_structure({'foo': (['a@example.com'],)})
+        self.assertEqual({'foo': [['<email address hidden>']]}, obfuscated)
+
+
+class TestTotalSeconds(TestCase):
+
+    # XXX: JonathanLange 2012-05-31: Remove this when Python 2.6 support is
+    # dropped.  Replace calls with timedelta.total_seconds.
+
+    def test_total_seconds(self):
+        # Numbers are arbitrary.
+        duration = timedelta(days=3, seconds=45, microseconds=16)
+        self.assertEqual(3 * 24 * 3600 + 45.000016, total_seconds(duration))

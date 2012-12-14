@@ -1,11 +1,15 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad test fixtures that have no better home."""
 
 __metaclass__ = type
 __all__ = [
+    'CaptureOops',
+    'DemoMode',
+    'DisableTriggerFixture',
     'PGBouncerFixture',
+    'PGNotReadyError',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
@@ -14,11 +18,17 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import socket
+import time
 
+import amqplib.client_0_8 as amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
+from lazr.restful.utils import get_current_browser_request
+import oops
+import oops_amqp
 import pgbouncer.fixture
 from wsgi_intercept import (
     add_wsgi_intercept,
@@ -29,7 +39,9 @@ from wsgi_intercept.urllib2_intercept import (
     uninstall_opener,
     )
 from zope.component import (
+    adapter,
     getGlobalSiteManager,
+    getUtility,
     provideHandler,
     )
 from zope.interface import Interface
@@ -40,7 +52,22 @@ from zope.security.checker import (
     undefineChecker,
     )
 
-from canonical.config import config
+from lp.services import webapp
+from lp.services.config import config
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.messaging.interfaces import MessagingUnavailable
+from lp.services.messaging.rabbit import connect
+from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp.errorlog import ErrorReportEvent
+from lp.testing.dbuser import dbuser
+
+
+class PGNotReadyError(Exception):
+    pass
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -54,7 +81,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         super(PGBouncerFixture, self).__init__()
 
         # Known databases
-        from canonical.testing.layers import DatabaseLayer
+        from lp.testing.layers import DatabaseLayer
         dbnames = [
             DatabaseLayer._db_fixture.dbname,
             DatabaseLayer._db_template_fixture.dbname,
@@ -101,12 +128,28 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         as we are using a test layer that doesn't provide database
         connections.
         """
-        from canonical.testing.layers import (
+        from lp.testing.layers import (
             reconnect_stores,
             is_ca_available,
             )
         if is_ca_available():
             reconnect_stores()
+
+    def start(self, retries=20, sleep=0.5):
+        """Start PGBouncer, waiting for it to accept connections if neccesary.
+        """
+        super(PGBouncerFixture, self).start()
+        for i in xrange(retries):
+            try:
+                socket.create_connection((self.host, self.port))
+            except socket.error:
+                # Try again.
+                pass
+            else:
+                break
+            time.sleep(sleep)
+        else:
+            raise PGNotReadyError("Not ready after %d attempts." % retries)
 
 
 class ZopeAdapterFixture(Fixture):
@@ -177,12 +220,38 @@ class ZopeViewReplacementFixture(Fixture):
         # can add more flexibility then.
         defineChecker(self.replacement, self.checker)
 
-    def tearDown(self):
-        super(ZopeViewReplacementFixture, self).tearDown()
-        undefineChecker(self.replacement)
-        self.gsm.adapters.register(
-            (self.context_interface, self.request_interface), Interface,
-             self.name, self.original)
+        self.addCleanup(
+            undefineChecker, self.replacement)
+        self.addCleanup(
+            self.gsm.adapters.register,
+            (self.context_interface, self.request_interface),
+            Interface,
+            self.name, self.original)
+
+
+class ZopeUtilityFixture(Fixture):
+    """A fixture that temporarily registers a different utility."""
+
+    def __init__(self, component, intf, name):
+        """Construct a new fixture.
+
+        :param component: An instance of a class that provides this
+            interface.
+        :param intf: The Zope interface class to register, eg
+            IMailDelivery.
+        :param name: A string name to match.
+        """
+        self.component = component
+        self.name = name
+        self.intf = intf
+
+    def setUp(self):
+        super(ZopeUtilityFixture, self).setUp()
+        gsm = getGlobalSiteManager()
+        gsm.registerUtility(self.component, self.intf, self.name)
+        self.addCleanup(
+            gsm.unregisterUtility,
+            self.component, self.intf, self.name)
 
 
 class Urllib2Fixture(Fixture):
@@ -194,9 +263,163 @@ class Urllib2Fixture(Fixture):
 
     def setUp(self):
         # Work around circular import.
-        from canonical.testing.layers import wsgi_application
+        from lp.testing.layers import wsgi_application
         super(Urllib2Fixture, self).setUp()
         add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
         install_opener()
         self.addCleanup(uninstall_opener)
+
+
+class CaptureOops(Fixture):
+    """Capture OOPSes notified via zope event notification.
+
+    :ivar oopses: A list of the oops objects raised while the fixture is
+        setup.
+    :ivar oops_ids: A set of observed oops ids. Used to de-dup reports
+        received over AMQP.
+    """
+
+    AMQP_SENTINEL = "STOP NOW"
+
+    def setUp(self):
+        super(CaptureOops, self).setUp()
+        self.oopses = []
+        self.oops_ids = set()
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
+        try:
+            self.connection = connect()
+        except MessagingUnavailable:
+            self.channel = None
+        else:
+            self.addCleanup(self.connection.close)
+            self.channel = self.connection.channel()
+            self.addCleanup(self.channel.close)
+            self.oops_config = oops.Config()
+            self.oops_config.publishers.append(self._add_oops)
+            self.setUpQueue()
+
+    def setUpQueue(self):
+        """Sets up the queue to be used to receive reports.
+
+        The queue is autodelete which means we can only use it once: after
+        that it will be automatically nuked and must be recreated.
+        """
+        self.queue_name, _, _ = self.channel.queue_declare(
+            durable=True, auto_delete=True)
+        # In production the exchange already exists and is durable, but
+        # here we make it just-in-time, and tell it to go when the test
+        # fixture goes.
+        self.channel.exchange_declare(config.error_reports.error_exchange,
+            "fanout", durable=True, auto_delete=True)
+        self.channel.queue_bind(
+            self.queue_name, config.error_reports.error_exchange)
+
+    def _add_oops(self, report):
+        """Add an oops if it isn't already recorded.
+
+        This is called from both amqp and in-appserver situations.
+        """
+        if report['id'] not in self.oops_ids:
+            self.oopses.append(report)
+            self.oops_ids.add(report['id'])
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        """Callback from zope publishing to publish oopses."""
+        self._add_oops(event.object)
+
+    def sync(self):
+        """Sync the in-memory list of OOPS with the external OOPS source."""
+        if not self.channel:
+            return
+        # Send ourselves a message: when we receive this, we've processed all
+        # oopses created before sync() was invoked.
+        message = amqp.Message(self.AMQP_SENTINEL)
+        # Match what oops publishing does
+        message.properties["delivery_mode"] = 2
+        # Publish the message via a new channel (otherwise rabbit
+        # shortcircuits it straight back to us, apparently).
+        connection = connect()
+        try:
+            channel = connection.channel()
+            try:
+                channel.basic_publish(
+                    message, config.error_reports.error_exchange,
+                    config.error_reports.error_queue_key)
+            finally:
+                channel.close()
+        finally:
+            connection.close()
+        receiver = oops_amqp.Receiver(
+            self.oops_config, connect, self.queue_name)
+        receiver.sentinel = self.AMQP_SENTINEL
+        try:
+            receiver.run_forever()
+        finally:
+            # Ensure we leave the queue ready to roll, or later calls to
+            # sync() will fail.
+            self.setUpQueue()
+
+
+class CaptureTimeline(Fixture):
+    """Record and return the timeline.
+
+    This won't work well (yet) for code that starts new requests as they will
+    reset the timeline.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        webapp.adapter.set_request_started(time.time())
+        self.timeline = get_request_timeline(
+            get_current_browser_request())
+        self.addCleanup(webapp.adapter.clear_request_started)
+
+
+class DemoMode(Fixture):
+    """Run with an is_demo configuration.
+
+    This changes the page styling, feature flag permissions, and perhaps
+    other things.
+    """
+
+    def setUp(self):
+        Fixture.setUp(self)
+        config.push('demo-fixture', '''
+[launchpad]
+is_demo: true
+site_message = This is a demo site mmk. \
+<a href="http://example.com">File a bug</a>.
+            ''')
+        self.addCleanup(lambda: config.pop('demo-fixture'))
+
+
+class DisableTriggerFixture(Fixture):
+    """Let tests disable database triggers."""
+
+    def __init__(self, table_triggers=None):
+        self.table_triggers = table_triggers or {}
+
+    def setUp(self):
+        super(DisableTriggerFixture, self).setUp()
+        self._disable_triggers()
+        self.addCleanup(self._enable_triggers)
+
+    def _process_triggers(self, mode):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        with dbuser('postgres'):
+            for table, trigger in self.table_triggers.items():
+                sql = ("ALTER TABLE %(table)s %(mode)s trigger "
+                       "%(trigger)s") % {
+                    'table': table,
+                    'mode': mode,
+                    'trigger': trigger,
+                }
+                store.execute(sql)
+
+    def _disable_triggers(self):
+        self._process_triggers(mode='DISABLE')
+
+    def _enable_triggers(self):
+        self._process_triggers(mode='ENABLE')

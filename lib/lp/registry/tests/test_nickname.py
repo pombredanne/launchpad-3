@@ -7,13 +7,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import (
     generate_nick,
     NicknameGenerationError,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestNicknameGeneration(TestCaseWithFactory):

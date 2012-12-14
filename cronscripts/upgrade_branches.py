@@ -9,8 +9,8 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.services.job.runner import JobCronScript
 from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+from lp.services.job.runner import JobCronScript
 
 
 class RunUpgradeBranches(JobCronScript):

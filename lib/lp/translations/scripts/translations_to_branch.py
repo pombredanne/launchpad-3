@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
@@ -13,6 +13,10 @@ from datetime import (
     )
 import os.path
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.errors import NotBranchError
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -22,34 +26,34 @@ from storm.expr import (
     )
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.enums import ServiceUsage
-# Load the normal plugin set.
-import lp.codehosting
 from lp.code.errors import StaleLastMirrored
 from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.model.branch import Branch
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
     )
 from lp.codehosting.vfs import get_rw_server
+from lp.services.config import config
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
@@ -109,33 +113,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             db_branch.owner.name)
         return DirectBranchCommit(db_branch, committer_id=committer_id)
 
-    def _prepareBranchCommit(self, db_branch):
-        """Prepare branch for use with `DirectBranchCommit`.
-
-        Create a `DirectBranchCommit` for `db_branch`.  If `db_branch`
-        is not in a format we can commit directly to, try to deal with
-        that.
-
-        :param db_branch: A `Branch`.
-        :return: `DirectBranchCommit`.
-        """
-        # XXX JeroenVermeulen 2009-09-30 bug=375013: It should become
-        # possible again to commit to these branches at some point.
-        # When that happens, remove this workaround and just call
-        # _makeDirectBranchCommit directly.
-        if db_branch.stacked_on:
-            bzrbranch = db_branch.getBzrBranch()
-            self.logger.info("Unstacking branch to work around bug 375013.")
-            bzrbranch.set_stacked_on_url(None)
-            self.logger.info("Done unstacking branch.")
-
-            # This may have taken a while, so commit for good
-            # manners.
-            if self.txn:
-                self.txn.commit()
-
-        return self._makeDirectBranchCommit(db_branch)
-
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
@@ -194,15 +171,22 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         """
         self.logger.info("Exporting %s." % source.title)
         self._checkForObjections(source)
+        branch = source.translations_branch
+
+        branch = source.translations_branch
 
         try:
-            committer = self._prepareBranchCommit(source.translations_branch)
+            committer = self._makeDirectBranchCommit(branch)
         except StaleLastMirrored as e:
-            source.translations_branch.branchChanged(
-                **get_db_branch_info(**e.info))
+            # Request a rescan of the branch.  Do this on the master
+            # store, or we won't be able to modify the branch object.
+            # (The master copy may also be more recent, in which case
+            # the rescan won't be necessary).
+            master_branch = IMasterStore(branch).get(Branch, branch.id)
+            master_branch.branchChanged(**get_db_branch_info(**e.info))
             self.logger.warning(
-                'Skipped %s due to stale DB info and scheduled scan.',
-                source.translations_branch.bzr_identity)
+                "Skipped %s due to stale DB info, and scheduled a new scan.",
+                branch.bzr_identity)
             if self.txn:
                 self.txn.commit()
             return
@@ -281,9 +265,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 self._handleUnpushedBranch(source)
                 if self.txn:
                     self.txn.commit()
-            except Exception, e:
+            except Exception as e:
                 items_failed += 1
-                self.logger.error("Failure: %s" % repr(e))
+                self.logger.error(
+                    "Failure in %s/%s: %s", source.product.name, source.name,
+                    repr(e))
                 if self.txn:
                     self.txn.abort()
 
@@ -337,7 +323,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = self.store.using(product_join).find(
             ProductSeries,
             And(
-                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                Product.translations_usage == ServiceUsage.LAUNCHPAD,
                 ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for

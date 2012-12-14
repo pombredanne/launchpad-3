@@ -7,12 +7,12 @@
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchivePurpose
 

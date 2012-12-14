@@ -13,7 +13,7 @@ package name that doesn't exist in the distribution.
 
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> '"jellybelly" does not exist in Ubuntu' in browser.contents
+    >>> '&quot;jellybelly&quot; does not exist in Ubuntu' in browser.contents
     True
 
 An error is also raised if you choose the radio button to enter a

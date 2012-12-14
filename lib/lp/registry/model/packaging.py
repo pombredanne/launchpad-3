@@ -16,21 +16,23 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.errors import CannotPackageProprietaryProduct
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
     PackagingType,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class Packaging(SQLBase):
@@ -74,12 +76,13 @@ class Packaging(SQLBase):
         if user is None:
             return False
         admin = getUtility(ILaunchpadCelebrities).admin
-        registry_experts = (
-            getUtility(ILaunchpadCelebrities).registry_experts)
-        return (
-            user.inTeam(self.owner) or
-            user.canAccess(self.sourcepackage, 'setBranch') or
-            user.inTeam(registry_experts) or user.inTeam(admin))
+        registry_experts = (getUtility(ILaunchpadCelebrities).registry_experts)
+        if (not user.is_probationary
+            or user.inTeam(self.productseries.product.owner)
+            or user.canAccess(self.sourcepackage, 'setBranch')
+            or user.inTeam(registry_experts) or user.inTeam(admin)):
+            return True
+        return False
 
     def destroySelf(self):
         if not self.userCanDelete():
@@ -94,17 +97,30 @@ class PackagingUtil:
     """Utilities for Packaging."""
     implements(IPackagingUtil)
 
-    def createPackaging(self, productseries, sourcepackagename,
+    @classmethod
+    def createPackaging(cls, productseries, sourcepackagename,
                         distroseries, packaging, owner):
         """See `IPackaging`.
 
         Raises an assertion error if there is already packaging for
         the sourcepackagename in the distroseries.
         """
-        if self.packagingEntryExists(sourcepackagename, distroseries):
+        if cls.packagingEntryExists(sourcepackagename, distroseries):
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
+        # XXX: AaronBentley: 2012-08-12 bug=1066063 Cannot adapt ProductSeries
+        # to IInformationType.
+        # The line below causes a failure of
+        # lp.registry.tests.test_distroseries.TestDistroSeriesPackaging.
+        # test_getPrioritizedPackagings_bug_tracker because
+        # productseries.product loses all set permissions.
+        # info_type = IInformationType(productseries).information_type
+        info_type = productseries.product.information_type
+        if info_type != InformationType.PUBLIC:
+            raise CannotPackageProprietaryProduct(
+                "Only Public project series can be packaged, not %s."
+                % info_type.title)
         return Packaging(productseries=productseries,
                          sourcepackagename=sourcepackagename,
                          distroseries=distroseries,
@@ -125,7 +141,8 @@ class PackagingUtil:
                distroseries.parent.name, distroseries.name))
         packaging.destroySelf()
 
-    def packagingEntryExists(self, sourcepackagename, distroseries,
+    @staticmethod
+    def packagingEntryExists(sourcepackagename, distroseries,
                              productseries=None):
         """See `IPackaging`."""
         criteria = dict(

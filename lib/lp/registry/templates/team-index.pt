@@ -42,16 +42,10 @@
 <div metal:fill-slot="main"
      tal:define="overview_menu context/menu:overview">
 
-  <div
-    class="description"
-    tal:condition="context/homepage_content"
-    tal:content="structure context/homepage_content/fmt:text-to-html"
-  />
+  <div class="description">
+      <tal:widget replace="structure view/description_widget" />
+  </div>
 
-  <div
-    class="description"
-    tal:content="structure context/teamdescription/fmt:text-to-html"
-  />
   <ul class="horizontal">
     <tal:comment condition="nothing">
       This link name is different from the menu, since it refers
@@ -61,7 +55,21 @@
       tal:define="link context/menu:overview/related_software_summary"
       tal:condition="link/enabled">
       <a class="sprite info" tal:attributes="href link/fmt:url">
-        Related software and packages
+        Related packages
+      </a>
+    </li>
+      <li
+        tal:define="link context/menu:overview/projects"
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related projects
+        </a>
+      </li>
+    <li
+      tal:define="link context/menu:overview/upcomingwork"
+      tal:condition="link/enabled">
+      <a class="sprite info" tal:attributes="href link/fmt:url">
+        Upcoming work assigned to members of this team
       </a>
     </li>
   </ul>

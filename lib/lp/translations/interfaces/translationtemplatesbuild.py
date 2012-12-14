@@ -10,9 +10,8 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
-from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     ISpecificBuildFarmJobSource,
