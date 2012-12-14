@@ -190,7 +190,9 @@
                 package_name
                 package_version
                 section_name
-                components"/>
+                components
+                searchable_names
+                searchable_versions"/>
         <require
             permission="launchpad.Edit"
             attributes="
