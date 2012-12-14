@@ -1,14 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.app.form.interfaces import IInputWidget
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.interfaces import ILaunchBag
+
 
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request
@@ -39,7 +43,7 @@ class RequestWidget(object):
 
     def getInputValue(self):
         '''See zope.app.form.interfaces.IInpputWidget'''
-        raise NotImplementedError, 'getInputValue'
+        raise NotImplementedError('getInputValue')
 
     def applyChanges(self, content):
         '''See zope.app.form.interfaces.IInputWidget'''
@@ -81,6 +85,7 @@ class IUserWidget(Interface):
 
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
+
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.
 

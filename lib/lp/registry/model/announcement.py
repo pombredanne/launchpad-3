@@ -19,12 +19,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.registry.interfaces.announcement import (
     IAnnouncement,
     IAnnouncementSet,
@@ -33,6 +27,12 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.utils import utc_now
 
 
@@ -153,7 +153,6 @@ class HasAnnouncements:
         """See IHasAnnouncements."""
 
         # Create the SQL query.
-        clauseTables = []
         query = '1=1 '
         # Filter for published news items if necessary.
         if published_only:

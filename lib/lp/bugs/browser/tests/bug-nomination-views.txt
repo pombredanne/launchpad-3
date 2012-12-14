@@ -1,4 +1,5 @@
-= Bug Nomination Pages =
+Bug Nomination Pages
+====================
 
 Series targeting is done on the +nominate page of a bug. From here,
 bug supervisors can propose that the bug be fixed in specific distribution
@@ -8,9 +9,9 @@ the bug to series for which they are drivers.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from zope.component import getUtility, getMultiAdapter
 
-    >>> from canonical.launchpad.ftests import login_person
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.testing import login_person
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -25,9 +26,8 @@ the bug to series for which they are drivers.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
-    >>> logout()
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
     >>> request = LaunchpadTestRequest()
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
     >>> print bug_one_in_ubuntu_firefox.bug.id
@@ -40,14 +40,15 @@ the bug to series for which they are drivers.
     >>> launchbag = getUtility(IOpenLaunchBag)
 
 
-== Submitting Nominations ==
+Submitting Nominations
+----------------------
 
 BugNominationView is a LaunchpadFormView. It expects a "submit" action
 to process nominations.
 
 Here's an example of nominating a bug for a distroseries.
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -124,9 +125,11 @@ Here's an example of nominating a bug for a productseries.
     Added nominations for: Mozilla Firefox trunk
 
 
-== Approving and Declining Nominations ==
+Approving and Declining Nominations
+-----------------------------------
 
-=== On the bug page ===
+On the bug page
+...............
 
 Nominations are listed in the same table on the bug page that shows
 bugtasks, rendered in a way that makes them look obviously different
@@ -164,55 +167,8 @@ approval.
     False
 
 
-=== From a series listing ===
-
-Nominations are also listed on the +nomination page for a series.
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> grumpy = ubuntu.getSeries('grumpy')
-    >>> request = LaunchpadTestRequest()
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> list(grumpy_nominations.search().batch)
-    []
-
-The batch navigator used returns a BugTaskListingItem for each of the
-distribution's bugtasks that are nominated for this release, with a
-widget set up for accepting/declining the nomination. The widget is only
-set up if the user has permission to approve the nomination.
-
-    >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> login_person(nominator)
-    >>> no_priv = getUtility(ILaunchBag).user
-    >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
-    ...     no_priv, "Ubuntu bug", comment="Test bug."))
-    >>> grumpy_nomination = ubuntu_bug.addNomination(no_priv, grumpy)
-    >>> grumpy_nomination.canApprove(no_priv)
-    False
-
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> for listing_item in grumpy_nominations.search().getBugListingItems():
-    ...     has_widget = listing_item.review_action_widget is not None
-    ...     print "%s: %s" % (listing_item.bug.title, has_widget)
-    Ubuntu bug: False
-
-    >>> login("foo.bar@canonical.com")
-    >>> foo_bar = getUtility(ILaunchBag).user
-    >>> grumpy_nomination.canApprove(foo_bar)
-    True
-    >>> grumpy_nominations = getMultiAdapter(
-    ...     (grumpy, request), name='+nominations')
-    >>> grumpy_nominations.initialize()
-    >>> for listing_item in grumpy_nominations.search().getBugListingItems():
-    ...     has_widget = listing_item.review_action_widget is not None
-    ...     print "%s: %s" % (listing_item.bug.title, has_widget)
-    Ubuntu bug: True
-
-
-== Series Targeting For Release Managers ==
+Series Targeting For Release Managers
+-------------------------------------
 
 When a release manager "nominates" a bug, the nomination is immediately
 approved. The nomination is created only to communicate when and by whom
@@ -296,7 +252,8 @@ The notification message also changes slightly.
     Targeted bug to: Ubuntu Grumpy
 
 
-== IPrimaryContext for BugNominations ==
+IPrimaryContext for BugNominations
+----------------------------------
 
 A BugNomination can be adapted to its IPrimaryContext for use with
 menus. The IPrimaryContext for a BugNomination is the IBugTarget
@@ -305,7 +262,7 @@ traversed in the URL.
     # XXX sinzui 2008-08-12 bug=257341:
     # We need a test helper to "publish" the request's traversed objects
     # and update the launchbag.
-    >>> from canonical.launchpad.webapp.interfaces import IPrimaryContext
+    >>> from lp.services.webapp.interfaces import IPrimaryContext
     >>> from lp.bugs.interfaces.bugnomination import (
     ...     IBugNominationSet)
 

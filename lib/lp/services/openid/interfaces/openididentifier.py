@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenIdIdentifier interface"""
@@ -13,8 +13,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import IAccount
+from lp import _
+from lp.services.identity.interfaces.account import IAccount
+
 
 class IOpenIdIdentifier(Interface):
     """An OpenId Identifier that can be used to log into an Account"""

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -39,16 +39,8 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -75,6 +67,12 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import (
     Message,
@@ -707,8 +705,7 @@ class DistroSeriesDifference(StormBase):
     def _package_release(self, distro_series, version):
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name, version=version,
-            status=active_publishing_status, distroseries=distro_series,
-            exact_match=True)
+            distroseries=distro_series, exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
         # (name, id)).
@@ -774,7 +771,7 @@ class DistroSeriesDifference(StormBase):
         new_source_version = new_parent_source_version = None
         if self.source_pub:
             new_source_version = self.source_pub.source_package_version
-            if self.source_version is None or apt_pkg.VersionCompare(
+            if self.source_version is None or apt_pkg.version_compare(
                     self.source_version, new_source_version) != 0:
                 self.source_version = new_source_version
                 updated = True
@@ -786,7 +783,7 @@ class DistroSeriesDifference(StormBase):
         if self.parent_source_pub:
             new_parent_source_version = (
                 self.parent_source_pub.source_package_version)
-            if self.parent_source_version is None or apt_pkg.VersionCompare(
+            if self.parent_source_version is None or apt_pkg.version_compare(
                     self.parent_source_version,
                     new_parent_source_version) != 0:
                 self.parent_source_version = new_parent_source_version
@@ -800,13 +797,13 @@ class DistroSeriesDifference(StormBase):
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                 self.source_version, self.parent_source_version) < 0:
                 # Higher parent version.
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # The child was updated with a higher version so it's
@@ -820,12 +817,12 @@ class DistroSeriesDifference(StormBase):
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) == 0:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # If the derived version is lower than the parent's, we

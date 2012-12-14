@@ -5,17 +5,17 @@
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
-from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing.layers import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.name import valid_name
+from lp.services.librarianserver.testing.fake import FakeLibrarian
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators.name import valid_name
-from lp.testing import TestCaseWithFactory
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -150,6 +150,18 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         entry = self._upload_file(template_path)
         self._createApprover(template_path).approve(entry)
         self.assertEqual(potemplate, entry.potemplate)
+
+    def test_ignore_existing_inactive_potemplate(self):
+        # When replacing an existing inactive template, the entry is not
+        # approved and no template is created for it.
+        translation_domain = self.factory.getUniqueString()
+        template_path = translation_domain + u'.pot'
+        potemplate = self._createTemplate(template_path, translation_domain)
+        potemplate.setActive(False)
+        entry = self._upload_file(template_path)
+        self._createApprover(template_path).approve(entry)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
+        self.assertEqual(None, entry.potemplate)
 
     def test_replace_existing_any_path(self):
         # If just one template file is found in the tree and just one
@@ -295,8 +307,7 @@ class TestBranchApproverPrivileges(TestCaseWithFactory):
         This is the role that the TranslationsBranchApprover is actually
         run under.
         """
-        transaction.commit()
-        self.layer.switchDbUser('translationsbranchscanner')
+        switch_dbuser('translationsbranchscanner')
 
     def test_approve_new_product_template(self):
         # The approver has sufficient privileges to create a new

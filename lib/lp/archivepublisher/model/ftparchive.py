@@ -1,6 +1,7 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from collections import defaultdict
 import os
 from StringIO import StringIO
 
@@ -11,15 +12,6 @@ from storm.expr import (
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.command_spawner import (
@@ -27,14 +19,26 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.database.stormexpr import Concatenate
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.osutils import write_file
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.files import BinaryPackageFile
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -42,12 +46,6 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
-
-
-def f_touch(*parts):
-    """Touch the file named by the arguments concatenated as a path."""
-    fname = os.path.join(*parts)
-    open(fname, "w").close()
 
 
 def safe_mkdir(path):
@@ -120,14 +118,6 @@ class FTPArchiveHandler:
         self._diskpool = diskpool
         self.distro = distro
         self.publisher = publisher
-
-        # We need somewhere to note down where the debian-installer
-        # components came from. in _di_release_components we store
-        # sets, keyed by distroseries name of the component names
-        # which contain debian-installer binaries.  This is filled out
-        # when generating overrides and file lists, and then consumed
-        # when generating apt-ftparchive configuration.
-        self._di_release_components = {}
 
     def run(self, is_careful):
         """Do the entire generation and run process."""
@@ -216,30 +206,24 @@ class FTPArchiveHandler:
 
     def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
-        if pocket == PackagePublishingPocket.RELEASE:
-            # organize distroseries and component pair as
-            # debian-installer -> distroseries_component
-            # internal map. Only the main pocket actually
-            # needs these, though.
-            self._di_release_components.setdefault(
-                distroseries.name, set()).add(comp)
-            f_touch(self._config.overrideroot,
-                    ".".join(["override", distroseries.name, comp,
-                              "debian-installer"]))
-
         suite = distroseries.getSuite(pocket)
 
         # Create empty override lists.
-        for path in ((comp, ), ("extra", comp), (comp, "src")):
-            f_touch(os.path.join(
+        for path in (
+            (comp, ),
+            ("extra", comp),
+            (comp, "debian-installer"),
+            (comp, "src"),
+            ):
+            write_file(os.path.join(
                 self._config.overrideroot,
-                ".".join(("override", suite) + path)))
+                ".".join(("override", suite) + path)), "")
 
         # Create empty file lists.
         def touch_list(*parts):
-            f_touch(os.path.join(
+            write_file(os.path.join(
                 self._config.overrideroot,
-                "_".join((suite, ) + parts)))
+                "_".join((suite, ) + parts)), "")
         touch_list(comp, "source")
 
         arch_tags = [
@@ -261,12 +245,8 @@ class FTPArchiveHandler:
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
 
-        :return: a `DecoratedResultSet` with the source override information
-            tuples
+        :return: a `ResultSet` with the source override information tuples
         """
-        # Avoid cicular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             SourcePackagePublishingHistory,
@@ -290,15 +270,7 @@ class FTPArchiveHandler:
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.getSuite(pocket)
-
-        def add_suite(result):
-            name, component, section = result
-            return (name, suite, component, section)
-
-        result_set.order_by(
-            Desc(SourcePackagePublishingHistory.id))
-        return DecoratedResultSet(result_set, add_suite)
+        return result_set.order_by(Desc(SourcePackagePublishingHistory.id))
 
     def getBinariesForOverrides(self, distroseries, pocket):
         """Fetch override information about all published binaries.
@@ -309,12 +281,8 @@ class FTPArchiveHandler:
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
 
-        :return: a `DecoratedResultSet` with the binary override information
-            tuples
+        :return: a `ResultSet` with the binary override information tuples
         """
-        # Avoid cicular imports.
-        from lp.soyuz.model.binarypackagename import BinaryPackageName
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             BinaryPackagePublishingHistory,
@@ -344,15 +312,7 @@ class FTPArchiveHandler:
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.getSuite(pocket)
-
-        def add_suite(result):
-            name, component, section, priority = result
-            return (name, suite, component, section, priority.title.lower())
-
-        result_set.order_by(
-            Desc(BinaryPackagePublishingHistory.id))
-        return DecoratedResultSet(result_set, add_suite)
+        return result_set.order_by(Desc(BinaryPackagePublishingHistory.id))
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
@@ -367,9 +327,11 @@ class FTPArchiveHandler:
 
                 spphs = self.getSourcesForOverrides(distroseries, pocket)
                 bpphs = self.getBinariesForOverrides(distroseries, pocket)
-                self.publishOverrides(spphs, bpphs)
+                self.publishOverrides(
+                    distroseries.getSuite(pocket), spphs, bpphs)
 
-    def publishOverrides(self, source_publications, binary_publications):
+    def publishOverrides(self, suite,
+                         source_publications, binary_publications):
         """Output a set of override files for use in apt-ftparchive.
 
         Given the provided sourceoverrides and binaryoverrides, do the
@@ -389,11 +351,10 @@ class FTPArchiveHandler:
         # This code is tested in soyuz-set-of-uploads, and in
         # test_ftparchive.
 
-        # overrides[distroseries][component][src/bin] = sets of tuples
-        overrides = {}
+        # overrides[component][src/bin] = sets of tuples
+        overrides = defaultdict(lambda: defaultdict(set))
 
-        def updateOverride(packagename, suite, component, section,
-                           priority=None):
+        def updateOverride(packagename, component, section, priority=None):
             """Generates and packs tuples of data required for overriding.
 
             If priority is provided, it's a binary tuple; otherwise,
@@ -408,30 +369,21 @@ class FTPArchiveHandler:
             if component != DEFAULT_COMPONENT:
                 section = "%s/%s" % (component, section)
 
-            override = overrides.setdefault(suite, {})
-            suboverride = override.setdefault(component, {})
+            override = overrides[component]
             # We use sets in this structure to avoid generating
             # duplicated overrides. This issue is an outcome of the fact
             # that the PublishingHistory views select across all
             # architectures -- and therefore we have N binaries for N
             # archs.
-            suboverride.setdefault('src', set())
-            suboverride.setdefault('bin', set())
-            suboverride.setdefault('d-i', set())
             if priority:
+                priority = priority.title.lower()
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
-                    # XXX: kiko 2006-08-24: This is actually redundant with
-                    # what is done in createEmptyPocketRequests. However,
-                    # this code does make it possible to unit test this
-                    # method, so I'm sure if it should be removed.
-                    self._di_release_components.setdefault(
-                        suite, set()).add(component)
-                    suboverride['d-i'].add((packagename, priority, section))
+                    override['d-i'].add((packagename, priority, section))
                 else:
-                    suboverride['bin'].add((packagename, priority, section))
+                    override['bin'].add((packagename, priority, section))
             else:
-                suboverride['src'].add((packagename, section))
+                override['src'].add((packagename, section))
 
         # Process huge iterations (more than 200k records) in batches.
         # See `PublishingTunableLoop`.
@@ -446,30 +398,25 @@ class FTPArchiveHandler:
             updateOverride(*pub)
 
         # Now generate the files on disk...
-        for distroseries in overrides:
-            for component in overrides[distroseries]:
-                self.log.debug("Generating overrides for %s/%s..." % (
-                    distroseries, component))
-                self.generateOverrideForComponent(overrides, distroseries,
-                                                  component)
+        for component in overrides:
+            self.log.debug("Generating overrides for %s/%s..." % (
+                suite, component))
+            self.generateOverrideForComponent(overrides, suite, component)
 
     def generateOverrideForComponent(self, overrides, distroseries,
                                      component):
         """Generates overrides for a specific component."""
-        src_overrides = list(overrides[distroseries][component]['src'])
-        src_overrides.sort()
-        bin_overrides = list(overrides[distroseries][component]['bin'])
-        bin_overrides.sort()
-        di_overrides = list(overrides[distroseries][component]['d-i'])
-        di_overrides.sort()
+        src_overrides = sorted(overrides[component]['src'])
+        bin_overrides = sorted(overrides[component]['bin'])
+        di_overrides = sorted(overrides[component]['d-i'])
 
         # Set up filepaths for the overrides we read
         extra_extra_overrides = os.path.join(self._config.miscroot,
-            "more-extra.override.%s.%s" % (distroseries, component))
+            "more-extra.override.%s.main" % distroseries)
         if not os.path.exists(extra_extra_overrides):
             unpocketed_series = "-".join(distroseries.split('-')[:-1])
             extra_extra_overrides = os.path.join(self._config.miscroot,
-                "more-extra.override.%s.%s" % (unpocketed_series, component))
+                "more-extra.override.%s.main" % unpocketed_series)
         # And for the overrides we write out
         main_override = os.path.join(self._config.overrideroot,
                                      "override.%s.%s" %
@@ -548,13 +495,8 @@ class FTPArchiveHandler:
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
 
-        :return: a `DecoratedResultSet` with the source files information
-            tuples.
+        :return: a `ResultSet` with the source files information tuples.
         """
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackageFilePublishing
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.using(SourcePackageFilePublishing).find(
             (SourcePackageFilePublishing.sourcepackagename,
@@ -567,15 +509,7 @@ class FTPArchiveHandler:
             SourcePackageFilePublishing.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.getSuite(pocket)
-
-        def add_suite(result):
-            name, filename, component = result
-            return (name, suite, filename, component)
-
-        result_set.order_by(
-            Desc(SourcePackageFilePublishing.id))
-        return DecoratedResultSet(result_set, add_suite)
+        return result_set.order_by(Desc(SourcePackageFilePublishing.id))
 
     def getBinaryFiles(self, distroseries, pocket):
         """Fetch publishing information about all published binary files.
@@ -586,8 +520,7 @@ class FTPArchiveHandler:
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
 
-        :return: a `DecoratedResultSet` with the binary files information
-            tuples.
+        :return: a `ResultSet` with the binary files information tuples.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -595,7 +528,7 @@ class FTPArchiveHandler:
             SourcePackageName.name,
             LibraryFileAlias.filename,
             Component.name,
-            Concatenate("binary-", DistroArchSeries.architecturetag),
+            Concatenate(u"binary-", DistroArchSeries.architecturetag),
             )
         join_conditions = [
             BinaryPackageRelease.id ==
@@ -620,17 +553,10 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED,
             ]
 
-        suite = distroseries.getSuite(pocket)
-
-        def add_suite(result):
-            name, filename, component, architecture = result
-            return (name, suite, filename, component, architecture)
-
         result_set = store.find(
             columns, *(join_conditions + select_conditions))
-        result_set.order_by(
+        return result_set.order_by(
             BinaryPackagePublishingHistory.id, BinaryPackageFile.id)
-        return DecoratedResultSet(result_set, add_suite)
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
@@ -644,27 +570,24 @@ class FTPArchiveHandler:
                         continue
                 spps = self.getSourceFiles(distroseries, pocket)
                 pps = self.getBinaryFiles(distroseries, pocket)
-                self.publishFileLists(spps, pps)
+                self.publishFileLists(distroseries.getSuite(pocket), spps, pps)
 
-    def publishFileLists(self, sourcefiles, binaryfiles):
+    def publishFileLists(self, suite, sourcefiles, binaryfiles):
         """Collate the set of source files and binary files provided and
         write out all the file list files for them.
 
         listroot/distroseries_component_source
         listroot/distroseries_component_binary-archname
         """
-        filelist = {}
+        filelist = defaultdict(lambda: defaultdict(list))
 
-        def updateFileList(sourcepackagename, suite, filename, component,
+        def updateFileList(sourcepackagename, filename, component,
                            architecturetag=None):
             ondiskname = self._diskpool.pathFor(
                             component, sourcepackagename, filename)
-            this_file = filelist.setdefault(suite, {})
-            this_file.setdefault(component, {})
             if architecturetag is None:
                 architecturetag = "source"
-            this_file[component].setdefault(architecturetag, [])
-            this_file[component][architecturetag].append(ondiskname)
+            filelist[component][architecturetag].append(ondiskname)
 
         # Process huge iterations (more than 200K records) in batches.
         # See `PublishingTunableLoop`.
@@ -678,28 +601,27 @@ class FTPArchiveHandler:
         for file_details in binaryfiles:
             updateFileList(*file_details)
 
-        for suite, components in filelist.iteritems():
-            self.log.debug("Writing file lists for %s" % suite)
-            series, pocket = self.distro.getDistroSeriesAndPocket(suite)
-            for component, architectures in components.iteritems():
-                for architecture, file_names in architectures.iteritems():
-                    # XXX wgrant 2010-10-06: There must be a better place to
-                    # do this.
-                    if architecture == "source":
-                        enabled = True
-                    else:
-                        # The "[7:]" strips the "binary-" prefix off the
-                        # architecture names we get here.
-                        das = series.getDistroArchSeries(architecture[7:])
-                        enabled = das.enabled
-                    if enabled:
-                        self.writeFileList(
-                            architecture, file_names, suite, component)
+        self.log.debug("Writing file lists for %s" % suite)
+        series, pocket = self.distro.getDistroSeriesAndPocket(suite)
+        for component, architectures in filelist.iteritems():
+            for architecture, file_names in architectures.iteritems():
+                # XXX wgrant 2010-10-06: There must be a better place to do
+                # this.
+                if architecture == "source":
+                    enabled = True
+                else:
+                    # The "[7:]" strips the "binary-" prefix off the
+                    # architecture names we get here.
+                    das = series.getDistroArchSeries(architecture[7:])
+                    enabled = das.enabled
+                if enabled:
+                    self.writeFileList(
+                        architecture, file_names, suite, component)
 
     def writeFileList(self, arch, file_names, dr_pocketed, component):
-        """Outputs a file list for a series and architecture.
+        """Output file lists for a series and architecture.
 
-        Also outputs a debian-installer file list if necessary.
+        This includes a debian-installer file list.
         """
         files = []
         di_files = []
@@ -708,11 +630,7 @@ class FTPArchiveHandler:
         f = file(f_path, "w")
         for name in file_names:
             if name.endswith(".udeb"):
-                # Once again, note that this component in this
-                # distroseries has d-i elements
-                self._di_release_components.setdefault(
-                    dr_pocketed, set()).add(component)
-                # And note the name for output later
+                # Note the name for output later
                 di_files.append(name)
             else:
                 files.append(name)
@@ -721,18 +639,18 @@ class FTPArchiveHandler:
         f.write("\n")
         f.close()
 
-        if len(di_files):
-            # Once again, some d-i stuff to write out...
-            self.log.debug("Writing d-i file list for %s/%s/%s" % (
+        # Once again, some d-i stuff to write out...
+        self.log.debug(
+            "Writing d-i file list for %s/%s/%s" % (
                 dr_pocketed, component, arch))
-            di_overrides = os.path.join(self._config.overrideroot,
-                                        "%s_%s_debian-installer_%s" %
-                                        (dr_pocketed, component, arch))
-            f = open(di_overrides, "w")
-            di_files.sort(key=package_name)
-            f.write("\n".join(di_files))
-            f.write("\n")
-            f.close()
+        di_overrides = os.path.join(
+            self._config.overrideroot,
+            "%s_%s_debian-installer_%s" % (dr_pocketed, component, arch))
+        f = open(di_overrides, "w")
+        di_files.sort(key=package_name)
+        f.write("\n".join(di_files))
+        f.write("\n")
+        f.close()
 
     #
     # Config Generation
@@ -810,8 +728,8 @@ class FTPArchiveHandler:
                                     else "false",
                          })
 
-        if archs and suite in self._di_release_components:
-            for component in self._di_release_components[suite]:
+        if archs:
+            for component in comps:
                 apt_config.write(STANZA_TEMPLATE % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
@@ -830,15 +748,10 @@ class FTPArchiveHandler:
         for comp in comps:
             component_path = os.path.join(
                 self._config.distsroot, suite, comp)
-            base_paths = [component_path]
-            if suite in self._di_release_components:
-                if comp in self._di_release_components[suite]:
-                    base_paths.append(os.path.join(component_path,
-                                                   "debian-installer"))
-            for base_path in base_paths:
-                if "debian-installer" not in base_path:
-                    safe_mkdir(os.path.join(base_path, "source"))
-                    if not distroseries.include_long_descriptions:
-                        safe_mkdir(os.path.join(base_path, "i18n"))
-                for arch in archs:
-                    safe_mkdir(os.path.join(base_path, "binary-" + arch))
+            safe_mkdir(os.path.join(component_path, "source"))
+            if not distroseries.include_long_descriptions:
+                safe_mkdir(os.path.join(component_path, "i18n"))
+            for arch in archs:
+                safe_mkdir(os.path.join(component_path, "binary-" + arch))
+                safe_mkdir(os.path.join(
+                    component_path, "debian-installer", "binary-" + arch))

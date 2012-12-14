@@ -16,7 +16,7 @@ html {
 }
 
 body {
-  font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+  font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
   font-size: 0.75em;
   line-height: 1.3em;
   color: #000;
@@ -159,7 +159,7 @@ lp_status_cors_feed = '${view/cors_feed}';
 "
 ></script>
     <script id="load-status" type="text/javascript">
-LPS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
+LPJS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
   var tag = function(name) {
     return Y.Node.create('<'+name+'/>');
   }

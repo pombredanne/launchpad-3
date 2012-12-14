@@ -17,7 +17,7 @@ from optparse import (
 
 import transaction
 
-from canonical.launchpad.scripts.logger import logger_options
+from lp.services.scripts.logger import logger_options
 
 
 def _check_datetime(option, opt, value):

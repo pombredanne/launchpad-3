@@ -132,7 +132,7 @@ we should not have a link to it.
 Administrator can change the translation focus for a distribution.
 
     >>> editor_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> editor_browser.open('http://launchpad.dev/ubuntu')
     >>> editor_browser.getLink('Change details').click()
     >>> editor_browser.getControl('Translation focus').displayValue

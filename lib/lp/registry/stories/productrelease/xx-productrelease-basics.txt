@@ -130,7 +130,7 @@ release too.
 
 Let's add a release as Jeff:
 
-    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/+addmilestone')
     >>> browser.getControl('Name').value = '0.6.6.6'
     >>> browser.getControl('Register Milestone').click()
@@ -144,7 +144,7 @@ Let's add a release as Jeff:
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 
-    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
@@ -159,7 +159,7 @@ And if no-priv owns the series...
 
     >>> no_priv = Person.selectOneBy(name="no-priv")
     >>> tomcat.getSeries('trunk').owner = no_priv
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 ... he can edit existing releases as well, even if they are owned by

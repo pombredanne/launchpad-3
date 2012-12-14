@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -19,20 +19,13 @@ from storm.expr import (
     LeftJoin,
     SQL,
     )
-from zope.component import getUtility
+from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
@@ -83,23 +76,22 @@ class DistributionSourcePackageRelease:
     @property
     def publishing_history(self):
         """See IDistributionSourcePackageRelease."""
-        return SourcePackagePublishingHistory.select("""
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagerelease),
-            clauseTables=['DistroSeries'],
-            orderBy='-datecreated')
+        from lp.registry.model.distroseries import DistroSeries
+        res = Store.of(self.distribution).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease)
+        return res.order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
 
     @property
     def builds(self):
         """See IDistributionSourcePackageRelease."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         # Import DistroArchSeries here to avoid circular imports.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
@@ -121,7 +113,7 @@ class DistributionSourcePackageRelease:
 
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
-        builds_built_in_main_archives = store.find(
+        builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
             builds_for_distro_exprs,
             PackageBuild.archive == Archive.id,
@@ -131,7 +123,7 @@ class DistributionSourcePackageRelease:
         # main archive... this will include many of those in the above
         # query, but not the new/failed ones. It will also include
         # ppa builds that have been published in main archives.
-        builds_published_in_main_archives = store.find(
+        builds_published_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
             builds_for_distro_exprs,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
@@ -166,7 +158,6 @@ class DistributionSourcePackageRelease:
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         from lp.soyuz.model.distroseriespackagecache import (
             DistroSeriesPackageCache)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         archive_ids = list(self.distribution.all_distro_archive_ids)
         result_row = (
             SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
@@ -200,7 +191,7 @@ class DistributionSourcePackageRelease:
                     DistroSeriesPackageCache.binarypackagename ==
                     BinaryPackageName.id)))
 
-        all_published = store.using(*tables).find(
+        all_published = Store.of(self.distribution).using(*tables).find(
             result_row,
             DistroSeries.distribution == self.distribution,
             BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),

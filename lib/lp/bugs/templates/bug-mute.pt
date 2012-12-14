@@ -14,9 +14,9 @@
   <div metal:fill-slot="main">
 
     <div id="maincontent">
-      <div id="nonportlets" class="readable">
+      <div id="nonportlets">
         <p>
-          If you mute a bug you will receive no mail about the the bug
+          If you mute a bug you will receive no mail about the bug
           at all until you unmute it again.
         </p>
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,6 +11,7 @@ __all__ = [
     'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
+    'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
     'ICanPublishPackages',
     'IFilePublishing',
@@ -18,24 +19,31 @@ __all__ = [
     'IPublishingSet',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'ISourcePackagePublishingHistoryEdit',
     'ISourcePackagePublishingHistoryPublic',
     'MissingSymlinkInPool',
     'NotInPool',
+    'OverrideError',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
+    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -53,7 +61,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -93,6 +101,12 @@ class MissingSymlinkInPool(Exception):
     The corresponding record is marked as removed and the process
     continues.
     """
+
+
+@error_status(httplib.BAD_REQUEST)
+class OverrideError(Exception):
+    """Raised when an attempt to change an override fails."""
+
 
 name_priority_map = {
     'required': PackagePublishingPriority.REQUIRED,
@@ -415,6 +429,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="date_removed")
+    removed_byID = Attribute("DB ID for removed_by.")
     removed_by = exported(
         Reference(
             IPerson,
@@ -486,11 +501,32 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         description=_('The previous release of this source package.'),
         required=False, readonly=True)
 
+    creatorID = Attribute("DB ID for creator.")
     creator = exported(
         Reference(
             IPerson,
             title=_('Publication Creator'),
             description=_('The IPerson who created this publication.'),
+            required=False, readonly=True
+        ))
+
+    sponsorID = Attribute("DB ID for sponsor.")
+    sponsor = exported(
+        Reference(
+            IPerson,
+            title=_('Publication sponsor'),
+            description=_('The IPerson who sponsored the creation of '
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
+    packageupload = exported(
+        Reference(
+            # Really IPackageUpload, fixed in _schema_circular_imports.
+            Interface,
+            title=_('Package upload'),
+            description=_('The Package Upload that caused the creation of '
+                'this publication.'),
             required=False, readonly=True
         ))
 
@@ -533,11 +569,25 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `IBuilds`.
         """
 
+    def getFileByName(name):
+        """Return the file with the specified name.
+
+        Only supports 'changelog' at present.
+        """
+
     @export_read_operation()
     def changesFileUrl():
         """The .changes file URL for this source publication.
 
         :return: the .changes file URL for this source (a string).
+        """
+
+    @export_read_operation()
+    @operation_for_version('devel')
+    def changelogUrl():
+        """The URL for this source package release's changelog.
+
+        :return: the changelog file URL for this source (a string).
         """
 
     def getUnpublishedBuilds(build_states=None):
@@ -592,16 +642,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             logged.
         """
 
-    def changeOverride(new_component=None, new_section=None):
-        """Change the component and/or section of this publication
-
-        It is changed only if the argument is not None.
-
-        Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or
-        `IBinaryPackagePublishingHistory`.
-        """
-
     def copyTo(distroseries, pocket, archive, overrides=None, creator=None):
         """Copy this publication to another location.
 
@@ -613,6 +653,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             `IOverridePolicy`.
         :param creator: the `IPerson` to use as the creator for the copied
             publication.
+        :param packageupload: The `IPackageUpload` that caused this
+            publication to be created.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -659,8 +701,29 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
 
+class ISourcePackagePublishingHistoryEdit(IPublishingEdit):
+    """A writeable source package publishing history record."""
+
+    # Really ISourcePackagePublishingHistory, patched in
+    # _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, a
+        `ISourcePackagePublishingHistory`.
+        """
+
+
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
-                                      IPublishingEdit):
+                                      ISourcePackagePublishingHistoryEdit):
     """A source package publishing history record."""
     export_as_webservice_entry(publish_web_link=False)
 
@@ -697,6 +760,9 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    distroarchseriesID = Int(
+        title=_("The DB id for the distroarchseries."),
+        required=False, readonly=False)
     distroarchseries = exported(
         Reference(
             # Really IDistroArchSeries (fixed in
@@ -836,17 +902,6 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             logged.
         """
 
-    def changeOverride(new_component=None, new_section=None,
-                       new_priority=None):
-        """Change the component, section and/or priority of this publication.
-
-        It is changed only if the argument is not None.
-
-        Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or
-        `IBinaryPackagePublishingHistory`.
-        """
-
     def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
@@ -886,9 +941,44 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :param end_date: The optional last date to return.
         """
 
+    @export_read_operation()
+    @operation_for_version("devel")
+    def binaryFileUrls():
+        """URLs for this binary publication's binary files.
+
+        :return: A collection of URLs for this binary.
+        """
+
+
+class IBinaryPackagePublishingHistoryEdit(IPublishingEdit):
+    """A writeable binary package publishing record."""
+
+    # Really IBinaryPackagePublishingHistory, patched in
+    # _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."),
+        # XXX cjwatson 20120619: It would be nice to use copy_field here to
+        # save manually looking up the priority name, but it doesn't work in
+        # this case: the title is wrong, and tests fail when a string value
+        # is passed over the webservice.
+        new_priority=TextLine(title=u"The new priority name."))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, a
+        `IBinaryPackagePublishingHistory`.
+        """
+
 
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
-                                      IPublishingEdit):
+                                      IBinaryPackagePublishingHistoryEdit):
     """A binary package publishing record."""
     export_as_webservice_entry(publish_web_link=False)
 
@@ -986,6 +1076,10 @@ class IPublishingSet(Interface):
              should be created for the new source publication.
         :param creator: An optional `IPerson`. If this is None, the
             sourcepackagerelease's creator will be used.
+        :param sponsor: An optional `IPerson` indicating the sponsor of this
+            publication.
+        :param packageupload: An optional `IPackageUpload` that caused this
+            publication to be created.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

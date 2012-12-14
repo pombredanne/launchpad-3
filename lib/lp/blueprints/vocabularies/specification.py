@@ -13,10 +13,9 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import NamedSQLObjectVocabulary
-
 from lp.blueprints.model.specification import Specification
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import NamedSQLObjectVocabulary
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -40,7 +39,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
         if target is not None:
             for spec in sorted(
-                target.specifications(), key=attrgetter('title')):
+                target.specifications(launchbag.user),
+                key=attrgetter('title')):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -50,6 +50,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
+                    user = getattr(launchbag, 'user', None)
+                    if spec in launchbag.specification.all_blocked(user=user):
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)

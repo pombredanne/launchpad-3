@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -33,18 +33,12 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import (
+from lp.services import scripts
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.database.postgresql import ConnectionString
-from canonical.launchpad import scripts
-from canonical.launchpad.scripts.logger import OopsHandler
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS,
-    setupInteractionByEmail,
-    )
+from lp.services.database.postgresql import ConnectionString
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -52,6 +46,13 @@ from lp.services.features import (
     )
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.logger import OopsHandler
+from lp.services.utils import total_seconds
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.interaction import (
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 
 
 LOCK_PATH = "/var/lock/"
@@ -338,10 +339,10 @@ class LaunchpadScript:
                 profiler.runcall(self.main)
             else:
                 self.main()
-        except LaunchpadScriptFailure, e:
+        except LaunchpadScriptFailure as e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
-        except SilentLaunchpadScriptFailure, e:
+        except SilentLaunchpadScriptFailure as e:
             sys.exit(e.exit_status)
         else:
             date_completed = datetime.datetime.now(UTC)
@@ -352,13 +353,13 @@ class LaunchpadScript:
             profiler.dump_stats(self.options.profile)
 
     def _init_zca(self, use_web_security):
-        """Initialize the ZCA, this can be overriden for testing purpose."""
+        """Initialize the ZCA, this can be overridden for testing purposes."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
     def _init_db(self, isolation):
         """Initialize the database transaction.
 
-        Can be overriden for testing purpose.
+        Can be overridden for testing purposes.
         """
         dbuser = self.dbuser
         if dbuser is None:
@@ -383,8 +384,7 @@ class LaunchpadScript:
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run(
-                use_web_security=use_web_security, isolation=isolation)
+            self.run(use_web_security=use_web_security, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
@@ -412,7 +412,12 @@ class LaunchpadCronScript(LaunchpadScript):
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by
         # overriding the name property.
-        logging.getLogger().addHandler(OopsHandler(self.name))
+        oops_hdlr = OopsHandler(self.name, logger=self.logger)
+        logging.getLogger().addHandler(oops_hdlr)
+
+    def get_last_activity(self):
+        """Return the last activity, if any."""
+        return getUtility(IScriptActivitySet).getLastActivity(self.name)
 
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
@@ -424,6 +429,12 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+        # date_started is recorded *after* the lock is acquired and we've
+        # initialized Zope components and the database.  Thus this time is
+        # only for the script proper, rather than total execution time.
+        seconds_taken = total_seconds(date_completed - date_started)
+        self.logger.debug(
+            "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
 
 
 @contextmanager
@@ -446,13 +457,13 @@ def cronscript_enabled(control_url, name, log):
         # seconds.
         control_fp = urlopen(control_url, timeout=5)
     # Yuck. API makes it hard to catch 'does not exist'.
-    except HTTPError, error:
+    except HTTPError as error:
         if error.code == 404:
             log.debug("Cronscript control file not found at %s", control_url)
             return True
         log.exception("Error loading %s" % control_url)
         return True
-    except URLError, error:
+    except URLError as error:
         if getattr(error.reason, 'errno', None) == 2:
             log.debug("Cronscript control file not found at %s", control_url)
             return True

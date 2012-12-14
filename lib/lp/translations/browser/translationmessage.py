@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0404
@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'BaseTranslationView',
     'contains_translations',
+    'convert_translationmessage_to_submission',
     'CurrentTranslationMessageAppMenus',
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
@@ -38,8 +39,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp import (
+from lp.app.errors import UnexpectedFormData
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
     enabled_with_permission,
@@ -47,11 +49,10 @@ from canonical.launchpad.webapp import (
     Link,
     urlparse,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from lp.app.errors import UnexpectedFormData
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import RedirectionView
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,
     convert_newlines_to_web_form,
@@ -70,6 +71,7 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model import pofilestatsjob
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
     )
@@ -223,17 +225,13 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         return Link('../+export', text, icon='download')
 
 
-class CurrentTranslationMessageIndexView:
+class CurrentTranslationMessageIndexView(RedirectionView):
     """A view to forward to the translation form."""
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Redirect to the translation form."""
-        url = '%s/%s' % (canonical_url(self.context), '+translate')
-        self.request.response.redirect(url)
+        target = canonical_url(context, view_name='+translate')
+        super(CurrentTranslationMessageIndexView, self).__init__(
+            target, request)
 
 
 def _getSuggestionFromFormId(form_id):
@@ -384,11 +382,6 @@ class BaseTranslationView(LaunchpadView):
             principle the user should not have been given the option to
             submit the current request.
         """
-        if is_read_only():
-            raise UnexpectedFormData(
-                "Launchpad is currently in read-only mode for maintenance.  "
-                "Please try again later.")
-
         if self.user is None:
             raise UnexpectedFormData("You are not logged in.")
 
@@ -456,7 +449,7 @@ class BaseTranslationView(LaunchpadView):
         """
         try:
             self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             return unicode(e)
         except TranslationConflict:
             # The translations are demoted to suggestions, but they may
@@ -892,10 +885,8 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
-        # XXX: kiko 2006-09-27:
-        # Isn't this a hell of a performance issue, hitting this
-        # same table for every submit?
-        self.pofile.updateStatistics()
+        # Schedule this POFile to have its statistics updated.
+        pofilestatsjob.schedule(self.pofile)
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
             # We are already at the end of the batch, forward to the
@@ -1679,6 +1670,7 @@ def convert_translationmessage_to_submission(
     """
 
     submission = Submission()
+    submission.is_traversable = (message.sequence != 0)
     submission.translationmessage = message
     for attribute in ['id', 'language', 'potmsgset', 'date_created']:
         setattr(submission, attribute, getattr(message, attribute))

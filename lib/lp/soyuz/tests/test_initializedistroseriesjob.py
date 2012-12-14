@@ -7,14 +7,12 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
+from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
@@ -22,6 +20,7 @@ from lp.soyuz.interfaces.distributionjob import (
     InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -29,7 +28,17 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    celebrity_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    CeleryJobLayer,
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
@@ -73,12 +82,14 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         overlay_pockets = (u'Updates', u'Release')
         overlay_components = (u"main", u"universe")
         arches = (u'i386', u'amd64')
+        archindep_archtag = u'amd64'
         packagesets = (packageset1.id, packageset2.id)
         rebuild = False
 
         job = self.job_source.create(
-            distroseries, [parent1.id, parent2.id], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
+            distroseries, [parent1.id, parent2.id], arches, archindep_archtag,
+            packagesets, rebuild, overlays, overlay_pockets,
+            overlay_components)
 
         expected = ("<InitializeDistroSeriesJob for "
             "distribution: {distroseries.distribution.name}, "
@@ -87,6 +98,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             "{parent1.name}[True/Updates/main],"
             "{parent2.name}[False/Release/universe], "
             "architectures: (u'i386', u'amd64'), "
+            "archindep_archtag: amd64, "
             "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
             "rebuild: False>".format(
                 distroseries=distroseries,
@@ -157,18 +169,20 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
+        archindep_archtag = u'amd64'
         packagesets = (u'1', u'2', u'3')
         overlays = (True, )
         overlay_pockets = ('Updates', )
         overlay_components = ('restricted', )
 
         job = self.job_source.create(
-            distroseries, [parent.id], arches, packagesets, False, overlays,
-            overlay_pockets, overlay_components)
+            distroseries, [parent.id], arches, archindep_archtag, packagesets,
+            False, overlays, overlay_pockets, overlay_components)
 
         naked_job = removeSecurityProxy(job)
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
+        self.assertEqual(naked_job.archindep_archtag, archindep_archtag)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
         self.assertEqual(naked_job.parents, (parent.id, ))
@@ -214,25 +228,17 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(message, removeSecurityProxy(job).error_description)
 
 
-class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
-    """Test case for InitializeDistroSeriesJob."""
-
-    layer = LaunchpadZopelessLayer
-
-    @property
-    def job_source(self):
-        return getUtility(IInitializeDistroSeriesJobSource)
-
-    def _create_child(self):
-        pf = self.factory.makeProcessorFamily()
-        pf.addProcessor('x86', '', '')
-        parent = self.factory.makeDistroSeries()
-        parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf)
-        lf = self.factory.makeLibraryFileAlias()
-        # Since the LFA needs to be in the librarian, commit.
-        transaction.commit()
-        parent_das.addOrUpdateChroot(lf)
+def create_child(factory):
+    pf = factory.makeProcessorFamily()
+    pf.addProcessor('x86', '', '')
+    parent = factory.makeDistroSeries()
+    parent_das = factory.makeDistroArchSeries(
+        distroseries=parent, processorfamily=pf)
+    lf = factory.makeLibraryFileAlias()
+    # Since the LFA needs to be in the librarian, commit.
+    transaction.commit()
+    parent_das.addOrUpdateChroot(lf)
+    with celebrity_logged_in('admin'):
         parent_das.supports_virtualized = True
         parent.nominatedarchindep = parent_das
         publisher = SoyuzTestPublisher()
@@ -246,20 +252,41 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', parent.owner,
             distroseries=parent)
-        self.test1_packageset_id = str(test1.id)
+        test1_packageset_id = str(test1.id)
         test1.addSources('udev')
-        parent.updatePackageCount()
-        child = self.factory.makeDistroSeries()
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            child, SourcePackageFormat.FORMAT_1_0)
-        # Make sure everything hits the database, switching db users aborts.
+    parent.updatePackageCount()
+    child = factory.makeDistroSeries()
+    getUtility(ISourcePackageFormatSelectionSet).add(
+        child, SourcePackageFormat.FORMAT_1_0)
+    # Make sure everything hits the database, switching db users aborts.
+    transaction.commit()
+    return parent, child, test1_packageset_id
+
+
+class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
+    """Test case for InitializeDistroSeriesJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitializeDistroSeriesJobSource)
+
+    def setupDas(self, parent, proc, arch_tag):
+        pf = getUtility(IProcessorFamilySet).getByName(proc)
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf,
+            architecturetag=arch_tag)
+        lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
-        return parent, child
+        parent_das.addOrUpdateChroot(lf)
+        parent_das.supports_virtualized = True
+        return parent_das
 
     def test_job(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         job = self.job_source.create(child, [parent.id])
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         job.run()
         child.updatePackageCount()
@@ -267,12 +294,12 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(parent.binarycount, child.binarycount)
 
     def test_job_with_arguments(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         arch = parent.nominatedarchindep.architecturetag
         job = self.job_source.create(
-            child, [parent.id], packagesets=(self.test1_packageset_id,),
+            child, [parent.id], packagesets=(test1_packageset_id,),
             arches=(arch,), rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         job.run()
         child.updatePackageCount()
@@ -284,17 +311,66 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(builds.count(), 1)
 
     def test_job_with_none_arguments(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         job = self.job_source.create(
-            child, [parent.id], packagesets=None, arches=None,
-            overlays=None, overlay_pockets=None,
+            child, [parent.id], archindep_archtag=None, packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
             overlay_components=None, rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
         job.run()
         child.updatePackageCount()
 
         self.assertEqual(parent.sourcecount, child.sourcecount)
 
+    def test_job_with_none_archindep_archtag_argument(self):
+        parent, child, test1_packageset_id = create_child(self.factory)
+        job = self.job_source.create(
+            child, [parent.id], archindep_archtag=None, packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
+            overlay_components=None, rebuild=True)
+        switch_dbuser('initializedistroseries')
+        job.run()
+
+        self.assertEqual(
+            parent.nominatedarchindep.architecturetag,
+            child.nominatedarchindep.architecturetag)
+
+    def test_job_with_archindep_archtag_argument(self):
+        parent, child, test1_packageset_id = create_child(self.factory)
+        self.setupDas(parent, 'amd64', 'amd64')
+        self.setupDas(parent, 'powerpc', 'hppa')
+        job = self.job_source.create(
+            child, [parent.id], archindep_archtag='amd64', packagesets=None,
+            arches=None, overlays=None, overlay_pockets=None,
+            overlay_components=None, rebuild=True)
+        switch_dbuser('initializedistroseries')
+        job.run()
+
+        self.assertEqual(
+            'amd64',
+            child.nominatedarchindep.architecturetag)
+
     def test_cronscript(self):
         run_script(
             'cronscripts/run_jobs.py', ['-v', 'initializedistroseries'])
+        DatabaseLayer.force_dirty_database()
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_job(self):
+        """Job runs successfully via Celery."""
+        fixture = FeatureFixture({
+            'jobs.celery.enabled_classes': 'InitializeDistroSeriesJob',
+        })
+        self.useFixture(fixture)
+        parent, child, test1 = create_child(self.factory)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        with block_on_job():
+            job_source.create(child, [parent.id])
+            transaction.commit()
+        child.updatePackageCount()
+        self.assertEqual(parent.sourcecount, child.sourcecount)
+        self.assertEqual(parent.binarycount, child.binarycount)

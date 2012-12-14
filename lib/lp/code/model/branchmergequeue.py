@@ -19,14 +19,14 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,
     IBranchMergeQueueSource,
     )
 from lp.code.model.branch import Branch
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IMasterStore
 
 
 class BranchMergeQueue(Storm):

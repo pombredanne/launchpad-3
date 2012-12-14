@@ -39,9 +39,9 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
@@ -208,12 +208,6 @@ class IPOFile(IRosettaStats):
 
         If condition is None, return all messages, else narrow the result
         set down using the condition.
-        """
-
-    def makeTranslatableMessage(potmsgset):
-        """Factory method for an `ITranslatableMessage` object.
-
-        :param potmsgset: The `IPOTMsgSet` to combine this pofile with.
         """
 
     def export(ignore_obsolete=False, export_utf8=False):

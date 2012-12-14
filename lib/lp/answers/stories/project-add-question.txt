@@ -154,7 +154,7 @@ be a supported language for Thunderbird Questions, which allows us to
 test the supported languages behaviour for non-English languages. Dafydd
 speaks Japanese, so we will use him.
 
-    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> print daf_browser.title
     Language preferences...
@@ -198,9 +198,9 @@ list. This indicates that he can ask a question in Japanese or English
 and expect someone to reply in the same language.
 
     >>> user_browser.open(
-    ...     'http://answers.launchpad.dev/thunderbird/+addquestion')
+    ...     'http://answers.launchpad.dev/firefox/+addquestion')
     >>> print user_browser.getControl('Language').displayOptions
-    ['English (en) *', 'Japanese (ja) *']
+    ['English (en) *', 'Japanese (ja)']
 
 The supported languages will not be shown immediately when Sample Person
 asks a question Thunderbird question from the context of the Mozilla

@@ -11,8 +11,8 @@ __all__ = [
     'YUITestFixtureControllerView',
 ]
 
+from fnmatch import fnmatchcase
 import os
-import simplejson
 import sys
 from textwrap import dedent
 import traceback
@@ -20,6 +20,7 @@ import unittest
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
@@ -27,26 +28,28 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.http import IResult
 from zope.security.checker import (
     NamesChecker,
-    ProxyFactory)
+    ProxyFactory,
+    )
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility,
+from lp.app.versioninfo import revno
+from lp.services.config import config
+from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
+    IPlacelessAuthUtility,
     )
-from canonical.launchpad.webapp.login import logInPrincipal
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.testing.layers import (
+from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.publisher import LaunchpadView
+from lp.testing import AbstractYUITestCase
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
-    LibrarianLayer,
     LayerProcessController,
+    LibrarianLayer,
     YUIAppServerLayer,
     )
-from lp.app.versioninfo import revno
-from lp.testing import AbstractYUITestCase
+
 
 EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)
 
@@ -108,7 +111,7 @@ def login_as_person(person):
     request = get_current_browser_request()
     assert request is not None, "We do not have a browser request."
     authutil = getUtility(IPlacelessAuthUtility)
-    principal = authutil.getPrincipalByLogin(email, want_password=False)
+    principal = authutil.getPrincipalByLogin(email)
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(email)
     logInPrincipal(request, principal, email)
@@ -154,45 +157,141 @@ class YUITestFixtureControllerView(LaunchpadView):
     """Dynamically loads YUI test along their fixtures run over an app server.
     """
 
+    COMBOFILE = 'COMBOFILE'
     JAVASCRIPT = 'JAVASCRIPT'
     HTML = 'HTML'
     SETUP = 'SETUP'
     TEARDOWN = 'TEARDOWN'
+    INDEX = 'INDEX'
+
+    yui_block_no_combo = dedent("""\
+        <script type="text/javascript"
+            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
+
+        <script type="text/javascript">
+            YUI.GlobalConfig = {
+                fetchCSS: false,
+                timeout: 50,
+                ignore: [
+                    'yui2-yahoo', 'yui2-event', 'yui2-dom',
+                    'yui2-calendar','yui2-dom-event'
+                ]
+            }
+       </script>
+    """)
+
+    yui_block_combo = dedent("""\
+       <script type="text/javascript"
+           src="/+yuitest/build/js/yui/yui/yui-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/yui/loader/loader-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/lp/meta.js"></script>
+       <script type="text/javascript">
+            YUI.GlobalConfig = {
+                combine: false,
+                base: '/+yuitest/build/js/yui/',
+                debug: true,
+                fetchCSS: false,
+                groups: {
+                    lp: {
+                        combine: false,
+                        base: '/+yuitest/build/js/lp/',
+                        root: 'lp/',
+                        debug: true,
+                        filter: 'raw',
+                        // comes from including lp/meta.js
+                        modules: LP_MODULES,
+                        fetchCSS: false
+                    },
+                    yui2: {
+                        combine: true,
+                        base: '/+yuitest/build/js/yui2/',
+                        fetchCSS: false,
+                        modules: {
+                            'yui2-yahoo': {
+                                path: 'yahoo/yahoo.js'
+                            },
+                            'yui2-event': {
+                                path: 'event/event.js'
+                            },
+                            'yui2-dom': {
+                                path: 'dom/dom.js'
+                            },
+                            'yui2-calendar': {
+                                path: 'calendar/calendar.js'
+                            },
+                            'yui2-dom-event': {
+                                path: 'yahoo-dom-event/yahoo-dom-event.js'
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    """)
 
     page_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
-          <title>Test</title>
+            <title>Test</title>
+            %(javascript_block)s
+            <script type="text/javascript">
+              // we need this to create a single YUI instance all events and
+              // code talks across. All instances of YUI().use should be
+              // based off of LPJS instead.
+              LPJS = new YUI();
+            </script>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/console/assets/console-core.css"/>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css"/>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css"/>
+            <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
+            <script type="text/javascript" src="%(test_module)s"></script>
+          </head>
+        <body class="yui3-skin-sam">
+          <div id="log"></div>
+          <p>Want to re-run your test?</p>
+          <ul>
+            <li><a href="?">Reload test JS</a></li>
+            <li><a href="?reload=1">Reload test JS and the associated
+                                    Python fixtures</a></li>
+          </ul>
+          <p>Don't forget to run <code>make jsbuild</code> and then do a
+             hard reload of this page if you change a file that is built
+             into launchpad.js!</p>
+          <p>If you change Python code other than the fixtures, you must
+             restart the server.  Sorry.</p>
+        </body>
+        </html>
+        """)
+
+    index_template = dedent("""\
+        <!DOCTYPE html>
+        <html>
+          <head>
+          <title>YUI XHR Tests</title>
           <script type="text/javascript"
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
           <style>
-          /* Taken and customized from testlogger.css */
-          .yui-console-entry-src { display:none; }
-          .yui-console-entry.yui-console-entry-pass .yui-console-entry-cat {
-            background-color: green;
-            font-weight: bold;
-            color: white;
+          ul {
+            text-align: left;
           }
-          .yui-console-entry.yui-console-entry-fail .yui-console-entry-cat {
-            background-color: red;
-            font-weight: bold;
-            color: white;
+          body, ul, h1 {
+            margin: 0.3em;
+            padding: 0.3em;
           }
-          .yui-console-entry.yui-console-entry-ignore .yui-console-entry-cat {
-            background-color: #666;
-            font-weight: bold;
-            color: white;
-          }
-          </style>
-          <script type="text/javascript" src="%(test_module)s"></script>
+        </style>
         </head>
         <body class="yui3-skin-sam">
-          <div id="log"></div>
+          <h1>YUI XHR Tests</h1>
+          <ul>%(tests)s</ul>
         </body>
         </html>
         """)
@@ -208,24 +307,33 @@ class YUITestFixtureControllerView(LaunchpadView):
         return os.path.join(*self.names)
 
     def initialize(self):
+        if not self.names:
+            self.action = self.INDEX
+            return
         path, ext = os.path.splitext(self.traversed_path)
-        full_path = os.path.join(config.root, 'lib', path)
-        if not os.path.exists(full_path + '.py'):
-            raise NotFound(self, full_path + '.py', self.request)
-        if not os.path.exists(full_path + '.js'):
-            raise NotFound(self, full_path + '.js', self.request)
-
-        if ext == '.js':
-            self.action = self.JAVASCRIPT
+        # We need to route requests with build/js in them to the combo loader
+        # js files so we can load those to bootstap.
+        if path.startswith('build/js'):
+            self.action = self.COMBOFILE
         else:
-            if self.request.method == 'GET':
-                self.action = self.HTML
+            full_path = os.path.join(config.root, 'lib', path)
+
+            if not os.path.exists(full_path + '.py'):
+                raise NotFound(self, full_path + '.py', self.request)
+            if not os.path.exists(full_path + '.js'):
+                raise NotFound(self, full_path + '.js', self.request)
+
+            if ext == '.js':
+                self.action = self.JAVASCRIPT
             else:
-                self.fixtures = self.request.form['fixtures'].split(',')
-                if self.request.form['action'] == 'setup':
-                    self.action = self.SETUP
+                if self.request.method == 'GET':
+                    self.action = self.HTML
                 else:
-                    self.action = self.TEARDOWN
+                    self.fixtures = self.request.form['fixtures'].split(',')
+                    if self.request.form['action'] == 'setup':
+                        self.action = self.SETUP
+                    else:
+                        self.action = self.TEARDOWN
 
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
@@ -236,72 +344,170 @@ class YUITestFixtureControllerView(LaunchpadView):
         assert os.path.sep not in name, (
             'traversed name contains os.path.sep: %s' % name)
         assert name != '..', 'traversing to ..'
-        self.names.append(name)
+        if name:
+            self.names.append(name)
         return self
 
     def browserDefault(self, request):
         return self, ()
 
-    def page(self):
-        return self.page_template % dict(
-            test_module='/+yuitest/%s.js' % self.traversed_path,
-            revno=revno)
+    @property
+    def module_name(self):
+        return '.'.join(self.names)
 
     def get_fixtures(self):
-        module_name = '.'.join(self.names)
-        test_module = __import__(
-            module_name, globals(), locals(), ['_fixtures_'], 0)
-        return test_module._fixtures_
+        module = __import__(
+            self.module_name, globals(), locals(), ['_fixtures_'], 0)
+        return module._fixtures_
+
+    def renderINDEX(self):
+        root = os.path.join(config.root, 'lib')
+        test_lines = []
+        for path in find_tests(root):
+            test_path = '/+yuitest/' + '/'.join(path)
+            module_name = '.'.join(path)
+            try:
+                module = __import__(
+                    module_name, globals(), locals(), ['test_suite'], 0)
+            except ImportError:
+                warning = 'cannot import Python fixture file'
+            else:
+                try:
+                    suite_factory = module.test_suite
+                except AttributeError:
+                    warning = 'cannot find test_suite'
+                else:
+                    try:
+                        suite = suite_factory()
+                    except EXPLOSIVE_ERRORS:
+                        raise
+                    except:
+                        warning = 'test_suite raises errors'
+                    else:
+                        case = None
+                        for case in suite:
+                            if isinstance(case, YUIAppServerTestCase):
+                                root_url = config.appserver_root_url(
+                                    case.facet)
+                                if root_url != 'None':
+                                    test_path = root_url + test_path
+                                warning = ''
+                                break
+                        else:
+                            warning = (
+                                'test suite is not instance of '
+                                'YUIAppServerTestCase')
+            link = '<a href="%s">%s</a>' % (test_path, test_path)
+            if warning:
+                warning = ' <span class="warning">%s</span>' % warning
+            test_lines.append('<li>%s%s</li>' % (link, warning))
+        return self.index_template % {
+            'revno': revno,
+            'tests': '\n'.join(test_lines)}
+
+    def renderCOMBOFILE(self):
+        """We need to serve the combo files out of the build directory."""
+        self.request.response.setHeader('Cache-Control', 'no-cache')
+        if self.traversed_path.endswith('js'):
+            self.request.response.setHeader('Content-Type', 'text/javascript')
+        elif self.traversed_path.endswith('css'):
+            self.request.response.setHeader('Content-Type', 'text/css')
+        return open(
+            os.path.join(config.root, self.traversed_path))
+
+    def renderJAVASCRIPT(self):
+        self.request.response.setHeader('Content-Type', 'text/javascript')
+        self.request.response.setHeader('Cache-Control', 'no-cache')
+        return open(
+            os.path.join(config.root, 'lib', self.traversed_path))
+
+    def renderHTML(self):
+        self.request.response.setHeader('Content-Type', 'text/html')
+        self.request.response.setHeader('Cache-Control', 'no-cache')
+        if ('INTERACTIVE_TESTS' in os.environ and
+            'reload' in self.request.form):
+            # We should try to reload the module.
+            module = sys.modules.get(self.module_name)
+            if module is not None:
+                del module._fixtures_
+                reload(module)
+        return self.page_template % dict(
+            test_module='/+yuitest/%s.js' % self.traversed_path,
+            revno=revno,
+            javascript_block=self.renderYUI())
+
+    def renderSETUP(self):
+        data = {}
+        fixtures = self.get_fixtures()
+        try:
+            for fixture_name in self.fixtures:
+                __traceback_info__ = (fixture_name, data)
+                fixtures[fixture_name](self.request, data)
+        except EXPLOSIVE_ERRORS:
+            raise
+        except:
+            self.request.response.setStatus(500)
+            result = ''.join(format_exception(*sys.exc_info()))
+        else:
+            self.request.response.setHeader(
+                'Content-Type', 'application/json')
+            # We use the ProxyFactory so that the restful
+            # redaction code is always used.
+            result = simplejson.dumps(
+                ProxyFactory(data), cls=ResourceJSONEncoder)
+        return result
+
+    def renderTEARDOWN(self):
+        data = simplejson.loads(self.request.form['data'])
+        fixtures = self.get_fixtures()
+        try:
+            for fixture_name in reversed(self.fixtures):
+                __traceback_info__ = (fixture_name, data)
+                fixtures[fixture_name].teardown(self.request, data)
+        except EXPLOSIVE_ERRORS:
+            raise
+        except:
+            self.request.response.setStatus(500)
+            result = ''.join(format_exception(*sys.exc_info()))
+        else:
+            # Remove the session cookie, in case we have one.
+            self.request.response.expireCookie(
+                getUtility(IClientIdManager).namespace)
+            # Blow up the database once we are out of this transaction
+            # by passing a result that will do so when it is iterated
+            # through in asyncore.
+            self.request.response.setHeader('Content-Length', 1)
+            result = CloseDbResult()
+        return result
+
+    def renderYUI(self):
+        """Render out which YUI block we need based on the combo loader
+
+        If the combo loader is enabled, we need that setup and config and not
+        to load launchpad.js, else we need launchpad.js for things to run.
+
+        """
+        if self.request.features.getFlag('js.combo_loader.enabled'):
+            return self.yui_block_combo % dict(
+                revno=revno,
+                combo_url=self.combo_url)
+        else:
+            return self.yui_block_no_combo % dict(revno=revno)
 
     def render(self):
-        if self.action == self.JAVASCRIPT:
-            self.request.response.setHeader('Content-Type', 'text/javascript')
-            result = open(
-                os.path.join(config.root, 'lib', self.traversed_path))
-        elif self.action == self.HTML:
-            self.request.response.setHeader('Content-Type', 'text/html')
-            result = self.page()
-        elif self.action == self.SETUP:
-            data = {}
-            fixtures = self.get_fixtures()
-            try:
-                for fixture_name in self.fixtures:
-                    __traceback_info__ = (fixture_name, data)
-                    fixtures[fixture_name](self.request, data)
-            except EXPLOSIVE_ERRORS:
-                raise
-            except:
-                self.request.response.setStatus(500)
-                result = ''.join(format_exception(*sys.exc_info()))
-            else:
-                self.request.response.setHeader(
-                    'Content-Type', 'application/json')
-                # We use the ProxyFactory so that the restful
-                # redaction code is always used.
-                result = simplejson.dumps(
-                    ProxyFactory(data), cls=ResourceJSONEncoder)
-        elif self.action == self.TEARDOWN:
-            data = simplejson.loads(self.request.form['data'])
-            fixtures = self.get_fixtures()
-            try:
-                for fixture_name in reversed(self.fixtures):
-                    __traceback_info__ = (fixture_name, data)
-                    fixtures[fixture_name].teardown(self.request, data)
-            except EXPLOSIVE_ERRORS:
-                raise
-            except:
-                self.request.response.setStatus(500)
-                result = ''.join(format_exception(*sys.exc_info()))
-            else:
-                # Remove the session cookie, in case we have one.
-                self.request.response.expireCookie(
-                    getUtility(IClientIdManager).namespace)
-                # Blow up the database once we are out of this transaction
-                # by passing a result that will do so when it is iterated
-                # through in asyncore.
-                self.request.response.setHeader('Content-Length', 1)
-                result = CloseDbResult()
-        return result
+        return getattr(self, 'render' + self.action)()
+
+
+def find_tests(root):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirpath = os.path.relpath(dirpath, root)
+        for filename in filenames:
+            if fnmatchcase(filename, 'test_*.js'):
+                name, ext = os.path.splitext(filename)
+                if name + '.py' in filenames:
+                    names = dirpath.split(os.path.sep)
+                    names.append(name)
+                    yield names
 
 
 # This class cannot be imported directly into a test suite because
@@ -312,20 +518,34 @@ class YUIAppServerTestCase(AbstractYUITestCase):
 
     layer = YUIAppServerLayer
     _testMethodName = 'runTest'
+    # 5 minutes for the suite.  Hopefully we never get close to this.
+    suite_timeout = 300000
+    # 12 seconds for each test.  Hopefully they are three or less for
+    # yuixhr tests, and less than one for pure JS tests, but
+    # occasionally buildbot runs over six seconds even for tests that
+    # are well-behaved locally and on ec2, so we up the limit to 12..
+    incremental_timeout = 12000
+    # 45 seconds for the first test, to include warmup time.  These times
+    # are wildly large, and they are only necessary on buildbot.  ec2 and
+    # local instances are much, much faster.  We have not yet investigated
+    # why buildbot is so slow for these.
+    initial_timeout = 45000
 
-    def __init__(self, module_name=None):
+    def __init__(self, module_name, facet='mainsite'):
         self.module_name = module_name
+        self.facet = facet
         # This needs to be done early so the "id" is set correctly.
         self.test_path = self.module_name.replace('.', '/')
         super(YUIAppServerTestCase, self).__init__()
 
     def setUp(self):
-        root_url = LayerProcessController.appserver_root_url()
-        self.html_uri = '%s+yuitest/%s' % (root_url, self.test_path)
+        config = LayerProcessController.appserver_config
+        root_url = config.appserver_root_url(self.facet)
+        self.html_uri = '%s/+yuitest/%s' % (root_url, self.test_path)
         super(YUIAppServerTestCase, self).setUp()
 
     runTest = AbstractYUITestCase.checkResults
 
 
-def make_suite(module_name):
-    return unittest.TestSuite([YUIAppServerTestCase(module_name)])
+def make_suite(module_name, facet='mainsite'):
+    return unittest.TestSuite([YUIAppServerTestCase(module_name, facet)])

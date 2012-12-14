@@ -57,34 +57,20 @@ To update the sample data:
 
             make harness LPCONFIG=test-playground
 
-    4.  Make a fresh snapshot of the sample data to newsampledata.sql:
+    4.  Update the snapshot of the sample data in current(-dev).sql:
 
             make newsampledata
 
     5.  Inspect the new sample data:
 
-            cd ../sampledata
-            diff current-dev.sql newsampledata-dev.sql
+            bzr diff ../sampledata
 
-        If your changes are to the sampledata used for tests, the files
-        above will be named current.sql and newsampledata.sql instead.
-
-    6.  If it passes your sanity checks, just copy it over the existing one:
-
-            cp newsampledata-dev.sql current-dev.sql
-
-        Or
-
-            cp newsampledata.sql current.sql
-
-        if your changes are to the sample data used for tests.
-
-    7.  Ensure the tests still pass:
+    6.  Ensure the tests still pass:
 
             cd ../..
             make check  # Yeah, yeah, we all know our machines can stand that.
 
-    8.  Commit your changes and submit for review:
+    7.  Commit your changes and submit for review:
 
             bzr commit -m 'Added frotz to sampledata..."
             bzr push

@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
 
@@ -53,7 +51,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
@@ -63,6 +61,7 @@ from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
+    IHasExpirableBugs,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.structuralsubscription import (
@@ -144,15 +143,10 @@ class DistroSeriesVersionField(UniqueField):
         The distribution is the context's distribution (which may
         the context itself); A version is unique to a distribution.
         """
-        found_series = None
-        for series in getUtility(IDistroSeriesSet).findByVersion(version):
-            if (series.distribution == self._distribution
-                and series != self.context):
-                # A version is unique to a distribution, but a distroseries
-                # may edit itself.
-                found_series = series
-                break
-        return found_series
+        existing = getUtility(IDistroSeriesSet).queryByVersion(
+            self._distribution, version)
+        if existing != self.context:
+            return existing
 
     def _getByAttribute(self, version):
         """Return the content object with the given attribute."""
@@ -171,7 +165,7 @@ class DistroSeriesVersionField(UniqueField):
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except VersionError, error:
+        except VersionError as error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error))
 
@@ -180,7 +174,7 @@ class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
     IHasBuildRecords, IHasTranslationImports, IHasTranslationTemplates,
-    IServiceUsage):
+    IServiceUsage, IHasExpirableBugs):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -284,9 +278,14 @@ class IDistroSeriesPublic(
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    nominatedarchindep = Attribute(
-        "DistroArchSeries designed to build architecture-independent "
-        "packages whithin this distroseries context.")
+    nominatedarchindep = exported(
+        Reference(
+            Interface,  # IDistroArchSeries.
+            title=_("DistroArchSeries designed to build "
+                    "architecture-independent packages whithin this "
+                    "distroseries context."),
+            default=None,
+            required=False))
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
@@ -375,9 +374,6 @@ class IDistroSeriesPublic(
                 on clients, which requires downloading Packages files for
                 multiple architectures.""")))
 
-    def priorReleasedSeries():
-        """Prior series *by date* from the same distribution."""
-
     main_archive = exported(
         Reference(
             Interface,  # Really IArchive, see below for circular import fix.
@@ -395,26 +391,6 @@ class IDistroSeriesPublic(
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
         development moves on to the other pockets.
-        """
-
-    def canUploadToPocket(pocket):
-        """Decides whether or not allow uploads for a given pocket.
-
-        Only allow uploads for RELEASE pocket in unreleased
-        distroseries and the opposite, only allow uploads for
-        non-RELEASE pockets in released distroseries.
-        For instance, in edgy time :
-
-                warty         -> DENY
-                edgy          -> ALLOW
-                warty-updates -> ALLOW
-                edgy-security -> DENY
-
-        Note that FROZEN is not considered either 'stable' or 'unstable'
-        state.  Uploads to a FROZEN distroseries will end up in the
-        UNAPPROVED queue.
-
-        Return True if the upload is allowed and False if denied.
         """
 
     def getLatestUploads():
@@ -542,6 +518,13 @@ class IDistroSeriesPublic(
             description=_("Return only items with custom files of this "
                           "type."),
             required=False),
+        name=TextLine(title=_("Package or file name"), required=False),
+        version=TextLine(title=_("Package version"), required=False),
+        exact_match=Bool(
+            title=_("Exact match"),
+            description=_("Whether to filter name and version by exact "
+                          "matching."),
+            required=False),
         )
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
@@ -598,8 +581,7 @@ class IDistroSeriesPublic(
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Deprecated.  Use IArchive.getPublishedSources instead.
@@ -609,9 +591,6 @@ class IDistroSeriesPublic(
         If pocket is not specified, we look in all pockets.
 
         If version is not specified, return packages with any version.
-
-        If exclude_pocket is specified we exclude results matching that
-        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher
@@ -628,26 +607,26 @@ class IDistroSeriesPublic(
         Return publications in the main archives only.
         """
 
+    def getAllUncondemnedSources():
+        """Return all uncondemned sources for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
+
+        Return publications in the main archives only.
+        """
+
     def getAllPublishedBinaries():
         """Return all currently published binaries for the distroseries.
 
         Return publications in the main archives only.
         """
 
-    def getSourcesPublishedForAllArchives():
-        """Return all sourcepackages published across all the archives.
+    def getAllUncondemnedBinaries():
+        """Return all uncondemned binaries for the distroseries.
 
-        It's only used in the buildmaster/master.py context for calculating
-        the publication that are still missing build records.
+        An uncondemned publication is one without scheduleddeletiondate set.
 
-        It will consider all publishing records in PENDING or PUBLISHED status
-        as part of the 'build-unpublished-source' specification.
-
-        For 'main_archive' candidates it will automatically exclude RELEASE
-        pocket records of released distroseries (ensuring that we won't waste
-        time with records that can't be accepted).
-
-        Return a SelectResult of SourcePackagePublishingHistory.
+        Return publications in the main archives only.
         """
 
     def getDistroSeriesLanguage(language):
@@ -729,23 +708,18 @@ class IDistroSeriesPublic(
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""
 
-    def getBinaryPackagePublishing(
-        name=None, version=None, archtag=None, sourcename=None, orderBy=None,
-        pocket=None, component=None, archive=None):
+    def getBinaryPackagePublishing(archtag, pocket, component, archive):
         """Get BinaryPackagePublishings in a DistroSeries.
 
-        Can optionally restrict the results by name, version,
-        architecturetag, pocket and/or component.
+        Can optionally restrict the results by architecturetag, pocket and/or
+        component.
 
-        If sourcename is passed, only packages that are built from
-        source packages by that name will be returned.
         If archive is passed, restricted the results to the given archive,
         if it is suppressed the results will be restricted to the
         distribution 'main_archive'.
         """
 
-    def getSourcePackagePublishing(status, pocket, component=None,
-                                   archive=None):
+    def getSourcePackagePublishing(pocket, component, archive):
         """Return a selectResult of ISourcePackagePublishingHistory.
 
         According status and pocket.
@@ -936,19 +910,25 @@ class IDistroSeriesEditRestricted(Interface):
             required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
-            "distroseries."), value_type=TextLine(),
+                    "distroseries."),
+            value_type=TextLine(),
+            required=False),
+        archindep_archtag=TextLine(
+            title=_("Architecture tag to build architecture-independent "
+                    "packages."),
             required=False),
         packagesets=List(
             title=_("The list of packagesets to copy to the derived "
-            "distroseries"), value_type=TextLine(),
+                    "distroseries"),
+            value_type=TextLine(),
             required=False),
         rebuild=Bool(
             title=_("If binaries will be copied to the derived "
-            "distroseries."),
+                    "distroseries."),
             required=True),
         overlays=List(
             title=_("The list of booleans indicating, for each parent, if "
-            "the parent/child relationship should be an overlay."),
+                    "the parent/child relationship should be an overlay."),
             value_type=Bool(),
             required=False),
         overlay_pockets=List(
@@ -963,7 +943,8 @@ class IDistroSeriesEditRestricted(Interface):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def initDerivedDistroSeries(user, parents, architectures=[],
-                                packagesets=[], rebuild=False, overlays=[],
+                                archindep_archtag=None, packagesets=[],
+                                rebuild=False, overlays=[],
                                 overlay_pockets=[], overlay_components=[]):
         """Initialize this series from parents.
 
@@ -974,6 +955,9 @@ class IDistroSeriesEditRestricted(Interface):
             from.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.
+        :param archindep_archtag: The architecture tag used to build
+            architecture-independent packages. If not specified, one from
+            the parents' will be used.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
         :param rebuild: Whether binaries will be copied to the derived
@@ -1010,12 +994,6 @@ class IDistroSeriesSet(Interface):
         """Return a set of distroseriess that can be translated in
         rosetta."""
 
-    def findByName(name):
-        """Find a DistroSeries by name.
-
-        Returns a list of matching distributions, which may be empty.
-        """
-
     def queryByName(distribution, name):
         """Query a DistroSeries by name.
 
@@ -1025,10 +1003,13 @@ class IDistroSeriesSet(Interface):
         Returns the matching DistroSeries, or None if not found.
         """
 
-    def findByVersion(version):
-        """Find a DistroSeries by version.
+    def queryByVersion(distribution, version):
+        """Query a DistroSeries by version.
 
-        Returns a list of matching distributions, which may be empty.
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroSeries, or None if not found.
         """
 
     def fromSuite(distribution, suite):
@@ -1062,24 +1043,8 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(distribution, prior_to_date):
-        """Find distroseries for the supplied distro  released before a
-        certain date.
-
-        :param distribution: An `IDistribution` in which to search for its
-            series.
-        :param prior_to_date: A `datetime`
-
-        :return: `IResultSet` of `IDistroSeries` that were released before
-            prior_to_date, ordered in increasing order of age.
-        """
-
 
 @error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
     _message_prefix = "Error deriving distro series"
-
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py

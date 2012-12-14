@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,22 +13,27 @@ __all__ = [
     ]
 
 from lazr.restful.utils import smartquote
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.interfaces.services import IService
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class BranchSubscriptionPrimaryContext:
@@ -48,9 +53,20 @@ class BranchPortletSubscribersContent(LaunchpadView):
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""
+
+        # Cache permissions so private subscribers can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        if self.user is not None:
+            subscribers = [
+                subscription.person
+                for subscription in self.context.subscriptions]
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", subscribers)
+
         visible_subscriptions = [
             subscription for subscription in self.context.subscriptions
-            if check_permission('launchpad.View', subscription.person)]
+            if check_permission('launchpad.LimitedView', subscription.person)]
         return sorted(
             visible_subscriptions,
             key=lambda subscription: subscription.person.displayname)
@@ -197,6 +213,15 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
     page_title = label = "Subscribe to branch"
 
+    def validate(self, data):
+        if data.has_key('person'):
+            person = data['person']
+            subscription = self.context.getSubscription(person)
+            if (subscription is None and person.is_team and 
+                person.anyone_can_join()):
+                self.setFieldError('person', "Open and delegated teams "
+                "cannot be subscribed to private branches.")
+
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
@@ -215,7 +240,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
             self.context.subscribe(
                 person, notification_level, max_diff_lines, review_level,
                 self.user)
-
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
                 % person.displayname, notification_level, max_diff_lines,
@@ -267,6 +291,13 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.branch)
+        url = canonical_url(self.branch)
+        # If the subscriber can no longer see the branch, redirect them away.
+        service = getUtility(IService, 'sharing')
+        ignored, branches, ignored = service.getVisibleArtifacts(
+            self.person, branches=[self.branch], ignore_permissions=True)
+        if not branches:
+            url = canonical_url(self.branch.target)
+        return url
 
     cancel_url = next_url

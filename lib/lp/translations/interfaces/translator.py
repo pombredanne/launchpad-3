@@ -19,7 +19,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import (
     PublicPersonChoice,
     URIField,

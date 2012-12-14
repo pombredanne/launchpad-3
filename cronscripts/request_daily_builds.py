@@ -14,13 +14,12 @@ import _pythonpath
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-# fix circular import issue
-import canonical.launchpad.interfaces
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,)
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RequestDailyBuilds(LaunchpadCronScript):

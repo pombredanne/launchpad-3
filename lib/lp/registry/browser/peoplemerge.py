@@ -18,24 +18,13 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     PURGE_STATES,
@@ -46,7 +35,18 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IRequestPeopleMerge,
     )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 
@@ -73,10 +73,16 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
-            if dupe_person.is_merge_pending:
+            all_branches = getUtility(IAllBranches)
+            if all_branches.ownedBy(dupe_person).isPrivate().count() != 0:
+                self.addError(
+                    _("${name} owns private branches that must be "
+                      "deleted or transferred to another owner first.",
+                    mapping=dict(name=dupe_person.name)))
+            if dupe_person.isMergePending():
                 self.addError(_("${name} is already queued for merging.",
                       mapping=dict(name=dupe_person.name)))
-        if target_person is not None and target_person.is_merge_pending:
+        if target_person is not None and target_person.isMergePending():
             self.addError(_("${name} is already queued for merging.",
                   mapping=dict(name=target_person.name)))
 
@@ -133,16 +139,14 @@ class AdminMergeBaseView(ValidatingMergeView):
         if not self.dupe_person.is_team:
             # Transfer user email addresses. Team addresses will be deleted.
             for email in self.dupe_person_emails:
-                email = IMasterObject(email)
-                # EmailAddress.person and EmailAddress.account are readonly
-                # fields, so we need to remove the security proxy here.
+                # EmailAddress.person is a readonly field, so we need to
+                # remove the security proxy here.
                 naked_email = removeSecurityProxy(email)
                 naked_email.personID = self.target_person.id
-                naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
         getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user,
-            delete=self.delete)
+            delete=self.delete, requester=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
 

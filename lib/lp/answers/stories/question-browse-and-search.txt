@@ -147,7 +147,7 @@ to jump to the question.
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = '9'
     >>> browser.getControl('Find Answers').click()
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
     Question #9 : ...
 
@@ -208,7 +208,7 @@ Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
 selected. He adds 'Invalid' to the selection, and run his search again.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> statuses = browser.getControl(name='field.status').displayValue
     >>> [strip_label(status) for status in statuses]
@@ -311,7 +311,7 @@ That listing is also searchable. Since he's has lots of experience
 dealing with plugins problems, he always start by a search for such
 problems:
 
-    >>> browser.getControl(name='field.search_text').value = 'plug-in'
+    >>> browser.getControl(name='field.search_text').value = 'plugin'
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'questionTITLE'):
@@ -765,7 +765,7 @@ Entering an invalid project also displays an error message:
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There is no project named 'invalid' registered in Launchpad
+    There is no project named &#x27;invalid&#x27; registered in Launchpad
 
 If the browser supports javascript, there is a 'Choose' link available
 to help the user find an existing project. Since the test browser does

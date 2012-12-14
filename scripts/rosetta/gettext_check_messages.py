@@ -23,7 +23,8 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.translations.scripts.gettext_check_messages import (
-    GettextCheckMessages)
+    GettextCheckMessages,
+    )
 
 
 if __name__ == '__main__':

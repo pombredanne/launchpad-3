@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
 
@@ -55,7 +53,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -69,10 +67,10 @@ from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -83,7 +81,11 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
-from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
+from lp.registry.interfaces.pillar import (
+    IHasSharingPolicies,
+    IPillar,
+    )
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
     IHasDrivers,
@@ -133,11 +135,11 @@ class IDistributionDriverRestricted(Interface):
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-    IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
+    IHasBuildRecords, IHasDrivers, IHasMilestones, IHasSharingPolicies,
+    IHasOOPSReferences, IHasOwner, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
-    ISpecificationTarget):
+    ISpecificationTarget, IHasExpirableBugs):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -211,8 +213,12 @@ class IDistributionPublic(
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam',
@@ -234,10 +240,10 @@ class IDistributionPublic(
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = PublicPersonChoice(
+    members = exported(PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPersonOrTeam'))
     mirror_admin = exported(PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to review and "
@@ -340,10 +346,6 @@ class IDistributionPublic(
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
 
-    upstream_report_excluded_packages = Attribute(
-        "A list of the source packages that should not be shown on the "
-        "upstream bug report for this Distribution.")
-
     has_published_binaries = Bool(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
@@ -354,6 +356,11 @@ class IDistributionPublic(
         title=_("Has Published Sources"),
         description=_("True if this distribution has sources published."),
         readonly=True, required=False)
+
+    redirect_release_uploads = exported(Bool(
+        title=_("Redirect release pocket uploads"),
+        description=_("Redirect release pocket uploads to proposed pocket"),
+        readonly=False, required=True))
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
@@ -565,18 +572,6 @@ class IDistributionPublic(
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
-    # Really returns IArchive, see
-    # _schema_circular_imports.py.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getCommercialPPAs():
-        """Return all commercial PPAs.
-
-        Commercial PPAs are private, but explicitly flagged up as commercial
-        so that they are discoverable by people who wish to buy items
-        from them.
-        """
-
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.
 
@@ -607,23 +602,16 @@ class IDistributionPublic(
         If the component_name supplied is unknown, None is returned.
         """
 
-    def getPackagesAndPublicUpstreamBugCounts(limit=50,
-                                              exclude_packages=None):
-        """Return list of tuples of packages, upstreams and public bug counts.
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this distribution can have.
 
-        :param limit: The maximum number of rows to return.
-        :param exclude_packages: A list of source packages to exclude.
-            These should be specified as strings which correspond with
-            SourcePackageName.name.
-        :returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
+        :return: A sequence of `InformationType`s.
+        """
 
-        This API is quite specialized; it returns a list of up to limit
-        tuples containing IProducts and three different bug counts:
-            - open bugs
-            - triaged bugs
-            - open bugs with an upstream task
-            - open bugs with upstream tasks that are either linked to
-              bug watches or to products that use_malone.
+    def getDefaultBugInformationType():
+        """Get the default information type of a new bug in this distro.
+
+        :return: The `InformationType`.
         """
 
     def userCanEdit(user):

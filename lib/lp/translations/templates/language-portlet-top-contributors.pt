@@ -5,7 +5,6 @@
   class="portlet" id="portlet-top-contributors"
   tal:condition="view/top_contributors">
   <h2>Top contributors</h2>
-  <div class="portletBody portletContent">
     <p>
       These are the top translation contributors who have stated they have
       a particular interest in
@@ -18,5 +17,4 @@
         <a tal:replace="structure contributor/fmt:link">Guilherme Salgado</a>
       </li>
     </ul>
-  </div>
 </div>

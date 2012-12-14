@@ -58,8 +58,7 @@ just-published file:
 We have to commit in order to have new Librarian files available to
 server by Librarian Server:
 
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
 Now let's submit a new source version of ed (0.2-21) which will be
 automatically accepted and published resulting in a PackageUpload

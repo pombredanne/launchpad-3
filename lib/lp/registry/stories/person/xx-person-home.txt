@@ -68,7 +68,7 @@ URL.
 The URL is followed by a helpful link.
 
     >>> print user_browser.getLink('OpenID help').url
-    http://launchpad.dev/+help/openid.html
+    http://launchpad.dev/+help-registry/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
 
@@ -141,11 +141,15 @@ can edit them.
 Summary Pagelets
 ----------------
 
-A person's homepage also lists Karma information:
+A person's homepage also lists Karma and Time zone information:
 
     >>> browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(find_tag_by_id(browser.contents, 'karma'))
     Karma: 130 Karma help
+
+    >>> browser.open('http://launchpad.dev/~ddaa')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'timezone'))
+    Time zone: UTC (UTC+0000)
 
 Negative Ubuntu Code of Conduct signatory status is only displayed for
 yourself; others won't see it:
@@ -171,25 +175,6 @@ Teams don't have member-since; they have created-date:
     >>> browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(find_tag_by_id(browser.contents, 'created-date'))
     2005-06-06
-
-
-Time zones
-..........
-
-The user's time zone is displayed next to their location details:
-
-    >>> browser.open('http://launchpad.dev/~kamion')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-map'))
-    Location
-    Time zone: Europe/London...
-
-If the user does not have location data set then the portlet will not be
-shown.
-
-    >>> browser.open('http://launchpad.dev/~bac')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-map'))
 
 
 Table of contributions
@@ -261,7 +246,7 @@ associated with an Ubuntu Single Signon account. Anonymous and logged in
 users cannot see this, but admins like Foo Bar can.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus, IEmailAddressSet)
 
     >>> login('admin@canonical.com')

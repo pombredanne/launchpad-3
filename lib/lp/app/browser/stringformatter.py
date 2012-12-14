@@ -1,15 +1,12 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
-from base64 import urlsafe_b64encode
-
 
 __metaclass__ = type
 __all__ = [
     'add_word_breaks',
     'break_long_words',
-    'escape',
     'extract_bug_numbers',
     'extract_email_addresses',
     'FormattersAPI',
@@ -18,11 +15,11 @@ __all__ = [
     'split_paragraphs',
     ]
 
-import cgi
+from base64 import urlsafe_b64encode
 import re
-from lxml import html
-from xml.sax.saxutils import unescape as xml_unescape
 
+from lxml import html
+import markdown
 from zope.component import getUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
@@ -30,23 +27,21 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.utils import (
-    re_email_address,
     obfuscate_email,
+    re_email_address,
     )
-
-
-def escape(text, quote=True):
-    """Escape text for insertion into HTML.
-
-    Wraps `cgi.escape` to make the default to escape double-quotes.
-    """
-    return cgi.escape(text, quote)
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import (
+    html_escape,
+    html_unescape,
+    structured,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def split_paragraphs(text):
@@ -149,7 +144,7 @@ def add_word_breaks(word):
     while pos < len(word):
         chunk, pos = next_word_chunk(word, pos, 7, 15)
         broken.append(chunk)
-    return '<wbr></wbr>'.join(broken)
+    return '<wbr />'.join(broken)
 
 
 break_text_pat = re.compile(r'''
@@ -256,14 +251,14 @@ class FormattersAPI:
 
     def nl_to_br(self):
         """Quote HTML characters, then replace newlines with <br /> tags."""
-        return cgi.escape(self._stringtoformat).replace('\n', '<br />\n')
+        return html_escape(self._stringtoformat).replace('\n', '<br />\n')
 
     def escape(self):
-        return escape(self._stringtoformat)
+        return html_escape(self._stringtoformat)
 
     def break_long_words(self):
         """Add manual word breaks to long words."""
-        return break_long_words(cgi.escape(self._stringtoformat))
+        return break_long_words(html_escape(self._stringtoformat))
 
     @staticmethod
     def _substitute_matchgroup_for_spaces(match):
@@ -314,10 +309,6 @@ class FormattersAPI:
 
         :return: an unescaped url, an unescaped trailer.
         """
-        # The text will already have been cgi escaped.  We temporarily
-        # unescape it so that we can strip common trailing characters
-        # that aren't part of the URL.
-        url = xml_unescape(url)
         match = FormattersAPI._re_url_trailers.search(url)
         if match:
             trailers = match.group(1)
@@ -343,7 +334,6 @@ class FormattersAPI:
             'irc',
             'jabber',
             'apt',
-            'data',
             ]
 
         for base in protocol_bases:
@@ -361,20 +351,21 @@ class FormattersAPI:
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
             full_url = match.group('url')
-            url, trailers = FormattersAPI._split_url_and_trailers(full_url)
+            url, trailers = FormattersAPI._split_url_and_trailers(
+                html_unescape(full_url))
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
+            # The use of structured() in the argument here is a bit
+            # evil. Ideally add_word_breaks would return one itself.
             if not FormattersAPI._linkify_url_should_be_ignored(url):
-                link_string = (
+                return structured(
                     '<a rel="nofollow" '
-                    'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
-                        'url': cgi.escape(url, quote=True),
-                        'linked_text': add_word_breaks(cgi.escape(url)),
-                        'trailers': cgi.escape(trailers)
-                        })
-                return link_string
+                    'href="%(url)s">%(linked_text)s</a>%(trailers)s',
+                    url=url,
+                    linked_text=structured(add_word_breaks(html_escape(url))),
+                    trailers=trailers).escapedtext
             else:
                 return full_url
         elif match.group('faq') is not None:
@@ -395,23 +386,24 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-            url = root_url + match.group('oopscode')
+            url = root_url + "OOPS-" + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
             path = match.group('branch')
-            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
-            path, trailers = FormattersAPI._split_url_and_trailers(path)
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(
+                html_unescape(lp_url))
+            path, trailers = FormattersAPI._split_url_and_trailers(
+                html_unescape(path))
             if path.isdigit():
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
             url = '/+branch/%s' % path
             # Mark the links with a 'branch-short-link' class so they can be
             # harvested and validated when the page is rendered.
-            return '<a href="%s" class="branch-short-link">%s</a>%s' % (
-                cgi.escape(url, quote=True),
-                cgi.escape(lp_url),
-                cgi.escape(trailers))
+            return structured(
+                '<a href="%s" class="branch-short-link">%s</a>%s',
+                url, lp_url, trailers).escapedtext
         elif match.group("clbug") is not None:
             # 'clbug' matches Ubuntu changelog format bugs. 'bugnumbers' is
             # all of the bug numbers, that look something like "#1234, #434".
@@ -481,6 +473,9 @@ class FormattersAPI:
     # We will simplify "unreserved / pct-encoded / sub-delims" as the
     # following regular expression:
     #   [-a-zA-Z0-9._~%!$&'()*+,;=]
+    # But we are working on text that has already been through
+    # html_escape, so the & and ' are &amp; and &#x27; respectively. It
+    # gets a bit more complicated.
     #
     # We also require that the path-rootless form not begin with a
     # colon to avoid matching strings like "http::foo" (to avoid bug
@@ -505,43 +500,43 @@ class FormattersAPI:
     _re_linkify = re.compile(r'''
       (?P<url>
         \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt|data)
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt)
         :
         (?:
           (?:
             # "//" authority path-abempty
             //
             (?: # userinfo
-              [%(unreserved)s:]*
+              (?:%(unreserved)s|:)*
               @
             )?
             (?: # host
               \d+\.\d+\.\d+\.\d+ |
-              [%(unreserved)s]*
+              %(unreserved)s*
             )
             (?: # port
               : \d*
             )?
-            (?: / [%(unreserved)s:@]* )*
+            (?: / (?:%(unreserved)s|[:@])* )*
           ) | (?:
             # path-absolute
             /
-            (?: [%(unreserved)s:@]+
-                (?: / [%(unreserved)s:@]* )* )?
+            (?: (?:%(unreserved)s|[:@])+
+                (?: / (?:%(unreserved)s|[:@])* )* )?
           ) | (?:
             # path-rootless
-            [%(unreserved)s@]
-            [%(unreserved)s:@]*
-            (?: / [%(unreserved)s:@]* )*
+            (?:%(unreserved)s|@)
+            (?:%(unreserved)s|[:@])*
+            (?: / (?:%(unreserved)s|[:@])* )*
           )
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?\[\]]*
+          (?:%(unreserved)s|[:@/\?\[\]])*
         )?
         (?: # fragment
           \#
-          [%(unreserved)s:@/\?]*
+          (?:%(unreserved)s|[:@/\?])*
         )?
       ) |
       (?P<clbug>
@@ -556,18 +551,19 @@ class FormattersAPI:
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number?|num\.?|no\.?)?
+        (?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
-        \boops\s*-?\s*
-        (?P<oopscode> \d* [a-z]+ \d+)
+        \boops\s*-\s*
+        (?P<oopscode> \w+)
       ) |
       (?P<lpbranchurl>
         \blp:(?:///|/)?
-        (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
+        (?P<branch>%(unreserved)s(?:%(unreserved)s|/)*)
       )
-    ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
+    ''' % {'unreserved': "(?:[-a-zA-Z0-9._~%!$'()*+,;=]|&amp;|&\#x27;)"},
                              re.IGNORECASE | re.VERBOSE)
 
     # There is various punctuation that can occur at the end of a link that
@@ -605,7 +601,7 @@ class FormattersAPI:
                     output.append('<br />\n')
                 first_line = False
                 # escape ampersands, etc in text
-                line = cgi.escape(line)
+                line = html_escape(line)
                 # convert leading space in logical line to non-breaking space
                 line = self._re_leadingspace.sub(
                     self._substitute_matchgroup_for_spaces, line)
@@ -647,7 +643,7 @@ class FormattersAPI:
         else:
             linkified_text = re_substitute(self._re_linkify,
                 self._linkify_substitution, break_long_words,
-                cgi.escape(self._stringtoformat))
+                html_escape(self._stringtoformat))
             return '<pre class="wrap">%s</pre>' % linkified_text
 
     # Match lines that start with one or more quote symbols followed
@@ -713,7 +709,7 @@ class FormattersAPI:
             return line[:-4]
 
         for line in self.text_to_html().split('\n'):
-            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+            if 'Desired=<wbr />Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
                 # quote matching rules. We do not assume lines that start
                 # with a pipe are quoted passages. dpkg output is often
@@ -802,6 +798,16 @@ class FormattersAPI:
         if getUtility(ILaunchBag).user is not None:
             return self._stringtoformat
         return obfuscate_email(self._stringtoformat)
+
+    def strip_email(self):
+        """Strip out things that may be email.
+
+        This is a variation on obfuscate_email for when we are generating a
+        snipped for page metadata: we don't want to waste space spelling out
+        "<email address hidden>", and we do want to strip addresses even for
+        logged-in users in case they use the summary in a sharing tool.
+        """
+        return obfuscate_email(self._stringtoformat, replacement="...")
 
     def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
@@ -900,7 +906,8 @@ class FormattersAPI:
                 css_class = 'text'
                 header_next = False
             result.append(
-                '<td class="%s">%s</td>' % (css_class, escape(line)))
+                structured(
+                    '<td class="%s">%s</td>', css_class, line).escapedtext)
             result.append('</tr>')
 
         result.append('</table>')
@@ -972,6 +979,12 @@ class FormattersAPI:
         url = root_url + self._stringtoformat
         return '<a href="%s">%s</a>' % (url, self._stringtoformat)
 
+    def markdown(self):
+        if getFeatureFlag('markdown.enabled'):
+            return format_markdown(self._stringtoformat)
+        else:
+            return self.text_to_html()
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -981,6 +994,8 @@ class FormattersAPI:
             return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
+        elif name == 'markdown':
+            return self.markdown()
         elif name == 'text-to-html':
             return self.text_to_html()
         elif name == 'text-to-html-with-target':
@@ -991,6 +1006,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'strip-email':
+            return self.strip_email()
         elif name == 'linkify-email':
             return self.linkify_email()
         elif name == 'shorten':
@@ -1021,3 +1038,15 @@ class FormattersAPI:
             return self.oops_id()
         else:
             raise TraversalError(name)
+
+
+def format_markdown(text):
+    """Return html form of marked-up text."""
+    # This returns whole paragraphs (in p tags), similarly to text_to_html.
+    md = markdown.Markdown(
+        safe_mode='escape',
+        extensions=[
+            'tables',
+            'nl2br',
+            ])
+    return md.convert(text)  # How easy was that?

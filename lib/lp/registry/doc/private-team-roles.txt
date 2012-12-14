@@ -12,12 +12,17 @@ Bug subscriptions
 
     >>> # Create the necessary teams.
     >>> team_owner = factory.makePerson(name='team-owner')
-    >>> from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonVisibility,
+    ...     TeamMembershipPolicy,
+    ...     )
     >>> admin_user = getUtility(IPersonSet).getByEmail('admin@canonical.com')
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
-    ...     visibility=PersonVisibility.PRIVATE)
+    ...     visibility=PersonVisibility.PRIVATE,
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
 
 A private team can be subscribed to a bug.
 
@@ -79,30 +84,6 @@ Private teams can subscribe to branches.
     private-team
 
 
-Branch visibility policies
---------------------------
-
-Private teams can have branch visibility policies.
-
-    >>> def teamname(team):
-    ...     if team is None:
-    ...         return "*everyone*"
-    ...     else:
-    ...         return team.displayname
-    >>> def print_team_policies(context):
-    ...     for item in context.getBranchVisibilityTeamPolicies():
-    ...         print "%s: %s" % (teamname(item.team), item.rule.title)
-
-    >>> from lp.code.enums import BranchVisibilityRule
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> print_team_policies(evolution)
-    >>> evolution.setBranchVisibilityTeamPolicy(
-    ...     priv_team, BranchVisibilityRule.PRIVATE)
-    >>> print_team_policies(evolution)
-    Private Team: Private
-
-
 PPAs
 ====
 
@@ -135,7 +116,7 @@ Private teams can be subscribed to private PPAs.
     ...     visibility=PersonVisibility.PRIVATE)
 
     >>> # We must login as the archive owner to add the subscription.
-    >>> login_person(team_owner)
+    >>> ignored = login_person(team_owner)
     >>> subscription = private_archive.newSubscription(
     ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
@@ -150,6 +131,7 @@ Structural Subscription to Products
 
 Private teams can have structural subscriptions to products.
 
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> sub = firefox.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
@@ -179,10 +161,11 @@ Registrant
 Only a person can register a project, not a team, so no team, public
 or private, can be the project registrant.
 
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> public_team = factory.makeTeam(name='public-team',
     ...     owner=team_owner,
-    ...     visibility=PersonVisibility.PUBLIC)
+    ...     visibility=PersonVisibility.PUBLIC,
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> product = factory.makeProduct(registrant=team_owner)
     >>> product = factory.makeProduct(registrant=public_team)
     >>> product = factory.makeProduct(registrant=priv_team)
@@ -217,8 +200,8 @@ Bug Supervisor
 A public team and a private team can be a project bug supervisor.
 
     >>> product = factory.makeProduct()
-    >>> product.setBugSupervisor(public_team, admin_user)
-    >>> product.setBugSupervisor(priv_team, admin_user)
+    >>> product.bug_supervisor = public_team
+    >>> product.bug_supervisor = priv_team
 
 
 Product Series Roles
@@ -288,7 +271,6 @@ Team Membership
 ===============
 
 Mixing public and private teams can create interesting situations.
-Not every type of team can become a member of other types.
 
     >>> from lp.registry.interfaces.person import PrivatePersonLinkageError
     >>> reviewer = factory.makePerson()
@@ -315,8 +297,8 @@ Not every type of team can become a member of other types.
     ...         join_team(joined, joiner)
     ...     print "---"
     Public <- Public:  Allowed
-    Public <- Private:  Not Allowed
+    Public <- Private: Allowed
     ---
     Private <- Public:  Allowed
-    Private <- Private:  Not Allowed
+    Private <- Private: Allowed
     ---

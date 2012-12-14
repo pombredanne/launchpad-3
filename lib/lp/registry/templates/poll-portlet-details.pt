@@ -6,8 +6,6 @@
 
 <div class="portlet" id="portlet-details">
   <h2><span tal:replace="context/name" /></h2>
-  
-  <div class="portletBody portletContent">
 	
     <b>Title:</b>
     <span tal:replace="context/title" /><br />
@@ -31,8 +29,6 @@
 
     <b>Secrecy:</b>
     <span tal:replace="context/secrecy/title" /><br />
-
-  </div>
 
 </div>
 </tal:root>

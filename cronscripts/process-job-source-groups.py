@@ -7,16 +7,16 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 from optparse import IndentedHelpFormatter
 import os
 import subprocess
 import sys
 import textwrap
 
-import _pythonpath
-
-from canonical.config import config
-from canonical.launchpad.helpers import english_list
+from lp.services.config import config
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import LaunchpadCronScript
 
@@ -113,4 +113,6 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = ProcessJobSourceGroups()
-    script.lock_and_run()
+    # We do not need to take a lock here; all the interesting work is done
+    # by process-job-source.py, which takes its own per-job-source locks.
+    script.run()

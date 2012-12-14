@@ -32,7 +32,7 @@ any other bug tracker, but with a baseurl in the form
 mailto:<email-address>.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtracker import (
     ...     IBugTracker,
     ...     IBugTrackerSet,

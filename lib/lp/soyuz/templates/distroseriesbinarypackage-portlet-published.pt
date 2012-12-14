@@ -6,8 +6,6 @@
 
   <h2>Published versions</h2>
 
-  <div class="portletBody portletContent">
-
     <ul tal:condition="context/current_publishings">
       <li class="binary package" tal:repeat="pub context/current_publishings">
         <a tal:attributes="href
@@ -29,5 +27,4 @@
     <p tal:condition="not: context/current_publishings">
       <i>Not published at present.</i>
     </p>
-  </div>
 </div>

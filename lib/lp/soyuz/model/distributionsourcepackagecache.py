@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -14,20 +14,18 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class DistributionSourcePackageCache(SQLBase):
@@ -97,9 +95,7 @@ class DistributionSourcePackageCache(SQLBase):
             DistroSeries.distribution = %s AND
             Archive.id = %s AND
             SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL AND
             Archive.enabled = TRUE
@@ -108,8 +104,7 @@ class DistributionSourcePackageCache(SQLBase):
             clauseTables=[
                 'Archive',
                 'DistroSeries',
-                'SourcePackagePublishingHistory',
-                'SourcePackageRelease']))
+                'SourcePackagePublishingHistory']))
 
         # Remove the cache entries for packages we no longer publish.
         for cache in cls._find(distro, archive):
@@ -130,9 +125,9 @@ class DistributionSourcePackageCache(SQLBase):
 
         # Get the set of published sourcepackage releases.
         sprs = list(SourcePackageRelease.select("""
-            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
@@ -221,16 +216,13 @@ class DistributionSourcePackageCache(SQLBase):
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(distro, archive),
             distinct=True,
             orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
-                'SourcePackageRelease']))
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries']))
 
         number_of_updates = 0
         chunk_size = 0

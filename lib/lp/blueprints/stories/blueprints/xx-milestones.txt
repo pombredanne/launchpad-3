@@ -42,19 +42,12 @@ milestone.
   <...Milestone target:...
   <.../firefox/+milestone/1.0...
 
+  >>> print admin_browser.getLink('1.0').url
+  http://launchpad.dev/firefox/+milestone/1.0
 
-Now, we should see the spec on the Mozilla Milestone 1.0 page after the
-cache has expired.
-
-    >>> from canonical.testing.layers import MemcachedLayer
-
-    >>> MemcachedLayer.purge()
-    >>> print admin_browser.getLink('1.0').url
-    http://launchpad.dev/firefox/+milestone/1.0
-
-    >>> admin_browser.getLink('1.0').click()
-    >>> print admin_browser.getLink('Support <canvas> Objects').url
-    http://blueprints.launchpad.dev/firefox/+spec/canvas
+  >>> admin_browser.getLink('1.0').click()
+  >>> print admin_browser.getLink('Support <canvas> Objects').url
+  http://blueprints.launchpad.dev/firefox/+spec/canvas
 
 The count of targeted features has also updated.
 

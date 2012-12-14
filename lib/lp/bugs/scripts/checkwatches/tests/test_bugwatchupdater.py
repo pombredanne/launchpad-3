@@ -9,7 +9,6 @@ from datetime import datetime
 
 import transaction
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtask import (
@@ -22,6 +21,7 @@ from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 def make_bug_watch_updater(checkwatches_master, bug_watch,

@@ -82,7 +82,7 @@ The Ubuntu distro is owned by the Ubuntu team, ubuntu-team. jdub is a
 member, and therefore should be able to edit any spec attached to it
 (but not specs attached to mozilla-firefox).
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> print ubuntu.owner.name
     ubuntu-team
 
@@ -99,13 +99,10 @@ member, and therefore should be able to edit any spec attached to it
 
 SpecificationSet implements the ISpecificationSet interface
 
-    >>> ubuspec in specset.all_specifications
+    >>> ubuspec in specset._all_specifications
     True
 
-    >>> specset.has_any_specifications
-    True
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(ISpecificationSet, specset)
     True
 
@@ -225,7 +222,7 @@ The "SpecificationSet" can be used to search across all specifications.
 We can filter for specifications that contain specific text, across all
 specifications:
 
-    >>> for spec in specset.specifications(filter=['install']):
+    >>> for spec in specset.specifications(None, filter=['install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     extension-manager-upgrades firefox
@@ -233,7 +230,7 @@ specifications:
 
 Specs from inactive products are filtered out.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('mark@example.com')
 
     # Unlink the source packages so the project can be deactivated.
@@ -242,7 +239,7 @@ Specs from inactive products are filtered out.
     >>> unlink_source_packages(upstream_firefox)
     >>> upstream_firefox.active = False
     >>> flush_database_updates()
-    >>> for spec in specset.specifications(filter=['install']):
+    >>> for spec in specset.specifications(None, filter=['install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     media-integrity-check ubuntu
@@ -268,22 +265,22 @@ block-them-too.
     >>> for spec in efourx.dependencies: print spec.name
     svg-support
 
-    >>> for spec in efourx.all_deps: print spec.name
+    >>> for spec in efourx.all_deps(): print spec.name
     svg-support
 
     >>> for spec in efourx.blocked_specs: print spec.name
     canvas
 
-    >>> for spec in efourx.all_blocked: print spec.name
+    >>> for spec in efourx.all_blocked(): print spec.name
     canvas
 
     >>> canvas = efourx.blocked_specs[0]
     >>> svg = efourx.dependencies[0]
-    >>> for spec in svg.all_blocked: print spec.name
+    >>> for spec in svg.all_blocked(): print spec.name
     canvas
     e4x
 
-    >>> for spec in canvas.all_deps: print spec.name
+    >>> for spec in canvas.all_deps(): print spec.name
     e4x
     svg-support
 

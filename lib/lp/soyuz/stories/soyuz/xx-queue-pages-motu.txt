@@ -38,7 +38,7 @@ component:
 
     >>> motu_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> motu_browser.getLink("Show uploads").click()
+    >>> motu_browser.getLink("All uploads").click()
     >>> print_queue(motu_browser.contents)
     Package             Version     Component Section Priority Sets Pocket  When
     netapplet...ddtp... -                                           Release 2006...
@@ -55,7 +55,7 @@ not have permission to accept items in "main":
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: alsa-utils (You have no rights to accept component(s) 'main')
+    FAILED: alsa-utils (You have no rights to accept component(s) &#x27;main&#x27;)
 
 The same applies to the binary upload "pmount" because its build
 produced a package in main:
@@ -64,13 +64,12 @@ produced a package in main:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: pmount (You have no rights to accept component(s) 'main')
+    FAILED: pmount (You have no rights to accept component(s) &#x27;main&#x27;)
 
 Let's change the components on some uploads so that the user has
 permission to manipulate them.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
@@ -82,22 +81,20 @@ permission to manipulate them.
     >>> universe = getUtility(IComponentSet)['universe']
     >>> alsa_utils = getUtility(
     ...     ISourcePackageNameSet).queryByName("alsa-utils")
-    >>> pmount = getUtility(
-    ...     IBinaryPackageNameSet).queryByName("pmount")
+    >>> pmount = getUtility(IBinaryPackageNameSet).queryByName("pmount")
     >>> mozilla = getUtility(
     ...     IBinaryPackageNameSet).queryByName("mozilla-firefox")
     >>> for source in SourcePackageRelease.selectBy(
     ...     sourcepackagename=alsa_utils):
     ...     source.component = universe
-    >>> for binary in BinaryPackageRelease.selectBy(
-    ...     binarypackagename=pmount):
+    >>> for binary in BinaryPackageRelease.selectBy(binarypackagename=pmount):
     ...     binary.component = universe
     >>> for binary in BinaryPackageRelease.selectBy(
     ...     binarypackagename=mozilla):
     ...     binary.component = universe
     >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 
@@ -156,7 +153,5 @@ will be left alone.
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in sorted(get_feedback_messages(motu_browser.contents)):
     ...     print message
-    FAILED: netapplet (You have no rights to accept component(s) 'main')
+    FAILED: netapplet (You have no rights to accept component(s) &#x27;main&#x27;)
     OK: mozilla-firefox(multiverse/(unchanged)/(unchanged))
-
-

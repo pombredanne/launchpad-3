@@ -8,7 +8,7 @@ and an external bug, see bugwatch.txt.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')

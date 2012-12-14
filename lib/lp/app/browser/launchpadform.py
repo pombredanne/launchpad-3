@@ -44,15 +44,15 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
     IMultiLineWidgetLayout,
     INotificationResponse,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import (
+from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
@@ -138,6 +138,9 @@ class LaunchpadFormView(LaunchpadView):
                 self.request.response.redirect(self.next_url)
         if self.request.is_ajax:
             self._processNotifications(self.request)
+        if self.errors:
+            self.form_result = form_action.failure(data, self.errors)
+            self._abort()
         self.action_taken = form_action
 
     def _processNotifications(self, request):
@@ -147,11 +150,8 @@ class LaunchpadFormView(LaunchpadView):
         notifications = ([(notification.level, notification.message)
              for notification in request.response.notifications])
         if notifications:
-            json_notifications = simplejson.dumps(notifications)
-        else:
-            json_notifications = simplejson.dumps(None)
-        request.response.setHeader(
-            'X-Lazr-Notifications', json_notifications)
+            request.response.setHeader(
+                'X-Lazr-Notifications', simplejson.dumps(notifications))
 
     def render(self):
         """Return the body of the response.
@@ -260,7 +260,7 @@ class LaunchpadFormView(LaunchpadView):
         `INotificationResponse.addNotification()` API.  Please see it
         for details re: internationalized and markup text.
         """
-        cleanmsg = escape(message)
+        cleanmsg = html_escape(message)
         self.form_wide_errors.append(cleanmsg)
         self.errors.append(cleanmsg)
 
@@ -286,7 +286,7 @@ class LaunchpadFormView(LaunchpadView):
         `INotificationResponse.addNotification()` API.  Please see it
         for details re: internationalized and markup text.
         """
-        cleanmsg = escape(message)
+        cleanmsg = html_escape(message)
         self.widget_errors[field_name] = cleanmsg
         self.errors.append(cleanmsg)
 
@@ -347,6 +347,29 @@ class LaunchpadFormView(LaunchpadView):
             return 'There is 1 error.'
         else:
             return 'There are %d errors.' % count
+
+    def ajax_failure_handler(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+        For ajax requests the standard Launchpad form template is not available
+        to render any errors. We simply convert the errors to json and return
+        that data to the caller so the errors can be rendered.
+        """
+
+        if not self.request.is_ajax:
+            return
+        self.request.response.setStatus(400, "Validation")
+        self.request.response.setHeader('Content-type', 'application/json')
+        errors = {}
+        for widget in self.widgets:
+            widget_error = self.getFieldError(widget.context.getName())
+            if widget_error:
+                errors[widget.name] = widget_error
+        return_data = dict(
+            form_wide_errors=self.form_wide_errors,
+            errors=errors,
+            error_summary=self.error_count)
+        return simplejson.dumps(return_data)
 
     def validate(self, data):
         """Validate the form.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,9 +7,6 @@ __all__ = [
     ]
 
 
-from datetime import datetime
-
-import pytz
 from storm.locals import (
     Int,
     Reference,
@@ -18,11 +15,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -36,8 +35,9 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
-
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.model.packageset import Packageset
 
 
 class BuildPackageJob(BuildFarmJobOldDerived, Storm):
@@ -63,48 +63,17 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         We override this to provide a delegate specific to package builds."""
         self.build_farm_job = BuildFarmBuildJob(self.build)
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        return list(IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            [BuildPackageJob.job_id.is_in([job.id for job in jobs]),
+             BuildPackageJob.build_id == BinaryPackageBuild.id]))
+
     def score(self):
         """See `IBuildPackageJob`."""
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
-        # Please note: the score for language packs is to be zero because
-        # they unduly delay the building of packages in the main component
-        # otherwise.
-        if self.build.source_package_release.section.name == 'translations':
-            return 0
-
         score = 0
-
-        # Calculates the urgency-related part of the score.
-        urgency = SCORE_BY_URGENCY[
-            self.build.source_package_release.urgency]
-        score += urgency
-
-        # Calculates the pocket-related part of the score.
-        score_pocket = SCORE_BY_POCKET[self.build.pocket]
-        score += score_pocket
-
-        # Calculates the component-related part of the score.
-        score += SCORE_BY_COMPONENT.get(
-            self.build.current_component.name, 0)
-
-        # Calculates the build queue time component of the score.
-        right_now = datetime.now(pytz.timezone('UTC'))
-        eta = right_now - self.job.date_created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                break
 
         # Private builds get uber score.
         if self.build.archive.private:
@@ -113,10 +82,30 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         if self.build.archive.is_copy:
             score -= COPY_ARCHIVE_SCORE_PENALTY
 
-        # Lastly, apply the archive score delta.  This is to boost
-        # or retard build scores for any build in a particular
-        # archive.
         score += self.build.archive.relative_build_score
+
+        # Language packs don't get any of the usual package-specific
+        # score bumps, as they unduly delay the building of packages in
+        # the main component otherwise.
+        if self.build.source_package_release.section.name == 'translations':
+            return score
+
+        # Calculates the urgency-related part of the score.
+        score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
+
+        # Calculates the pocket-related part of the score.
+        score += SCORE_BY_POCKET[self.build.pocket]
+
+        # Calculates the component-related part of the score.
+        score += SCORE_BY_COMPONENT.get(
+            self.build.current_component.name, 0)
+
+        # Calculates the package-set-related part of the score.
+        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
+            self.build.source_package_release.name,
+            distroseries=self.build.distro_series)
+        if not self.build.archive.is_ppa and not package_sets.is_empty():
+            score += package_sets.max(Packageset.relative_build_score)
 
         return score
 
@@ -156,6 +145,14 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
+
+    @classmethod
+    def preloadJobsData(cls, jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.services.job.model.job import Job
+        load_related(Job, jobs, ['job_id'])
+        builds = load_related(BinaryPackageBuild, jobs, ['build_id'])
+        getUtility(IBinaryPackageBuildSet).preloadBuildsData(list(builds))
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
@@ -240,8 +237,10 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
-        # be wasting build-time, the former case already has a newer source
-        # and the latter could not be built in DAK.
+        # be wasting build-time.  In the former case, there is already a
+        # newer source; the latter case needs an overhaul of the way
+        # security builds are handled (by copying from a PPA) to avoid
+        # creating duplicate builds.
         build_set = getUtility(IBinaryPackageBuildSet)
 
         build = build_set.getByQueueEntry(job)

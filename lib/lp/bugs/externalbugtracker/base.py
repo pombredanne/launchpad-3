@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -27,10 +27,10 @@ __all__ = [
 
 import urllib
 import urllib2
+from urlparse import urlparse
 
 from zope.interface import implements
 
-from canonical.config import config
 from lp.bugs.adapters import treelookup
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
@@ -39,6 +39,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentImport,
     ISupportsCommentPushing,
     )
+from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
 
 # The user agent we send in our requests
@@ -47,10 +48,6 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 # To signify that all bug watches should be checked in a single run.
 BATCH_SIZE_UNLIMITED = 0
 
-
-#
-# Errors.
-#
 
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
@@ -96,10 +93,6 @@ class BugTrackerAuthenticationError(BugTrackerConnectError):
     """Launchpad couldn't authenticate with the remote bugtracker."""
 
 
-#
-# Warnings.
-#
-
 class BugWatchUpdateWarning(Exception):
     """An exception representing a warning.
 
@@ -141,10 +134,6 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
-#
-# Everything else.
-#
-
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
@@ -156,6 +145,7 @@ class ExternalBugTracker:
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.basehost = urlparse(baseurl).netloc
         self.sync_comments = (
             config.checkwatches.sync_comments and (
                 ISupportsCommentPushing.providedBy(self) or
@@ -238,28 +228,32 @@ class ExternalBugTracker:
         """
         return None
 
+    def _getHeaders(self):
+        # For some reason, bugs.kde.org doesn't allow the regular urllib
+        # user-agent string (Python-urllib/2.x) to access their bugzilla.
+        return {'User-agent': LP_USER_AGENT, 'Host': self.basehost}
+
     def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
+        if not isinstance(page, urllib2.Request):
+            page = urllib2.Request(page, headers=self._getHeaders())
         try:
             return self.urlopen(page, data)
-        except (urllib2.HTTPError, urllib2.URLError), val:
+        except (urllib2.HTTPError, urllib2.URLError) as val:
             raise BugTrackerConnectError(self.baseurl, val)
 
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
-        # For some reason, bugs.kde.org doesn't allow the regular urllib
-        # user-agent string (Python-urllib/2.x) to access their
-        # bugzilla, so we send our own instead.
-        request = urllib2.Request("%s/%s" % (self.baseurl, page),
-                                  headers={'User-agent': LP_USER_AGENT})
+        request = urllib2.Request(
+            "%s/%s" % (self.baseurl, page), headers=self._getHeaders())
         return self._fetchPage(request).read()
 
     def _post(self, url, data):
         """Post to a given URL."""
-        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
+        request = urllib2.Request(url, headers=self._getHeaders())
         return self._fetchPage(request, data=data)
 
     def _postPage(self, page, form, repost_on_redirect=False):
@@ -275,7 +269,6 @@ class ExternalBugTracker:
         """
         url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
-
         response = self._post(url, data=post_data)
 
         if repost_on_redirect and response.url != url:

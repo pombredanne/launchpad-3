@@ -17,7 +17,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
     IDistroArchSeriesBinaryPackageRelease,
     )

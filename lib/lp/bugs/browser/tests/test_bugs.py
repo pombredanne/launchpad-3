@@ -6,16 +6,22 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import InformationType
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
+from lp.registry.enums import BugSharingPolicy
+from lp.registry.interfaces.product import License
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -90,3 +96,76 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.searchtext')"
         self.assertIn(focus_script, text)
+
+    def test_search_all_bugs_rendering(self):
+        view = create_initialized_view(
+            self.application, '+bugs', rootsite='bugs')
+        content = view.render()
+        # we should get some valid content out of this
+        self.assertIn('Search all bugs', content)
+
+    def _assert_getBugData(self, related_bug=None):
+        # The getBugData method works as expected.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            target=product,
+            owner=owner,
+            status=BugTaskStatus.INPROGRESS,
+            title='title', description='description',
+            information_type=InformationType.PRIVATESECURITY)
+        with person_logged_in(owner):
+            bug_data = getUtility(IMaloneApplication).getBugData(
+                owner, bug.id, related_bug)
+            expected_bug_data = {
+                    'id': bug.id,
+                    'information_type': 'Private Security',
+                    'is_private': True,
+                    'importance': 'Undecided',
+                    'importance_class': 'importanceUNDECIDED',
+                    'status': 'In Progress',
+                    'status_class': 'statusINPROGRESS',
+                    'bug_summary': 'title',
+                    'description': 'description',
+                    'bug_url': canonical_url(bug.default_bugtask),
+                    'different_pillars': related_bug is not None
+        }
+        self.assertEqual([expected_bug_data], bug_data)
+
+    def test_getBugData(self):
+        # The getBugData method works as expected without a related_bug.
+        self._assert_getBugData()
+
+    def test_getBugData_with_related_bug(self):
+        # The getBugData method works as expected if related bug is specified.
+        related_bug = self.factory.makeBug()
+        self._assert_getBugData(related_bug)
+
+    def test_createBug_public_bug_sharing_policy_public(self):
+        # createBug() does not adapt the default kwargs when they are none.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
+        bug = self.application.createBug(
+            product.owner, 'title', 'description', product)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_createBug_default_sharing_policy_proprietary(self):
+        # createBug() does not adapt the default kwargs when they are none.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        bug = self.application.createBug(
+            product.owner, 'title', 'description', product)
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
+
+    def test_createBug_public_bug_sharing_policy_proprietary(self):
+        # createBug() adapts a kwarg to InformationType if one is is not None.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        bug = self.application.createBug(
+            product.owner, 'title', 'description', product, private=False)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)

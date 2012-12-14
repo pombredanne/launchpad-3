@@ -23,9 +23,8 @@ submissions that cannot be processed are set to the status INVALID.
 
 import _pythonpath
 
+from lp.hardwaredb.scripts.hwdbsubmissions import process_pending_submissions
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.hardwaredb.scripts.hwdbsubmissions import (
-    process_pending_submissions)
 
 
 class HWDBSubmissionProcessor(LaunchpadCronScript):

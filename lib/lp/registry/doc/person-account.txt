@@ -12,7 +12,10 @@ A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.blueprints.enums import SpecificationFilter
+    >>> from lp.services.identity.interfaces.emailaddress import (
+    ...     IEmailAddressSet,
+    ...     )
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> emailset = getUtility(IEmailAddressSet)
@@ -22,8 +25,6 @@ process. Matsubara's account was created during a code import.
     False
     >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara.password
-    None
     >>> print matsubara.preferredemail
     None
 
@@ -31,19 +32,17 @@ The account can only be activated by the user who is claiming
 the profile. Sample Person cannot claim it.
 
     >>> login('test@canonical.com')
-    >>> matsubara.account.activate(
-    ...     comment="test", password='ok', preferred_email=emailaddress)
+    >>> matsubara.account.reactivate(comment="test")
     Traceback (most recent call last):
     ...
     Unauthorized: ...'launchpad.Special')
 
-Matsubara can. A password and a preferred email address must be passed
-as arguments.
+Matsubara can.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> login('matsubara@async.com.br')
-    >>> matsubara.account.activate(
-    ...     comment="test", password='ok', preferred_email=emailaddress)
+    >>> matsubara.account.reactivate(comment="test")
+    >>> matsubara.setPreferredEmail(emailaddress)
     >>> import transaction
     >>> transaction.commit()
     >>> matsubara.is_valid_person
@@ -52,7 +51,7 @@ as arguments.
     <DBItem AccountStatus.ACTIVE, ...>
     >>> matsubara.account.status_comment
     u'test'
-    >>> removeSecurityProxy(matsubara.account.preferredemail).email
+    >>> removeSecurityProxy(matsubara.preferredemail).email
     u'matsubara@async.com.br'
 
 
@@ -72,7 +71,7 @@ will cause this spec to be reassigned.
     >>> personset = getUtility(IPersonSet)
     >>> foobar_preferredemail = emailset.getByEmail('foo.bar@canonical.com')
     >>> foobar = personset.get(foobar_preferredemail.personID)
-    >>> foobar.specifications().count() > 0
+    >>> foobar.specifications(None).count() > 0
     True
 
     >>> from lp.blueprints.model.specification import Specification
@@ -97,16 +96,17 @@ will cause this spec to be reassigned.
     >>> [coc.active for coc in foobar.signedcocs]
     [True]
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> params = BugTaskSearchParams(foobar, assignee=foobar)
     >>> foobar.searchTasks(params).count() > 0
     True
 
-    >>> len(foobar.assigned_specs) > 0
+    >>> foobar.specifications(
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count() > 0
     True
 
     >>> foobar_pillars = []
-    >>> for pillar_name in foobar.getOwnedOrDrivenPillars():
+    >>> for pillar_name in foobar.getAffiliatedPillars(foobar):
     ...     pillar = pillar_name.pillar
     ...     if pillar.owner == foobar or pillar.driver == foobar:
     ...         foobar_pillars.append(pillar_name)
@@ -175,7 +175,8 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no assigned specs...
 
-    >>> len(foobar.assigned_specs)
+    >>> foobar.specifications(
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count()
     0
 
 ...no owned teams...
@@ -185,7 +186,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no owned or driven pillars...
 
-    >>> foobar.getOwnedOrDrivenPillars().count()
+    >>> foobar.getAffiliatedPillars(foobar).count()
     0
 
 ...and, finally, to not be considered a valid person in Launchpad.
@@ -200,7 +201,7 @@ Bar are now owned/driven by the registry admins team.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
-    >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
+    >>> registry_pillars = set(registry_experts.getAffiliatedPillars(foobar))
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 
@@ -212,19 +213,10 @@ Bar are now owned/driven by the registry admins team.
 Reactivating user accounts
 --------------------------
 
-Accounts can be reactivated. A comment and a non-None preferred email address
-are required to reactivate() an account, though.
-
-    >>> foobar.account.reactivate(
-    ...     'This will raise an error.', password='', preferred_email=None)
-    Traceback (most recent call last):
-     ...
-    AssertionError: Account ... cannot be activated without a preferred
-                    email address.
+Accounts can be reactivated.
 
     >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',
-    ...     password="ok",
     ...     preferred_email=foobar_preferredemail)
     >>> transaction.commit()  # To see the changes on other stores.
     >>> foobar.account.status

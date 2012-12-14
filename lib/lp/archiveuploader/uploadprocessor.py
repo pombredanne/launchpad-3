@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -56,10 +56,6 @@ from contrib.glock import GlobalLock
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
@@ -70,9 +66,7 @@ from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
     )
-from lp.buildmaster.enums import (
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -80,6 +74,10 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
@@ -193,7 +191,7 @@ class UploadProcessor:
                     continue
                 try:
                     handler = UploadHandler.forProcessor(self, fsroot, upload)
-                except CannotGetBuild, e:
+                except CannotGetBuild as e:
                     self.log.warn(e)
                 else:
                     handler.process()
@@ -227,7 +225,7 @@ class UploadProcessor:
         # be able to do so.
         try:
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError, err:
+        except OSError as err:
             self.log.debug('Could not fix the lockfile permission: %s' % err)
 
         try:
@@ -328,7 +326,7 @@ class UploadHandler:
         try:
             (distribution, suite_name,
              archive) = parse_upload_path(relative_path)
-        except UploadPathError, e:
+        except UploadPathError as e:
             # pick some defaults to create the NascentUpload() object.
             # We will be rejecting the upload so it doesn matter much.
             distribution = getUtility(IDistributionSet)['ubuntu']
@@ -339,7 +337,7 @@ class UploadHandler:
                      extra_info=(
                          "Please update your dput/dupload configuration "
                          "and then re-upload.")))
-        except PPAUploadPathError, e:
+        except PPAUploadPathError as e:
             # Again, pick some defaults but leave a hint for the rejection
             # emailer that it was a PPA failure.
             distribution = getUtility(IDistributionSet)['ubuntu']
@@ -410,7 +408,7 @@ class UploadHandler:
 
             try:
                 self._processUpload(upload)
-            except UploadPolicyError, e:
+            except UploadPolicyError as e:
                 upload.reject("UploadPolicyError escaped upload.process: "
                               "%s " % e)
                 logger.debug(
@@ -423,7 +421,7 @@ class UploadHandler:
                 upload.reject(
                     "Further error processing not possible because of "
                     "a critical previous error.")
-            except Exception, e:
+            except Exception as e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause
                 # a further exception, depending on the state of the

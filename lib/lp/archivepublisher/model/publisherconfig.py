@@ -18,13 +18,13 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
     IPublisherConfigSet,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 
 

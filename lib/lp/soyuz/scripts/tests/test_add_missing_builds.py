@@ -4,18 +4,17 @@
 """Test the add-missing-builds.py script. """
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
 
-from canonical.config import config
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.sqlbase import (
     clear_current_connection_cache,
     flush_database_updates,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -25,6 +24,7 @@ from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.add_missing_builds import AddMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestAddMissingBuilds(TestCaseWithFactory):

@@ -9,11 +9,10 @@ import _pythonpath
 import sys
 
 import transaction
-
 from zope.component import getUtility
-from lp.registry.interfaces.product import IProductSet
 
 from lp.bugs.scripts.bugexport import export_bugtasks
+from lp.registry.interfaces.product import IProductSet
 from lp.services.scripts.base import LaunchpadScript
 
 

@@ -53,8 +53,8 @@ from zope.security.proxy import (
     )
 from zope.sendmail.interfaces import IMailDelivery
 
-from canonical.config import config
 from lp.app import versioninfo
+from lp.services.config import config
 from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -216,10 +216,11 @@ class MailController(object):
         self.attachments = []
 
     def addAttachment(self, content, content_type='application/octet-stream',
-                      inline=False, filename=None):
+                      inline=False, filename=None, charset=None):
         attachment = Message()
-        attachment.set_payload(content)
-        attachment['Content-type'] = content_type
+        if charset and isinstance(content, unicode):
+            content = content.encode(charset)
+        attachment.add_header('Content-Type', content_type)
         if inline:
             disposition = 'inline'
         else:
@@ -229,6 +230,7 @@ class MailController(object):
             disposition_kwargs['filename'] = filename
         attachment.add_header(
             'Content-Disposition', disposition, **disposition_kwargs)
+        attachment.set_payload(content, charset)
         self.encodeOptimally(attachment)
         self.attachments.append(attachment)
 
@@ -248,6 +250,10 @@ class MailController(object):
         :param exact: If True, the encoding will ensure newlines are not
             mangled.  If False, 7-bit attachments will not be encoded.
         """
+        # If encoding has already been done by virtue of a charset being
+        # previously specified, then do nothing.
+        if 'Content-Transfer-Encoding' in part:
+            return
         orig_payload = part.get_payload()
         if not exact and is_ascii_only(orig_payload):
             return
@@ -441,6 +447,9 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
     message_detail = message['Subject']
+    if not isinstance(message_detail, basestring):
+        # Might be a Header object; can be squashed.
+        message_detail = unicode(message_detail)
     if _immediate_mail_delivery:
         # Immediate email delivery is not unit tested, and won't be.
         # The immediate-specific stuff is pretty simple though so this
@@ -496,10 +505,9 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
 
     Returns the message-id.
 
-    :param message_detail: Information about the message to include in the
-        request timeline.
+    :param message_detail: String of detail about the message
+        to be recorded to help with debugging, eg the message subject.
     """
-    # Note that raw_sendail has no tests, unit or otherwise.
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'

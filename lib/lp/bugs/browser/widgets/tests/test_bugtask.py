@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.widgets.bugtask import BugTaskTargetWidget
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BugTaskTargetWidgetTestCase(TestCaseWithFactory):

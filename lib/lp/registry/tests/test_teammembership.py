@@ -3,75 +3,94 @@
 
 __metaclass__ = type
 
+import bz2
 from datetime import (
     datetime,
     timedelta,
     )
+import os
+import pickle
 import re
 import subprocess
-from testtools.matchers import Equals
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestLoader
 
+from fixtures import TempDir
 import pytz
+from testtools.content import text_content
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    flush_database_caches,
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.ftests import (
-    login,
-    login_person,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.testing.systemdocs import (
-    default_optionflags,
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import (
-    IPersonSet,
+from lp.registry.enums import (
+    TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (\
+from lp.registry.model.teammembership import (
     find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
+from lp.registry.scripts.teamparticipation import (
+    check_teamparticipation_circular,
+    check_teamparticipation_consistency,
+    ConsistencyError,
+    fetch_team_participation_info,
+    fix_teamparticipation_consistency,
+    )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_caches,
+    flush_database_updates,
+    sqlvalues,
+    )
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
+    login,
     login_celebrity,
+    login_person,
     person_logged_in,
+    StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    CeleryJobLayer,
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.storm import reload_object
+from lp.testing.systemdocs import (
+    default_optionflags,
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class TestTeamMembershipSetScripts(TestCaseWithFactory):
     """Separate Testcase to separate out examples required dbuser switches.
 
-    This uses the LaunchpadZoplelessLayer to provide layer.switchDbUser
+    This uses the LaunchpadZopelessLayer to provide switch_dbuser.
     """
 
     layer = LaunchpadZopelessLayer
@@ -83,7 +102,7 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         adminteam.setContactAddress(None)
         team = self.factory.makeTeam(owner=adminteam)
         with person_logged_in(team.teamowner):
-            team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+            team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
             team.defaultrenewalperiod = 10
 
         # Create a person to be in the control team.
@@ -95,17 +114,12 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         # Set expiration time to now
         now = datetime.now(pytz.UTC)
         removeSecurityProxy(teammembership).dateexpires = now
-        transaction.commit()
 
-        # Switch dbuser to the user running the membership flagging
-        # cronscript. Reload the membership object so we can assert against
-        # it.
-        self.layer.switchDbUser(config.expiredmembershipsflagger.dbuser)
-        reload_object(teammembership)
         janitor = getUtility(ILaunchpadCelebrities).janitor
-        membershipset.handleMembershipsExpiringToday(janitor)
+        with dbuser(config.expiredmembershipsflagger.dbuser):
+            membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
-            teammembership.status, TeamMembershipStatus.APPROVED)
+            TeamMembershipStatus.EXPIRED, teammembership.status)
 
 
 class TestTeamMembershipSet(TestCaseWithFactory):
@@ -490,7 +504,7 @@ class TestParticipationCleanup(TeamParticipationTestCase):
         The number of db queries should be constant not O(depth).
         """
         self.assertStatementCount(
-            7,
+            9,
             self.team5.setMembershipData, self.no_priv,
             TeamMembershipStatus.DEACTIVATED, self.team5.teamowner)
 
@@ -628,9 +642,9 @@ class TestTeamMembership(TestCaseWithFactory):
         person = self.factory.makePerson()
         login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
-            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         teamB = self.factory.makeTeam(
-            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         self.failUnless(
             teamA.inTeam(teamA), "teamA is not a participant of itself")
         self.failUnless(
@@ -868,7 +882,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
 
     def test_declined_member_can_be_made_admin(self):
-        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, requester=self.foobar)
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
@@ -953,7 +967,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
 
     def test_retractTeamMembership_proposed(self):
         # A team can retract the proposed membership in a team.
-        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, self.team1.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -978,6 +992,67 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
 
 
+class TestTeamMembershipJobs(TestCaseWithFactory):
+    """Test jobs associated with managing team membership."""
+    layer = CeleryJobLayer
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
+        }))
+        super(TestTeamMembershipJobs, self).setUp()
+
+    def _make_subscribed_bug(self, grantee, target,
+                             information_type=InformationType.USERDATA):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, target=target, information_type=information_type)
+        with person_logged_in(owner):
+            bug.subscribe(grantee, owner)
+        return bug, owner
+
+    def test_retract_unsubscribes_former_member(self):
+        # When a team member is removed, any subscriptions to artifacts they
+        # can no longer see are removed also.
+        person_grantee = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        # Make a bug the person_grantee is subscribed to.
+        bug1, ignored = self._make_subscribed_bug(
+            person_grantee, product,
+            information_type=InformationType.USERDATA)
+
+        # Make another bug and grant access to a team.
+        team_grantee = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
+            members=[person_grantee])
+        bug2, bug2_owner = self._make_subscribed_bug(
+            team_grantee, product,
+            information_type=InformationType.PRIVATESECURITY)
+        # Add a subscription for the person_grantee.
+        with person_logged_in(bug2_owner):
+            bug2.subscribe(person_grantee, bug2_owner)
+
+        # Subscribing person_grantee to bugs creates an access grant so we
+        # need to revoke the one to bug2 for our test.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            accessartifact_source.find([bug2]), [person_grantee])
+
+        with person_logged_in(person_grantee):
+            person_grantee.retractTeamMembership(team_grantee, person_grantee)
+        with block_on_job(self):
+            transaction.commit()
+
+        # person_grantee is still subscribed to bug1.
+        self.assertIn(
+            person_grantee, removeSecurityProxy(bug1).getDirectSubscribers())
+        # person_grantee is not subscribed to bug2 because they no longer have
+        # access via a team.
+        self.assertNotIn(
+            person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
+
+
 class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
     """Test the behaviour of sendExpirationWarningEmail()."""
     layer = DatabaseFunctionalLayer
@@ -997,19 +1072,6 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         # expiration date.
         self.assertEqual(None, self.tm.dateexpires)
         message = 'green in team red has no membership expiration date.'
-        self.assertRaisesWithContent(
-            AssertionError, message, self.tm.sendExpirationWarningEmail)
-
-    def test_error_raised_for_team_with_automatic_renewal(self):
-        # An exception is raised if the team's TeamMembershipRenewalPolicy
-        # is AUTOMATIC.
-        self.team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-        self.team.defaultrenewalperiod = 365
-        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
-        removeSecurityProxy(self.tm).dateexpires = tomorrow
-        message = (
-            'Team red with automatic renewals should not send '
-            'expiration warnings.')
         self.assertRaisesWithContent(
             AssertionError, message, self.tm.sendExpirationWarningEmail)
 
@@ -1047,21 +1109,29 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
 
 
 class TestCheckTeamParticipationScript(TestCase):
+
     layer = DatabaseFunctionalLayer
 
-    def _runScript(self, expected_returncode=0):
+    def _runScript(self, *args):
+        cmd = ["cronscripts/check-teamparticipation.py"]
+        cmd.extend(args)
         process = subprocess.Popen(
-            'cronscripts/check-teamparticipation.py', shell=True,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(process.returncode, expected_returncode, (out, err))
-        return out, err
+        out, err = process.communicate()
+        if out != "":
+            self.addDetail("stdout", text_content(out))
+        if err != "":
+            self.addDetail("stderr", text_content(err))
+        DatabaseLayer.force_dirty_database()
+        return process.poll(), out, err
 
     def test_no_output_if_no_invalid_entries(self):
         """No output if there's no invalid teamparticipation entries."""
-        out, err = self._runScript()
-        self.assertEqual((out, err), ('', ''))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
+        self.assertEqual(0, len(err))
 
     def test_report_invalid_teamparticipation_entries(self):
         """The script reports missing/spurious TeamParticipation entries.
@@ -1099,20 +1169,15 @@ class TestCheckTeamParticipationScript(TestCase):
                         LIMIT 1),
                     %s);
             """ % sqlvalues(TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
 
-        out, err = self._runScript()
-        self.assertEqual(out, '', (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(0, code)
+        self.assertEqual(0, len(out))
         self.failUnless(
-            re.search('missing TeamParticipation entries for zzzzz', err),
-            (out, err))
+            re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
-            re.search('spurious TeamParticipation entries for zzzzz', err),
-            (out, err))
-        self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err),
-            (out, err))
+            re.search('spurious TeamParticipation entries for zzzzz', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1142,12 +1207,117 @@ class TestCheckTeamParticipationScript(TestCase):
                 TeamParticipation (person, team)
                 VALUES (9997, 9998);
             """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
-        import transaction
         transaction.commit()
-        out, err = self._runScript(expected_returncode=1)
-        self.assertEqual(out, '', (out, err))
-        self.failUnless(
-            re.search('Circular references found', err), (out, err))
+        code, out, err = self._runScript()
+        self.assertEqual(1, code)
+        self.assertEqual(0, len(out))
+        self.failUnless(re.search('Circular references found', err))
+
+    # A script to create two new people, where both participate in the first,
+    # and first is missing a self-participation.
+    script_create_inconsistent_participation = """
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6969, 'bobby', 'Dazzler', 1);
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6970, 'nobby', 'Jazzler', 1);
+        INSERT INTO
+            TeamParticipation (person, team)
+            VALUES (6970, 6969);
+        DELETE FROM
+            TeamParticipation
+            WHERE person = 6969
+              AND team = 6969;
+        """
+
+    def test_check_teamparticipation_consistency(self):
+        """The script reports spurious participants of people.
+
+        Teams can have multiple participants, but only the person should be a
+        paricipant of him/herself.
+        """
+        cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        errors_expected = [
+            ConsistencyError("spurious", 6969, [6970]),
+            ConsistencyError("missing", 6969, [6969]),
+            ]
+        self.assertContentEqual(errors_expected, errors)
+
+    def test_fix_teamparticipation_consistency(self):
+        """
+        `fix_teamparticipation_consistency` takes an iterable of
+        `ConsistencyError`s and attempts to repair the data.
+        """
+        cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertNotEqual([], errors)
+        fix_teamparticipation_consistency(logger, errors)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertEqual([], errors)
+
+    def test_load_and_save_team_participation(self):
+        """The script can load and save participation info."""
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        info = fetch_team_participation_info(logger)
+        tempdir = self.useFixture(TempDir()).path
+        filename_in = os.path.join(tempdir, "info.in")
+        filename_out = os.path.join(tempdir, "info.out")
+        fout = bz2.BZ2File(filename_in, "w")
+        try:
+            pickle.dump(info, fout, pickle.HIGHEST_PROTOCOL)
+        finally:
+            fout.close()
+        code, out, err = self._runScript(
+            "--load-participation-info", filename_in,
+            "--save-participation-info", filename_out)
+        self.assertEqual(0, code)
+        fin = bz2.BZ2File(filename_out, "r")
+        try:
+            saved_info = pickle.load(fin)
+        finally:
+            fin.close()
+        self.assertEqual(info, saved_info)
+
+
+class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_queries(self):
+        """The script does not overly tax the database.
+
+        The whole check_teamparticipation() run executes a constant low number
+        of queries.
+        """
+        # Create a deeply nested team and member structure.
+        team = self.factory.makeTeam()
+        for num in xrange(10):
+            another_team = self.factory.makeTeam()
+            another_person = self.factory.makePerson()
+            with person_logged_in(team.teamowner):
+                team.addMember(another_team, team.teamowner)
+                team.addMember(another_person, team.teamowner)
+            team = another_team
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        with StormStatementRecorder() as recorder:
+            check_teamparticipation_circular(logger)
+            check_teamparticipation_consistency(
+                logger, fetch_team_participation_info(logger))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
 
 def test_suite():

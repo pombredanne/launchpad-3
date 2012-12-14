@@ -20,27 +20,28 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    VocabularyFilter,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    VocabularyFilter,
+    )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_view
 
@@ -134,40 +135,35 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_user(self):
-        # The enhanced person picker provides more information for users.
+    def test_PersonPickerEntrySourceAdapter_user(self):
+        # The person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
-        entry = get_picker_entry(
-            person, None, enhanced_picker_enabled=True,
-            picker_expander_enabled=True)
+        entry = get_picker_entry(person, None, picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
             entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
-        # The enhanced person picker provides more information for teams.
+    def test_PersonPickerEntrySourceAdapter_team(self):
+        # The person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
-        entry = get_picker_entry(
-            team, None, enhanced_picker_enabled=True,
-            picker_expander_enabled=True)
+        entry = get_picker_entry(team, None, picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
-        # The enhanced person picker provides affiliation information.
+    def test_PersonPickerEntryAdapter_badges(self):
+        # The person picker provides affiliation information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         project = self.factory.makeProduct(
             name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
         entry = get_picker_entry(
-            person, bugtask, enhanced_picker_enabled=True,
-            picker_expander_enabled=True,
+            person, bugtask, picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
@@ -181,13 +177,12 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('bug supervisor', entry.badges[2]['role'])
 
     def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
-        # The enhanced person picker handles objects that do not support
+        # The person picker handles objects that do not support
         # IHasAffilliation.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         thing = object()
         entry = get_picker_entry(
-            person, thing, enhanced_picker_enabled=True,
-            picker_expander_enabled=True,
+            person, thing, picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertIsNot(None, entry)
 
@@ -196,12 +191,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
         TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDistributionSourcePackagePickerEntrySourceAdapter,
-              self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, dsp):
         return get_picker_entry(dsp, object())
@@ -276,11 +265,6 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestProductPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
-
     def getPickerEntry(self, product):
         return get_picker_entry(product, object())
 
@@ -329,15 +313,35 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
             'http://launchpad.dev/fnord',
             self.getPickerEntry(product).alt_title_link)
 
+    def test_provides_commercial_subscription_none(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.assertEqual(
+            'Commercial Subscription: None',
+            self.getPickerEntry(product).details[1])
+
+    def test_provides_commercial_subscription_active(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product)
+        self.assertEqual(
+            'Commercial Subscription: Active',
+            self.getPickerEntry(product).details[1])
+
+    def test_provides_commercial_subscription_expired(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product)
+        import datetime
+        import pytz
+        then = datetime.datetime(2005, 6, 15, 0, 0, 0, 0, pytz.UTC)
+        with celebrity_logged_in('admin'):
+            product.commercial_subscription.date_expires = then
+        self.assertEqual(
+            'Commercial Subscription: Expired',
+            self.getPickerEntry(product).details[1])
+
 
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestProjectGroupPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, projectgroup):
         return get_picker_entry(projectgroup, object())
@@ -392,11 +396,6 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDistributionPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, distribution):
         return get_picker_entry(distribution, object())
@@ -532,15 +531,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        feature_flag = {
-            'disclosure.picker_enhancements.enabled': 'on',
-            'disclosure.picker_expander.enabled': 'on',
-            'disclosure.personpicker_affiliation.enabled': 'on',
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -589,7 +582,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_vocab_filter(self):
         # The vocab filter is used to filter results.
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

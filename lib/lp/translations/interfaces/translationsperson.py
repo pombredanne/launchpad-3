@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
-
 __metaclass__ = type
 __all__ = [
     'ITranslationsPerson',
@@ -14,7 +12,7 @@ from zope.interface import (
     )
 from zope.schema import Bool
 
-from canonical.launchpad import _
+from lp import _
 
 
 class ITranslationsPerson(Interface):
@@ -59,16 +57,6 @@ class ITranslationsPerson(Interface):
             ignored.
         :return: A query result of `POFile`s ordered by age of oldest
             unreviewed `TranslationMessage` (oldest first).
-        """
-
-    def suggestReviewableTranslationFiles(maximum):
-        """Suggest `POFile`s this person could review.
-
-        Unlike `getReviewableTranslationFiles`, this method looks for
-        arbitrary translations that the person has not worked on in the
-        recent past.
-
-        :param maximum: Maximum number of `POFile`s to return.
         """
 
     def getTranslatableFiles(no_older_than=None, urgent_first=True):

@@ -52,7 +52,7 @@ class TestTrapFault(TestCase):
     def assertRaisesFailure(self, failure, function, *args, **kwargs):
         try:
             function(*args, **kwargs)
-        except Failure, raised_failure:
+        except Failure as raised_failure:
             self.assertEqual(failure, raised_failure)
 
     def test_raises_non_faults(self):

@@ -11,9 +11,9 @@ SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
 
  >>> from zope.component import getUtility
- >>> from canonical.launchpad.webapp.testing import verifyObject
+ >>> from lp.services.webapp.testing import verifyObject
 
- >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+ >>> from lp.services.librarian.interfaces import ILibraryFileAlias
  >>> from lp.registry.interfaces.distribution import IDistributionSet
  >>> from lp.soyuz.interfaces.files import (
  ...     IBinaryPackageFile,

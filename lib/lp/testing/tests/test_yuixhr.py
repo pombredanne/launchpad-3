@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 
-import re
 import os
+import re
 from shutil import rmtree
-import simplejson
 import sys
 import tempfile
 import types
 
+import simplejson
 from storm.exceptions import DisconnectionError
 from testtools.testcase import ExpectedException
 import transaction
@@ -24,20 +24,22 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IResult
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.osutils import override_environ
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
-    TestCase,
-    login,
     ANONYMOUS,
+    login,
+    TestCase,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.matchers import Contains
+from lp.testing.publication import test_traverse
+from lp.testing.tests import test_yuixhr_fixture
 from lp.testing.views import create_view
 from lp.testing.yuixhr import setup
-from lp.testing.tests import test_yuixhr_fixture
-from lp.testing.publication import test_traverse
+
 
 TEST_MODULE_NAME = '_lp_.tests'
 
@@ -101,8 +103,8 @@ class TestYUITestFixtureController(TestCase):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         view.initialize()
-        content = view.page()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        content = view.renderHTML()
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             re.escape(
                 'src="/+yuitest/lp/testing/tests/test_yuixhr_fixture.js"'),
@@ -126,6 +128,9 @@ class TestYUITestFixtureController(TestCase):
         self.assertEqual(
             'text/javascript',
             view.request.response.getHeader('Content-Type'))
+        self.assertEqual(
+            'no-cache',
+            view.request.response.getHeader('Cache-Control'))
 
     def test_javascript_must_have_a_py_fixture(self):
         js_dir = tempfile.mkdtemp()
@@ -153,10 +158,13 @@ class TestYUITestFixtureController(TestCase):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         content = view()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertEqual(
             'text/html',
             view.request.response.getHeader('Content-Type'))
+        self.assertEqual(
+            'no-cache',
+            view.request.response.getHeader('Cache-Control'))
 
     def test_get_fixtures(self):
         view = create_traversed_view(
@@ -389,3 +397,99 @@ class TestYUITestFixtureController(TestCase):
         del called[:]
         original_fixture.teardown(None, dict())
         self.assertEquals(['original'], called)
+
+    def test_python_fixture_does_not_reload_by_default(self):
+        # Even though the dangers of Python's "reload" are subtle and
+        # real, using it can be very nice, particularly with
+        # Launchpad's slow start-up time.  By default, though, it is
+        # not used.  We will show this by scribbling on one of the
+        # fixtures and showing that the scribble is still there when
+        # we load the page.
+        test_yuixhr_fixture._fixtures_['baseline'].scribble = 'hello'
+        self.addCleanup(
+            delattr, test_yuixhr_fixture._fixtures_['baseline'], 'scribble')
+        view = create_traversed_view(
+            path_info='/+yuitest/lp/testing/tests/'
+                      'test_yuixhr_fixture')
+        view.initialize()
+        view.render()
+        self.assertEquals(
+            'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
+
+    def test_python_fixture_does_not_reload_without_environ_var(self):
+        # As a bit of extra paranoia, we only allow a reload if
+        # 'INTERACTIVE_TESTS' is in the environ.  make run-testapp
+        # sets this environmental variable.  However, if we don't set
+        # the environment, even if we request a reload it will not
+        # happen.
+        test_yuixhr_fixture._fixtures_['baseline'].scribble = 'hello'
+        self.addCleanup(
+            delattr, test_yuixhr_fixture._fixtures_['baseline'], 'scribble')
+        view = create_traversed_view(
+            path_info='/+yuitest/lp/testing/tests/'
+                      'test_yuixhr_fixture', form=dict(reload='1'))
+        view.initialize()
+        view.render()
+        self.assertEquals(
+            'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
+
+    def test_python_fixture_can_reload(self):
+        # Now we will turn reloading fully on, with the environmental
+        # variable and the query string..
+        test_yuixhr_fixture._fixtures_['baseline'].scribble = 'hello'
+        with override_environ(INTERACTIVE_TESTS='1'):
+            view = create_traversed_view(
+                path_info='/+yuitest/lp/testing/tests/'
+                'test_yuixhr_fixture', form=dict(reload='1'))
+            # reloading only happens at render time, so the scribble is
+            # still there for now.
+            view.initialize()
+            self.assertEquals(
+                'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
+            # After a render of the html view, the module is reloaded.
+            view.render()
+            self.assertEquals(
+                None,
+                getattr(test_yuixhr_fixture._fixtures_['baseline'],
+                        'scribble',
+                        None))
+
+    def test_python_fixture_resets_fixtures(self):
+        # When we reload, we also clear out _fixtures_.  This means
+        # that if you rename or delete something, it won't be hanging
+        # around confusing you into thinking everything is fine after
+        # the reload.
+        test_yuixhr_fixture._fixtures_['extra_scribble'] = 42
+        with override_environ(INTERACTIVE_TESTS='1'):
+            view = create_traversed_view(
+                path_info='/+yuitest/lp/testing/tests/'
+                'test_yuixhr_fixture', form=dict(reload='1'))
+            view.initialize()
+            # After a render of the html view, the module is reloaded.
+            view.render()
+            self.assertEquals(
+                None,
+                test_yuixhr_fixture._fixtures_.get('extra_scribble'))
+
+    def test_python_fixture_reload_in_html(self):
+        # The reload is specifically when we load HTML pages only.
+        test_yuixhr_fixture._fixtures_['extra_scribble'] = 42
+        with override_environ(INTERACTIVE_TESTS='1'):
+            view = create_traversed_view(
+                path_info='/+yuitest/lp/testing/tests/'
+                'test_yuixhr_fixture', form=dict(reload='1'))
+            view.initialize()
+            # After a render of the html view, the module is reloaded.
+            view.renderHTML()
+            self.assertEquals(
+                None,
+                test_yuixhr_fixture._fixtures_.get('extra_scribble'))
+
+    def test_index_page(self):
+        view = create_traversed_view(path_info='/+yuitest')
+        view.initialize()
+        output = view.render()
+        self.assertThat(
+            output,
+            Contains(
+                'href="/+yuitest/lp/testing/tests/test_yuixhr_fixture'))

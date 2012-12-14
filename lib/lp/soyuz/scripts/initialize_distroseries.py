@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -14,15 +14,16 @@ from operator import methodcaller
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database import bulk
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.helpers import ensure_unicode
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -100,12 +101,9 @@ class InitializeDistroSeries:
     """
 
     def __init__(
-        self, distroseries, parents=(), arches=(), packagesets=(),
-        rebuild=False, overlays=(), overlay_pockets=(),
+        self, distroseries, parents=(), arches=(), archindep_archtag=None,
+        packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
-        # Avoid circular imports
-        from lp.registry.model.distroseries import DistroSeries
-
         self.distroseries = distroseries
         self.parent_ids = [int(id) for id in parents]
         # Load parent objects in bulk...
@@ -115,6 +113,7 @@ class InitializeDistroSeries:
             parents_bulk,
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
+        self.archindep_archtag = archindep_archtag
         self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
         self.packagesets = bulk.load(
@@ -166,12 +165,24 @@ class InitializeDistroSeries:
     def _checkArchindep(self):
         # Check that the child distroseries has an architecture to
         # build architecture independent binaries.
-        potential_nominated_arches = self._potential_nominated_arches(
-             self.derivation_parents)
-        if len(potential_nominated_arches) == 0:
-            raise InitializationError(
-                "The distroseries has no architectures selected to "
-                 "build architecture independent binaries.")
+        if self.archindep_archtag is None:
+            # No archindep_archtag was given, so we try to figure out
+            # a proper one among the parents'.
+            potential_nominated_arches = self._potential_nominated_arches(
+                 self.derivation_parents)
+            if len(potential_nominated_arches) == 0:
+                raise InitializationError(
+                    "The distroseries has no architectures selected to "
+                    "build architecture independent binaries.")
+        else:
+            # Make sure that the given archindep_archtag is among the
+            # selected architectures.
+            if (self.arches is not None and
+                len(self.arches) != 0 and
+                self.archindep_archtag not in self.arches):
+                raise InitializationError(
+                    "The selected architecture independent architecture tag "
+                    "is not among the selected architectures.")
 
     def _checkPublisherConfig(self):
         """A series cannot be initialized if it has no publisher config
@@ -268,8 +279,10 @@ class InitializeDistroSeries:
         self._set_parents()
         self._copy_configuration()
         self._copy_architectures()
+        self._set_nominatedarchindep()
         self._copy_packages()
         self._copy_packagesets()
+        self._copy_pocket_permissions()
         self._create_dsds()
         self._set_initialized()
         transaction.commit()
@@ -376,12 +389,19 @@ class InitializeDistroSeries:
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
-        # Select the arch-indep builder from the intersection between
-        # the selected architectures and the list of the parent's
-        # arch-indep builders.
-        arch_tag = self._potential_nominated_arches(
-            self.derivation_parents).pop()
-        self.distroseries.nominatedarchindep = self.distroseries[arch_tag]
+
+    def _set_nominatedarchindep(self):
+        if self.archindep_archtag is None:
+            # Select the arch-indep builder from the intersection between
+            # the selected architectures and the list of the parent's
+            # arch-indep builders.
+            arch_tag = self._potential_nominated_arches(
+                self.derivation_parents).pop()
+            self.distroseries.nominatedarchindep = (
+                self.distroseries.getDistroArchSeries(arch_tag))
+        else:
+            self.distroseries.nominatedarchindep = (
+                self.distroseries.getDistroArchSeries(self.archindep_archtag))
 
     def _potential_nominated_arches(self, parent_list):
         parent_indep_archtags = set(
@@ -539,7 +559,8 @@ class InitializeDistroSeries:
                             sources, target_archive, self.distroseries,
                             target_pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
-                            close_bugs=False, create_dsd_job=False)
+                            close_bugs=False, create_dsd_job=False,
+                            person=None)
                         if self.rebuild:
                             rebuilds = []
                             for pubrec in sources_published:
@@ -547,7 +568,7 @@ class InitializeDistroSeries:
                                    list(self.distroseries.architectures))
                                 rebuilds.extend(builds)
                             self._rescore_rebuilds(rebuilds)
-                    except CannotCopy, error:
+                    except CannotCopy as error:
                         raise InitializationError(error)
 
     def _rescore_rebuilds(self, builds):
@@ -633,11 +654,9 @@ class InitializeDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
+            Packageset,
+            Packageset.distroseries_id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
         # Create the packagesets and any archivepermissions if we're not
         # copying cross-distribution.
@@ -684,3 +703,17 @@ class InitializeDistroSeries:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))
+
+    def _copy_pocket_permissions(self):
+        """Copy per-distroseries/pocket permissions from the parent series."""
+        for parent in self.derivation_parents:
+            if self.distroseries.distribution == parent.distribution:
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, pocket, distroseries)
+                    SELECT person, permission, %s, pocket, %s
+                    FROM Archivepermission
+                    WHERE pocket IS NOT NULL AND distroseries = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, self.distroseries.id,
+                        parent.id))

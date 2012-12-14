@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -31,12 +31,10 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import (
-    patch_reference_property,
-    )
-from lp.bugs.enum import BugNotificationLevel
+from lp import _
+from lp.bugs.enums import BugNotificationLevel
 from lp.services.fields import PersonChoice
+from lp.services.webservice.apihelpers import patch_reference_property
 
 
 class IBugSubscription(Interface):
@@ -50,7 +48,8 @@ class IBugSubscription(Interface):
         readonly=True, description=_("The person's Launchpad ID or "
         "e-mail address.")), as_of="beta")
     bug = exported(Reference(
-        Interface, title=_("Bug"), required=True, readonly=True), as_of="beta")
+        Interface, title=_("Bug"), required=True, readonly=True),
+        as_of="beta")
     # We mark this as doNotSnapshot() because it's a magically-generated
     # Storm attribute and it causes Snapshot to break.
     bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
@@ -85,7 +84,6 @@ class IBugSubscription(Interface):
     @operation_for_version("beta")
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
-
 
 
 # In order to avoid circular dependencies, we only import

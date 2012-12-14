@@ -44,7 +44,7 @@ with launchpad.Edit permission on the archive.  Here, "duderino" who is
 some random dude is refused:
 
     >>> person = factory.makePerson(name="duderino")
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> archive.delete(person)
     Traceback (most recent call last):
     ...
@@ -52,7 +52,7 @@ some random dude is refused:
 
 However we can delete it using the owner of the archive:
 
-    >>> login_person(archive.owner)
+    >>> ignored = login_person(archive.owner)
     >>> archive.delete(archive.owner)
 
 The deletion code uses a store.execute() command to speed up the operation

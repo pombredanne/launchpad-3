@@ -26,12 +26,15 @@ happen by table, with one block of statements for each table.
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import sys
 
-from canonical.launchpad.scripts.sort_sql import Parser, print_lines_sorted
+from lp.services.database.sort_sql import (
+    Parser,
+    print_lines_sorted,
+    )
+
 
 def main(argv):
     if len(argv) > 1:

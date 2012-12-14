@@ -342,6 +342,14 @@
                 <xsl:text>/+hwdb/+hwvendorid/</xsl:text>
                 <var>&lt;id&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'h_w_driver_name'">
+                <xsl:text>/+hwdb/+drivername/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'h_w_driver_package_name'">
+                <xsl:text>/+hwdb/+driverpackagename/</xsl:text>
+                <var>&lt;package_name&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'jabber_id'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;person.name&gt;</var>

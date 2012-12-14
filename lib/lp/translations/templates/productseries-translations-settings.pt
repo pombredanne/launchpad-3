@@ -24,7 +24,7 @@
         context/product/@@+portlet-not-using-launchpad"/>
   </div>
 
-  <div class="yui-g">
+  <div class="yui-g" tal:condition="not: context/product/private">
     <div class="yui-u first portlet">
       <div metal:use-macro="context/@@launchpad_form/form" class="portlet">
         <div metal:fill-slot="extra_info">
@@ -59,28 +59,30 @@
               </li>
               <li>
                 give each template its own directory (<a
-                href="/+help/directory-example.html" target="help">see
+                href="/+help-translations/directory-example.html" target="help">see
                 an example directory layout</a>).
               </li>
             </ul>
 
-            <p id="bzr-request-display"  class="info sprite">
-              If you only need a one-time import, please request it
-              <a tal:attributes="href view/request_bzr_import_url">here</a>.
+            <p id="bzr-request-display">
+              <a class="info sprite"
+                tal:attributes="href view/request_bzr_import_url">You can
+                request a one-time import</a>.
             </p>
+
             <p tal:condition="view/context/branch"
                tal:define="branch view/context/branch"
                id="branch-display">
               The official Bazaar branch is:
               <a tal:replace="structure branch/fmt:link">branch</a>
-              <a tal:attributes="href view/link_branch_url;
+              <a tal:attributes="href view/set_branch_url;
                                  title string:Change official branch"
                  ><span class="edit sprite" /></a>
             </p>
             <p tal:condition="not:view/context/branch"
                id="no-branch-display">
               This series does not have an official Bazaar branch.
-              <a tal:attributes="href view/link_branch_url">Set it now!</a>
+              <a tal:attributes="href view/set_branch_url">Set it now!</a>
             </p>
           </tal:rosetta>
         </div>

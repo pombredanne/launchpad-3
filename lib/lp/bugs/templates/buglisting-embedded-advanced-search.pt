@@ -6,6 +6,9 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
+<metal:block fill-slot="head_epilogue">
+  <metal:activate-listing use-macro="context/@@+bugtask-macros-tableview/activate_listing_js" />
+</metal:block>
 <body>
   <div metal:fill-slot="side">
     <tal:menu replace="structure context/@@+global-actions" />

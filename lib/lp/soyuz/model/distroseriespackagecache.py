@@ -18,11 +18,11 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.interfaces.distroseriespackagecache import (
     IDistroSeriesPackageCache,
     )
@@ -88,7 +88,7 @@ class DistroSeriesPackageCache(SQLBase):
             BinaryPackagePublishingHistory.archive = Archive.id AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
+            BinaryPackagePublishingHistory.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.dateremoved is NULL AND
             Archive.enabled = TRUE
@@ -120,9 +120,10 @@ class DistroSeriesPackageCache(SQLBase):
         # get the set of published binarypackagereleases
         bprs = IStore(BinaryPackageRelease).find(
             BinaryPackageRelease,
-            BinaryPackageRelease.binarypackagename == binarypackagename,
             BinaryPackageRelease.id ==
                 BinaryPackagePublishingHistory.binarypackagereleaseID,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                binarypackagename,
             BinaryPackagePublishingHistory.distroarchseriesID ==
                 DistroArchSeries.id,
             DistroArchSeries.distroseries == distroseries,
@@ -193,9 +194,8 @@ class DistroSeriesPackageCache(SQLBase):
             BinaryPackagePublishingHistory.distroarchseriesID ==
                 DistroArchSeries.id,
             BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
                 distinct=True).order_by(BinaryPackageName.name)
 

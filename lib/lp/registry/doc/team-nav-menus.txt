@@ -4,8 +4,8 @@ The team pages have their own navigation menu.
 
     >>> from zope.component import queryAdapter
     >>> from lp.testing import test_tales
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.lazr.testing.menus import summarise_tal_links
+    >>> from lp.services.webapp.interfaces import INavigationMenu
+    >>> from lp.testing.menu import summarise_tal_links
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
@@ -18,8 +18,8 @@ The default navigation menu is registered for the 'overview' facet.
 
     # Set up the test request so the MenuAPI knows what facet to use for
     # the team.
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> fake_view = LaunchpadView(ubuntu_team, request)
     >>> fake_view.__launchpad_facetname__ = 'overview'

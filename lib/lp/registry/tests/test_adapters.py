@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.adapters import (
     distroseries_to_distribution,
+    information_type_from_product,
     package_to_sourcepackagename,
     productseries_to_product,
     sourcepackage_to_distribution,
@@ -16,6 +16,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestAdapters(TestCaseWithFactory):
@@ -73,3 +74,11 @@ class TestAdapters(TestCaseWithFactory):
         self.assertTrue(IProduct.providedBy(product))
         self.assertEqual(product_series.product, product)
         self.assertEqual(product, IProduct(product_series))
+
+    def test_information_type_from_product(self):
+        # information_type_from_product() returns an IProduct given
+        # an IMilestone.
+        milestone = self.factory.makeMilestone()
+        product = information_type_from_product(milestone)
+        self.assertTrue(IProduct.providedBy(product))
+        self.assertEqual(product, milestone.product)

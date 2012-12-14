@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -22,9 +22,9 @@ import string
 import urllib
 
 from apt_pkg import (
-    ParseSrcDepends,
+    parse_src_depends,
     upstream_version,
-    VersionCompare,
+    version_compare,
     )
 from lazr.enum import (
     EnumeratedType,
@@ -55,34 +55,22 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    GetitemNavigation,
-    Link,
-    StandardLaunchpadFacets,
-    stepto,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from lp.app.browser.tales import CustomizableFormatter
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
@@ -95,6 +83,20 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.product import Product
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    GetitemNavigation,
+    Link,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -304,6 +306,16 @@ class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
         self.next_step = SourcePackageChangeUpstreamStepTwo
         self.request.form['product'] = data['product']
 
+    def validateStep(self, data):
+        super(SourcePackageChangeUpstreamStepOne, self).validateStep(data)
+        product = data.get('product')
+        if product is None:
+            return
+        if product.private:
+            self.setFieldError('product',
+                'Only Public projects can be packaged, not %s.' %
+                data['product'].information_type.title)
+
     @property
     def register_upstream_url(self):
         return get_register_upstream_url(self.context)
@@ -512,11 +524,11 @@ class SourcePackageView(LaunchpadView):
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for SourcePackages.
 
-        Define apt_pkg.ParseSrcDep as a relationship 'parser' and
+        Define apt_pkg.parse_src_depends as a relationship 'parser' and
         IDistroSeries.getBinaryPackage as 'getter'.
         """
         getter = self.context.distroseries.getBinaryPackage
-        parser = ParseSrcDepends
+        parser = parse_src_depends
         return relationship_builder(content, parser=parser, getter=getter)
 
     @property
@@ -543,7 +555,7 @@ class SourcePackageView(LaunchpadView):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     @property
     def potemplates(self):
@@ -569,7 +581,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # Find registered products that are similarly named to the source
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
-        matches = product_vocab.searchForTerms(self.context.name)
+        matches = product_vocab.searchForTerms(self.context.name,
+            vocab_filter=[Product._information_type ==
+                          InformationType.PUBLIC])
         # Based upon the matching products, create a new vocabulary with
         # term descriptions that include a link to the product.
         self.product_suggestions = []
@@ -680,7 +694,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         # Compare the base version contained in the full debian version
         # to upstream release's version.
         base_version = upstream_version(current_release.version)
-        age = VersionCompare(upstream_release.version, base_version)
+        age = version_compare(upstream_release.version, base_version)
         if age > 0:
             return PackageUpstreamTracking.NEWER
         elif age < 0:

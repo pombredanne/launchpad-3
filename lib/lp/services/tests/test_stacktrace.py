@@ -8,9 +8,9 @@ __metaclass__ = type
 import StringIO
 import sys
 
-from canonical.testing.layers import BaseLayer
 from lp.services import stacktrace
 from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 # This constant must always be equal to the line number on which it lives for
 # the tests to pass.
@@ -148,6 +148,7 @@ class TestStacktrace(TestCase):
     def test_get_frame_data_supplement_bad_getInfo_with_traceback(self):
         def boo_hiss():
             raise ValueError()
+        original_stderr = sys.__stderr__
         stderr = sys.stderr = StringIO.StringIO()
         self.assertFalse(stacktrace.DEBUG_EXCEPTION_FORMATTER)
         stacktrace.DEBUG_EXCEPTION_FORMATTER = True
@@ -157,7 +158,7 @@ class TestStacktrace(TestCase):
                     get_frame(supplement=dict(getInfo=boo_hiss)),
                     MY_LINE_NUMBER))
         finally:
-            sys.stderr = sys.__stderr__
+            sys.stderr = original_stderr
             stacktrace.DEBUG_EXCEPTION_FORMATTER = False
         self.assertEqual(
             dict(source_url=None, line=None, column=None, expression=None,
@@ -275,24 +276,26 @@ class TestStacktrace(TestCase):
     def test_format_list_extra_errors(self):
         extracted = stacktrace.extract_stack(get_frame(supplement=dict()))
         extracted[-1][-2]['warnings'] = object()  # This should never happen.
+        original_stderr = sys.__stderr__
         stderr = sys.stderr = StringIO.StringIO()
         self.assertFalse(stacktrace.DEBUG_EXCEPTION_FORMATTER)
         stacktrace.DEBUG_EXCEPTION_FORMATTER = True
         try:
             formatted = stacktrace.format_list(extracted)
         finally:
-            sys.stderr = sys.__stderr__
+            sys.stderr = original_stderr
             stacktrace.DEBUG_EXCEPTION_FORMATTER = False
         self.assertStartsWith(stderr.getvalue(), 'Traceback (most recent')
         self.assertEndsWith(formatted[-1], '    return sys._getframe()\n')
 
     def test_print_list_default(self):
         extracted = stacktrace.extract_stack(get_frame())
+        original_stderr = sys.__stderr__
         stderr = sys.stderr = StringIO.StringIO()
         try:
             stacktrace.print_list(extracted)
         finally:
-            sys.stderr = sys.__stderr__
+            sys.stderr = original_stderr
         self.assertEndsWith(stderr.getvalue(), 'return sys._getframe()\n')
 
     def test_print_list_file(self):
@@ -302,11 +305,12 @@ class TestStacktrace(TestCase):
         self.assertEndsWith(f.getvalue(), 'return sys._getframe()\n')
 
     def test_print_stack_default(self):
+        original_stderr = sys.__stderr__
         stderr = sys.stderr = StringIO.StringIO()
         try:
             stacktrace.print_stack()
         finally:
-            sys.stderr = sys.__stderr__
+            sys.stderr = original_stderr
         self.assertEndsWith(stderr.getvalue(), 'stacktrace.print_stack()\n')
 
     def test_print_stack_options(self):

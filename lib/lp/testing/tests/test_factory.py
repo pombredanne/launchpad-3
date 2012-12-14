@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -12,12 +12,6 @@ from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.cve import (
     CveStatus,
     ICve,
@@ -31,6 +25,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.enums import (
     BinaryPackageFileType,
@@ -58,6 +54,10 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import ComponentSelection
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import (
     IsProxied,
     Provides,
@@ -175,6 +175,12 @@ class TestFactory(TestCaseWithFactory):
     def test_makeBinaryPackagePublishingHistory_sets_datecreated(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         self.assertNotEqual(None, bpph.datecreated)
+
+    def test_makeBinaryPackagePublishingHistory_uses_datecreated(self):
+        datecreated = self.factory.getUniqueDate()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            datecreated=datecreated)
+        self.assertEqual(datecreated, bpph.datecreated)
 
     def test_makeBinaryPackagePublishingHistory_sets_datepub_PENDING(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
@@ -774,14 +780,21 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
     def test_makeBuildPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
         bpn = self.factory.makeBinaryPackageName()
+        spr = self.factory.makeSourcePackageRelease()
+        component = self.factory.makeComponent()
         pu = self.factory.makeBuildPackageUpload(
-            distroseries=distroseries, binarypackagename=bpn)
+            distroseries=distroseries, pocket=PackagePublishingPocket.PROPOSED,
+            binarypackagename=bpn, source_package_release=spr,
+            component=component)
         build = list(pu.builds)[0].build
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
+        self.assertEqual(spr, build.source_package_release)
         release = IStore(distroseries).find(
             BinaryPackageRelease, BinaryPackageRelease.build == build).one()
         self.assertEqual(bpn, release.binarypackagename)
+        self.assertEqual(component, release.component)
 
     # makeCustomPackageUpload
     def test_makeCustomPackageUpload_makes_proxied_IPackageUpload(self):
@@ -794,14 +807,17 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
 
     def test_makeCustomPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive()
         custom_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
         filename = self.factory.getUniqueString()
         pu = self.factory.makeCustomPackageUpload(
-            distroseries=distroseries, custom_type=custom_type,
+            distroseries=distroseries, archive=archive,
+            pocket=PackagePublishingPocket.PROPOSED, custom_type=custom_type,
             filename=filename)
         custom = list(pu.customfiles)[0]
         self.assertEqual(distroseries, pu.distroseries)
-        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(archive, pu.archive)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
         self.assertEqual(custom_type, custom.customformat)
         self.assertEqual(filename, custom.libraryfilealias.filename)
 

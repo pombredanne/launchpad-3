@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of `PersonMergeJob`."""
@@ -12,26 +12,52 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IStore,
-    )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts import log
-from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.job.tests import block_on_job
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.scripts import log
 from lp.testing import (
-    run_script,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    CeleryJobLayer,
+    DatabaseFunctionalLayer,
+    )
+
+
+def create_job(factory):
+    """Create a PersonMergeJob for testing purposes.
+
+    :param factory: A LaunchpadObjectFactory.
+    """
+    from_person = factory.makePerson(name='void')
+    to_person = factory.makePerson(name='gestalt')
+    requester = factory.makePerson(name='requester')
+    return getUtility(IPersonMergeJobSource).create(
+        from_person=from_person, to_person=to_person, requester=requester)
+
+
+def transfer_email(job):
+    """Reassign email address using the people specified in the job.
+
+    IPersonSet.merge() does not (yet) promise to do this.
+    """
+    from_email = removeSecurityProxy(job.from_person.preferredemail)
+    from_email.personID = job.to_person.id
+    from_email.accountID = job.to_person.accountID
+    from_email.status = EmailAddressStatus.NEW
+    IStore(from_email).flush()
 
 
 class TestPersonMergeJob(TestCaseWithFactory):
@@ -40,11 +66,11 @@ class TestPersonMergeJob(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonMergeJob, self).setUp()
-        self.from_person = self.factory.makePerson(name='void')
-        self.to_person = self.factory.makePerson(name='gestalt')
         self.job_source = getUtility(IPersonMergeJobSource)
-        self.job = self.job_source.create(
-            from_person=self.from_person, to_person=self.to_person)
+        self.job = create_job(self.factory)
+        self.from_person = self.job.from_person
+        self.to_person = self.job.to_person
+        self.requester = self.job.requester
 
     def test_interface(self):
         # PersonMergeJob implements IPersonMergeJob.
@@ -58,20 +84,10 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(self.to_person, self.job.major_person)
         self.assertEqual({'delete': False}, self.job.metadata)
 
-    def test_getErrorRecipients_user(self):
-        # The to_person is the recipient.
-        email_id = format_address_for_person(self.to_person)
+    def test_getErrorRecipients(self):
+        # The requester is the recipient.
+        email_id = format_address_for_person(self.requester)
         self.assertEqual([email_id], self.job.getErrorRecipients())
-
-    def test_getErrorRecipients_team(self):
-        # The to_person admins are the recipients.
-        to_team = self.factory.makeTeam()
-        from_team = self.factory.makeTeam()
-        job = self.job_source.create(
-            from_person=from_team, to_person=to_team,
-            reviewer=to_team.teamowner)
-        self.assertEqual(
-            to_team.getTeamAdminsEmailAddresses(), job.getErrorRecipients())
 
     def test_enqueue(self):
         # Newly created jobs are enqueued.
@@ -81,20 +97,18 @@ class TestPersonMergeJob(TestCaseWithFactory):
         # create returns None if either of the persons are already
         # in a pending merge job.
         duplicate_job = self.job_source.create(
-            from_person=self.from_person, to_person=self.to_person)
+            from_person=self.from_person, to_person=self.to_person,
+            requester=self.requester)
         inverted_job = self.job_source.create(
-            from_person=self.to_person, to_person=self.from_person)
+            from_person=self.to_person, to_person=self.from_person,
+            requester=self.requester)
         self.assertEqual(None, duplicate_job)
         self.assertEqual(None, inverted_job)
 
     def transfer_email(self):
         # Reassign from_person's email address over to to_person because
         # IPersonSet.merge() does not (yet) promise to do that.
-        from_email = IMasterObject(self.from_person.preferredemail)
-        removeSecurityProxy(from_email).personID = self.to_person.id
-        removeSecurityProxy(from_email).accountID = self.to_person.accountID
-        removeSecurityProxy(from_email).status = EmailAddressStatus.NEW
-        IStore(from_email).flush()
+        transfer_email(self.job)
 
     def test_run(self):
         # When run it merges from_person into to_person.
@@ -121,7 +135,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
             from_team.teamowner.leave(from_team)
         self.job_source.create(
             from_person=from_team, to_person=to_team,
-            reviewer=from_team.teamowner)
+            reviewer=from_team.teamowner, requester=self.factory.makePerson())
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -141,6 +155,10 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(
             "<PersonMergeJob to merge ~void into ~gestalt; status=Waiting>",
             repr(self.job))
+
+    def test_getOperationDescription(self):
+        self.assertEqual('merging ~void into ~gestalt',
+                         self.job.getOperationDescription())
 
     def find(self, **kwargs):
         return list(self.job_source.find(**kwargs))
@@ -179,3 +197,29 @@ class TestPersonMergeJob(TestCaseWithFactory):
                 self.assertEqual([self.job], self.find())
             else:
                 self.assertEqual([], self.find())
+
+    def test_create_requester(self):
+        requester = self.factory.makePerson()
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        job = getUtility(IPersonMergeJobSource).create(
+            from_person, to_person, requester)
+        self.assertEqual(requester, job.requester)
+
+
+class TestViaCelery(TestCaseWithFactory):
+    """Test that PersonMergeJob runs under Celery."""
+
+    layer = CeleryJobLayer
+
+    def test_run(self):
+        # When run it merges from_person into to_person.
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'PersonMergeJob',
+        }))
+        job = create_job(self.factory)
+        transfer_email(job)
+        from_person = job.from_person
+        with block_on_job(self):
+            transaction.commit()
+        self.assertEqual(job.to_person, from_person.merged)

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import logging
+
 from lp.services.features.rulesource import (
     NullFeatureRuleSource,
     StormFeatureRuleSource,
@@ -19,6 +21,8 @@ from lp.services.features.rulesource import (
 __metaclass__ = type
 
 
+logger = logging.getLogger('lp.services.features')
+
 value_domain_info = sorted([
     ('boolean',
      'Any non-empty value is true; an empty value is false.'),
@@ -27,135 +31,213 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour.
+# 1. flag name
+# 2. value domain
+# 3. prose documentation
+# 4. default behaviour
+# 5. title
+# 6. URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('baselayout.careers_link.disabled',
+     'boolean',
+     'Hide the link to the Canonical Careers site.',
+     '',
+     '',
+     ''),
+    ('blueprints.information_type.enabled',
+     'boolean',
+     'Enable UI for information_type on Blueprints.',
+     'Disable UI',
+     'Blueprint information_type UI',
+     'https://dev.launchpad.net/LEP/PrivateProjects'),
+    ('bugs.affected_count_includes_dupes.disabled',
+     'boolean',
+     ("Disable adding up affected users across all duplicate bugs."),
+     '',
+     '',
+     'https://bugs.launchpad.net/launchpad/+bug/678090'),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
+     '',
+     '',
+     ''),
+    ('bugs.dynamic_bug_listings.pre_fetch',
+     'boolean',
+     ('Enables pre-fetching bug listing results.'),
+     '',
+     'Listing pre-fetching',
+     'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
      ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
+     '',
+     '',
      ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
+     '',
+     '',
      ''),
     ('code.incremental_diffs.enabled',
      'boolean',
      'Shows incremental diffs on merge proposals.',
+     '',
+     '',
      ''),
     ('hard_timeout',
      'float',
      'Sets the hard request timeout in milliseconds.',
+     '',
+     '',
+     ''),
+    ('jobs.celery.enabled_classes',
+     'space delimited',
+     'Names of Job classes that should be run via celery',
+     'No jobs run via celery',
+     'Celery-enabled job classes',
+     'https://dev.launchpad.net/CeleryJobRunner'),
+    ('js.combo_loader.enabled',
+     'boolean',
+     'Determines if we use a js combo loader or not.',
+     '',
+     '',
+     ''),
+    ('js.yui-version',
+     'space delimited',
+     'Allows us to change the YUI version we run against, e.g. yui-3.4.',
+     'As speficied in versions.cfg',
+     '',
      ''),
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
+     '',
+     '',
      ''),
-    ('malone.disable_targetnamesearch',
+    ('markdown.enabled',
      'boolean',
-     'If true, disables consultation of target names during bug text search.',
-     ''),
+     'Interpret selected user content as Markdown.',
+     'disabled',
+     'Markdown',
+     'https://launchpad.net/bugs/391780'),
     ('memcache',
      'boolean',
      'Enables use of memcached where it is supported.',
-     'enabled'),
+     'enabled',
+     '',
+     ''),
     ('profiling.enabled',
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
-     ''),
-    ('soyuz.derived_series.max_synchronous_syncs',
-     'int',
-     "How many package syncs may be done directly in a web request.",
-     '100'),
-    ('soyuz.derived_series_ui.enabled',
-     'boolean',
-     'Enables derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_upgrade.enabled',
      'boolean',
      'Enables mass-upgrade of packages on derivative distributions pages.',
+     '',
+     '',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
-     ''),
-    ('translations.sharing_information.enabled',
-     'boolean',
-     'Enables display of sharing information on translation pages.',
+     '',
+     '',
      ''),
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
-     ''),
-    ('disclosure.dsp_picker.enabled',
-     'boolean',
-     'Enables the use of the new DistributionSourcePackage vocabulary for '
-     'the source and binary package name pickers.',
-     ''),
-    ('disclosure.picker_enhancements.enabled',
-     'boolean',
-     ('Enables the display of extra details in the person picker.'),
-     ''),
-    ('disclosure.picker_expander.enabled',
-     'boolean',
-     ('Enables the expanding of extra details in the person picker.'),
-     ''),
-    ('disclosure.personpicker_affiliation.enabled',
-     'boolean',
-     ('Enables display of affiliation details in the person picker.'),
-     ''),
-    ('disclosure.person_affiliation_rank.enabled',
-     'boolean',
-     ('Enables ranking by pillar affiliation in the person picker.'),
-     ''),
-    ('disclosure.target_picker_enhancements.enabled',
-     'boolean',
-     ('Enables the display and use of the enhanced target pickers.'),
-     ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     ''),
-    ('disclosure.enhanced_private_bug_subscriptions.enabled',
-     'boolean',
-     ('Enables the auto subscribing and unsubscribing of users as a bug '
-      'transitions between public, private and security related states.'),
+     '',
+     '',
      ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
       'series and packages).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all distributions.'),
-     'None are enabled'),
+     'None are enabled',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_product_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for products (and their '
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
-     'None are enabled'),
+     'None are enabled',
+     '',
+     ''),
     ('longpoll.merge_proposals.enabled',
      'boolean',
      ('Enables the longpoll mechanism for merge proposals so that diffs, '
       'for example, are updated in-page when they are ready.'),
+     '',
+     '',
      ''),
+    ('ajax.batch_navigator.enabled',
+     'boolean',
+     ('If true, batch navigators which have been wired to do so use ajax '
+     'calls to load the next batch of data.'),
+     '',
+     '',
+     ''),
+    ('registry.upcoming_work_view.enabled',
+     'boolean',
+     ('If true, the new upcoming work view of teams is available.'),
+     '',
+     '',
+     ''),
+    ('auditor.enabled',
+     'boolean',
+     'If true, send audit data to an auditor instance.',
+     '',
+     '',
+     ''),
+    ('app.root_blog.enabled',
+     'boolean',
+     'If true, load posts from the Launchpad blog to show on the root page.',
+     '',
+     '',
+     ''),
+    ('disclosure.private_projects.enabled',
+     'boolean',
+     'If true, enabled access to private project registration features.',
+     'disabled',
+     'Allow registering a non-public project.',
+     'http://blog.launchpad.net/general/private-projects-beta'),
+    ('disclosure.private_project.traversal_override',
+     'boolean',
+     'If set, allow all users to traverse to private projects.',
+     'Traversal to private projects requires special access.',
+     'Override traveral checks.',
+     'https://dev.launchpad.net/LEP/PrivateProjects'),
     ])
 
 # The set of all flag names that are documented.
@@ -240,6 +322,7 @@ class FeatureController():
         if rule_source is None:
             rule_source = StormFeatureRuleSource()
         self.rule_source = rule_source
+        self._current_scopes = Memoize(self._findCurrentScope)
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
@@ -255,11 +338,37 @@ class FeatureController():
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):
+        return self._currentValueAndScope(flag)[0]
+
+    def _currentValueAndScope(self, flag):
         self._needRules()
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
-                    return value
+                    self._debugMessage(
+                        'feature match flag=%r value=%r scope=%r' %
+                        (flag, value, scope))
+                    return (value, scope)
+            else:
+                self._debugMessage('no rules matched for %r' % flag)
+        else:
+            self._debugMessage('no rules relevant to %r' % flag)
+        return (None, None)
+
+    def _debugMessage(self, message):
+        logger.debug(message)
+        # The OOPS machinery can also grab it out of the request if needed.
+
+    def currentScope(self, flag):
+        """The name of the scope of the matching rule with the highest
+        priority.
+        """
+        return self._current_scopes.lookup(flag)
+
+    def _findCurrentScope(self, flag):
+        """Lookup method for self._current_scopes. See also `currentScope()`.
+        """
+        return self._currentValueAndScope(flag)[1]
 
     def isInScope(self, scope):
         return self._known_scopes.lookup(scope)
@@ -298,6 +407,15 @@ class FeatureController():
     def usedScopes(self):
         """Return {scope: active} for scopes that have been used so far."""
         return dict(self._known_scopes._known)
+
+    def defaultFlagValue(self, flag):
+        """Return the flag's value in the default scope."""
+        self._needRules()
+        if flag in self._rules:
+            for scope, priority, value in self._rules[flag]:
+                if scope == 'default':
+                    return value
+        return None
 
 
 class NullFeatureController(FeatureController):

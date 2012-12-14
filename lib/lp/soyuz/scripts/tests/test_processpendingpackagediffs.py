@@ -7,11 +7,11 @@ import os
 import subprocess
 import sys
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):

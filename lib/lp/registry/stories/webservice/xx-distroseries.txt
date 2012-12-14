@@ -77,6 +77,7 @@ For distroseries we publish a subset of its attributes.
     include_long_descriptions: True
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
+    nominatedarchindep_link: u'http://.../ubuntu/hoary/i386'
     official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
     parent_series_link: u'http://.../ubuntu/warty'

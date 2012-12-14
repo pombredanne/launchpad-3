@@ -10,11 +10,6 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
     IDistroSeriesParentSet,
@@ -22,8 +17,13 @@ from lp.registry.interfaces.distroseriesparent import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    login,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 

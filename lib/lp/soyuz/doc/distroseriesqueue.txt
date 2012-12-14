@@ -39,7 +39,7 @@ binaries + custom, other only source.
 First up, we need to actually process an upload to get it into the
 queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 We need some setup for the upload handler.
@@ -51,7 +51,7 @@ Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -87,7 +87,7 @@ convert it to an ACCEPTED item.
     >>> new_queue = hoary.getPackageUploads(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
-upload. If some designed check according the request state do not
+upload. If some designed check according to the request state do not
 pass, the state-machine methods will raise an exception indicating the
 upload can not have that state.
 
@@ -97,7 +97,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
     ...     try:
     ...         item.setAccepted()
     ...         item.syncUpdate()
-    ...     except QueueInconsistentStateError, info:
+    ...     except QueueInconsistentStateError as info:
     ...         print info
 
     >>> accepted_queue = hoary.getPackageUploads(PackageUploadStatus.ACCEPTED)
@@ -124,7 +124,7 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
@@ -308,7 +308,7 @@ Performing full acceptance:
     >>> for item in items:
     ...      try:
     ...          item.setAccepted()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, item.status.name
@@ -339,7 +339,7 @@ Check if the state machine methods raise when trying to set the same state:
     >>> for item in items:
     ...      try:
     ...          item.setNew()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, 'BOGUS'
@@ -380,7 +380,7 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
     >>> naked_bin.component = getUtility(IComponentSet).new('hell')
     >>> try:
     ...     item.setAccepted()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...     print item.displayname, e
     ... else:
     ...     print item.displayname, 'ACCEPTED'
@@ -648,7 +648,7 @@ of component and section and the latter both those plus the section.
 In addition to these parameters, you must also supply
 "allowed_components", which is a sequence of IComponent.  Any overrides
 must have the existing and new component in this sequence otherwise
-QueueInconsistentStateError is raised.
+QueueAdminUnauthorizedError is raised.
 
 The alsa-utils source is already in the queue with component "main"
 and section "base".
@@ -673,7 +673,7 @@ an error:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override to restricted
+    QueueAdminUnauthorizedError: No rights to override to restricted
 
 Allowing "restricted" still won't work because the original component
 is "main":
@@ -683,7 +683,7 @@ is "main":
     ...     allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main
+    QueueAdminUnauthorizedError: No rights to override from main
 
 Specifying both main and restricted allows the override to restricted/web.
 overrideSource() returns True if it completed the task.
@@ -710,29 +710,25 @@ Similarly for binaries:
     main/base/Important
 
     >>> from lp.soyuz.enums import PackagePublishingPriority
+    >>> binary_changes = [{
+    ...     "component": restricted,
+    ...     "section": web,
+    ...     "priority": PackagePublishingPriority.EXTRA,
+    ...     }]
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(universe,))
+    ...     binary_changes, allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override to restricted
+    QueueAdminUnauthorizedError: No rights to override to restricted
 
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(restricted,))
+    ...     binary_changes, allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main
+    QueueAdminUnauthorizedError: No rights to override from main
 
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(main,restricted))
+    ...     binary_changes, allowed_components=(main,restricted))
     True
     >>> print "%s/%s/%s" % (
     ...     binary_package.component.name,
@@ -839,7 +835,7 @@ with fake changes files first so that emails can be generated.)
     >>> insertFakeChangesFile(items[3].changesfile.id)
     >>> try:
     ...    items[1].acceptFromQueue()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...    print 'FAILED'
     ... else:
     ...    print 'DONE'
@@ -870,7 +866,7 @@ Let's reject something in the queue:
 
     >>> try:
     ...     items[3].rejectFromQueue()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...    print 'FAILED'
     ... else:
     ...    print 'REJECTED'
@@ -882,143 +878,5 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
-
-
-Delayed copies
---------------
-
-IPackageUploadSet allows call sites to create 'delayed-copy'
-PackageUpload records.
-
-    >>> from lp.registry.interfaces.gpg import IGPGKeySet
-    >>> testing_key = getUtility(IGPGKeySet).get(1)
-
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.addFakeChroots(hoary)
-    >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-
-A 'delayed-copy' is a PackageUpload record.
-
-    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-    ...     ubuntu.main_archive, hoary,
-    ...     PackagePublishingPocket.RELEASE, testing_key)
-
-Delayed copies are manipulated exactly as normal uploads
-are. Contents can be attached to it.
-
-    >>> a_source_package = test_publisher.createSource(
-    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
-    >>> transaction.commit()
-    >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
-
-    >>> print delayed_copy.displayname
-    foocomm (delayed)
-
-    >>> verifyObject(IPackageUpload, delayed_copy)
-    True
-
-The distinction between normal uploads and delayed-copies can be made
-by checking IPackageUpload.is_delayed_copy.
-
-    >>> delayed_copy.is_delayed_copy
-    True
-
-    >>> normal_upload = breezy_autotest.createQueueEntry(
-    ...     PackagePublishingPocket.RELEASE,
-    ...     ubuntu.main_archive, 'foo.changes',
-    ...     'something')
-
-    >>> normal_upload.is_delayed_copy
-    False
-
-Delayed-copies are targeted to a publication context (archive,
-distroseries, pocket).
-
-    >>> print delayed_copy.archive.displayname
-    Primary Archive for Ubuntu Linux
-
-    >>> print delayed_copy.distroseries.displayname
-    Hoary
-
-    >>> print delayed_copy.pocket.name
-    RELEASE
-
-And are created in NEW state, so they have to pass through the upload
-state-machine.
-
-    >>> print delayed_copy.status.name
-    NEW
-
-However they have no 'changesfile', only a signing_key representing the
-requester of the copy.
-
-    >>> print delayed_copy.changesfile
-    None
-
-    >>> print delayed_copy.signing_key.owner.displayname
-    Foo Bar
-
-IPackageUpload.acceptFromCopy() simply checks and accepts a
-delayed-copy record. Bugs mentioned in the changelog are closed by
-`process-accepted` (transition to ACCEPTED to DONE) see
-closing-bugs-from-changelogs.txt for more information.
-
-    >>> print delayed_copy.status.name
-    NEW
-
-    >>> delayed_copy.acceptFromCopy()
-
-    >>> print delayed_copy.status.name
-    ACCEPTED
-
-Once accepted a delayed-copy is published as a normal upload, via
-IPackageUpload.realiseUpload().
-
-    >>> publishing_records = delayed_copy.realiseUpload()
-
-    >>> for pub_record in publishing_records:
-    ...     print pub_record.displayname, pub_record.status.name
-    foocomm 2.0-1 in hoary PENDING
-
-    >>> print delayed_copy.status.name
-    DONE
-
-As mentioned above, delayed copies wait in the ACCEPTED upload queue
-until they get processed, resulting in the corresponding publishing
-records.
-
-For that period of time, between creation and processing, a
-delayed-copy existence is not apparent in the publishing domain and
-creating a duplicated delayed-copy is perfectly possible.
-
-    >>> dup_delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
-    ...     ubuntu.main_archive, breezy_autotest,
-    ...     PackagePublishingPocket.RELEASE, testing_key)
-
-    >>> unused = dup_delayed_copy.addSource(
-    ...     a_source_package.sourcepackagerelease)
-
-Although it cannot be accepted.
-
-    >>> dup_delayed_copy.acceptFromCopy()
-    Traceback (most recent call last):
-    ...
-    QueueInconsistentStateError: The source foocomm - 2.0-1 is already
-    accepted in ubuntu/hoary and you cannot upload the same version within the
-    same distribution. You have to modify the source version and re-upload.
-
-For detecting conflicting delayed copies we have to inspect the
-ACCEPTED and DONE queue for uploads of sources matching a given
-(name, version) pair in a publishing context, archive and
-distribution.
-
-    >>> conflict = getUtility(IPackageUploadSet).findSourceUpload(
-    ...     'foocomm', '2.0-1', ubuntu.main_archive, ubuntu)
-
-    >>> conflict.id == delayed_copy.id
-    True

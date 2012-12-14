@@ -36,7 +36,7 @@ valid URI:
   >>> field.validate(u'not-a-uri')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: "not-a-uri" is not a valid URI
+  LaunchpadValidationError: &quot;not-a-uri&quot; is not a valid URI
 
 
 === Scheme Restrictions ===
@@ -50,7 +50,7 @@ will result in a validation error:
   >>> sftp_only.validate(u'http://launchpad.net/')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: The URI scheme "http" is not allowed.
+  LaunchpadValidationError: The URI scheme &quot;http&quot; is not allowed.
   Only URIs with the following schemes may be used: sftp
 
 
@@ -158,20 +158,11 @@ URIs with an authority but a blank path get canonicalised to a path of
   u'http://launchpad.net/'
 
 
-== Whitespace and null values ==
-
-Whitespace is stripped from the value:
-
-  >>> from zope.publisher.browser import TestRequest
-  >>> from lp.app.validators import LaunchpadValidationError
-  >>> from lp.app.widgets.textwidgets import URIWidget
-  >>> field = URIField(__name__='foo', title=u'Foo')
-
-  >>> field.normalize('  http://www.ubuntu.com/   ')
-  u'http://www.ubuntu.com/'
+== Null values ==
 
 None is an acceptable value for a URI field.
 
+  >>> field = URIField(__name__='foo', title=u'Foo')
   >>> print field.normalize(None)
   None
 
@@ -187,7 +178,8 @@ This widget is registered as an input widget:
 
   >>> from zope.app.form.interfaces import IInputWidget
   >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.app.widgets.textwidgets import URIWidget
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
   >>> class URIFieldTest(object):
   ...     implements(IURIFieldTest)
@@ -202,8 +194,12 @@ This widget is registered as an input widget:
 
 Multiple values will cause an UnexpectedFormData exception:
 
-  >>> widget._toFieldValue(['http://launchpad.net',
-  ...                       'http://ubuntu.com'])
+  >>> widget._toFieldValue(['http://launchpad.net', 'http://ubuntu.com'])
   Traceback (most recent call last):
     ...
   UnexpectedFormData: Only a single value is expected
+
+Values with leading and trailing whitespace are stripped.
+
+   >>> widget._toFieldValue('  http://www.ubuntu.com/   ')
+   u'http://www.ubuntu.com/'

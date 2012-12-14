@@ -1,4 +1,5 @@
-= The BugTrackerPerson interface =
+The BugTrackerPerson interface
+==============================
 
 The IBugTrackerPerson interfaces allows Launchpad to link Persons to
 bugtrackers. BugTrackerPersons are created using the
@@ -18,15 +19,10 @@ linkPersonToSelf() method of IBugTracker.
 
 We'll rename the bugtracker to make the tests more readable.
 
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.testing.dbuser import lp_dbuser
 
-    >>> bugtracker.name = 'bugzilla-checkwatches'
-    >>> commit()
-
-    >>> from canonical.config import config
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     bugtracker.name = 'bugzilla-checkwatches'
 
     >>> bugtracker_person = bugtracker.linkPersonToSelf(
     ...         'some-name-i-made-up', sample_person)
@@ -64,7 +60,8 @@ be retrieved by calling BugTracker.getLinkedPersonByName().
     name12
 
 
-== ensurePersonForSelf() ==
+ensurePersonForSelf()
+---------------------
 
 IBugTracker has a method, ensurePersonForSelf(), which is
 responsible for returning the correct BugTrackerPerson for a given
@@ -153,7 +150,7 @@ We'll create a person, 'noemail,' on our example bugtracker.
     >>> print bugtracker_person.person.name
     noemail-bugzilla-checkwatches
 
-    >>> commit()
+    >>> transaction.commit()
 
 If we rename the BugTracker and then create another with the same name,
 calling ensurePersonForSelf() for 'noemail' on that BugTracker
@@ -161,15 +158,9 @@ should produce a new Person rather than re-using the existing one.
 
     >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> bugtracker.name = 'bugzilla-checkwatches-renamed'
-    >>> commit()
-
-    >>> other_bug_tracker.name = 'bugzilla-checkwatches'
-    >>> commit()
-
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     bugtracker.name = 'bugzilla-checkwatches-renamed'
+    ...     other_bug_tracker.name = 'bugzilla-checkwatches'
 
 A new Person has been created for 'noemail' on other_bug_tracker, even
 though that bug tracker's name is the same as one from which we've

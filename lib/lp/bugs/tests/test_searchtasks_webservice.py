@@ -1,16 +1,19 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
+
+from lp.app.enums import InformationType
+from lp.bugs.interfaces.bugtask import BugTaskStatusSearch
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestOmitTargetedParameter(TestCaseWithFactory):
@@ -40,23 +43,27 @@ class TestOmitTargetedParameter(TestCaseWithFactory):
         self.assertEqual(response['total_size'], 1)
 
 
-class TestLinkedBlueprintsParameter(TestCaseWithFactory):
-    """Tests for the linked_blueprints parameter."""
+class TestProductSearchTasks(TestCaseWithFactory):
+    """Tests for the information_type, linked_blueprints and order_by
+    parameters."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestLinkedBlueprintsParameter, self).setUp()
+        super(TestProductSearchTasks, self).setUp()
         self.owner = self.factory.makePerson()
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
-        self.bug = self.factory.makeBugTask(target=self.product)
+        self.product_name = self.product.name
+        self.bug = self.factory.makeBug(
+            target=self.product,
+            information_type=InformationType.PRIVATESECURITY)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
     def search(self, api_version, **kwargs):
         return self.webservice.named_get(
-            '/%s' % self.product.name, 'searchTasks',
+            '/%s' % self.product_name, 'searchTasks',
             api_version=api_version, **kwargs).jsonBody()
 
     def test_linked_blueprints_in_devel(self):
@@ -81,3 +88,70 @@ class TestLinkedBlueprintsParameter(TestCaseWithFactory):
         # validation is performed for the linked_blueprints parameter, and
         # thus no error is returned when we pass rubbish.
         self.search("beta", linked_blueprints="Teabags!")
+
+    def test_search_returns_results(self):
+        # A matching search returns results.
+        response = self.search(
+            "devel", information_type="Private Security")
+        self.assertEqual(response['total_size'], 1)
+
+    def test_search_returns_no_results(self):
+        # A non-matching search returns no results.
+        response = self.search("devel", information_type="Private")
+        self.assertEqual(response['total_size'], 0)
+
+    def test_search_with_wrong_orderby(self):
+        # Calling searchTasks() with a wrong order_by is a Bad Request.
+        response = self.webservice.named_get(
+            '/%s' % self.product_name, 'searchTasks',
+            api_version='devel', order_by='date_created')
+        self.assertEqual(400, response.status)
+        self.assertRaisesWithContent(
+            ValueError, "Unrecognized order_by: u'date_created'",
+            response.jsonBody)
+
+    def test_search_incomplete_status_results(self):
+        # The Incomplete status matches Incomplete with response and
+        # Incomplete without response bug tasks.
+        with person_logged_in(self.owner):
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            self.factory.makeBug(
+                target=self.product,
+                status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+        response = self.search("devel", status="Incomplete")
+        self.assertEqual(response['total_size'], 2)
+
+
+class TestGetBugData(TestCaseWithFactory):
+    """Tests for the /bugs getBugData operation."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetBugData, self).setUp()
+        self.owner = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.product = self.factory.makeProduct()
+        self.bug = self.factory.makeBug(
+            target=self.product,
+            information_type=InformationType.PRIVATESECURITY)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def search(self, api_version, **kwargs):
+        return self.webservice.named_get(
+            '/bugs', 'getBugData',
+            api_version=api_version, **kwargs).jsonBody()
+
+    def test_search_returns_results(self):
+        # A matching search returns results.
+        response = self.search(
+            "devel", bug_id=self.bug.id)
+        self.assertEqual(self.bug.id, response[0]['id'])
+
+    def test_search_returns_no_results(self):
+        # A non-matching search returns no results.
+        response = self.search("devel", bug_id=0)
+        self.assertEqual(len(response), 0)

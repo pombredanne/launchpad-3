@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -30,6 +30,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.interface import (
     Attribute,
     Interface,
@@ -44,15 +45,13 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.lifecycle.interfaces import IObjectCreatedEvent
-
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.services.messages.interfaces.message import IMessage
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.librarian.interfaces import ILibraryFileAlias
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 class IMailingListApplication(ILaunchpadApplication):
@@ -403,29 +402,11 @@ class IMailingList(Interface):
             not own the given email address.
         """
 
-    def getSubscribedAddresses():
-        """Return the set of subscribed email addresses for members.
-
-        :return: an iterator over the subscribed IEmailAddresses for all
-            subscribed members of the mailing list, in no particular order.
-            This represents all the addresses which will receive messages
-            posted to the mailing list.
-        """
-
     def getSubscribers():
         """Return the set of subscribers.
 
         :return: a result set of the subscribers sorted by full name.  These
         are the people who will receive messages posted to the mailing list.
-        """
-
-    def getSenderAddresses():
-        """Return the set of all email addresses for members.
-
-        :return: an iterator over the all the registered and validated
-            IEmailAddresses for all members of the mailing list's team, in
-            no particular order.  These represent all the addresses which are
-            allowed to post to the mailing list.
         """
 
     def holdMessage(message):
@@ -853,13 +834,6 @@ class IHeldMessageDetails(Interface):
         description=_('The RFC 2822 Subject header.'),
         required=True, readonly=True)
 
-    sender = Text(
-        title=_('Message author'),
-        description=_('The message originator (i.e. author), formatted as '
-                      'per RFC 2822 and derived from the RFC 2822 originator '
-                      'fields From and Reply-To.  This is a unicode string.'),
-        required=True, readonly=True)
-
     author = Object(
         schema=IPerson,
         title=_('Message author'),
@@ -874,12 +848,6 @@ class IHeldMessageDetails(Interface):
     body = Text(
         title=_('Plain text message body'),
         description=_('The message body as plain text.'),
-        required=True, readonly=True)
-
-    email_message = Text(
-        title=_('The email message object'),
-        description=_('The email.message.Message object created from the '
-                      "original message's raw text."),
         required=True, readonly=True)
 
 

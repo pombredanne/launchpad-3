@@ -5,10 +5,12 @@ The Person class is what we use to represent Launchpad users, teams and
 some people which have done work on the free software community but are
 not Launchpad users.
 
+    >>> from lp.services.mail import stub
+    >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
     ...     IPerson,
@@ -22,14 +24,14 @@ Any Person object (either a person or a team) implements IPerson...
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> foobar.isTeam()
+    >>> foobar.is_team
     False
 
     >>> verifyObject(IPerson, foobar)
     True
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.isTeam()
+    >>> ubuntu_team.is_team
     True
 
     >>> verifyObject(IPerson, ubuntu_team)
@@ -66,7 +68,7 @@ The IPersonSet utility
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> verifyObject(IPersonSet, personset)
     True
@@ -84,14 +86,13 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
-    >>> import transaction
     >>> transaction.commit()
     >>> p.teamowner is None
     True
@@ -108,7 +109,7 @@ caused the entry to be created.
 Since this person has chosen to hide his email addresses they won't be
 visible to other users which are not admins.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
@@ -132,9 +133,6 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.accountID == p.accountID
-    True
-
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
@@ -142,13 +140,10 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.database.account import Account
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.identity.model.account import Account
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
-    >>> account.activate(
-    ...     "Activated by doc test.",
-    ...     password=p.password,
-    ...     preferred_email=email)
+    >>> account.reactivate("Activated by doc test.")
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -158,7 +153,7 @@ to the person, and it updates the email address's status.
 
     >>> emailset = getUtility(IEmailAddressSet)
     >>> validated_email = emailset.new(
-    ...     'validated@canonical.com', p, account=p.account)
+    ...     'validated@canonical.com', p)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
 
@@ -168,16 +163,22 @@ to the person, and it updates the email address's status.
     <DBItem EmailAddressStatus.VALIDATED...
 
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status.
+setPreferredEmail() method updated the address's status. This will generate a
+security email notification to the original preferred email address.
 
     >>> preferred_email = emailset.new(
-    ...     'preferred@canonical.com', p, account=p.account)
+    ...     'preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
 
+    >>> login('validated@canonical.com')
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
+    >>> transaction.commit()
+    >>> efrom, eto, emsg = stub.test_emails.pop()
+    >>> eto
+    ['randomuser@randomhost.com']
 
     >>> login(ANONYMOUS)
 
@@ -259,7 +260,7 @@ account into an IPerson.
 
 We can't adapt an account which has no person associated with, though.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale, IAccountSet)
     >>> personless_account = getUtility(IAccountSet).new(
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
@@ -278,7 +279,7 @@ IPerson objects associated to the accounts we adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
     None
@@ -359,7 +360,6 @@ Non-administrators may not change a person's standing.
     ...
     Unauthorized: ...
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -388,19 +388,19 @@ Teams
 
 As we said above, the Person class is overloaded to represent teams so
 we may have Person objects which are, in fact, teams. To find out
-whether a given object is a person or a team we can use the isTeam()
-method of IPerson or check if the object provides the ITeam interface.
+whether a given object is a person or a team we can use the is_team
+property of IPerson or check if the object provides the ITeam interface.
 
     >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
-    >>> ddaa.isTeam()
+    >>> ddaa.is_team
     False
 
     >>> ITeam.providedBy(ddaa)
     False
 
     >>> landscape_devs = personset.getByName('landscape-developers')
-    >>> landscape_devs.isTeam()
+    >>> landscape_devs.is_team
     True
 
     >>> ITeam.providedBy(landscape_devs)
@@ -442,7 +442,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -466,7 +466,7 @@ entries into teams.
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
     ...     comment='when the ed package was imported into Ubuntu Feisty')
     >>> transaction.commit()
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     False
 
     >>> not_a_person.is_valid_person
@@ -479,11 +479,10 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     True
 
     >>> ITeam.providedBy(not_a_person)
@@ -491,9 +490,6 @@ entries into teams.
 
     >>> verifyObject(ITeam, not_a_person)
     True
-
-    >>> print removeSecurityProxy(not_a_person).password
-    None
 
 The team owner is also added as an administrator of its team.
 
@@ -644,7 +640,7 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> from lp.services.mail.helpers import get_contact_email_addresses
     >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
@@ -694,7 +690,9 @@ Private teams can be subscribed to bugs.
     >>> bug = bug_set.get(1)
     >>> guadamen = person_set.getByName('guadamen')
     >>> salgado = personset.getByName('salgado')
-    >>> private_team = factory.makeTeam(salgado, name='private-team',
+    >>> private_team_owner = factory.makePerson()
+    >>> private_team = factory.makeTeam(
+    ...     private_team_owner, name='private-team',
     ...     displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
     >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
@@ -807,7 +805,7 @@ Anonymous users cannot see non-public teams, such as 'private-team'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login_person(private_team.teamowner)
+    >>> ignored = login_person(private_team_owner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
@@ -858,7 +856,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()
@@ -957,7 +955,15 @@ archives.
 The 3rd method returns SourcePackageReleases uploaded by the person in
 question to any PPA.
 
+There are also analogous methods to see if a person has any of the above
+related packages:
+ 1. hasMaintainedPackages(),
+ 2. hasUploadedButNotMaintainedPackages(),
+ 3. hasUploadedPPAPackages
+
     >>> mark = personset.getByName('mark')
+    >>> mark.hasMaintainedPackages()
+    True
     >>> for sprelease in mark.getLatestMaintainedPackages():
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
@@ -970,6 +976,8 @@ question to any PPA.
     (u'mozilla-firefox', u'Ubuntu Warty', u'0.9')
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
+    >>> mark.hasUploadedButNotMaintainedPackages()
+    True
     >>> for sprelease in mark.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name,
     ...            sprelease.upload_distroseries.fullseriesname,
@@ -981,6 +989,8 @@ question to any PPA.
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
+    >>> mark.hasUploadedPPAPackages()
+    True
     >>> mark_spreleases = mark.getLatestUploadedPPAPackages()
     >>> for sprelease in mark_spreleases:
     ...     print (sprelease.name,
@@ -1010,6 +1020,16 @@ maintainer got omitted from the results:
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'mark', u'mark', u'mark', u'Ubuntu Warty')
 
+Unlike Mark, this next person is very lazy and has no related packages:
+
+    >>> lazy = personset.getByName('name12')
+    >>> lazy.hasMaintainedPackages()
+    False
+    >>> lazy.hasUploadedButNotMaintainedPackages()
+    False
+    >>> lazy.hasUploadedPPAPackages()
+    False
+
 
 Packages a Person is subscribed to
 ----------------------------------
@@ -1034,48 +1054,6 @@ alphabetically by package name.
     [u'mozilla-firefox', u'pmount']
 
 
-Pillars owned or driven by a person or team
--------------------------------------------
-
-To obtain all distributions, project groups and projects owned or driven
-by a person or team, we can use the getOwnedOrDrivenPillars() method of
-IPerson. This method returns PillarNames ordered by distribution,
-project groups and projects.
-
-    >>> login(ANONYMOUS)
-
-    >>> from lp.registry.interfaces.distribution import IDistribution
-    >>> from lp.registry.interfaces.product import IProduct
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
-
-    >>> def print_pillar(pillarname):
-    ...     pillar = pillarname.pillar
-    ...     if IDistribution.providedBy(pillar):
-    ...         pillar_type = 'distribution'
-    ...     elif IProjectGroup.providedBy(pillar):
-    ...         pillar_type = 'project group'
-    ...     elif IProduct.providedBy(pillar):
-    ...         pillar_type = 'project'
-    ...     print "%s: %s (%s)" % (
-    ...         pillar_type, pillar.displayname, pillar.name)
-
-    >>> for pillarname in mark.getOwnedOrDrivenPillars():
-    ...     print_pillar(pillarname)
-    distribution: Debian (debian)
-    distribution: Gentoo (gentoo)
-    distribution: Kubuntu (kubuntu)
-    distribution: Red Hat (redhat)
-    project group: Apache (apache)
-    project: Derby (derby)
-    project: alsa-utils (alsa-utils)
-
-    >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
-    ...     print_pillar(pillarname)
-    distribution: Ubuntu (ubuntu)
-    distribution: ubuntutest (ubuntutest)
-    project: Tomcat (tomcat)
-
-
 Project owned by a person or team
 ---------------------------------
 
@@ -1097,9 +1075,8 @@ The method does not return inactive projects.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in mark.getOwnedProjects():
@@ -1119,13 +1096,13 @@ David does not own any projects.
 The results returned can be filtered by providing a token to refine the
 search.
 
-    >>> for project in mark.getOwnedProjects(match_name='java'):
+    >>> for project in mark.getOwnedProjects(match_name=u'java'):
     ...     print project.displayname
     Tomcat
 
 Searching for a non-existent project returns no matches.
 
-    >>> list(mark.getOwnedProjects(match_name='nosuchthing'))
+    >>> list(mark.getOwnedProjects(match_name=u'nosuchthing'))
     []
 
 
@@ -1192,23 +1169,24 @@ First, Carlos does not have any completed specifications assigned to
 him:
 
     >>> from lp.blueprints.enums import SpecificationFilter
-    >>> carlos.specifications(filter=[
+    >>> carlos.specifications(None, filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()
     0
 
-Next, Carlos has three incomplete specs *related* to him:
+Next, Carlos has two incomplete specs *related* to him:
 
     >>> filter = []
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.specifications(None, filter=filter):
     ...     print spec.name, spec.is_complete, spec.informational
     svg-support False False
     extension-manager-upgrades False True
-    media-integrity-check False False
 
-Carlos has 2 specifications assigned to him:
+These 2 specifications are assigned to Carlos:
 
-    >>> for spec in carlos.assigned_specs:
+    >>> assigned_specs = carlos.specifications(
+    ...     carlos, filter=[SpecificationFilter.ASSIGNEE])
+    >>> for spec in assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
@@ -1216,7 +1194,7 @@ Carlos has 2 specifications assigned to him:
 But from these two, only one has started.
 
     >>> [(spec.name, spec.is_started)
-    ...  for spec in carlos.assigned_specs_in_progress]
+    ...  for spec in carlos.findVisibleAssignedInProgressSpecs(None)]
     [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
@@ -1224,52 +1202,45 @@ is the approver.
 
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> filter = [SpecificationFilter.APPROVER]
-    >>> for spec in mark.specifications(filter=filter):
+    >>> for spec in mark.specifications(None, filter=filter):
     ...     print spec.name
     extension-manager-upgrades
-
-The Foo Bar person has a single spec which has feedback requested:
-
-    >>> filter = [SpecificationFilter.FEEDBACK]
-    >>> for spec in foobar.specifications(filter=filter):
-    ...     print spec.name
-    e4x
 
 But has registered 5 of them:
 
     >>> filter = [SpecificationFilter.CREATOR]
-    >>> print foobar.specifications(filter=filter).count()
+    >>> print foobar.specifications(None, filter=filter).count()
     5
 
 Now Celso, on the other hand, has 2 specs related to him:
 
     >>> cprov = personset.getByName('cprov')
-    >>> cprov.specifications().count()
+    >>> cprov.specifications(None).count()
     2
 
 On one of those, he is the approver:
 
     >>> filter = [SpecificationFilter.APPROVER]
-    >>> for spec in cprov.specifications(filter=filter):
+    >>> for spec in cprov.specifications(None, filter=filter):
     ...     print spec.name
     svg-support
 
 And on another one, he is the drafter
 
     >>> filter = [SpecificationFilter.DRAFTER]
-    >>> for spec in cprov.specifications(filter=filter):
+    >>> for spec in cprov.specifications(None, filter=filter):
     ...     print spec.name
     e4x
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in cprov.specifications(filter=['svg']):
+    >>> for spec in cprov.specifications(None, filter=['svg']):
     ...     print spec.name
     svg-support
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
@@ -1279,7 +1250,7 @@ Inactive products are excluded from the listings.
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
-    >>> cprov.specifications(filter=['svg']).count()
+    >>> cprov.specifications(None, filter=['svg']).count()
     0
 
 Reset firefox so we don't mess up later tests.
@@ -1321,7 +1292,7 @@ within the context of a specific bug target, or in Launchpad in general.
 A person with bugs assigned to them in a context is considered a 'Bug
 Contributor'.
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 
     >>> cprov.searchTasks(
     ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
@@ -1378,7 +1349,7 @@ bugtracker.
 The method createPersonWithoutEmail() is used in these situations. This
 takes some parameters similar to those taken by createPersonAndEmail()
 but, since an emailless Person cannot be considered to be valid, it
-takes no parameters regarding to emails or passwords.
+takes no parameters regarding to emails.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> new_person = person_set.createPersonWithoutEmail(

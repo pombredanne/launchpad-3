@@ -100,7 +100,7 @@ class GettextCheckMessages(LaunchpadScript):
             validate_translation(
                 potmsgset.singular_text, potmsgset.plural_text,
                 msgstrs, potmsgset.flags)
-        except GettextValidationError, error:
+        except GettextValidationError as error:
             self._error_count += 1
             return unicode(error)
 

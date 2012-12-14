@@ -44,15 +44,15 @@ Given a private PPA for Celso,
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
 
 and a client of Celso's who has a launchpad name of 'joesmith'
 
     >>> login('foo.bar@canonical.com')
-    >>> client = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> client = factory.makePerson(
+    ...     name="joesmith", displayname="Joe Smith", email="joe@example.com")
     >>> logout()
 
 When Celso fills in the form with 'joesmith' as the subscriber, a blank
@@ -108,6 +108,7 @@ new subscriber.
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    Launchpad developer access.
     ...
 
@@ -141,13 +142,15 @@ modifies the description field and clicks Update,
     ...     "a different description")
     >>> cprov_browser.getControl(name="field.actions.update").click()
 
-then the browser is redirected back to the subscriptions page, the updated subscription for the launchpad team is displayed as well as a notification
+then the browser is redirected back to the subscriptions page, the updated
+subscription for the launchpad team is displayed as well as a notification
 about the update.
 
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    a different description
     ...
     >>> for msg in get_feedback_messages(cprov_browser.contents):
@@ -182,7 +185,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have revoked Launchpad Developers's access to PPA
+    You have revoked Launchpad Developers&#x27;s access to PPA
     named p3a for Celso Providelo.
 
 
@@ -261,7 +264,8 @@ the page is redisplayed with new sources.list entries and a notification.
     ...     print msg
     Launchpad has generated the new password you requested for your
     access to the archive PPA named p3a for Celso Providelo. Please
-    follow the instructions below to update your custom "sources.list".
+    follow the instructions below to update your custom
+    &quot;sources.list&quot;.
 
 
 === Scenario 3: A user activates a team subscription ===
@@ -270,12 +274,9 @@ Given a subscription for Celso's private PPA for the Launchpad Team and
 a user Mark who is a member of the Launchpad team,
 
     >>> login('celso.providelo@canonical.com')
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> launchpad = getUtility(IPersonSet).getByName('launchpad')
     >>> ignore = private_ppa.newSubscription(launchpad, cprov)
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> mark = getUtility(IPersonSet).getByName('mark')
@@ -349,5 +350,3 @@ Given a cancelled subscription for Celso's private PPA
 When Andrew visits his subscriptions
 Then the page clearly identifies the subscription as no longer valid
 And there is no entry in the sources.list for the expired subscription.
-
-

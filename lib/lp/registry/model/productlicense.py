@@ -12,14 +12,14 @@ __all__ = [
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productlicense import IProductLicense
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class ProductLicense(SQLBase):
-    """A product's license."""
+    """A product's licence."""
     implements(IProductLicense)
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)

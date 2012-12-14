@@ -9,7 +9,7 @@ you can't know to which comment the new comment was a reply to.
 
 Let's add add change notification and see how it works:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.messages.model.message import MessageSet
 
     >>> login('test@canonical.com')
@@ -18,16 +18,17 @@ Let's add add change notification and see how it works:
     >>> from datetime import datetime, timedelta
     >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lp.bugs.adapters.bugchange import BugVisibilityChange
+    >>> from lp.bugs.adapters.bugchange import BugInformationTypeChange
+    >>> from lp.app.enums import InformationType
 
     >>> ten_minutes_ago = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         False, True))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.PUBLIC, InformationType.USERDATA))
 
     >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> from lp.bugs.scripts.bugnotification import (
@@ -40,11 +41,11 @@ Let's add add change notification and see how it works:
     >>> len(messages)
     1
 
-There are four recipients for this message, so we get:
+There are three recipients for this message, so we get:
 
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
 
 The three emails have identical headers for our purposes, so:
 
@@ -68,9 +69,9 @@ id:
     >>> bug_one.linkMessage(comment)
     <...>
     >>> bug_one.addChange(
-    ...     BugVisibilityChange(
-    ...         ten_minutes_ago, sample_person, "private",
-    ...         True, False))
+    ...     BugInformationTypeChange(
+    ...         ten_minutes_ago, sample_person, "information_type",
+    ...         InformationType.USERDATA, InformationType.PUBLIC))
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> messages = [emails for notifications, omitted, emails in
@@ -79,7 +80,7 @@ id:
     1
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
     >>> notification = emails[0]
 
     >>> notification['Message-Id'] == comment.rfc822msgid
@@ -112,7 +113,7 @@ Grab the notifications:
     1
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
     >>> notification = emails[0]
     >>> notification['Message-Id'] == reply.rfc822msgid
     True

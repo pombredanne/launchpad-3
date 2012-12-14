@@ -16,7 +16,7 @@ First we create a new poll to use throughout this test.
 Now we'll try to change its name to something that is already in use.
 
     >>> team_admin_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
     >>> team_admin_browser.getLink('Change details').click()

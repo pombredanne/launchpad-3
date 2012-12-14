@@ -7,10 +7,11 @@ __metaclass__ = type
 
 from datetime import timedelta
 
-from canonical.testing.layers import FunctionalLayer
 from lazr.restful.interfaces import IJSONPublishable
+
 from lp.services.webservice.json import StrJSONSerializer
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class TestStrJSONSerializer(TestCase):

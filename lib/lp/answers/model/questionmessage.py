@@ -15,15 +15,15 @@ from lazr.delegates import delegates
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from lp.services.messages.interfaces.message import IMessage
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
+from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import cachedproperty
 
 

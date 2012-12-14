@@ -58,7 +58,10 @@ class ImportantInfo:
         return '\n'.join(L)
 
 # PageTemplateFile has .filename.
-from z3c.ptcompat import PageTemplateFile, ViewPageTemplateFile
+from z3c.ptcompat import (
+    PageTemplateFile,
+    ViewPageTemplateFile,
+    )
 
 # PythonExpr has .text, the text of the expression.
 from zope.tales.pythonexpr import PythonExpr
@@ -102,7 +105,6 @@ def find_important_info():
                     metadata["doctest"] = (filename, lineno, func_name)
                 if 'self' in frame.f_locals:
                     fself = frame.f_locals['self']
-                    ftype = type(fself)
                     for cls in list(important_classes):
                         if isinstance(fself, cls):
                             important_objects[cls] = fself

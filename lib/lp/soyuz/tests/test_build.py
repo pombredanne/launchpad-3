@@ -8,13 +8,13 @@ from datetime import (
     timedelta,
     )
 from exceptions import AssertionError
+
 import pytz
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -33,6 +33,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -100,8 +101,8 @@ class TestBuild(TestCaseWithFactory):
         # Builds which were already processed also offer additional
         # information about its process such as the time it was started and
         # finished and its 'log' and 'upload_changesfile' as librarian files.
-        spn=self.factory.getUniqueString()
-        version="%s.1" % self.factory.getUniqueInteger()
+        spn = self.factory.getUniqueString()
+        version = "%s.1" % self.factory.getUniqueInteger()
         spph = self.publisher.getPubSource(
             sourcename=spn, version=version,
             distroseries=self.distroseries,
@@ -154,6 +155,15 @@ class TestBuild(TestCaseWithFactory):
         # If the package has no uploads, its package_upload is None
         self.assertEquals(None, build.package_upload)
 
+    def test_current_component_when_unpublished(self):
+        # Production has some buggy builds without source publications.
+        # current_component returns None in that case.
+        spph = self.publisher.getPubSource()
+        other_das = self.factory.makeDistroArchSeries()
+        build = spph.sourcepackagerelease.createBuild(
+            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        self.assertIs(None, build.current_component)
+
     def test_retry_for_released_series(self):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
@@ -203,6 +213,17 @@ class TestBuild(TestCaseWithFactory):
         [build] = spph.createMissingBuilds()
         with person_logged_in(self.admin):
             build.status = BuildStatus.FAILEDTOBUILD
+        self.assertTrue(build.can_be_retried)
+
+    def test_retry_cancelled(self):
+        # A cancelled build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        with person_logged_in(self.admin):
+            build.status = BuildStatus.CANCELLED
         self.assertTrue(build.can_be_retried)
 
     def test_uploadlog(self):
@@ -382,7 +403,7 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(
             timedelta(0, 72 * 60),
             new_build.buildqueue_record.estimated_duration)
-        
+
     def test_store_uploadlog_refuses_to_overwrite(self):
         # Storing an upload log for a build will fail if the build already
         # has an upload log.
@@ -394,18 +415,4 @@ class TestBuild(TestCaseWithFactory):
         with person_logged_in(self.admin):
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.storeUploadLog('foo')
-        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')   
-
-    def test_assert_with_no_source_history(self):
-        # We can create a BinaryPackageBuild with only an SPR -- this means
-        # that the build has no history (no SourcePackagePublishingHistory),
-        # and we can't queue it.
-        spr = self.factory.makeSourcePackageRelease(
-            distroseries=self.distroseries)
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spr)
-        expected_msg = (
-            "Build %d lacks a corresponding source publication." % (
-                build.id))
-        self.assertRaisesWithContent(
-            AssertionError, expected_msg, build.queueBuild)
+        self.assertRaises(AssertionError, build.storeUploadLog, 'bar')

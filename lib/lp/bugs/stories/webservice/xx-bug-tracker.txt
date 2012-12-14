@@ -31,7 +31,7 @@ any user can access.
     web_link: u'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org'
     --- ...
 
-A bug tracker can be retrieved using the the bug tracker collection's
+A bug tracker can be retrieved using the bug tracker collection's
 getByName named operation.
 
     >>> bug_tracker = anon_webservice.named_get(
@@ -40,7 +40,7 @@ getByName named operation.
     >>> print bug_tracker['name']
     gnome-bugzilla
 
-A bug tracker can be retrieved using the the bug tracker collection's
+A bug tracker can be retrieved using the bug tracker collection's
 queryByBaseURL named operation.
 
     >>> bug_tracker = anon_webservice.named_get(

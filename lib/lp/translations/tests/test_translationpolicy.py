@@ -9,10 +9,10 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 from lp.translations.interfaces.translationsperson import ITranslationsPerson

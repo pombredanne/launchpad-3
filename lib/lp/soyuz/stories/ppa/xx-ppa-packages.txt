@@ -208,7 +208,7 @@ We can view the link on the public PPA to Celso's private PPA when logged
 in as Celso.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~joe/+archive/ppa/+packages")
     >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
@@ -271,25 +271,23 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
-    ...     name='iceweasel').first()
+    ...     name=u'iceweasel').first()
     >>> bpr = test_publisher.uploadBinaryForBuild(
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
     >>> iceweasel_pub.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount').first()
+    >>> pmount_pub = cprov.archive.getPublishedSources(name=u'pmount').first()
     >>> pmount_pub.status = PackagePublishingStatus.DELETED
     >>> pmount_pub.removed_by = cprov
     >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The default status filter is 'published', which means that, by
@@ -305,7 +303,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
 Use can explicitly select 'published' filter and will get the same result.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['published']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -315,7 +314,8 @@ Use can explicitly select 'published' filter and will get the same result.
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build
@@ -443,7 +443,7 @@ sees that there was a failure while building 'cdrkit' on i386 he can
 quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
 

@@ -5,24 +5,24 @@
 
 __metaclass__ = type
 
-import transaction
-
 from lazr.restfulclient.errors import HTTPError
+import transaction
 from zope.component import getUtility
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     launchpadlib_for,
+    login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMessageTraversal(WebServiceTestCase):
@@ -49,6 +49,25 @@ class TestMessageTraversal(WebServiceTestCase):
         self.assertContentEqual(
             messages,
             expected_messages)
+
+    def test_message_with_parent(self):
+        # The API exposes the parent attribute IMessage that is hidden by
+        # IIndexedMessage. The representation cannot make a link to the
+        # parent message because it might switch to another context
+        # object that is not exposed or the user may not have access to.
+        message_1 = self.factory.makeMessage()
+        message_2 = self.factory.makeMessage()
+        message_2.parent = message_1
+        bug = self.factory.makeBug()
+        bug.linkMessage(message_2)
+        user = self.factory.makePerson()
+        lp_bug = self.wsObject(bug, user)
+        for lp_message in lp_bug.messages:
+            # An IIndexedMessage's representation.
+            self.assertIs(None, lp_message.parent)
+        # An IMessage's representation.
+        lp_message = self.wsObject(message_2, user)
+        self.assertIs(None, lp_message.parent)
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):
@@ -86,50 +105,52 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             comment_number=1,
             visible=False)
 
-    def assertCommentHidden(self):
+    def _check_comment_hidden(self):
         bug_msg_set = getUtility(IBugMessageSet)
         with person_logged_in(self.admin):
             bug_message = bug_msg_set.getByBugAndMessage(
                 self.bug, self.message)
             self.assertFalse(bug_message.message.visible)
 
+    def _test_hide_comment(self, person, should_fail=False):
+        bug = self._get_bug_for_user(person)
+        if should_fail:
+            self.assertRaises(
+                HTTPError,
+                self._set_visibility,
+                bug)
+        else:
+            self._set_visibility(bug)
+            self._check_comment_hidden()
+
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set bug comment
         # visibility.
         nopriv = self.person_set.getByName('no-priv')
-        bug = self._get_bug_for_user(nopriv)
-        self.assertRaises(
-            HTTPError,
-            self._set_visibility,
-            bug)
+        self._test_hide_comment(person=nopriv, should_fail=True)
 
     def test_anon_cannot_set_visible(self):
         # Anonymous users can't set bug comment
         # visibility.
-        bug = self._get_bug_for_user()
-        self.assertRaises(
-            HTTPError,
-            self._set_visibility,
-            bug)
+        self._test_hide_comment(person=None, should_fail=True)
 
     def test_registry_admin_can_set_visible(self):
         # Members of registry experts can set bug comment
         # visibility.
-        registry = self.person_set.getByName('registry')
-        person = self.factory.makePerson()
-        with person_logged_in(registry.teamowner):
-            registry.addMember(person, registry.teamowner)
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        person = login_celebrity('registry_experts')
+        self._test_hide_comment(person)
 
     def test_admin_can_set_visible(self):
         # Admins can set bug comment
         # visibility.
-        admins = self.person_set.getByName('admins')
+        person = login_celebrity('admin')
+        self._test_hide_comment(person)
+
+    def test_userdata_grantee_can_set_visible(self):
         person = self.factory.makePerson()
-        with person_logged_in(admins.teamowner):
-            admins.addMember(person, admins.teamowner)
-        bug = self._get_bug_for_user(person)
-        self._set_visibility(bug)
-        self.assertCommentHidden()
+        pillar = removeSecurityProxy(self.bug.default_bugtask).pillar
+        policy = getUtility(IAccessPolicySource).find(
+            [(pillar, InformationType.USERDATA)]).one()
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantor=pillar.owner, grantee=person)
+        self._test_hide_comment(person)

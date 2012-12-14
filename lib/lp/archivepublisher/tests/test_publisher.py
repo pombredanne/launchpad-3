@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -15,18 +15,13 @@ import shutil
 import stat
 import tempfile
 from textwrap import dedent
+import time
 
 from debian.deb822 import Release
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.testing.keyserver import KeyServerTac
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -45,17 +40,27 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.log.logger import BufferLogger
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
+from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 RELEASE = PackagePublishingPocket.RELEASE
@@ -427,6 +432,45 @@ class TestPublisher(TestPublisherBase):
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
+
+    def testPublishingSkipsObsoleteFuturePrimarySeries(self):
+        """Publisher skips OBSOLETE/FUTURE series in PRIMARY archives."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(0, naked_breezy_autotest.publish.call_count)
+
+    def testPublishingConsidersObsoleteFuturePPASeries(self):
+        """Publisher does not skip OBSOLETE/FUTURE series in PPA archives."""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, test_archive)
+        # Remove security proxy so that the publisher can call our fake
+        # method.
+        publisher.distro = removeSecurityProxy(publisher.distro)
+
+        for status in (SeriesStatus.OBSOLETE, SeriesStatus.FUTURE):
+            naked_breezy_autotest = publisher.distro['breezy-autotest']
+            naked_breezy_autotest.status = status
+            naked_breezy_autotest.publish = FakeMethod(result=set())
+
+            publisher.A_publish(False)
+
+            self.assertEqual(1, naked_breezy_autotest.publish.call_count)
 
     def testPublisherBuilderFunctions(self):
         """Publisher can be initialized via provided helper function.
@@ -817,8 +861,8 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        self.assertTrue(
-            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+        self.assertIn(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE),
             publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
@@ -877,7 +921,8 @@ class TestPublisher(TestPublisherBase):
         archive_publisher.D_writeReleaseFiles(False)
 
         release = self.parseRelease(os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release'))
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release'))
         self.assertEqual('LP-PPA-cprov', release['origin'])
 
         # The Label: field should be set to the archive displayname
@@ -925,7 +970,8 @@ class TestPublisher(TestPublisherBase):
         # Check the distinct Origin: field content in the main Release file
         # and the component specific one.
         release = self.parseRelease(os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'Release'))
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'Release'))
         self.assertEqual('LP-PPA-cprov-testing', release['origin'])
 
         arch_release = self.parseRelease(os.path.join(
@@ -1381,3 +1427,103 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
 
         # All done, turn test-keyserver off.
         tac.tearDown()
+
+
+class TestPublisherLite(TestCaseWithFactory):
+    """Lightweight unit tests for the publisher."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makePublishableSeries(self, root_dir):
+        """Create a `DistroSeries` ready for publishing.
+
+        :param root_dir: A temporary directory for use as an archive root.
+        """
+        distro = self.factory.makeDistribution(publish_root_dir=root_dir)
+        return self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.FROZEN)
+
+    def getReleaseFileDir(self, root, distroseries, suite):
+        """Locate the directory where a Release file should be.
+
+        :param root: Archive root directory.
+        :param distroseries: Published distroseries.
+        :param suite: Published suite.
+        """
+        return os.path.join(
+            root, distroseries.distribution.name, 'dists', suite)
+
+    def makePublishablePackage(self, series):
+        """Create a source publication ready for publishing."""
+        return self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, status=PackagePublishingStatus.PENDING)
+
+    def makePublisher(self, series):
+        """Create a publisher for a given distroseries."""
+        return getPublisher(series.main_archive, None, DevNullLogger())
+
+    def makeFakeReleaseData(self):
+        """Create a fake `debian.deb822.Release`.
+
+        The object's dump method will write arbitrary text.  For testing
+        purposes, the fake object will compare equal to a string holding
+        this same text, encoded in the requested encoding.
+        """
+        class FakeReleaseData(unicode):
+            def dump(self, output_file, encoding):
+                output_file.write(self.encode(encoding))
+
+        return FakeReleaseData(self.factory.getUniqueUnicode())
+
+    def test_writeReleaseFile_dumps_release_file(self):
+        # _writeReleaseFile writes a Release file for a suite.
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        spph = self.makePublishablePackage(series)
+        suite = series.name + pocketsuffix[spph.pocket]
+        releases_dir = self.getReleaseFileDir(root, series, suite)
+        os.makedirs(releases_dir)
+        release_data = self.makeFakeReleaseData()
+        release_path = os.path.join(releases_dir, "Release")
+
+        self.makePublisher(series)._writeReleaseFile(suite, release_data)
+
+        self.assertTrue(file_exists(release_path))
+        self.assertEqual(
+            release_data.encode('utf-8'), file(release_path).read())
+
+    def test_writeReleaseFile_creates_directory_if_necessary(self):
+        # If the suite is new and its release directory does not exist
+        # yet, _writeReleaseFile will create it.
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        spph = self.makePublishablePackage(series)
+        suite = series.name + pocketsuffix[spph.pocket]
+        release_data = self.makeFakeReleaseData()
+        release_path = os.path.join(
+            self.getReleaseFileDir(root, series, suite), "Release")
+
+        self.makePublisher(series)._writeReleaseFile(suite, release_data)
+
+        self.assertTrue(file_exists(release_path))
+
+    def test_syncTimestamps_makes_timestamps_match_latest(self):
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        location = self.getReleaseFileDir(root, series, series.name)
+        os.makedirs(location)
+        now = time.time()
+        path_times = (("a", now), ("b", now - 1), ("c", now - 2))
+        for path, timestamp in path_times:
+            with open(os.path.join(location, path), "w"):
+                pass
+            os.utime(os.path.join(location, path), (timestamp, timestamp))
+
+        paths = [path for path, _ in path_times]
+        self.makePublisher(series)._syncTimestamps(series.name, set(paths))
+
+        timestamps = set(
+            os.stat(os.path.join(location, path)).st_mtime for path in paths)
+        self.assertEqual(1, len(timestamps))
+        # The filesystem may round off subsecond parts of timestamps.
+        self.assertEqual(int(now), int(list(timestamps)[0]))

@@ -16,25 +16,24 @@
             <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
                   tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
                   style="display: inline; padding-left: 1em"
+                  id="tryagain"
                   name="tryagain"
                   method="post"
                   enctype="multipart/form-data" accept-charset="UTF-8">
-              <noscript>
-                <img src="/@@/retry" />
-                <input id="tryagain.actions.tryagain" name="tryagain.actions.tryagain" value="Try Again" class="button" type="submit" />
-              </noscript>
               <input
                  type="hidden"
                  name="tryagain.actions.tryagain"
                  value="" />
-              <a href="javascript:document.tryagain.submit()" style="display: none" id="tryagainlink">
-                <img src="/@@/retry" />
-                Try again
-              </a>
+              <input type="submit" id="tryagain.actions.tryagain"
+                 name="tryagain.actions.tryagain" value="Try Again"
+                 class="button"  />
+              <a href="#" class="hidden sprite retry"
+                id="tryagainlink">Try again</a>
               <script type="text/javascript">
-                  LPS.use('event', 'node', function(Y) {
-                    Y.on("domready", function () { Y.one('#tryagainlink').setStyle('display', 'inline') });
-                  });
+                  LPJS.use('lp.code.util', function(Y) {
+                      Y.on("domready", function () {
+                          Y.lp.code.util.hookUpRetyImportSubmission(Y);
+                      }, window);});
               </script>
             </form>
         </div>
@@ -50,18 +49,6 @@
             </tal:not-web-url>
           </p>
         </tal:git-import>
-
-        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
-          <p>This branch is an import of the tip branch of the Mercurial repository at
-            <tal:is-web-url condition="view/url_is_web">
-              <a tal:attributes="href code_import/url"
-                 tal:content="code_import/url" />.
-            </tal:is-web-url>
-            <tal:not-web-url condition="not: view/url_is_web">
-              <span tal:replace="code_import/url" />.
-            </tal:not-web-url>
-          </p>
-        </tal:hg-import>
 
         <tal:bzr-import condition="code_import/rcs_type/enumvalue:BZR">
           <p>This branch is an import of the Bazaar branch at
@@ -140,7 +127,7 @@
         <tal:failing condition="code_import/review_status/enumvalue:FAILING">
           <div id="failing-try-again" class="message warning">
             The import has been suspended because it failed
-            <tal:failure-limit content="modules/canonical.config/config/codeimport/consecutive_failure_limit"/>
+            <tal:failure-limit content="modules/lp.services.config/config/codeimport/consecutive_failure_limit"/>
             or more times in succession.
           </div>
         </tal:failing>
@@ -165,7 +152,7 @@
             tal:define="link context_menu/edit_import"
             tal:condition="link/enabled"
             >
-            <a id="linkbug"
+            <a id="edit-import"
                class="sprite add"
                tal:attributes="href link/url"
                tal:content="link/text" />

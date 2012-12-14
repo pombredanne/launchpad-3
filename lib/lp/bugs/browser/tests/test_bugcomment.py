@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the bugcomment module."""
@@ -12,21 +12,35 @@ from datetime import (
 from itertools import count
 
 from pytz import utc
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.browser.bugcomment import group_comments_with_activity
+from lp.app.enums import InformationType
+from lp.bugs.browser.bugcomment import (
+    BugComment,
+    group_comments_with_activity,
+    )
+from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
-    person_logged_in,
+    login_person,
     TestCase,
+    TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 
 
 class BugActivityStub:
@@ -220,18 +234,106 @@ class TestBugHideCommentControls(
 
     layer = DatabaseFunctionalLayer
 
-    def getContext(self):
+    def getContext(self, comment_owner=None):
         """Required by the mixin."""
-        administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
-        with person_logged_in(administrator):
-            self.factory.makeBugComment(bug=bug)
+        with celebrity_logged_in('admin'):
+            self.factory.makeBugComment(bug=bug, owner=comment_owner)
         return bug
 
     def getView(self, context, user=None, no_login=False):
         """Required by the mixin."""
-        view = self.getViewBrowser(
-            context=context.default_bugtask,
-            user=user,
-            no_login=no_login)
-        return view
+        task = removeSecurityProxy(context).default_bugtask
+        return self.getViewBrowser(
+            context=task, user=user, no_login=no_login)
+
+    def _test_hide_link_visible(self, context, user):
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+    def test_comment_owner_sees_hide_control(self):
+        # The comment owner sees the hide control.
+        owner = self.factory.makePerson()
+        context = self.getContext(comment_owner=owner)
+        self._test_hide_link_visible(context, owner)
+
+    def test_userdata_grant_sees_hide_control(self):
+        # The pillar owner sees the hide control.
+        person = self.factory.makePerson()
+        context = self.getContext()
+        pillar = context.default_bugtask.product
+        policy = getUtility(IAccessPolicySource).find(
+            [(pillar, InformationType.USERDATA)]).one()
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantor=pillar.owner, grantee=person)
+        self._test_hide_link_visible(context, person)
+
+
+class TestBugCommentMicroformats(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_comment_metadata(self):
+        owner = self.factory.makePerson()
+        login_person(owner)
+        bug_comment = self.factory.makeBugComment()
+        browser = self.getViewBrowser(bug_comment)
+        iso_date = bug_comment.datecreated.isoformat()
+        self.assertThat(
+            browser.contents,
+            HTMLContains(Tag(
+                'comment time tag',
+                'time',
+                attrs=dict(
+                    itemprop='commentTime',
+                    title=True,
+                    datetime=iso_date))))
+
+
+class TestBugCommentImplementsInterface(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_comment_implements_interface(self):
+        """Ensure BugComment implements IBugComment"""
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].bugtasks[0]
+        bug_comment = BugComment(1, bug_message, bugtask)
+        verifyObject(IBugComment, bug_comment)
+
+    def test_download_url(self):
+        """download_url is provided and works as expected."""
+        bug_comment = make_bug_comment(self.factory)
+        url = canonical_url(bug_comment, view_name='+download')
+        self.assertEqual(url, bug_comment.download_url)
+
+    def test_bug_comment_canonical_url(self):
+        """The bug comment url should use the default bugtastk."""
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].default_bugtask
+        product = removeSecurityProxy(bugtask).target
+        url = 'http://bugs.launchpad.dev/%s/+bug/%s/comments/%s' % (
+           product.name, bugtask.bug.id, 1)
+        self.assertEqual(url, canonical_url(bug_message))
+
+
+def make_bug_comment(factory, *args, **kwargs):
+    bug_message = factory.makeBugComment(*args, **kwargs)
+    bugtask = bug_message.bugs[0].bugtasks[0]
+    return BugComment(1, bug_message, bugtask)
+
+
+class TestBugCommentInBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_excessive_comments_redirect_to_download(self):
+        """View for excessive comments redirects to download page."""
+        comment = make_bug_comment(self.factory, body='x ' * 5001)
+        view_url = canonical_url(comment)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getUserBrowser(view_url)
+        self.assertNotEqual(view_url, browser.url)
+        self.assertEqual(download_url, browser.url)
+        self.assertEqual('x ' * 5001, browser.contents)

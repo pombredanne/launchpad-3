@@ -20,7 +20,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="log context/bug/activity">
+            <tr tal:repeat="log view/activity">
               <tal:comment condition="nothing">
                 XXX: Gavin Panella 2009-08-12 bug=412963: Using strftime()
                 here because fmt:datetime changes timezone, even though we

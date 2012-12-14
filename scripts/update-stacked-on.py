@@ -21,16 +21,20 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
+
 from collections import namedtuple
 import sys
 
+from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
-from bzrlib import errors
 
-from lp.codehosting.vfs import get_rw_server, get_ro_server
-from lp.codehosting.bzrutils import get_branch_stacked_on_url
 from lp.code.interfaces.codehosting import branch_id_alias
+from lp.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.codehosting.vfs import (
+    get_ro_server,
+    get_rw_server,
+    )
 from lp.services.scripts.base import LaunchpadScript
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchivePermission."""
@@ -10,6 +10,9 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
+from operator import attrgetter
+
+from lazr.enum import DBItem
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -25,34 +28,37 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
     IArchive,
     )
-from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission,
     IArchivePermissionSet,
@@ -101,6 +107,11 @@ class ArchivePermission(SQLBase):
 
     explicit = BoolCol(dbName='explicit', notNull=True, default=False)
 
+    pocket = EnumCol(dbName="pocket", schema=PackagePublishingPocket)
+
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries', notNull=False)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -145,6 +156,8 @@ class ArchivePermission(SQLBase):
         """See `IArchivePermission`"""
         if self.packageset:
             return self.packageset.distroseries.name
+        elif self.distroseries:
+            return self.distroseries.name
         else:
             return None
 
@@ -153,7 +166,8 @@ class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
     implements(IArchivePermissionSet)
 
-    def checkAuthenticated(self, person, archive, permission, item):
+    def checkAuthenticated(self, person, archive, permission, item,
+                           distroseries=None):
         """See `IArchivePermissionSet`."""
         clauses = ["""
             ArchivePermission.archive = %s AND
@@ -176,10 +190,19 @@ class ArchivePermissionSet:
             clauses.append(
                 "ArchivePermission.packageset = %s" % sqlvalues(item.id))
             prejoins.append("packageset")
+        elif (zope_isinstance(item, DBItem) and
+              item.enum.name == "PackagePublishingPocket"):
+            clauses.append("ArchivePermission.pocket = %s" % sqlvalues(item))
+            if distroseries is not None:
+                clauses.append(
+                    "(ArchivePermission.distroseries IS NULL OR "
+                     "ArchivePermission.distroseries = %s)" %
+                    sqlvalues(distroseries))
+                prejoins.append("distroseries")
         else:
             raise AssertionError(
-                "'item' %r is not an IComponent, IPackageset or an "
-                "ISourcePackageName" % item)
+                "'item' %r is not an IComponent, IPackageset, "
+                "ISourcePackageName or PackagePublishingPocket" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
@@ -203,6 +226,16 @@ class ArchivePermissionSet:
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
         return sourcepackagename
+
+    def _precachePersonsForPermissions(self, permissions):
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            set(map(attrgetter("personID"), permissions))))
+        return permissions
+
+    def permissionsForArchive(self, archive):
+        """See `IArchivePermissionSet`."""
+        return self._precachePersonsForPermissions(
+            ArchivePermission.selectBy(archive=archive))
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
@@ -235,12 +268,12 @@ class ArchivePermissionSet:
             prejoins=["component"])
 
     def componentsForUploader(self, archive, person):
-        """See `IArchivePermissionSet`,"""
+        """See `IArchivePermissionSet`."""
         return self._componentsFor(
             archive, person, ArchivePermissionType.UPLOAD)
 
     def uploadersForComponent(self, archive, component=None):
-        "See `IArchivePermissionSet`."""
+        """See `IArchivePermissionSet`."""
         clauses = ["""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s
@@ -270,15 +303,42 @@ class ArchivePermissionSet:
             prejoins=["sourcepackagename"])
 
     def uploadersForPackage(self, archive, sourcepackagename):
-        "See `IArchivePermissionSet`."""
+        """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.UPLOAD,
             sourcepackagename=sourcepackagename)
         return results.prejoin(["sourcepackagename"])
 
+    def _pocketsFor(self, archives, person, permission_type):
+        """Helper function to get ArchivePermission objects."""
+        if IArchive.providedBy(archives):
+            archive_ids = [archives.id]
+        else:
+            archive_ids = [archive.id for archive in archives]
+
+        return ArchivePermission.select("""
+            ArchivePermission.archive IN %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.pocket IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                          TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive_ids, permission_type, person))
+
+    def pocketsForUploader(self, archive, person):
+        """See `IArchivePermissionSet`."""
+        return self._pocketsFor(archive, person, ArchivePermissionType.UPLOAD)
+
+    def uploadersForPocket(self, archive, pocket):
+        """See `IArchivePermissionSet`."""
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.UPLOAD,
+            pocket=pocket)
+
     def queueAdminsForComponent(self, archive, component):
-        "See `IArchivePermissionSet`."""
+        """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
         results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
@@ -288,6 +348,20 @@ class ArchivePermissionSet:
     def componentsForQueueAdmin(self, archive, person):
         """See `IArchivePermissionSet`."""
         return self._componentsFor(
+            archive, person, ArchivePermissionType.QUEUE_ADMIN)
+
+    def queueAdminsForPocket(self, archive, pocket, distroseries=None):
+        """See `IArchivePermissionSet`."""
+        kwargs = {}
+        if distroseries is not None:
+            kwargs["distroseries"] = distroseries
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
+            pocket=pocket, **kwargs)
+
+    def pocketsForQueueAdmin(self, archive, person):
+        """See `IArchivePermissionSet`."""
+        return self._pocketsFor(
             archive, person, ArchivePermissionType.QUEUE_ADMIN)
 
     def newPackageUploader(self, archive, person, sourcepackagename):
@@ -315,6 +389,17 @@ class ArchivePermissionSet:
                 archive=archive, person=person, component=component,
                 permission=ArchivePermissionType.UPLOAD)
 
+    def newPocketUploader(self, archive, person, pocket):
+        """See `IArchivePermissionSet`."""
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, pocket)
+        try:
+            return existing[0]
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person, pocket=pocket,
+                permission=ArchivePermissionType.UPLOAD)
+
     def newQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
@@ -325,6 +410,19 @@ class ArchivePermissionSet:
         except IndexError:
             return ArchivePermission(
                 archive=archive, person=person, component=component,
+                permission=ArchivePermissionType.QUEUE_ADMIN)
+
+    def newPocketQueueAdmin(self, archive, person, pocket, distroseries=None):
+        """See `IArchivePermissionSet`."""
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.QUEUE_ADMIN, pocket,
+            distroseries=distroseries)
+        try:
+            return existing[0]
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person, pocket=pocket,
+                distroseries=distroseries,
                 permission=ArchivePermissionType.QUEUE_ADMIN)
 
     @staticmethod
@@ -353,12 +451,29 @@ class ArchivePermissionSet:
             permission=ArchivePermissionType.UPLOAD)
         self._remove_permission(permission)
 
+    def deletePocketUploader(self, archive, person, pocket):
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person, pocket=pocket,
+            permission=ArchivePermissionType.UPLOAD)
+        self._remove_permission(permission)
+
     def deleteQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.QUEUE_ADMIN)
+        self._remove_permission(permission)
+
+    def deletePocketQueueAdmin(self, archive, person, pocket,
+                               distroseries=None):
+        """See `IArchivePermissionSet`."""
+        kwargs = {}
+        if distroseries is not None:
+            kwargs["distroseries"] = distroseries
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person, pocket=pocket,
+            permission=ArchivePermissionType.QUEUE_ADMIN, **kwargs)
         self._remove_permission(permission)
 
     def _nameToPackageset(self, packageset):

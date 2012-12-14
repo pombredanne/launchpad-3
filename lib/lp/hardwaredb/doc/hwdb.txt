@@ -109,7 +109,7 @@ together with the following data:
 Limitations:
   * "No name" products like mainboards from companies like ASRock
      or Asus that are directly sold to end users have fingerprints like
-     "American Megatrends Inc. Uknown 1.0".
+     "American Megatrends Inc. Unknown 1.0".
   * A manufacturer may erroneously assign identical DMI values for product
     and vendor to different systems.
   * submissions for "counterfeit systems".
@@ -368,7 +368,7 @@ to the method, or if the passed parameter is neither the owner nor an admin.
 When an anonymous submitter later registers a Launchpad account, the field
 `owner` is updated.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     u'beeblebrox@example.com', u'Beeblebrox',
@@ -408,9 +408,9 @@ When he adds this email address to his list of addresses in Launchpad,
 the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
-    ...     u'beeblebrox@beeblebrox.net', user, account=user.account)
+    ...     u'beeblebrox@beeblebrox.net', user)
     >>> transaction.commit()
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
     >>> HWSubmissionEmailLinker(log=DevNullLogger()).run()
@@ -743,4 +743,3 @@ IPerson.hardware_submissions.
     >>> set(submission.owner.name for submission
     ...     in owner.hardware_submissions)
     set([u'name12'])
-

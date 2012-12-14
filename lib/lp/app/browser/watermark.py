@@ -9,8 +9,6 @@ __all__ = [
     ]
 
 
-import cgi
-
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.traversing.interfaces import (
@@ -19,13 +17,14 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 from lp.app.interfaces.headings import (
     IEditableContextTitle,
     IMajorHeadingView,
     IRootContext,
     )
+from lp.services.webapp.canonicalurl import nearest_provides_or_adapted
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.publisher import canonical_url
 
 
 class WatermarkTalesAdapter:
@@ -56,9 +55,9 @@ class WatermarkTalesAdapter:
             return self._view.title_edit_widget()
         # The title is static, but only the context's index view gets an H1.
         if IMajorHeadingView.providedBy(self._view):
-            heading = 'h1'
+            heading = structured('h1')
         else:
-            heading = 'h2'
+            heading = structured('h2')
         # If there is actually no root context, then it's a top-level
         # context-less page so Launchpad.net is shown as the branding.
         if self.root_context is None:
@@ -66,10 +65,10 @@ class WatermarkTalesAdapter:
         else:
             title = self.root_context.title
         # For non-editable titles, generate the static heading.
-        return "<%(heading)s>%(title)s</%(heading)s>" % dict(
+        return structured(
+            "<%(heading)s>%(title)s</%(heading)s>",
             heading=heading,
-            title=cgi.escape(title),
-            )
+            title=title).escapedtext
 
     def logo(self):
         """Return the logo image for the root context."""

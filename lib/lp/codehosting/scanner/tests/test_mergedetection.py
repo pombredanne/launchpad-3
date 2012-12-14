@@ -12,9 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -22,7 +19,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
-    BranchMergeProposalJobFactory,
     BranchMergeProposalJobType,
     )
 from lp.codehosting.scanner import (
@@ -33,11 +29,14 @@ from lp.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase,
     run_as_db_user,
     )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -285,7 +284,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
             BranchMergeProposalJob.branch_merge_proposal == proposal,
             BranchMergeProposalJob.job_type ==
             BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED).one()
-        derived_job = BranchMergeProposalJobFactory.create(job)
+        derived_job = job.makeDerived()
         derived_job.run()
         notifications = pop_notifications()
         self.assertIn('Work in progress => Merged',

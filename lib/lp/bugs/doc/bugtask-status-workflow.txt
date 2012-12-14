@@ -11,7 +11,7 @@ Here are examples of each transition that we record. First, let's create
 a new bug to work with:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 

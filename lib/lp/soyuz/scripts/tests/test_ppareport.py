@@ -11,12 +11,12 @@ from StringIO import StringIO
 import tempfile
 import unittest
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ppareport import PPAReportScript
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestPPAReport(unittest.TestCase):

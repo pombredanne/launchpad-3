@@ -46,28 +46,6 @@
       </dd>
     </dl>
 
-    <tal:derivation-not-enabled
-        tal:condition="not:request/features/soyuz.derived_series_ui.enabled">
-
-    <dl>
-      <dt>Successor to:</dt>
-      <dd>
-        <a
-          tal:condition="context/previous_series"
-          tal:attributes="href context/previous_series/fmt:url"
-          tal:content="context/previous_series/named_version" />
-        <tal:none condition="not: context/previous_series">
-          <tal:name replace="context/named_version"/>
-          did not succeed any earlier series.
-        </tal:none>
-      </dd>
-    </dl>
-
-    </tal:derivation-not-enabled>
-
-    <tal:derivation-enabled
-        tal:condition="request/features/soyuz.derived_series_ui.enabled">
-
     <dl tal:define="parents context/getParentSeries">
       <dt>Derives from:</dt>
       <dd tal:condition="parents">
@@ -97,8 +75,6 @@
         </tal:none>
       </dd>
     </dl>
-
-    </tal:derivation-enabled>
 
     <dl tal:define="sourcecount context/sourcecount">
       <dt>Source packages:</dt>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,17 +13,11 @@ __all__ = [
     'ISpecificationGoal',
     ]
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-from zope.schema import TextLine
-
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    exported,
     export_as_webservice_entry,
     export_read_operation,
+    exported,
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
@@ -32,8 +26,10 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.interface import Interface
+from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasSpecifications(Interface):
@@ -43,7 +39,7 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    all_specifications = exported(doNotSnapshot(
+    _all_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("All specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -51,13 +47,9 @@ class IHasSpecifications(Interface):
             description=_(
                 'A list of all specifications, regardless of status or '
                 'approval or completion, for this object.'))),
-                                  as_of="devel")
+        exported_as="all_specifications", as_of="devel")
 
-    has_any_specifications = Attribute(
-        'A true or false indicator of whether or not this object has any '
-        'specifications associated with it, regardless of their status.')
-
-    valid_specifications = exported(doNotSnapshot(
+    _valid_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("Valid specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -66,18 +58,13 @@ class IHasSpecifications(Interface):
                 'All specifications that are not obsolete. When called from '
                 'an ISpecificationGoal it will also exclude the ones that '
                 'have not been accepted for that goal'))),
-                                    as_of="devel")
+        exported_as="valid_specifications", as_of="devel")
 
-    latest_specifications = Attribute(
-        "The latest 5 specifications registered for this context.")
-
-    latest_completed_specifications = Attribute(
-        "The 5 specifications most recently completed for this context.")
-
-    def specifications(quantity=None, sort=None, filter=None,
+    def specifications(user, quantity=None, sort=None, filter=None,
                        prejoin_people=True):
         """Specifications for this target.
 
+        The user specifies which user to use for calculation of visibility.
         The sort is a dbschema which indicates the preferred sort order. The
         filter is an indicator of the kinds of specs to be returned, and
         appropriate filters depend on the kind of object this method is on.
@@ -103,13 +90,19 @@ class ISpecificationTarget(IHasSpecifications):
 
     @operation_parameters(
         name=TextLine(title=_('The name of the specification')))
-    @operation_returns_entry(Interface) # really ISpecification
+    @operation_returns_entry(Interface)  # really ISpecification
     @export_read_operation()
     @operation_for_version('devel')
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.
         """
+
+    def getAllowedSpecificationInformationTypes():
+        """Get the InformationTypes for this target's specifications."""
+
+    def getDefaultSpecificationInformationType():
+        """Get the default InformationType for the target's specifications."""
 
 
 class ISpecificationGoal(ISpecificationTarget):

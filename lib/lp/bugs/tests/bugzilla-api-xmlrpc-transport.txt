@@ -102,7 +102,7 @@ list of dicts containing those bugs' data.
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53
@@ -156,7 +156,7 @@ date / time.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -175,7 +175,7 @@ results to those IDs.
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53
@@ -224,7 +224,7 @@ It's possible to search for bugs filed on a particular product.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -239,7 +239,7 @@ You can search for more than one product.
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53
@@ -264,7 +264,7 @@ You can search for more than one product.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -481,7 +481,7 @@ The URL will now have been added to the bug's see_also list.
     >>> bug_dict = return_value['bugs'][0]
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict.get(key))
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53

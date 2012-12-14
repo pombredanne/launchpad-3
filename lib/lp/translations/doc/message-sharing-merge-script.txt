@@ -6,7 +6,7 @@ translations into properly sharing ones.
 Unit tests go through the details of how the script works.  Here we just
 show that the script can run and perform its work.
 
-    >>> from canonical.launchpad.scripts.tests import run_script
+    >>> from lp.services.scripts.tests import run_script
     >>> retcode, stdout, stderr = run_script(
     ...     'scripts/rosetta/message-sharing-merge.py', [
     ...         '-q', '-P', '-T', '-d', 'ubuntu', '-s', 'evolution'])
@@ -20,5 +20,5 @@ The migration succeeds.
 # The script modified the database, even though the database layer may
 # not have noticed it.
 
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> DatabaseLayer.force_dirty_database()

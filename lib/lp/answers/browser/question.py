@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -28,7 +28,6 @@ __all__ = [
 
 from operator import attrgetter
 import re
-from xml.sax.saxutils import escape
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -56,28 +55,7 @@ from zope.schema.vocabulary import (
     )
 import zope.security
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
-    is_english_variant,
-    preferred_or_request_languages,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import (
     QuestionAction,
@@ -97,7 +75,10 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
+from lp.answers.vocabulary import (
+    UsesAnswersDistributionVocabulary,
+    UsesAnswersProductVocabulary,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -106,11 +87,15 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -118,6 +103,25 @@ from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.personroles import PersonRoles
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.worlddata.helpers import (
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 
 
 class QuestionLinksMixin:
@@ -643,6 +647,15 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         """Return True if similar FAQs or questions were found."""
         return self.similar_questions or self.similar_faqs
 
+    @property
+    def context_uses_answers(self):
+        """Return True if the context uses launchpad as an answer forum."""
+        usage = IServiceUsage(self.context)
+        if usage is not None:             
+            return usage.answers_usage == ServiceUsage.LAUNCHPAD
+        else:
+            return False
+
     @action(_('Continue'))
     def continue_action(self, action, data):
         """Search for questions and FAQs similar to the entered summary."""
@@ -728,6 +741,9 @@ class QuestionChangeStatusView(LaunchpadFormView):
 
 class QuestionTargetWidget(LaunchpadTargetWidget):
     """A targeting widget that is aware of pillars that use Answers."""
+
+    def getProductVocabulary(self):
+        return 'UsesAnswersProduct'
 
     def getDistributionVocabulary(self):
         distro = self.context.context.distribution
@@ -925,7 +941,9 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
             role = PersonRoles(self.user)
             strip_invisible = not (role.in_admin or role.in_registry_experts)
         if strip_invisible:
-            messages = [message for message in messages if message.visible]
+            messages = [
+                message for message in messages
+                if message.visible or message.owner == self.user]
         return messages
 
     def canAddComment(self, action):
@@ -1145,7 +1163,7 @@ class QuestionMessageDisplayView(LaunchpadView):
 
     @cachedproperty
     def canSeeSpamControls(self):
-        return check_permission('launchpad.Moderate', self.context.question)
+        return check_permission('launchpad.Moderate', self.context)
 
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]
@@ -1301,7 +1319,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
 
         Those found in `values` are marked as selected. The list of rendered
         values is controlled by the search query. The currently selected
-        value is always added the the set.
+        value is always added to the set.
         """
         rendered_items = []
         rendered_values = set()
@@ -1366,12 +1384,13 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         if selected:
             attributes['checked'] = 'checked'
         input = renderElement(u'input', **attributes)
-        button = '<label style="font-weight: normal">%s&nbsp;%s:</label>' % (
-            input, escape(term.token))
-        link = '<a href="%s">%s</a>' % (
-            canonical_url(term.value), escape(term.title))
+        button = structured(
+            '<label style="font-weight: normal">%s&nbsp;%s:</label>',
+            structured(input), term.token)
+        link = structured(
+            '<a href="%s">%s</a>', canonical_url(term.value), term.title)
 
-        return "\n".join([button, link])
+        return "\n".join([button.escapedtext, link.escapedtext])
 
     def renderSearchWidget(self):
         """Render the search entry field and the button."""

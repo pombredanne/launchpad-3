@@ -164,7 +164,11 @@ will be edited.
 If the bug is targeted to a source package, that bugtask is of course
 edited.
 
-    >>> ubuntu_bugtask.transitionToTarget(ubuntu_firefox)
+    # Need to be privileged user to transition the target.
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_bugtask.transitionToTarget(
+    ...     ubuntu_firefox, getUtility(ILaunchBag).user)
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname

@@ -3,10 +3,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
+  <body class="private">
     <div class="top-portlet" metal:fill-slot="main">
       <h1>Not allowed here</h1>
       <span metal:use-macro="context/@@+forbidden-page-macros/body" />

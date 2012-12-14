@@ -17,7 +17,7 @@ DistroArchSeries and Archive.
 To demonstrate this we need to define some variables.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -89,8 +89,8 @@ was inherited in the initialization.
     >>> print breezy_autotest.previous_series.title
     The Hoary Hedgehog Release
 
-    >>> hoary_evo_release = hoary_evo_source['1.0']
-    >>> copied_pub = hoary_evo_release.current_published.copyTo(
+    >>> evo_pub = hoary.getPublishedSources('evolution', version='1.0')[0]
+    >>> copied_pub = evo_pub.copyTo(
     ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
 
     >>> breezy_autotest_evo_source = breezy_autotest.getSourcePackage(
@@ -176,8 +176,7 @@ where they are published.
 
 Let's start by copying a PRIMARY archive source to Celso's PPA.
 
-    >>> copy = hoary_evo_source['1.0'].current_published.copyTo(
-    ...    hoary, pocket_release, cprov.archive)
+    >>> copy = evo_pub.copyTo(hoary, pocket_release, cprov.archive)
 
 No suitable build will be found for it.
 
@@ -271,7 +270,7 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
     ...    hoary, pocket_release, cprov.archive)
     >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
     >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 A build record is clearly not required here, since both, source and
@@ -293,7 +292,7 @@ Another possible situation is when the user wants to rebuild the
 same source published in hoary to another suite, let's say
 breezy-autotest in his PPA.
 
-    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo').first()
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(name=u'foo').first()
 
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> copy = cprov_foo_src.copyTo(
@@ -315,7 +314,7 @@ It's even possible to copy source and binaries from hoary to warty
 suite in Celso's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary).first()
+    ...    name=u'foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> warty = ubuntu.getSeries('warty')
@@ -345,7 +344,7 @@ Now we can also copy the hoary source and its binary from Celso's PPA
 to Mark Shuttleworth's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary).first()
+    ...    name=u'foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> mark = getUtility(IPersonSet).getByName('mark')

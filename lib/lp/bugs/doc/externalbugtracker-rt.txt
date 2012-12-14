@@ -15,7 +15,7 @@ implementation of ExternalBugTracker, RequestTracker.
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
     ...     RequestTracker('http://example.com/'))
@@ -191,13 +191,15 @@ remote status for, the bug watch that we have created.
 
     >>> transaction.commit()
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     txn, logger=FakeLogger())
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: new
@@ -225,7 +227,7 @@ tracker with a variety of statuses.
 
     >>> rt.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 5 watches for 5 bugs on http://bugs.some.where
+    INFO Updating 5 watches for 5 bugs on http://bugs.some.where
     CALLED urlopen(u'REST/1.0/search/ticket/')
 
 The bug statuses have now been imported from the Example.com bug

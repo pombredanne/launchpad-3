@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
     <div class="top-portlet" metal:fill-slot="main">
@@ -43,7 +43,7 @@
           >Return to the page you came from</a>
         </li>
         <li>
-          <a tal:attributes="href modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+          <a tal:attributes="href modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
           >Return to the Launchpad front page</a>
         </li>
       </ul>

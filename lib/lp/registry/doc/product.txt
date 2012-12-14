@@ -14,8 +14,8 @@ software. It can be part of a ProjectGroup or it can be standalone.
     ...     )
     >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
-    >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.testing import login
+    >>> from lp.services.webapp.testing import verifyObject
 
 Let's log in as Foo Bar to ensure we have the privileges to do what we're
 going to demonstrate.
@@ -154,7 +154,7 @@ ILaunchpadStatisticSet is stored in the 'stats' attribute.
 IProductSet can also retrieve the latest products registered.  By
 default the latest five are returned.
 
-    >>> latest = productset.latest()
+    >>> latest = productset.latest(None)
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
@@ -167,7 +167,7 @@ default the latest five are returned.
 The quantity can be specified and that many, if available, will be
 returned.
 
-    >>> latest = productset.latest(quantity=3)
+    >>> latest = productset.latest(None, quantity=3)
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
@@ -186,29 +186,6 @@ IProductSet will also tell us which products can be translated:
     alsa-utils
     evolution
 
-A similar list of "featured translatables" picks a random set of these,
-so we can present a short list of arbitrary projects that a user can
-help translate.
-
-XXX JeroenVermeulen 2008-07-31 bug-253583: We're not using this method
-at the moment.  Remove it or start using it?
-
-    >>> for product in productset.featuredTranslatables():
-    ...     print product.name
-    alsa-utils
-    evolution
-
-In featuredTranslatables() we can also set how many products we want to
-show at maximum.  We can pick just one random translatable product, for
-example.
-
-    >>> features = [
-    ...     product.name for product in productset.featuredTranslatables(1)]
-    >>> len(features)
-    1
-    >>> features[0] in ('alsa-utils', 'evolution')
-    True
-
 Only active products are listed as translatables.
 
     # Unlink the source packages so the project can be deactivated.
@@ -216,10 +193,6 @@ Only active products are listed as translatables.
     >>> unlink_source_packages(evo)
     >>> evo.active = False
     >>> for product in productset.getTranslatables():
-    ...    print product.name
-    alsa-utils
-
-    >>> for product in productset.featuredTranslatables():
     ...    print product.name
     alsa-utils
 
@@ -242,26 +215,6 @@ For convenience, you can get just the distro source packages for Ubuntu.
 
     >>> [(sp.name, sp.distribution.name) for sp in alsa.ubuntu_packages]
     [(u'alsa-utils', u'ubuntu')]
-
-The date_next_suggest_packaging attribute records the date when Launchpad can
-resume suggesting Ubuntu packages that the project provides. A value of None
-means that no user has ever confirmed that that the project has no Ubuntu
-packages.
-
-    >>> print evo.date_next_suggest_packaging
-    None
-
-Any logged in user can set date_next_suggest_packaging, just like any
-logged in user can can link a project to a source package.
-
-    >>> from datetime import datetime
-    >>> from pytz import UTC
-
-    >>> login("no-priv@canonical.com")
-    >>> evo.date_next_suggest_packaging = datetime(
-    ...     2011, 1, 25, 0, 0, 0, tzinfo=UTC)
-    >>> print evo.date_next_suggest_packaging
-    2011-01-25 00:00:00+00:00
 
 
 External Bug Tracker
@@ -289,7 +242,7 @@ This is true even if its project has a bug tracker specified.
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
     >>> gnome_bugzilla = bug_tracker_set.getByName('gnome-bugzilla')
     >>> firefox.project.bugtracker = gnome_bugzilla
@@ -369,27 +322,6 @@ When creating a product, a default product series is created for it:
     >>> print trunk.name
     trunk
 
-A product's licenses is now being tracked. Previously registered products
-may not have a license set, so an empty tuple is valid. If the licenses
-or license_info attributes are changed, the project_reviewed is reset
-to false.
-
-    >>> login('admin@canonical.com')
-    >>> productset.getByName('jokosher').licenses == ()
-    True
-    >>> product.licenses
-    (<...License.GNU_GPL_V2...>,)
-    >>> product.project_reviewed = True
-    >>> product.licenses = (License.GNU_GPL_V2, License.GNU_LGPL_V2_1)
-    >>> product.licenses
-    (<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>)
-    >>> product.project_reviewed
-    False
-    >>> product.project_reviewed = True
-    >>> product.license_info = 'foo'
-    >>> product.project_reviewed
-    False
-
 This series is set as the development focus for the product:
 
     >>> product.development_focus == trunk
@@ -425,7 +357,7 @@ informational.
 First, there should be only one informational spec for firefox:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
     extension-manager-upgrades
 
@@ -433,19 +365,19 @@ First, there should be only one informational spec for firefox:
 There are no completed specs for firefox:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in firefox.specifications(filter=filter):
+    >>> for spec in firefox.specifications(None, filter=filter):
     ...    print spec.name
 
 
 And there are five incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> firefox.specifications(filter=filter).count()
+    >>> firefox.specifications(None, filter=filter).count()
     5
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in firefox.specifications(filter=['new']):
+    >>> for spec in firefox.specifications(None, filter=['new']):
     ...     print spec.name
     canvas
     e4x
@@ -463,14 +395,10 @@ ProductSeries of a product.
 Milestones for products can only be created by product/project owners,
 registry experts, or admins.
 
+    >>> from datetime import datetime
+
     >>> firefox_one_zero = firefox.getSeries('1.0')
     >>> product_owner_email = firefox.owner.preferredemail.email
-    >>> login("no-priv@canonical.com")
-    >>> firefox_one_zero.newMilestone(
-    ...     name='impossible', dateexpected=datetime(2018, 10, 1))
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<ProductSeries at ...>, 'newMilestone', 'launchpad.Edit')
     >>> login(product_owner_email)
     >>> firefox_milestone = firefox_one_zero.newMilestone(
     ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
@@ -743,7 +671,7 @@ A product owner can be changed by the current owner.
     >>> print mark.name
     mark
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> firefox.owner = mark
 
     >>> print firefox.owner.name

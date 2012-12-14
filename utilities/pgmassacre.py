@@ -13,11 +13,12 @@ Cut off access, slaughter connections and burn the database to the ground
 (but do nothing that could put the system into recovery mode).
 """
 
+from optparse import OptionParser
 import sys
 import time
+
 import psycopg2
 import psycopg2.extensions
-from optparse import OptionParser
 
 
 def connect(dbname='template1'):
@@ -167,7 +168,7 @@ def rebuild(database, template):
             cur.execute(create_db_cmd)
             con.close()
             return 0
-        except psycopg2.Error, exception:
+        except psycopg2.Error as exception:
             error_msg = str(exception)
         time.sleep(0.6)  # Stats only updated every 500ms.
         now = time.time()

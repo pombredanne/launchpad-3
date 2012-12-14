@@ -11,15 +11,18 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import ILaunchBag
+
+
+NO_KEY_TEMPLATE = 'key-not-registered.txt'
+NOT_SIGNED_TEMPLATE = 'not-signed.txt'
 
 
 class IncomingEmailError(Exception):
@@ -109,6 +112,7 @@ def parse_commands(content, command_names):
     A list of (command, args) tuples is returned.
     """
     commands = []
+
     for line in content.splitlines():
         # All commands have to be indented.
         if line.startswith(' ') or line.startswith('\t'):
@@ -117,12 +121,18 @@ def parse_commands(content, command_names):
                 # If the 'done' statement is encountered,
                 # stop reading any more commands.
                 break
-            words = command_string.split(' ')
+            words = command_string.split(' ', 1)
             if len(words) > 0:
-                first = words.pop(0)
+                # Capitalization gets ignored
+                first = words.pop(0).lower()
                 if first.endswith(':'):
                     first = first[:-1]
                 if first in command_names:
+                    if len(words) > 0:
+                        words = words[0]
+                        if command_names[first]:
+                            words = words.lower()
+                        words = words.split(' ')
                     commands.append((first, words))
     return commands
 
@@ -133,7 +143,7 @@ def get_error_message(filename, error_templates=None, **interpolation_items):
     If the error message requires some parameters, those are given in
     interpolation_items.
 
-    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
+    The files are searched for in lib/lp.services/mail/errortemplates.
     """
     if error_templates is None:
         error_templates = os.path.join(
@@ -148,6 +158,8 @@ def get_person_or_team(person_name_or_email):
 
     :raises: EmailProcessingError if person not found.
     """
+    # Avoid circular import problems.
+    from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
     valid_person_vocabulary = ValidPersonOrTeamVocabulary()
     try:
         person_term = valid_person_vocabulary.getTermByToken(
@@ -161,9 +173,7 @@ def get_person_or_team(person_name_or_email):
 
 
 def ensure_not_weakly_authenticated(signed_msg, context,
-                                    error_template='not-signed.txt',
-                                    no_key_template='key-not-registered.txt',
-                                    error_templates=None):
+                                    error_template='not-signed.txt'):
     """Make sure that the current principal is not weakly authenticated.
 
     NB: While handling an email, the authentication state is stored partly in
@@ -180,14 +190,12 @@ def ensure_not_weakly_authenticated(signed_msg, context,
     if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
         if signed_msg.signature is None:
             error_message = get_error_message(
-                error_template, error_templates=error_templates,
-                context=context)
+                NOT_SIGNED_TEMPLATE, None, context=context)
         else:
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                no_key_template, error_templates,
-                import_url=import_url, context=context)
+                NO_KEY_TEMPLATE, None, import_url=import_url, context=context)
         raise IncomingEmailError(error_message)
 
 
@@ -232,3 +240,34 @@ def save_mail_to_librarian(raw_mail):
             len(raw_mail),
             cStringIO(raw_mail), 'message/rfc822')
     return file_alias
+
+
+def get_email_template(filename, app=None):
+    """Returns the email template with the given file name.
+
+    The templates are located in 'lib/canonical/launchpad/emailtemplates'.
+    """
+    if app is None:
+        base = os.path.dirname(__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        import lp
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
+    return open(fullpath).read()
+
+
+def get_contact_email_addresses(person):
+    """Return a set of email addresses to contact this Person.
+
+    In general, it is better to use lp.registry.model.person.get_recipients
+    instead.
+    """
+    # Need to remove the security proxy of the email address because the
+    # logged in user may not have permission to see it.
+    from zope.security.proxy import removeSecurityProxy
+    # Circular imports force this import.
+    from lp.registry.model.person import get_recipients
+    return set(
+        str(removeSecurityProxy(mail_person).preferredemail.email)
+        for mail_person in get_recipients(person))

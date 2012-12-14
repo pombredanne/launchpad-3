@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import NotFoundError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.browser.potemplate import POTemplateNavigation
 from lp.translations.model.pofile import DummyPOFile
 

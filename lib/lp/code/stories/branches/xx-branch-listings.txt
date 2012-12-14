@@ -58,7 +58,6 @@ and are really just branch metadata without the revisions behind them.
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/klingon          Experimental  ...
-    lp://dev/~name12/landscape/feature-x             Development   ...
     lp://dev/~name12/+junk/junk.contrib              Development   ...
     lp://dev/~name12/+junk/junk.dev                  Experimental  ...
 
@@ -66,7 +65,7 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('subscribed').click()
+    >>> browser.getLink('Subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
@@ -137,7 +136,8 @@ Now all types of branches should be shown.
     lp://dev/~name12/gnome-terminal/pushed         Development     ...
     lp://dev/~name12/gnome-terminal/scanned        Development     ...
     lp://dev/~name12/gnome-terminal/klingon        Experimental    ...
-    lp://dev/~name12/landscape/feature-x           Development     ...
+    lp://dev/~name12/+junk/junk.contrib            Development     ...
+    lp://dev/~name12/+junk/junk.dev                Experimental    ...
 
 
 Selecting an individual lifecycle status from the select control
@@ -186,6 +186,7 @@ first.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
+    lp://dev/~name12/firefox/main ...
     lp://dev/~launchpad/gnome-terminal/launchpad ...
     lp://dev/~name12/+junk/junk.dev ...
 
@@ -229,9 +230,8 @@ We display badges for associated bugs.
 If the bug is not visible to the user that is looking at the page, then the
 badge is not shown.
 
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
-    >>> browser.getLink('This report is public').click()
-    >>> browser.getControl('This bug report should be private').click()
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4/+secrecy')
+    >>> browser.getControl('Private', index=1).click()
     >>> browser.getControl('Change').click()
 
 Now the badge is still shown for Sample Person...
@@ -359,7 +359,7 @@ development focus branch.
 
     >>> admin_browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> admin_browser.getLink('Link to branch').click()
-    >>> admin_browser.getControl(name='field.branch').value = (
+    >>> admin_browser.getControl(name='field.branch_location').value = (
     ...     '~name12/gnome-terminal/main')
     >>> admin_browser.getControl('Update').click()
 

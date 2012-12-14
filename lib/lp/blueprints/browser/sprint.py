@@ -33,20 +33,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -79,7 +66,20 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.bulk import load_referencing
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -216,7 +216,7 @@ class SprintView(HasSpecificationsView):
     @cachedproperty
     def latest_approved(self):
         filter = [SpecificationFilter.ACCEPTED]
-        return self.context.specifications(filter=filter,
+        return self.context.specifications(self.user, filter=filter,
                     quantity=self.latest_specs_limit,
                     sort=SpecificationSort.DATE)
 
@@ -464,7 +464,7 @@ class SprintMeetingExportView(LaunchpadView):
 
         model_specs = []
         for spec in self.context.specifications(
-            filter=[SpecificationFilter.ACCEPTED]):
+            self.user, filter=[SpecificationFilter.ACCEPTED]):
 
             # skip sprints with no priority or less than low:
             if spec.priority < SpecificationPriority.UNDEFINED:
@@ -492,12 +492,12 @@ class SprintMeetingExportView(LaunchpadView):
         for spec in model_specs:
             # Get the list of attendees that will attend the sprint.
             spec_people = people[spec.id]
-            if spec.assigneeID is not None:
-                spec_people[spec.assigneeID] = True
-                attendee_set.add(spec.assigneeID)
-            if spec.drafterID is not None:
-                spec_people[spec.drafterID] = True
-                attendee_set.add(spec.drafterID)
+            if spec.assignee is not None:
+                spec_people[spec.assignee.id] = True
+                attendee_set.add(spec.assignee.id)
+            if spec.drafter is not None:
+                spec_people[spec.drafter.id] = True
+                attendee_set.add(spec.drafter.id)
         people_by_id = dict((person.id, person) for person in
             getUtility(IPersonSet).getPrecachedPersonsFromIDs(attendee_set))
         self.specifications = [

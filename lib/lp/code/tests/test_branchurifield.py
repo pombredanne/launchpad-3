@@ -5,15 +5,15 @@
 
 __metaclass__ = type
 
-from canonical.config import config
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.code.interfaces.branch import (
     BranchURIField,
     get_blacklisted_hostnames,
     )
+from lp.services.config import config
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestBranchURIField(TestCase):

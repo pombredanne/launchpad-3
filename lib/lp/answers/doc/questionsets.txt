@@ -5,7 +5,7 @@ Question collections
 The IQuestionSet utility is used to retrieve and search for questions no
 matter which question target they were created for.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question_set = getUtility(IQuestionSet)
     >>> verifyObject(IQuestionSet, question_set)

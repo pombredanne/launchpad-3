@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -27,12 +27,17 @@ __metaclass__ = type
 
 import _pythonpath
 
+from optparse import OptionParser
+
 from storm.locals import Not
 from zope.component import getUtility
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.services.scripts import execute_zcml_for_scripts
 
 
 def get_stacked_branches():
@@ -48,6 +53,10 @@ def main():
 
     See the module docstring for more information.
     """
+    parser = OptionParser(
+        description="List the stacked branches in Launchpad.")
+    parser.parse_args()
+
     execute_zcml_for_scripts()
     for db_branch in get_stacked_branches():
         stacked_on = db_branch.stacked_on

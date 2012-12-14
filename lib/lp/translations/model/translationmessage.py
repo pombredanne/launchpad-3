@@ -24,19 +24,19 @@ from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.constants import (
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationmessage import (

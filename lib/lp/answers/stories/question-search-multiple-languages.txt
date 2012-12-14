@@ -31,7 +31,7 @@ information.
 
 The questions match the languages inferred from by GeoIP
 127.0.0.1 is mapped to South Africa in the test suite. The language
-control shows the intersection of the the user's languages and the
+control shows the intersection of the user's languages and the
 languages of the target's questions. In this example:
 set(['af', 'en', 'st', 'xh', 'zu']) & set(['en', 'es']) == set(en).
 
@@ -189,7 +189,7 @@ this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
 Catalan questions, so no Catalan checkbox is displayed.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -219,7 +219,7 @@ English questions. As there are no Japanese or Welsh questions, there
 will not be any controls present for those two languages when
 searching Ubuntu.
 
-    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.getControl('English (United Kingdom)').selected
     True

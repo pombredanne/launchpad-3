@@ -14,12 +14,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.codeimporthelpers import make_running_import
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     CodeImportResultStatus,
@@ -41,6 +35,7 @@ from lp.code.model.codeimportjob import (
     CodeImportJobSet,
     )
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.tests.codeimporthelpers import make_running_import
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
@@ -48,6 +43,11 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 
@@ -131,21 +131,6 @@ class TestCodeImportCreation(TestCaseWithFactory):
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_hg_import_reviewed(self):
-        """A new hg import is always reviewed by default."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
-            url=self.factory.getUniqueURL(),
-            review_status=None)
-        self.assertEqual(
-            CodeImportReviewStatus.REVIEWED,
-            code_import.review_status)
-        # A job is created for the import.
-        self.assertIsNot(None, code_import.import_job)
-
     def test_bzr_import_reviewed(self):
         """A new bzr import is always reviewed by default."""
         code_import = CodeImportSet().new(
@@ -168,7 +153,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=IBranchTarget(registrant),
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None)
 
@@ -181,7 +166,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None)
         code_import = removeSecurityProxy(code_import)
@@ -203,7 +188,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None, owner=owner)
         code_import = removeSecurityProxy(code_import)
@@ -227,7 +212,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None, owner=owner)
 

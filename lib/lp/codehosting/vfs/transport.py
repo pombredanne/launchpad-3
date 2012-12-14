@@ -135,7 +135,7 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             try:
                 return method(path, *args, **kwargs)
-            except BaseException, e:
+            except BaseException as e:
                 # It's much cheaper to explicitly construct a Failure than to
                 # let Deferred build automatically, because the automatic one
                 # will capture the traceback and perform an expensive
@@ -263,6 +263,12 @@ class SynchronousAdapter(Transport):
 
     def _abspath(self, relpath):
         return self._async_transport._abspath(relpath)
+
+    def get_segment_parameters(self):
+        return self._async_transport.get_segment_parameters()
+
+    def set_segment_parameter(self, name, value):
+        return self._async_transport.set_segment_parameter(name, value)
 
     def clone(self, offset=None):
         """See `bzrlib.transport.Transport`."""

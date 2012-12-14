@@ -25,14 +25,14 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PublicPersonChoice
 
 
 class ICommercialSubscription(Interface):
     """A Commercial Subscription for a Product.
 
-    If the product has a license which does not qualify for free
+    If the product has a licence which does not qualify for free
     hosting, a subscription needs to be purchased.
     """
     # Mark commercial subscriptions as exported entries for the Launchpad API.
@@ -46,7 +46,7 @@ class ICommercialSubscription(Interface):
             required=True,
             readonly=True,
             vocabulary='Product',
-            # Really IProduct.  Set properly in lp/registry/interfaces/product.py
+            # Really IProduct. See lp/registry/interfaces/product.py
             schema=Interface,
             description=_(
                 "Project for which this commercial subscription is "
@@ -102,3 +102,9 @@ class ICommercialSubscription(Interface):
             title=_('Active'),
             readonly=True,
             description=_("Whether this subscription is active.")))
+
+    def delete():
+        """Delete the expired Commercial Subscription.
+
+        :raises: CannotDeleteCommercialSubscription when is_active is True.
+        """

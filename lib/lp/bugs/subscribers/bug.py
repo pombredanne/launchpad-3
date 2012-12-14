@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,37 +16,31 @@ __all__ = [
 
 import datetime
 
-from canonical.config import config
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
-    BugTaskTargetChange,
     BugTaskAssigneeChange,
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
+from lp.services.config import config
+from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.mail.sendmail import (
     format_address,
     sendmail,
     )
+from lp.services.webapp.publisher import canonical_url
 
 
 @block_implicit_flushes
 def notify_bug_modified(bug, event):
-    """Handle bug change events.
-
-    Subscribe the security contacts for a bug when it becomes
-    security-related, and add notifications for the changes.
-    """
+    """Handle bug change events."""
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
         new_bug=event.object, user=IPerson(event.user))
@@ -115,9 +109,9 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-
-    for field_name in ("title", "description", "name", "private",
-                       "security_related", "duplicateof", "tags"):
+    fields = ["title", "description", "name", "information_type",
+        "duplicateof", "tags"]
+    for field_name in fields:
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
@@ -141,7 +135,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification,
         level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
@@ -150,51 +143,32 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
+        bug = bug_delta.bug
         if isinstance(change, BugDuplicateChange):
-            no_dupe_master_recipients = (
-                bug_delta.bug.getBugNotificationRecipients(
-                    old_bug=bug_delta.bug_before_modification,
-                    level=change.change_level,
-                    include_master_dupe_subscribers=False))
+            no_dupe_master_recipients = bug.getBugNotificationRecipients(
+                level=change.change_level)
             bug_delta.bug.addChange(
                 change, recipients=no_dupe_master_recipients)
         elif (isinstance(change, BugTaskAssigneeChange) and
               new_subscribers is not None):
             for person in new_subscribers:
+                # If this change involves multiple changes, other structural
+                # subscribers will leak into new_subscribers, and they may
+                # not be in the recipients list, due to having a LIFECYCLE
+                # structural subscription.
+                if person not in recipients:
+                    continue
+                # We are only interested in dropping the assignee out, since
+                # we send assignment notifications separately.
                 reason, rationale = recipients.getReason(person)
                 if 'Assignee' in rationale:
                     recipients.remove(person)
             bug_delta.bug.addChange(change, recipients=recipients)
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
-                change_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=change.change_level,
-                        include_master_dupe_subscribers=False))
+                change_recipients = bug.getBugNotificationRecipients(
+                    level=change.change_level)
                 recipients.update(change_recipients)
-            # Additionally, if we are re-targetting a bugtask for a private
-            # bug, we need to ensure the new bug supervisor and maintainer are
-            # notified (if they can view the bug).
-            # If they are the same person, only send one notification.
-            if (isinstance(change, BugTaskTargetChange) and
-                  old_bugtask is not None and bug_delta.bug.private):
-                bugtask_deltas = bug_delta.bugtask_deltas
-                if not isinstance(bugtask_deltas, (list, tuple)):
-                    bugtask_deltas = [bugtask_deltas]
-                for bugtask_delta in bugtask_deltas:
-                    if not bugtask_delta.target:
-                        continue
-                    new_target = bugtask_delta.bugtask.target
-                    if not new_target or not IProduct.providedBy(new_target):
-                        continue
-                    if bug_delta.bug.userCanView(new_target.owner):
-                        recipients.addMaintainer(new_target.owner)
-                    if (new_target.bug_supervisor and not
-                        new_target.bug_supervisor.inTeam(new_target.owner) and
-                        bug_delta.bug.userCanView(new_target.bug_supervisor)):
-                            recipients.addBugSupervisor(
-                                new_target.bug_supervisor)
             bug_delta.bug.addChange(change, recipients=recipients)
 
 

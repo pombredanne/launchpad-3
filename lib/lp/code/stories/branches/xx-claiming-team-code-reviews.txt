@@ -7,7 +7,7 @@ link shown in the reviewer table for the team.
     >>> # Logging in as an admin helps with setting things up.
     >>> login('admin@canonical.com')
     >>> eric = factory.makePerson(
-    ...     name="eric", email="eric@example.com", password="test",
+    ...     name="eric", email="eric@example.com",
     ...     displayname="Eric the Viking")
     >>> vikings = factory.makeTeam(
     ...     owner=eric, displayname="Vikings", name="vikings")

@@ -4,15 +4,15 @@
 
 import sys
 
-from canonical.config import config
 from lp.app.errors import NotFoundError
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class AddMissingBuilds(SoyuzScript):
@@ -87,7 +87,7 @@ class AddMissingBuilds(SoyuzScript):
         """Entry point for `LaunchpadScript`s."""
         try:
             self.setupLocation()
-        except SoyuzScriptError, err:
+        except SoyuzScriptError as err:
             raise LaunchpadScriptFailure(err)
 
         if not self.options.arch_tags:
@@ -113,7 +113,7 @@ class AddMissingBuilds(SoyuzScript):
                 self.location.distroseries, self.location.pocket)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
-        except Exception, err:
+        except Exception as err:
             self.logger.error(err)
             self.txn.abort()
             self.logger.info("Errors, aborted transaction.")

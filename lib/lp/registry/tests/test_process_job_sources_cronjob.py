@@ -8,17 +8,17 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.config import config
+from lp.services.scripts.tests import run_script
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.testing.matchers import DocTestMatches
 
 
@@ -62,7 +62,7 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
-            ('DEBUG   Running <MembershipNotificationJob '
+            ('INFO    Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
@@ -99,18 +99,18 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             output)
         self.assertIn('-e JOB_SOURCE, --exclude=JOB_SOURCE', output)
         self.assertIn('At least one group must be specified.', output)
-        self.assertIn('Group: MAIN\n    IMembershipNotificationJobSource',
-                      output)
+        self.assertIn('Group: MAIN\n    I', output)
 
     def test_empty_queue(self):
-        # The script should just create a lockfile, launch a child for
-        # each job source class, and then exit if no jobs are in the queue.
+        # The script should just launch a child for each job source class,
+        # and then exit if no jobs are in the queue.  It should not create
+        # its own lockfile.
         returncode, output, error = run_script(self.script, ['MAIN'])
         expected = (
-            '.*Creating lockfile:.*launchpad-processjobsourcegroups.lock'
             '.*Creating lockfile:.*launchpad-process-job-'
             'source-IMembershipNotificationJobSource.lock.*')
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, error)
+        self.assertNotIn("launchpad-processjobsourcegroups.lock", error)
 
     def test_processed(self):
         # The script should output the number of jobs that have been
@@ -126,7 +126,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            ('DEBUG Running <MembershipNotificationJob '
+            ('INFO Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
@@ -138,8 +138,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         for source in self.getJobSources("MAIN"):
             args.extend(("--exclude", source))
         returncode, output, error = run_script(self.script, args)
-        expected = "INFO    Creating lockfile: ...\n"
-        self.assertThat(error, DocTestMatches(expected))
+        self.assertEqual("", error)
 
     def test_exclude_non_existing_group(self):
         # If a job source specified by --exclude does not exist the script
@@ -149,7 +148,5 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             args.extend(("--exclude", source))
         args.extend(("--exclude", "BobbyDazzler"))
         returncode, output, error = run_script(self.script, args)
-        expected = (
-            "INFO    Creating lockfile: ...\n"
-            "INFO    'BobbyDazzler' is not in MAIN\n")
+        expected = "INFO    'BobbyDazzler' is not in MAIN\n"
         self.assertThat(error, DocTestMatches(expected))

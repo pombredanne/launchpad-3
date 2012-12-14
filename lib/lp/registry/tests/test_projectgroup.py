@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,18 +6,25 @@ __metaclass__ = type
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
+from lp.app.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
+from lp.registry.errors import InclusiveTeamLinkageError
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     launchpadlib_for,
     login_celebrity,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -30,6 +37,33 @@ class TestProjectGroup(TestCaseWithFactory):
         # The pillar category is correct.
         pg = self.factory.makeProject()
         self.assertEqual("Project Group", pg.pillar_category)
+
+    def test_owner_cannot_be_open_team(self):
+        """Project group owners cannot be open teams."""
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
+            self.assertRaises(
+                InclusiveTeamLinkageError, self.factory.makeProject,
+                owner=open_team)
+
+    def test_owner_can_be_closed_team(self):
+        """Project group owners can be exclusive teams."""
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
+            self.factory.makeProject(owner=closed_team)
+
+    def test_getProducts_with_proprietary(self):
+        # Proprietary projects are not listed for users without access to
+        # them.
+        project_group = removeSecurityProxy(self.factory.makeProject())
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            project=project_group, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        self.assertNotIn(product, project_group.getProducts(None))
+        outsider = self.factory.makePerson()
+        self.assertNotIn(product, project_group.getProducts(outsider))
+        self.assertIn(product, project_group.getProducts(owner))
 
 
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
@@ -145,6 +179,37 @@ class TestProjectGroupPermissions(TestCaseWithFactory):
         self.pg.owner = self.factory.makePerson(name='project-group-owner')
 
 
+class TestMilestones(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_milestones_privacy(self):
+        """ProjectGroup.milestones uses logged-in user."""
+        owner = self.factory.makePerson()
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            project=project_group)
+        milestone = self.factory.makeMilestone(product=product)
+        self.assertContentEqual([], project_group.milestones)
+        with person_logged_in(owner):
+            names = [ms.name for ms in project_group.milestones]
+            self.assertEqual([milestone.name], names)
+
+    def test_all_milestones_privacy(self):
+        """ProjectGroup.milestones uses logged-in user."""
+        owner = self.factory.makePerson()
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner,
+            project=project_group)
+        milestone = self.factory.makeMilestone(product=product)
+        self.assertContentEqual([], project_group.milestones)
+        with person_logged_in(owner):
+            names = [ms.name for ms in project_group.all_milestones]
+            self.assertEqual([milestone.name], names)
+
+
 class TestLaunchpadlibAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -153,15 +218,13 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         # Make sure a 400 error and not an OOPS is returned when a ValueError
         # is raised when trying to deactivate a project that has source
         # releases.
-        last_oops = globalErrorUtility.getLastOopsReport()
-
         launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
         project = launchpad.projects['evolution']
         project.active = False
         e = self.assertRaises(ClientError, project.lp_save)
 
         # no OOPS was generated as a result of the exception
-        self.assertNoNewOops(last_oops)
+        self.assertEqual([], self.oopses)
         self.assertEqual(400, e.response.status)
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '

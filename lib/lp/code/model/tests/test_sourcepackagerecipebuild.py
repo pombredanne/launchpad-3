@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -9,26 +9,22 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
 import re
+import shutil
+import tempfile
 
+from pytz import utc
 from storm.locals import Store
 import transaction
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from twisted.trial.unittest import TestCase as TrialTestCase
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
@@ -45,10 +41,14 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -58,6 +58,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -66,7 +70,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeSourcePackageRecipeBuild(self):
+    def makeSourcePackageRecipeBuild(self, archive=None):
         """Create a `SourcePackageRecipeBuild` for testing."""
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
@@ -75,12 +79,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             supports_virtualized=True)
         removeSecurityProxy(distroseries).nominatedarchindep = (
             distroseries_i386)
+        if archive is None:
+            archive = self.factory.makeArchive()
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=distroseries,
             recipe=self.factory.makeSourcePackageRecipe(
                 distroseries=distroseries),
-            archive=self.factory.makeArchive(),
+            archive=archive,
             requester=person)
 
     def test_providesInterfaces(self):
@@ -156,9 +162,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual('main', spb.current_component.name)
 
     def test_is_private(self):
-        # A source package recipe build is currently always public.
+        # A source package recipe build's is private iff its archive is.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(False, spb.is_private)
+        archive = self.factory.makeArchive(private=True)
+        with person_logged_in(archive.owner):
+            spb = self.makeSourcePackageRecipeBuild(archive=archive)
+            self.assertEqual(True, spb.is_private)
 
     def test_view_private_branch(self):
         """Recipebuilds with private branches are restricted."""
@@ -167,24 +177,33 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
-        removeSecurityProxy(branch).explicitly_private = True
+            self.assertTrue(check_permission('launchpad.View', job))
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_view_private_archive(self):
         """Recipebuilds with private branches are restricted."""
         owner = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=owner, private=True)
-        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
         with person_logged_in(owner):
+            build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
+            self.assertTrue(check_permission('launchpad.View', job))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_estimateDuration(self):
         # If there are no successful builds, estimate 10 minutes.
@@ -337,7 +356,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
             'DEBUG  - daily build failed for Warty (4.10): ' +
-            'PPA for Eric is disabled.\n',
+            "ArchiveDisabled(u'PPA for Eric is disabled.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_skips_archive_with_no_permission(self):
@@ -355,8 +374,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([], daily_builds)
         self.assertEqual(
             'DEBUG Recipe eric/funky-recipe is stale\n'
-            'DEBUG  - daily build failed for Warty (4.10): ' +
-            'Signer has no upload rights to this PPA.\n',
+            'DEBUG  - daily build failed for Warty (4.10): '
+            "CannotUploadToPPA('Signer has no upload rights "
+            "to this PPA.',)\n",
             logger.getLogBuffer())
 
     def test_makeDailyBuilds_with_an_older_build(self):
@@ -513,6 +533,26 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEquals(build.requester,
             build.getUploader(None))
 
+    def test_getByBuildFarmJob(self):
+        sprb = self.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        self.assertEqual(
+            sprb,
+            SourcePackageRecipeBuild.getByBuildFarmJob(sprb.build_farm_job))
+
+    def test_getByBuildFarmJobs(self):
+        sprbs = [self.makeSourcePackageRecipeBuild() for i in range(10)]
+        Store.of(sprbs[0]).flush()
+        self.assertContentEqual(
+            sprbs,
+            SourcePackageRecipeBuild.getByBuildFarmJobs(
+                [sprb.build_farm_job for sprb in sprbs]))
+
+    def test_getByBuildFarmJobs_empty(self):
+        self.assertContentEqual(
+            [],
+            SourcePackageRecipeBuild.getByBuildFarmJobs([]))
+
 
 class TestAsBuildmaster(TestCaseWithFactory):
 
@@ -586,15 +626,27 @@ class TestBuildNotifications(TrialTestCase):
         if fake_successful_upload:
             naked_build.verifySuccessfulUpload = FakeMethod(
                 result=True)
+            # We overwrite the buildmaster root to use a temp directory.
+            tempdir = tempfile.mkdtemp()
+            self.addCleanup(shutil.rmtree, tempdir)
+            self.upload_root = tempdir
+            tmp_builddmaster_root = """
+            [builddmaster]
+            root: %s
+            """ % self.upload_root
+            config.push('tmp_builddmaster_root', tmp_builddmaster_root)
+            self.addCleanup(config.pop, 'tmp_builddmaster_root')
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        queue_record.builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         return build
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
         d = build.handleStatus(status, None, {'filemap': {}})
+
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))
+
         d.addCallback(cb)
         return d
 
@@ -611,12 +663,9 @@ class TestBuildNotifications(TrialTestCase):
         return self.assertDeferredNotifyCount(
             "OK", self.prepare_build(), 0)
 
-#XXX 2011-05-20 gmb bug=785679
-#    This test has been disabled since it broke intermittently in
-#    buildbot (but does not fail in isolation locally).
-##    def test_handleStatus_OK_successful_upload(self):
-##        return self.assertDeferredNotifyCount(
-##            "OK", self.prepare_build(True), 0)
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:

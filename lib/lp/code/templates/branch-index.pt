@@ -17,21 +17,13 @@
       margin-bottom: .1em;
     }
     #download-url dt, #upload-url dt {
-      font-weight: normal;
+      font-weight: strong;
     }
-    #download-url dd, #upload-url dd {
-      font-size: 120%;
-      font-weight: bold;
-    }
-    #download-url dd span.branch-url, #upload-url dd span.branch-url {
-      font-weight: normal;
-    }
-
   </style>
   <script type="text/javascript"
           tal:content="string:
-    LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit',
+    LPJS.use('node', 'event', 'widget', 'plugin', 'overlay',
+              'lp.ui.choiceedit',
               'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
               'lp.code.branch.subscription',

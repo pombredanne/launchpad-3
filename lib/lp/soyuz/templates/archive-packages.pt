@@ -8,9 +8,23 @@
   >
 <body>
     <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .failed {color: red; font-weight: bold;}
+        .non-failed {color: green; font-weight: bold;}
+        .copy-job-message {
+          border-radius: 5px;
+          background: url("/+icing/blue-fade-to-grey") repeat scroll 0 0 #D4E8FF;
+          border-color: #666666;
+          border-style: solid;
+          border-width: 1px 2px 2px 1px;
+          padding: 5px;
+          width: 60em;
+        }
+      </style>
+
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
-LPS.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
+LPJS.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
           'lp.soyuz.update_archive_build_statuses', function(Y) {
 
 
@@ -71,6 +85,26 @@ function dispatchUpdate () {
 }
 
 Y.on("domready", dispatchUpdate);
+
+});
+      </script>
+      <script type="text/javascript" id="repository-size-update">
+LPJS.use('lp.soyuz.archive_packages',
+          'lp.app.widgets.expander.Expander', function(Y) {
+
+Y.on('domready', function() {
+    Y.all('.pending-job').each(function(node) {
+        var widget = new Y.lp.soyuz.archive_packages.PendingCopyJobWidget(
+            {srcNode: node, archive_uri: LP.cache['context'].self_link });
+        widget.render();
+
+        var expander = new Y.lp.app.widgets.expander.Expander(
+            node.one('.job-summary'), node.one('.job-details'));
+        expander.setUp();
+
+    });
+});
+
 });
       </script>
       <style type="text/css" media="screen, print">
@@ -96,6 +130,49 @@ tr#package-counters p{
           This archive has been disabled.
         </p>
 
+        <div tal:condition="view/has_pending_copy_jobs">
+          <div class="copy-job-message">
+            <tal:jobs tal:repeat="job view/package_copy_jobs">
+            <div class="pending-job" tal:attributes="job_id job/id">
+              <a href="" class="job-summary js-action">
+                Copying <span class="job-status"
+                  tal:attributes="class python: 'failed' if job.status.title=='Failed' else 'non-failed'"
+                  tal:content="job/status/title/lower">in progress</span> of <span
+                tal:content="job/package_name" /> (<span
+                tal:content="job/package_version" />)
+              </a>&nbsp;
+              <span tal:condition="view/has_append_perm">
+                <a href="#" class="js-action remove-notification"
+                   tal:condition="python: job.status.title=='Failed'">
+                  Remove notification
+                  <img src="/@@/remove" alt="Remove notification" /></a>
+              </span>
+              <div class="job-details">
+                Copied from: <a class="copied-from"
+                  tal:content="job/source_archive/displayname"
+                  tal:attributes="href job/source_archive/fmt:url">PPA for Fred
+                  </a>.
+                <tal:copied-by tal:condition="context/owner/is_team">
+                  Copied by: <a class="copied-by"
+                     tal:content="job/job/requester/displayname"
+                     tal:attributes="href job/job/requester/fmt:url">Jimmy Neutron
+                  </a>
+                </tal:copied-by>
+                Target series: <tal:target
+                  tal:replace="job/target_distroseries/displayname">Oneiric
+                  </tal:target>
+                <div class="job-failed-error-msg"
+                  tal:condition="job/error_message"
+                  tal:content="job/error_message">
+                </div>
+              </div>
+            </div>
+          </tal:jobs>
+        </div>
+      </div>
+
+      <br />
+
         <p>This
           <tal:archive_label replace="archive_label">PPA</tal:archive_label>
           currently publishes packages for
@@ -103,6 +180,7 @@ tr#package-counters p{
             Gutsy, Hardy and Karmic
           </tal:series_list>.
         </p>
+
       </div>
 
       <div class="yui-g">
@@ -111,7 +189,7 @@ tr#package-counters p{
           <p>The following information is related to the total published
              packages in the repository (not on your system).</p>
           <div id="package-counters">
-            <p class="discreet">
+            <p>
               Package counters and estimated archive size temporarily
               unavailable.
             </p>

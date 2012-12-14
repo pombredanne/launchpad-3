@@ -6,8 +6,7 @@ Jean Champollion is a translator.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> login(ANONYMOUS)
 
-    >>> jean = factory.makePerson(
-    ...     name='jean', email='jean@example.com', password='test')
+    >>> jean = factory.makePerson(name='jean', email='jean@example.com')
 
 Jean has been working on French translations for Foux in Launchpad.
 
@@ -52,8 +51,7 @@ Only Jean sees his personal listing.
 Pierre is not a translator.  Pierre does not get such a listing either.
 
     >>> login(ANONYMOUS)
-    >>> pierre = factory.makePerson(
-    ...     name='pierre', email='pierre@example.com', password='test')
+    >>> pierre = factory.makePerson(name='pierre', email='pierre@example.com')
     >>> logout()
 
     >>> pierre_browser = setupBrowser(auth='Basic pierre@example.com:test')

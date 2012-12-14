@@ -11,7 +11,6 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     ISeriesSourcePackageBranch,
@@ -21,6 +20,7 @@ from lp.code.model.seriessourcepackagebranch import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSeriesSourcePackageBranch(TestCaseWithFactory):

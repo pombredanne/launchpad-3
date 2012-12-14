@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp import GetitemNavigation
+from lp.services.webapp import GetitemNavigation
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 
 

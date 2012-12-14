@@ -13,10 +13,10 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
+from lp.services.database.constants import DEFAULT
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.worlddata.interfaces.country import (
     IContinent,
     ICountry,

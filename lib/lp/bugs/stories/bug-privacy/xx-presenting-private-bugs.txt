@@ -6,26 +6,25 @@ When a bug report is public, it says so.
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/4")
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report is public
+    This report contains Public information...
 
 But when marked private, it gains the standard Launchpad presentation
 for private things.
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
-    >>> browser.getControl(
-    ...     "This bug report should be private").selected = True
+    >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report is private
+    This report contains Private information...
 
 Bugs created before we started recording the date and time and who
 marked the bug private show only a simple message:
 
     >>> browser.open("http://launchpad.dev/bugs/14")
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report is private...
+    This report contains Private Security information...
 
 But newer bugs that are filed private at creation time (like security
 bugs or where the product requests that bugs are private by default)
@@ -37,14 +36,13 @@ have the full message:
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl("Further information").value = "foo"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report is private...
+    This report contains Private Security information...
 
 XXX 20080708 mpt: Bug 246671 again.
 

@@ -14,7 +14,7 @@
     <include file="zcml/zopeappbrowser.zcml" />
     <!-- <include package="zope.app" file="browser.zcml" /> -->
 
-    <include package="canonical" />
+    <include package="lp" />
 
     <include files="zcml/package-includes/*-meta.zcml" />
     <includeOverrides file="zcml/override-meta.zcml" />

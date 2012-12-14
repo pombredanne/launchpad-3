@@ -41,7 +41,7 @@
                   >blah</label>
                 </div>
                 <pre
-                  class="discreet"
+                  class="lesser"
                   tal:content="sig/signedcode"
                 >SIGNATURE</pre>
               </td>

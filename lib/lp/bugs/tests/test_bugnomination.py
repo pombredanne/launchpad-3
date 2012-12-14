@@ -5,16 +5,198 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
+from zope.component import getUtility
+
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatus,
+    BugNominationStatusError,
+    IBugNomination,
+    IBugNominationSet,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
+    login,
+    logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+
+
+class BugNominationTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_implementation(self):
+        # BugNomination implements IBugNomination.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        bug = self.factory.makeBug(target=target.distribution_sourcepackage)
+        with person_logged_in(series.distribution.owner):
+            nomination = bug.addNomination(series.distribution.owner, series)
+            self.assertProvides(nomination, IBugNomination)
+        self.assertEqual(series.distribution.owner, nomination.owner)
+        self.assertEqual(bug, nomination.bug)
+        self.assertEqual(series, nomination.distroseries)
+        self.assertIsNone(nomination.productseries)
+        self.assertEqual(BugNominationStatus.PROPOSED, nomination.status)
+        self.assertIsNone(nomination.date_decided)
+        self.assertEqual('UTC', nomination.date_created.tzname())
+
+    def test_target_distroseries(self):
+        # The target property returns the distroseries if it is not None.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+        self.assertEqual(series, nomination.distroseries)
+        self.assertEqual(series, nomination.target)
+
+    def test_target_productseries(self):
+        # The target property returns the productseries if it is not None.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        self.assertEqual(series, nomination.productseries)
+        self.assertEqual(series, nomination.target)
+
+    def test_status_proposed(self):
+        # isProposed is True when the status is PROPOSED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        self.assertEqual(BugNominationStatus.PROPOSED, nomination.status)
+        self.assertIs(True, nomination.isProposed())
+        self.assertIs(False, nomination.isDeclined())
+        self.assertIs(False, nomination.isApproved())
+
+    def test_status_declined(self):
+        # isDeclined is True when the status is DECLINED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.decline(series.product.owner)
+        self.assertEqual(BugNominationStatus.DECLINED, nomination.status)
+        self.assertIs(True, nomination.isDeclined())
+        self.assertIs(False, nomination.isProposed())
+        self.assertIs(False, nomination.isApproved())
+
+    def test_status_approved(self):
+        # isApproved is True when the status is APPROVED.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIs(True, nomination.isApproved())
+        self.assertIs(False, nomination.isDeclined())
+        self.assertIs(False, nomination.isProposed())
+
+    def test_decline(self):
+        # The decline method updates the status and other data.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            bug_tasks = nomination.bug.bugtasks
+            nomination.decline(series.product.owner)
+        self.assertEqual(BugNominationStatus.DECLINED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+        self.assertContentEqual(bug_tasks, nomination.bug.bugtasks)
+
+    def test_decline_error(self):
+        # A nomination cannot be declined if it is approved.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+            self.assertRaises(
+                BugNominationStatusError,
+                nomination.decline, series.product.owner)
+
+    def test_approve_productseries(self):
+        # Approving a product nomination creates a productseries bug task.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            bug_tasks = nomination.bug.bugtasks
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+        expected_targets = [bt.target for bt in bug_tasks] + [series]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
+
+    def test_approve_distroseries_source_package(self):
+        # Approving a package nomination creates a distroseries
+        # source package bug task.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+            bug_tasks = nomination.bug.bugtasks
+            nomination.approve(series.distribution.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        self.assertIsNotNone(nomination.date_decided)
+        self.assertEqual(series.distribution.owner, nomination.decider)
+        expected_targets = [bt.target for bt in bug_tasks] + [target]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
+
+    def test_approve_distroseries_source_package_many(self):
+        # Approving a package nomination creates a distroseries
+        # source package bug task for each affect package in the same distro.
+        # See bug 110195 which argues this is wrong.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        target2 = self.factory.makeSourcePackage(distroseries=series)
+        bug = self.factory.makeBug(target=target.distribution_sourcepackage)
+        self.factory.makeBugTask(
+            bug=bug, target=target2.distribution_sourcepackage)
+        bug_tasks = bug.bugtasks
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(bug=bug, target=target)
+            nomination.approve(series.distribution.owner)
+        expected_targets = [bt.target for bt in bug_tasks] + [target, target2]
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in bug.bugtasks])
+
+    def test_approve_twice(self):
+        # Approving a nomination twice is a no-op.
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+            nomination.approve(series.product.owner)
+        self.assertEqual(BugNominationStatus.APPROVED, nomination.status)
+        date_decided = nomination.date_decided
+        self.assertIsNotNone(date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+        with celebrity_logged_in('admin') as admin:
+            nomination.approve(admin)
+        self.assertEqual(date_decided, nomination.date_decided)
+        self.assertEqual(series.product.owner, nomination.decider)
+
+    def test_approve_distroseries_source_package_then_retarget(self):
+        # Retargeting a bugtarget with and approved nomination also
+        # retargets the master bug target.
+        target = self.factory.makeSourcePackage()
+        series = target.distroseries
+        with person_logged_in(series.distribution.owner):
+            nomination = self.factory.makeBugNomination(target=target)
+            nomination.approve(series.distribution.owner)
+        target2 = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
+        product_target = nomination.bug.bugtasks[0].target
+        expected_targets = [
+            product_target, target2, target2.distribution_sourcepackage]
+        bug_task = nomination.bug.bugtasks[-1]
+        with person_logged_in(series.distribution.owner):
+            bug_task.transitionToTarget(target2, series.distribution.owner)
+        self.assertContentEqual(
+            expected_targets, [bt.target for bt in nomination.bug.bugtasks])
 
 
 class CanBeNominatedForTestMixin:
@@ -68,7 +250,7 @@ class TestBugCanBeNominatedForProductSeries(
 
     def setUpTarget(self):
         self.series = self.factory.makeProductSeries()
-        self.bug = self.factory.makeBug(product=self.series.product)
+        self.bug = self.factory.makeBug(target=self.series.product)
         self.milestone = self.factory.makeMilestone(productseries=self.series)
         self.random_series = self.factory.makeProductSeries()
 
@@ -116,11 +298,15 @@ class TestCanApprove(TestCaseWithFactory):
             target=self.factory.makeProductSeries())
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
 
-    def test_driver_can_approve(self):
+    def test_privileged_users_can_approve(self):
         product = self.factory.makeProduct(driver=self.factory.makePerson())
-        nomination = self.factory.makeBugNomination(
-            target=self.factory.makeProductSeries(product=product))
+        series = self.factory.makeProductSeries(product=product)
+        with celebrity_logged_in('admin'):
+            series.driver = self.factory.makePerson()
+        nomination = self.factory.makeBugNomination(target=series)
+        self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
+        self.assertTrue(nomination.canApprove(series.driver))
 
     def publishSource(self, series, sourcepackagename, component):
         return self.factory.makeSourcePackagePublishingHistory(
@@ -216,3 +402,19 @@ class TestCanApprove(TestCaseWithFactory):
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
         self.assertTrue(nomination.canApprove(package_perm.person))
         self.assertTrue(nomination.canApprove(comp_perm.person))
+
+
+class BugNominationSetTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_get(self):
+        series = self.factory.makeProductSeries()
+        with person_logged_in(series.product.owner):
+            nomination = self.factory.makeBugNomination(target=series)
+        bug_nomination_set = getUtility(IBugNominationSet)
+        self.assertEqual(nomination, bug_nomination_set.get(nomination.id))
+
+    def test_get_none(self):
+        bug_nomination_set = getUtility(IBugNominationSet)
+        self.assertRaises(NotFoundError, bug_nomination_set.get, -1)

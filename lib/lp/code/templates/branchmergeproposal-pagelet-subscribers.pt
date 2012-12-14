@@ -5,7 +5,6 @@
   class="portlet" id="portlet-subscribers">
 
   <h2 class="unnecessary">Subscribers</h2>
-  <div class="portletBody portletContent">
 
     <p>
       <tal:people tal:condition="view/has_subscribers">
@@ -30,7 +29,6 @@
         <li tal:content="structure subscriber/fmt:link"/>
       </ul>
     </div>
-  </div>
 </div>
 
 

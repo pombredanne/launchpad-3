@@ -9,7 +9,7 @@ for us. Upstream proxy servers (and tinkering users!) may also add
 X-Forwarded-For: headers. The X-Forwarded-For: header takes precidence
 if it is set.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(environ={
     ...     'HTTP_X_FORWARDED_FOR': '127.0.0.1,82.211.81.179',
     ...     'REMOTE_ADDR': '127.0.0.1',

@@ -41,9 +41,10 @@ __all__ = [
     'UserCannotEditBugTaskStatus',
     ]
 
-from lp.bugs.interfaces.bug import (
-    IBug,
-    )
+# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
+# import bugs.  Break this up into a per-package thing.
+from lp import _schema_circular_imports
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -62,13 +63,13 @@ from lp.bugs.interfaces.bugtarget import (
     )
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
-    IllegalRelatedBugTasksParams,
     IllegalTarget,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtasksearch import IllegalRelatedBugTasksParams
 from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerComponent,
@@ -87,7 +88,4 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 
 
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-from canonical.launchpad.interfaces import _schema_circular_imports
 _schema_circular_imports

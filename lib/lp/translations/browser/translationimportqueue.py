@@ -24,11 +24,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp import (
-    canonical_url,
-    GetitemNavigation,
-    )
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -41,6 +36,11 @@ from lp.app.errors import (
 from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView,
@@ -617,7 +617,11 @@ class TranslationImportTargetVocabularyFactory:
 
     def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
-        targets = import_queue.getRequestTargets()
+        if hasattr(self, 'view'):
+            user = self.view.user
+        else:
+            user = None
+        targets = import_queue.getRequestTargets(user)
         filtered_targets = set()
 
         # Read filter_status, in order to mark targets that have requests with
@@ -634,7 +638,8 @@ class TranslationImportTargetVocabularyFactory:
                 try:
                     status = RosettaImportStatus.items[status_filter]
                     filtered_targets = set(
-                        import_queue.getRequestTargets(status))
+                        import_queue.getRequestTargets(
+                            user=None, status=status))
                 except LookupError:
                     # Unknown status.  Ignore.
                     pass

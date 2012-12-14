@@ -6,24 +6,25 @@
 __metaclass__ = type
 
 
-from storm.store import Store
 from storm.exceptions import IntegrityError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
     IPublisherConfigSet,
     )
+from lp.archivepublisher.model.publisherconfig import PublisherConfig
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
     ANONYMOUS,
+    login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
@@ -61,10 +62,13 @@ class TestPublisherConfig(TestCaseWithFactory):
 
     def test_one_config_per_distro(self):
         # Only one config for each distro is allowed.
-        pubconf = self.factory.makePublisherConfig(self.distribution)
-        pubconf2 = self.factory.makePublisherConfig(self.distribution)
-        store = Store.of(pubconf)
-        self.assertRaises(IntegrityError, store.flush)
+
+        def make_conflicting_configs():
+            for counter in range(2):
+                self.factory.makePublisherConfig(self.distribution)
+            IStore(PublisherConfig).flush()
+
+        self.assertRaises(IntegrityError, make_conflicting_configs)
 
     def test_getByDistribution(self):
         # Test that IPublisherConfigSet.getByDistribution works.

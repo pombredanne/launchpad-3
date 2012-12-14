@@ -8,7 +8,7 @@
                        value view/formvalue;
                        disabled view/disabled_flag" />
 <tal:daterange condition="view/daterange">
-  <span style="display:none;"
+  <span class="hidden"
         tal:attributes="id string:${view/name}-daterange"
         tal:content="view/daterange" />
 </tal:daterange>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,24 +15,15 @@ from textwrap import dedent
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.webapp import (
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.hardwaredb.interfaces.hwdb import (
-    HWSubmissionMissingFields,
     IHWDBApplication,
     IHWDeviceClassSet,
     IHWDeviceSet,
@@ -44,6 +35,13 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.webapp import (
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class HWDBUploadView(LaunchpadFormView):
@@ -102,7 +100,6 @@ class HWDBUploadView(LaunchpadFormView):
         if fingerprint is None:
             fingerprint = fingerprintset.createFingerprint(data['system'])
 
-        submitted_data = data['submission_data']
         filesize = len(data['submission_data'])
         submission_file = self.request.form[
             self.widgets['submission_data'].name]
@@ -142,7 +139,6 @@ class HWDBUploadView(LaunchpadFormView):
         successful as well as an failed request, add some HTTP headers
         to the response.
         """
-        response = self.request.response
         for field in self.form_fields:
             field_name = field.__name__
             error = self.getFieldError(field_name)
@@ -301,4 +297,3 @@ class HWDBFingerprintSetView(LaunchpadView):
         return (submission.owner is not None
                 and (submission.contactable
                      or (submission.owner == self.user)))
-

@@ -182,7 +182,7 @@ Searching for DistributionSourcePackages
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
-    >>> packages = ubuntu.searchSourcePackageCaches("mozilla")
+    >>> packages = ubuntu.searchSourcePackageCaches(u"mozilla")
     >>> for distro_source_package_cache, source_name, rank in packages:
     ...     print "%-17s rank:%s" % (
     ...         distro_source_package_cache.name,
@@ -192,10 +192,10 @@ a certain string through the magic of fti. For instance:
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
 
-    >>> packages = ubuntu.searchSourcePackageCaches("linux-source-2.6.15")
+    >>> packages = ubuntu.searchSourcePackageCaches(u"linux-source-2.6.15")
     >>> print packages.count()
     1
-    >>> packages = ubuntu.searchSourcePackageCaches('a')
+    >>> packages = ubuntu.searchSourcePackageCaches(u'a')
     >>> for distro_source_package_cache, source_name, rank in packages:
     ...     print "%s: %-17s rank:%s" % (
     ...         distro_source_package_cache.__class__.__name__,
@@ -210,7 +210,7 @@ and even on substrings:
 The searchSourcePackages() method just returns a decorated version
 of the results from searchSourcePackageCaches():
 
-    >>> packages = ubuntu.searchSourcePackages('a')
+    >>> packages = ubuntu.searchSourcePackages(u'a')
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
@@ -224,13 +224,13 @@ it just passes on to searchSourcePackageCaches(), and it restricts
 the results based on whether the source package has an entry
 in the Packaging table linking it to an upstream project.
 
-    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=True)
+    >>> packages = ubuntu.searchSourcePackages(u'a', has_packaging=True)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=False)
+    >>> packages = ubuntu.searchSourcePackages(u'a', has_packaging=False)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: commercialpackage
@@ -242,7 +242,7 @@ results based on whether the source package has an entry in the
 SourcePackagePublishingHistory table for the given distroseries.
 
     >>> packages = ubuntu.searchSourcePackages(
-    ...     'a', publishing_distroseries=ubuntu.currentseries)
+    ...     u'a', publishing_distroseries=ubuntu.currentseries)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
@@ -261,20 +261,20 @@ Searching for an exact match on a valid binary name returns the
 expected results:
 
     >>> results = ubuntu.searchBinaryPackages(
-    ...     "mozilla-firefox", exact_match=True)
+    ...     u"mozilla-firefox", exact_match=True)
     >>> print [result.name for result in results]
     [u'mozilla-firefox']
 
 An exact match search with no matches on any package name returns
 an empty result set:
 
-    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=True)
+    >>> results = ubuntu.searchBinaryPackages(u"mozilla", exact_match=True)
     >>> results.count()
     0
 
 Loosening to substring matches gives another result:
 
-    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
+    >>> results = ubuntu.searchBinaryPackages(u"mozilla", exact_match=False)
     >>> print results[0]
     <...DistributionSourcePackageCache instance ...
 
@@ -286,7 +286,7 @@ Loosening to substring matches gives another result:
 The results of searchBinaryPackages() are simply ordered alphabetically
 for the moment until we have a better FTI rank to order with.
 
-    >>> results = ubuntu.searchBinaryPackages("m")
+    >>> results = ubuntu.searchBinaryPackages(u"m")
     >>> for result in results:
     ...     print result.name
     mozilla-firefox
@@ -387,10 +387,6 @@ The bug_tracking_usage property currently only tracks official_malone.
 
 While the other attributes track the other official_ attributes.
 
-    >>> print ubuntu.official_rosetta
-    True
-    >>> print ubuntu.translations_usage.name
-    LAUNCHPAD
     >>> print ubuntu.official_answers
     True
     >>> print ubuntu.answers_usage.name
@@ -403,9 +399,9 @@ While the other attributes track the other official_ attributes.
 If the official_ attributes are False and the enum hasn't been set,
 the usage enums don't know anything.
 
-    >>> login_person(ubuntu.owner.teamowner)
-    >>> ubuntu.official_rosetta = False
-    >>> print ubuntu.translations_usage.name
+    >>> ignored = login_person(ubuntu.owner.teamowner)
+    >>> ubuntu.official_answers = False
+    >>> print ubuntu.answers_usage.name
     UNKNOWN
 
 A distribution *cannot* specify that it uses codehosting. Currently there's
@@ -458,7 +454,7 @@ Launchpad admins and the distro owner can set these fields.
 
     >>> debian_owner = factory.makePerson()
     >>> debian.owner = debian_owner
-    >>> login_person(debian_owner)
+    >>> ignored = login_person(debian_owner)
     >>> debian.blueprints_usage = ServiceUsage.NOT_APPLICABLE
     >>> print debian.blueprints_usage.name
     NOT_APPLICABLE
@@ -474,7 +470,7 @@ But others can't.
     Unauthorized: (..., 'official_malone', 'launchpad.Edit')
     >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
     Traceback (most recent call last):
-    Unauthorized: (..., 'translations_usage', 'launchpad.Edit')
+    Unauthorized: (..., 'translations_usage', 'launchpad.TranslationsAdmin')
 
 
 Specification Listings
@@ -494,18 +490,18 @@ First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> kubuntu.specifications(filter=filter).count()
+    >>> kubuntu.specifications(None, filter=filter).count()
     0
     >>> filter = [SpecificationFilter.INFORMATIONAL,
     ...           SpecificationFilter.COMPLETE]
-    >>> kubuntu.specifications(filter=filter).count()
+    >>> kubuntu.specifications(None, filter=filter).count()
     1
 
 
 There are 2 completed specs for Kubuntu:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in kubuntu.specifications(filter=filter):
+    >>> for spec in kubuntu.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete
     thinclient-local-devices True
     usplash-on-hibernation True
@@ -514,7 +510,7 @@ There are 2 completed specs for Kubuntu:
 And there are four incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in kubuntu.specifications(filter=filter):
+    >>> for spec in kubuntu.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -525,7 +521,7 @@ And there are four incomplete specs:
 If we ask for all specs, we get them in the order of priority.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for spec in kubuntu.specifications(filter=filter):
+    >>> for spec in kubuntu.specifications(None, filter=filter):
     ...    print spec.priority.title, spec.name
     Essential cluster-installation
     High revu
@@ -537,7 +533,7 @@ If we ask for all specs, we get them in the order of priority.
 
 And if we ask just for specs, we get the incomplete ones.
 
-    >>> for spec in kubuntu.specifications():
+    >>> for spec in kubuntu.specifications(None):
     ...     print spec.name, spec.is_complete
     cluster-installation False
     revu False
@@ -546,7 +542,7 @@ And if we ask just for specs, we get the incomplete ones.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in kubuntu.specifications(filter=['package']):
+    >>> for spec in kubuntu.specifications(None, filter=['package']):
     ...     print spec.name
     revu
 
@@ -554,7 +550,7 @@ We can get only valid specs (those that are not obsolete or superseded):
 
     >>> from lp.blueprints.enums import SpecificationDefinitionStatus
     >>> login('mark@example.com')
-    >>> for spec in kubuntu.specifications():
+    >>> for spec in kubuntu.specifications(None):
     ...     # Do this here, otherwise, the change will be flush before
     ...     # updateLifecycleStatus() acts and an IntegrityError will be
     ...     # raised.
@@ -566,7 +562,7 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...         spec.definition_status = (
     ...             SpecificationDefinitionStatus.SUPERSEDED)
     ...     shim = spec.updateLifecycleStatus(owner)
-    >>> for spec in kubuntu.valid_specifications:
+    >>> for spec in kubuntu._valid_specifications:
     ...     print spec.name
     kde-desktopfile-langpacks
 

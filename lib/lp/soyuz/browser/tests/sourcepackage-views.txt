@@ -1,7 +1,7 @@
 = SourcePackage View Classes =
 
   >>> from zope.component import queryMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
 
 Empty request.
@@ -68,7 +68,7 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   >>> firefox_parsed_depends = firefox_view.builddepends
 
   >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
-  >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.services.webapp.testing import verifyObject
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
   True
 

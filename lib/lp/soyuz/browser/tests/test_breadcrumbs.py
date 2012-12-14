@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
 from lp.testing import (
     login,

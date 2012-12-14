@@ -1,15 +1,17 @@
-= Bug Comments =
+Bug Comments
+############
 
 The BugComment class is a content class assembled by browser code; it
 abstracts a single bug comment, has an index, and can be rendered
 independently.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
 
 
-== Handling of the bug's first comment ==
+Handling of the bug's first comment
+===================================
 
 The bug's description starts out identical to its first comment. In the course
 of a bug's life, the description may be updated, but the first comment stays
@@ -23,7 +25,7 @@ page, and this is why the event stream elides it doesn't include it:
     ...     (bug_ten_bugtask, LaunchpadTestRequest()), name='+index')
     >>> bug_view.initialize()
     >>> def bug_comments(bug_view):
-    ...     return [event.get('comment') for event in 
+    ...     return [event.get('comment') for event in
     ...         bug_view.activity_and_comments if event.get('comment')]
     >>> [bug_comment.index for bug_comment in bug_comments(bug_view)]
     [1]
@@ -81,19 +83,20 @@ in activity_and_comments...
 This allows us to display the attachments of the initial message
 as the first comment, without repeating the text of the bug report.
 
-   >>> rendered_comments[0].text_for_display
-   ''
-   >>> print rendered_comments[0].text_contents
-   I've had problems when switching from Jokosher...
+    >>> rendered_comments[0].text_for_display
+    ''
+    >>> print rendered_comments[0].text_contents
+    I've had problems when switching from Jokosher...
 
 
-== Comment truncation ==
+Comment truncation
+==================
 
 If a comment is too long, we truncate it before we display it and
 display a link to view the full comment. Let's change the default
 threshold so that all comments truncate.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_comment_size = """
     ...     [malone]
     ...     max_comment_size: 20
@@ -112,7 +115,7 @@ just any of the bug's bugtask.)
 If we get the bug comments from the view we can see that the two additional
 comments have been truncated:
 
-    >>> [(bug_comment.index, bug_comment.was_truncated)
+    >>> [(bug_comment.index, bug_comment.too_long)
     ...  for bug_comment in bug_comments(bug_view)]
     [(1, True), (2, True)]
 
@@ -127,7 +130,8 @@ The UI will display information about the comment being truncated and
 provide a link to view the full comment.
 
 
-== Comments with multiple chunks ==
+Comments with multiple chunks
+=============================
 
 Bug 10 has two comments: one which is the initial description, and one
 which is a multi-chunk comment added through the email interface. To grab
@@ -149,7 +153,8 @@ itself; adding comments through the web UI always places them in the
 same chunk.
 
 
-== Comment titles ==
+Comment titles
+==============
 
 This function also eliminates redundant message titles. We have a policy of
 only displaying message titles when these are "new" to the bug. That means
@@ -180,13 +185,14 @@ displayed.
     False Re: Copy, Cut and Delete operations should work on selections
 
 
-== Comment omission ==
+Comment omission
+================
 
 If a comment made by the same user is strictly identical to its previous
 comment in sequence, it will be omitted. Let's add some comments and
 attachments to a bug to see this in action:
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> import StringIO
     >>> user = getUtility(ILaunchBag).user
@@ -231,7 +237,8 @@ hidden.
      (7, u'Ho', u'Hello there')]
 
 
-== Bugs with lots of comments ==
+Bugs with lots of comments
+==========================
 
 BugTaskView has another property for helping render bugs with lots of
 comments: visible_comments_truncated_for_display.
@@ -246,7 +253,7 @@ control the thresholds. If there are more comments than
 comments_list_max_length, the list is truncated to show the oldest and
 newest bugs, with a visual break in between.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 10
@@ -311,14 +318,16 @@ Restore the configuration to its previous setting.
     (...)
 
 
-== Wrapping up ==
+Wrapping up
+===========
 
 Be nice and restore the comment size to what it was originally.
 
     >>> config_data = config.pop('max_comment_size')
 
 
-== Displaying BugComments with activity ==
+Displaying BugComments with activity
+====================================
 
 Comments are often made when a user makes a change to a bug, for example
 setting the bug's status. The BugComment class has a property, activity,
@@ -367,7 +376,8 @@ with the comment.
     True
 
 
-== Comment attachments ==
+Comment attachments
+===================
 
 Attachments are provided in the properties BugComment.patches and
 BugComment.attachments. The latter provides only those attachments

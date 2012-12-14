@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag=""> 
+  omit-tag="">
   <tal:comment condition="nothing">
     This is a customised version of lib/zope/form/browser/widget_macros.pt
     for Launchpad use.
@@ -91,35 +91,18 @@
     <tal:yui2resources
       tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
 
-        <tal:devmode condition="devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/yahoo/yahoo.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/event/event.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/dom/dom.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${lp_js}/app/calendar.js"></script>
-        </tal:devmode>
-        <tal:nondevmode condition="not: devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/yahoo-dom-event/yahoo-dom-event.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${yui2}/calendar/calendar-min.js"></script>
-        </tal:nondevmode>
+      <script type="text/javascript">
+          LPJS.use('lang', 'node', 'lp.app.calendar', function(Y) {
+                  Y.lp.app.calendar.setup_calendar_widgets();
+              }
+          );
+      </script>
 
-        <link rel="stylesheet" type="text/css"
-            tal:attributes="href
-            string:${yui2}/calendar/assets/skins/sam/calendar.css" />
+      <link rel="stylesheet" type="text/css"
+          tal:attributes="href
+          string:${yui2}/calendar/assets/skins/sam/calendar.css" />
     </tal:yui2resources>
 
-    <script type="text/javascript">
-        LPS.use('node', 'lp.app.calendar', function(Y) {
-            Y.lp.app.calendar.setup_calendar_widgets();
-        });
-    </script>
 </metal:yui2calendar-dependencies>
 
 </tal:root>

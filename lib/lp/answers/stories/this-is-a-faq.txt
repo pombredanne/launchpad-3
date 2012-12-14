@@ -33,7 +33,7 @@ support in Firefox. That question has a well-known answer, so he clicks
 on 'Link to a FAQ' to answer the question:
 
     # We use backslashreplace because the page title includes smart quotes.
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
     >>> print backslashreplace(user_browser.title)
@@ -66,8 +66,8 @@ relevant' option is selected.
     ...         print radio, label, link
     >>> printFAQOptions(user_browser.contents)
     (*) No existing FAQs are relevant
-    ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 8: How do I install Extensions?
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
 
     >>> print user_browser.getLink('How do I troubleshoot problems').url
     http://answers.launchpad.dev/firefox/+faq/9
@@ -157,8 +157,8 @@ question's title are displayed:
     >>> printFAQOptions(user_browser.contents)
     ( ) No existing FAQs are relevant
     (*) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
-    ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 8: How do I install Extensions?
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
 
 He changes the message and click 'Link to FAQ'.
 
@@ -174,7 +174,7 @@ with an error message.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    You didn't modify the linked FAQ.
+    You didn&#x27;t modify the linked FAQ.
 
 To remove the FAQ, the user selects the 'No existing...' option and
 submit the form again.
@@ -187,7 +187,7 @@ The new message was added to the question:
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
-    Sorry, this document doesn't really answer your question.
+    Sorry, this document doesn&#x27;t really answer your question.
 
 The link was also removed from the details portlet:
 

@@ -11,7 +11,8 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.translations.scripts.upload_translations import (
-    UploadPackageTranslations)
+    UploadPackageTranslations,
+    )
 
 
 if __name__ == '__main__':

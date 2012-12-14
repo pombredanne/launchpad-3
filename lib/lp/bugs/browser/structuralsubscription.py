@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -35,24 +35,15 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -64,15 +55,32 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
     )
-from lp.registry.interfaces.distribution import (
-    IDistribution,
-    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 
 
 class StructuralSubscriptionNavigation(Navigation):
@@ -97,15 +105,11 @@ class StructuralSubscriptionView(LaunchpadFormView):
     custom_widget('subscriptions_team', LabeledMultiCheckBoxWidget)
     custom_widget('remove_other_subscriptions', LabeledMultiCheckBoxWidget)
 
-    override_title_breadcrumbs = True
-
-    @property
-    def page_title(self):
-        return 'Subscribe to Bugs in %s' % self.context.title
+    page_title = 'Subscribe'
 
     @property
     def label(self):
-        return self.page_title
+        return 'Subscribe to Bugs in %s' % self.context.title
 
     @property
     def next_url(self):
@@ -209,8 +213,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         Returns True is the user is subscribed to bug notifications
         for the context target.
         """
-        subscription = self.context.getSubscription(person)
-        return subscription is not None
+        return self.context.getSubscription(person) is not None
 
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
@@ -306,7 +309,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Has the current user driver permissions?"""
         # We only want to look at this if the target is a
         # distribution source package, in order to maintain
-        # compatibility with the bug contacts feature.
+        # compatibility with the obsolete bug contacts feature.
         if IDistributionSourcePackage.providedBy(self.context):
             return check_permission(
                 "launchpad.Driver", self.context.distribution)
@@ -414,6 +417,7 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
+    expose_enum_to_js(request, InformationType, 'information_types')
     if subscriptions is None:
         try:
             # No subscriptions, which means we are on a target
@@ -431,10 +435,7 @@ def expose_structural_subscription_data_to_js(context, request,
 
 def expose_enum_to_js(request, enum, name):
     """Make a list of enum titles and value available to JavaScript."""
-    info = []
-    for item in enum:
-        info.append(item.title)
-    IJSONRequestCache(request).objects[name] = info
+    IJSONRequestCache(request).objects[name] = [item.title for item in enum]
 
 
 def expose_user_administered_teams_to_js(request, user, context,
@@ -465,6 +466,19 @@ def expose_user_administered_teams_to_js(request, user, context,
             # filters can only be edited by the subscriber.
             # This can happen if the user is an owner but not a member.
             administers_and_in = membership.intersection(administrated_teams)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                [team.id for team in administers_and_in],
+                need_preferred_email=True))
+
+            # If the requester is the user, they're at least an admin in
+            # all of these teams. Precache launchpad.(Limited)View so we
+            # can see the necessary attributes.
+            current_user = IPerson(get_current_principal(), None)
+            if current_user is not None and user == current_user:
+                for perm in ('launchpad.View', 'launchpad.LimitedView'):
+                    precache_permission_for_objects(
+                        None, perm, administers_and_in)
+
             for team in administers_and_in:
                 if (bug_supervisor is not None and
                     not team.inTeam(bug_supervisor)):
@@ -498,7 +512,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
             info[target] = record
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
-            is_team = subscriber.isTeam()
+            is_team = subscriber.is_team
             user_is_team_admin = (
                 is_team and subscriber in administered_teams)
             team_has_contact_address = (

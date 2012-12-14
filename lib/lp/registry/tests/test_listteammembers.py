@@ -1,9 +1,9 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts import listteammembers
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 ubuntuteam_default = sorted([

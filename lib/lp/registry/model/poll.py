@@ -32,12 +32,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.poll import (
     IPoll,
@@ -52,6 +46,12 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollSecrecy,
     PollStatus,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
     )
 
 

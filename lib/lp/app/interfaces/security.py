@@ -16,13 +16,29 @@ class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
 
     def checkUnauthenticated():
-        """Returns True if an unauthenticated user has that permission
-        on the adapted object.  Otherwise returns False.
+        """Whether an unauthenticated user has `permission` on `obj`.
+
+        Returns `True` if an unauthenticated user has that permission on the
+        adapted object. Otherwise returns `False`.
+
+        If the check must be delegated to other objects, this method can
+        optionally instead generate `(object, permission)` tuples. It is then
+        the security policy's job of checking authorization of those pairs.
         """
 
-    def checkAccountAuthenticated(account):
-        """Returns True if the account has that permission on the adapted
-        object.  Otherwise returns False.
+    def checkAuthenticated(person):
+        """Whether an authenticated user has `permission` on `obj`.
 
-        The argument `account` is the account who is authenticated.
+        Returns `True` if the person has that permission on the adapted
+        object. Otherwise returns `False`.
+
+        If the check must be delegated to other objects, this method can
+        optionally instead generate `(object, permission)` tuples. It is then
+        the security policy's job of checking authorization of those pairs.
+
+        Typically all delegated authorizations must be allowed for the
+        top-level authorization to be allowed, but this is dependent on the
+        security policy in force.
+
+        :param person: The person that is authenticated.
         """

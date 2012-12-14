@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import (
-    DistributionOrProductVocabulary,
     DistributionOrProductOrProjectGroupVocabulary,
+    DistributionOrProductVocabulary,
     PillarVocabularyBase,
     )
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPillarVocabularyBase(TestCaseWithFactory):
@@ -38,16 +38,14 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
     def test_Product_toTerm(self):
         # Product terms are composed of title, name, and the object.
         term = self.vocabulary.toTerm(self.product)
-        title = '%s (Project)' % self.product.title
-        self.assertEqual(title, term.title)
+        self.assertEqual(self.product.title, term.title)
         self.assertEqual(self.product.name, term.token)
         self.assertEqual(self.product, term.value)
 
     def test_ProjectGroup_toTerm(self):
         # ProductGroup terms are composed of title, name, and the object.
         term = self.vocabulary.toTerm(self.project_group)
-        title = '%s (Project Group)' % self.project_group.title
-        self.assertEqual(title, term.title)
+        self.assertEqual(self.project_group.title, term.title)
         self.assertEqual(self.project_group.name, term.token)
         self.assertEqual(self.project_group, term.value)
 

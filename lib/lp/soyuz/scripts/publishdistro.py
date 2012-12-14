@@ -220,7 +220,7 @@ class PublishDistro(LaunchpadCronScript):
         """
         try:
             series, pocket = distribution.getDistroSeriesAndPocket(suite)
-        except NotFoundError, e:
+        except NotFoundError as e:
             raise OptionValueError(e)
         return series.name, pocket
 

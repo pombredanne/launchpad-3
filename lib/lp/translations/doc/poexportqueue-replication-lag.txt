@@ -9,7 +9,7 @@ We start our story with an empty export queue.
     >>> from datetime import timedelta
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> from lp.translations.interfaces.poexportrequest import (
     ...     IPOExportRequestSet)
     >>> from lp.translations.interfaces.pofile import IPOFile

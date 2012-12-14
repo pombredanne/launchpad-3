@@ -16,8 +16,8 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
+from lp.services.database.sqlbase import SQLBase
 from lp.soyuz.interfaces.section import (
     ISection,
     ISectionSelection,

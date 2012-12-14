@@ -7,18 +7,18 @@ from datetime import (
     datetime,
     timedelta,
     )
-import pytz
 from textwrap import dedent
+
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -26,6 +26,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.sampledata import ADMIN_EMAIL
 

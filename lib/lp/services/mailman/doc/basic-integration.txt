@@ -8,7 +8,7 @@ site list.  The withlist script called here simply returns a known exit code
 if the site list is set up correctly, otherwise it returns 1.
 
     >>> import subprocess, os
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.mailman.config import configure_prefix
     >>> def withlist(callable, *options):
     ...     callable_path = 'lp.services.mailman.testing.' + callable
@@ -57,10 +57,9 @@ drops the resulting message in Mailman's incoming queue.
 
     # The path to the binary we're testing is relative to the top of the
     # Launchpad source tree.
-    >>> import canonical
-    >>> launchpad_top = os.path.dirname(
-    ...     os.path.dirname(os.path.dirname(canonical.__file__)))
-    >>> binary = os.path.join(launchpad_top,
+    >>> import lp
+    >>> binary = os.path.join(
+    ...     os.path.dirname(lp.__file__), os.pardir, os.pardir,
     ...     'lib/mailman/mail/mailman')
 
     >>> mailman = subprocess.Popen(

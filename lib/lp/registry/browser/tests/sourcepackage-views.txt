@@ -49,7 +49,7 @@ This is a multistep view. In the first step, the product is specified.
     >>> print view.view.request.form
     {'field.__visited_steps__': 'sourcepackage_change_upstream_step1'}
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> form = {
     ...     'field.product': 'bonkers',
     ...     'field.actions.continue': 'Continue',
@@ -169,7 +169,7 @@ bonkers project, the portlet will display that information.
     ...     print product.name
     bonkers
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> content = find_tag_by_id(view.render(), 'upstreams')
     >>> for link in content.findAll('a'):
@@ -303,7 +303,7 @@ set then the view property is false.
 
 Having official_malone set results in has_bugtracker being true.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.official_malone = True
     >>> print view.has_bugtracker
     True
@@ -331,7 +331,7 @@ bug tracker then the property is false.
 If the product's project does have a bug tracker then the product
 inherits it.
 
-    >>> login_person(project.owner)
+    >>> ignored = login_person(project.owner)
     >>> project.bugtracker = bugtracker
     >>> print view.has_bugtracker
     True
@@ -354,7 +354,7 @@ to the project series.
     http://launchpad.dev/youbuntu/wonky/+source/stinkypackage
 
     >>> user = package.packaging.owner
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> view = create_initialized_view(
     ...     package, name='+remove-packaging', form=form, principal=user)

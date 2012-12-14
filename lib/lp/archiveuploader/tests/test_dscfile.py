@@ -1,30 +1,39 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
 
 __metaclass__ = type
 
+from collections import namedtuple
 import os
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.dscfile import (
     cleanup_unpacked_dir,
     DSCFile,
     find_changelog,
     find_copyright,
     format_to_file_checker_map,
+    SignableTagFile,
     unpack_source,
     )
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.log.logger import BufferLogger, DevNullLogger
+from lp.registry.model.person import Person
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.soyuz.enums import SourcePackageFormat
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 
 
@@ -97,7 +106,7 @@ class TestDscFile(TestCase):
         which is incredibly unlikely to be hit by normal files in the
         archive"""
         dev_zero = open("/dev/zero", "r")
-        ten_MiB = 2**20 * 10
+        ten_MiB = 10 * (2 ** 20)
         empty_file = dev_zero.read(ten_MiB + 1)
         dev_zero.close()
 
@@ -109,6 +118,43 @@ class TestDscFile(TestCase):
             UploadError, find_changelog, self.tmpdir, DevNullLogger())
         self.assertEqual(
             error.args[0], "debian/changelog file too large, 10MiB max")
+
+
+class TestSignableTagFile(TestCaseWithFactory):
+    """Test `SignableTagFile`, a helper mixin."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSignableTagFile(self):
+        """Create a minimal `SignableTagFile` object."""
+        FakePolicy = namedtuple(
+            'FakePolicy',
+            ['pocket', 'distroseries', 'create_people'])
+        tagfile = SignableTagFile()
+        tagfile.logger = DevNullLogger()
+        tagfile.policy = FakePolicy(None, None, create_people=True)
+        tagfile._dict = {
+            'Source': 'arbitrary-source-package-name',
+            'Version': '1.0',
+            }
+        return tagfile
+
+    def test_parseAddress_finds_addressee(self):
+        tagfile = self.makeSignableTagFile()
+        email = self.factory.getUniqueEmailAddress()
+        person = self.factory.makePerson(email=email)
+        self.assertEqual(person, tagfile.parseAddress(email)['person'])
+
+    def test_parseAddress_creates_addressee_for_unknown_address(self):
+        unknown_email = self.factory.getUniqueEmailAddress()
+        results = self.makeSignableTagFile().parseAddress(unknown_email)
+        self.assertEqual(unknown_email, results['email'])
+        self.assertIsInstance(results['person'], Person)
+
+    def test_parseAddress_raises_UploadError_if_address_is_malformed(self):
+        self.assertRaises(
+            UploadError,
+            self.makeSignableTagFile().parseAddress, "invalid@bad-address")
 
 
 class TestDscFileLibrarian(TestCaseWithFactory):
@@ -176,7 +222,8 @@ class BaseTestSourceFileVerification(TestCase):
         :param bzip2_count: number of files using bzip2 compression.
         :param xz_count: number of files using xz compression.
         """
-        self.assertErrorsForFiles([], files, components, bzip2_count, xz_count)
+        self.assertErrorsForFiles(
+            [], files, components, bzip2_count, xz_count)
 
 
 class Test10SourceFormatVerification(BaseTestSourceFileVerification):

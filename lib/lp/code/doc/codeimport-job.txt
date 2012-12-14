@@ -10,7 +10,7 @@ member of the vcs-imports team and can access the objects freely.
 They can be accessed via a utility registered for the ICodeImportJobSet
 interface.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.code.interfaces.codeimportjob import ICodeImportJobSet
     >>> job_set = getUtility(ICodeImportJobSet)
     >>> verifyObject(ICodeImportJobSet, job_set)
@@ -123,7 +123,7 @@ If date_due is in the past, then the job is overdue.
 Owing to the fleeting nature of time, if date_due is the time of the
 current transaction, then the job is overdue.
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> set_date_due(import_job, UTC_NOW)
     >>> import_job.isOverdue()
     True

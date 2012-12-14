@@ -8,9 +8,9 @@ same person and they're there just because each of those was created
 using a different email address.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from lp.testing import login, ANONYMOUS
 
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
@@ -98,6 +98,16 @@ Person' will be an active member of that team.
     >>> marilize in ubuntu_translators.activemembers
     True
 
+marilize happens to have an LoginToken.
+
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
+    >>> from lp.services.verification.interfaces.authtoken import (
+    ...     LoginTokenType)
+    >>> token = getUtility(ILoginTokenSet).new(
+    ...     marilize, marilize.preferredemail.email, 'willdie@example.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+
 Do the merge!
 -------------
 
@@ -105,10 +115,9 @@ Do the merge!
     # it.  First we need to change its status, though, because we can't delete
     # a person's preferred email.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
-    >>> email = IMasterObject(marilize.preferredemail)
+    >>> email = marilize.preferredemail
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
     >>> import transaction
@@ -152,7 +161,7 @@ Check that the branches have been renamed properly.
 The Karma that was previously assigned to marilize is now assigned to
 name12 (Sample Person).
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> saved_marilize_karma_id == marilize_karma.id
     True
@@ -230,6 +239,11 @@ email and mailing list subscription settings.
 
         https://launchpad.net/name12/+editemails ...
 
+sample has not been transferred marilize's logintoken.
+
+    >>> list(getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+    ...     'willdie@example.com', sample, LoginTokenType.VALIDATEEMAIL))
+    []
 
 Person decoration
 -----------------

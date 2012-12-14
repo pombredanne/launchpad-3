@@ -34,14 +34,14 @@ def monkey_patch(mailman_path, config):
     # Instead, anything that's needed from config should be written to the
     # mm_cfg.py file now.
     #
-    # Calculate the parent directory of the canonical package.  This directory
+    # Calculate the parent directory of the lp module.  This directory
     # will get appended to Mailman's sys.path.
-    import canonical
+    import lp
     from lp.services.mailman.config import configure_siteowner
-    launchpad_top = os.path.dirname(
-        os.path.dirname(os.path.dirname(canonical.__file__)))
+    launchpad_top = os.path.abspath(
+        os.path.join(os.path.dirname(lp.__file__), os.pardir, os.pardir))
     # Read the email footer template for all Launchpad messages.
-    from canonical.launchpad.helpers import get_email_template
+    from lp.services.mail.helpers import get_email_template
     footer = get_email_template(
         'mailinglist-footer.txt', app='services/mailman/monkeypatches')
     # Write the mm_cfg.py file, filling in the dynamic values now.
@@ -61,18 +61,21 @@ def monkey_patch(mailman_path, config):
             launchpad_top=launchpad_top,
             smtp_host=host,
             smtp_port=port,
+            smtp_max_rcpts=config.mailman.smtp_max_rcpts,
+            smtp_max_sesions_per_connection=(
+                config.mailman.smtp_max_sesions_per_connection),
             xmlrpc_url=config.mailman.xmlrpc_url,
             xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
             xmlrpc_timeout=config.mailman.xmlrpc_timeout,
-            xmlrpc_subscription_batch_size
-                =config.mailman.subscription_batch_size,
+            xmlrpc_subscription_batch_size=(
+                config.mailman.subscription_batch_size),
             site_list_owner=owner_address,
             list_help_header=config.mailman.list_help_header,
-            list_subscription_headers
-                =config.mailman.list_subscription_headers,
+            list_subscription_headers=(
+                config.mailman.list_subscription_headers),
             archive_url_template=config.mailman.archive_url_template,
-            list_owner_header_template
-                =config.mailman.list_owner_header_template,
+            list_owner_header_template=(
+                config.mailman.list_owner_header_template),
             footer=footer,
             var_dir=config.mailman.build_var_dir,
             shared_secret=config.mailman.shared_secret,

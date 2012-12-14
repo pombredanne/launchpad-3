@@ -12,9 +12,10 @@ __all__ = []
 
 from optparse import OptionParser
 import os
-import psycopg2
 import signal
 import sys
+
+import psycopg2
 
 
 def main():

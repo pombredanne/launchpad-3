@@ -19,14 +19,6 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
     CodeImportMachineOfflineReason,
     CodeImportMachineState,
@@ -36,6 +28,13 @@ from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine,
     ICodeImportMachineSet,
     )
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImportMachine(SQLBase):

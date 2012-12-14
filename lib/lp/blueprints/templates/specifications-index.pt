@@ -52,7 +52,7 @@
                 <input tal:replace="structure view/widgets/scope" />
                 <div class="message"
                   tal:condition="view/widgets/scope/error"
-                  tal:content="view/widgets/scope/error">
+                  tal:content="structure view/widgets/scope/error">
                   Error message
                 </div>
                 <script type="text/javascript"
@@ -64,9 +64,11 @@
           </tbody>
         </table>
       </form>
-      <script type="text/javascript"><!--
-         setFocusByName('field.search_text');
-       // --></script>
+      <script type="text/javascript">
+          LPJS.use('lp', function (Y) {
+              setFocusByName('field.search_text');
+          });
+      </script>
 
       <tal:searchresults condition="view/searchrequested"
                          define="specs view/specs" >

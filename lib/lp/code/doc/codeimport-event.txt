@@ -20,7 +20,7 @@ ICodeImportEventSet utility.
 
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.code.interfaces.codeimportevent import ICodeImportEventSet
     >>> event_set = getUtility(ICodeImportEventSet)
     >>> verifyObject(ICodeImportEventSet, removeSecurityProxy(event_set))
@@ -162,20 +162,6 @@ And for a Git import, the git details are recorded.
     ASSIGNEE None
     UPDATE_INTERVAL None
     URL u'git://git.example.org/main.git'
-
-And for a Mercurial import, the hg details are recorded.
-
-    >>> hg_import = factory.makeCodeImport(
-    ...     hg_repo_url='http://hg.example.org/main')
-    >>> hg_create_event = event_set.newCreate(hg_import, nopriv)
-    >>> print_items(hg_create_event)
-    CODE_IMPORT <muted>
-    OWNER ...
-    REVIEW_STATUS u'REVIEWED'
-    ASSIGNEE None
-    UPDATE_INTERVAL None
-    URL u'http://hg.example.org/main'
-
 
 MODIFY
 ------

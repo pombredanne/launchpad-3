@@ -213,7 +213,7 @@ A plain user is not able to reach it.
 
 An admin, though, will see the link and will be able to edit it.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/+languages/es')

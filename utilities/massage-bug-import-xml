@@ -57,6 +57,9 @@ def massage(root, project_name, fix_nickname, tag_nickname):
 
     - Fixing up the bug nickname, adding the existing nickname as a tag,
 
+    - Resolving duplicates to a bug that is not itself a duplicate
+      (i.e. remove chains of duplicates),
+
     - Fixing up the description, including truncating it if it's too long,
 
     - Fixing up the first comment, including truncating it if it's too long,
@@ -64,6 +67,19 @@ def massage(root, project_name, fix_nickname, tag_nickname):
     - Normalizing whitespace.
 
     """
+    # Resolve duplicates as far as they'll go.
+    duplicates = dict(
+        (node.getparent().get("id"), node.text)
+        for node in root.findall('{%s}bug/{%s}duplicateof' % (NS, NS))
+        if node.text is not None and node.text.isdigit())
+
+    def resolve(bug_id):
+        dupe_of = duplicates.get(bug_id)
+        return (bug_id if dupe_of is None else resolve(dupe_of))
+
+    duplicates = dict(
+        (bug_id, resolve(bug_id)) for bug_id in duplicates)
+
     # Scan the tree, fixing up issues.
     for bug in root.findall('{%s}bug' % NS):
         # Get or create the tags element.
@@ -82,6 +98,10 @@ def massage(root, project_name, fix_nickname, tag_nickname):
         # Change the nickname.
         if nickname.text is None or fix_nickname:
             nickname.text = u"%s-%s" % (project_name, bug.get('id'))
+
+        # Resolve duplicateof, if it exists.
+        if bug.get("id") in duplicates:
+            bug.find("{%s}duplicateof" % NS).text = duplicates[bug.get("id")]
 
         # Get the first comment and its text. We'll need these later.
         first_comment = bug.find('{%s}comment' % NS)
@@ -173,8 +193,9 @@ def main(arguments):
     usage = "Usage: %prog [options]"
     description = """
         This acts as a filter: pipe bug import XML into stdin and capture
-        stdout. By default it will ensure that bug descriptions and the first
-        comment are correct. If either exceeds 50,000 characters it is
+        stdout. By default it removes duplicate chains and ensures that bug
+        descriptions and the first comment are correct. If either the
+        description or the first comment exceeds 50,000 characters it is
         truncated and an attachment is created to hold the original.
         """
     parser = OptionParser(
@@ -198,21 +219,23 @@ def main(arguments):
         fix_nickname=False,
         tag_nickname=False)
 
-    options, args = parser.parse_args(arguments)
-    if len(args) != 0:
-        parser.error("Positional arguments are not recognized.")
+    options, filenames = parser.parse_args(arguments)
     if options.project_name is None:
         parser.error("A project name must be specified.")
 
-    tree = etree.parse(sys.stdin)
-    massage(
-        root=tree.getroot(),
-        project_name=options.project_name,
-        fix_nickname=options.fix_nickname,
-        tag_nickname=options.tag_nickname)
-    tree.write(
-        sys.stdout, encoding='utf-8',
-        pretty_print=True, xml_declaration=True)
+    if len(filenames) == 0:
+        filenames = ["-"]
+
+    for filename in filenames:
+        tree = etree.parse(sys.stdin if filename == "-" else filename)
+        massage(
+            root=tree.getroot(),
+            project_name=options.project_name,
+            fix_nickname=options.fix_nickname,
+            tag_nickname=options.tag_nickname)
+        tree.write(
+            (sys.stdout if filename == "-" else filename), encoding='utf-8',
+            pretty_print=True, xml_declaration=True)
 
     return 0
 

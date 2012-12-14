@@ -1,24 +1,23 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test copying of custom package uploads for a new `DistroSeries`."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import (
-    ArchivePurpose,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 def list_custom_uploads(distroseries):
@@ -64,12 +63,8 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
         # isCopyable checks a custom upload's customformat field to
         # determine whether the upload is a candidate for copying.  It
         # approves only those whose customformats are in copyable_types.
-        class FakePackageUploadCustom:
-            def __init__(self, customformat):
-                self.customformat = customformat
-
         uploads = [
-            FakePackageUploadCustom(custom_type)
+            FakeUpload(custom_type, None)
             for custom_type in PackageUploadCustomFormat.items]
 
         copier = CustomUploadsCopier(FakeDistroSeries())
@@ -78,50 +73,28 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
             CustomUploadsCopier.copyable_types,
             [upload.customformat for upload in copied_uploads])
 
-    def test_extractNameFields_extracts_architecture_and_version(self):
-        # extractNameFields picks up the architecture and version out
-        # of an upload's filename field.
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
-        # translations tarballs, we'll have to include the component
-        # name as well.
-        package_name = self.factory.getUniqueString('package')
-        version = self.makeVersion()
-        architecture = self.factory.getUniqueString('arch')
-        filename = '%s_%s_%s.tar.gz' % (package_name, version, architecture)
+    def test_getKey_calls_correct_custom_upload_method(self):
+        # getKey calls the getSeriesKey method on the correct custom upload.
+        class FakeCustomUpload:
+            @classmethod
+            def getSeriesKey(cls, tarfile_path):
+                return "dummy"
+
         copier = CustomUploadsCopier(FakeDistroSeries())
+        copier.copyable_types = {
+            PackageUploadCustomFormat.DEBIAN_INSTALLER: FakeCustomUpload,
+            }
+        custom_format, series_key = copier.getKey(
+            FakeUpload(PackageUploadCustomFormat.DEBIAN_INSTALLER, "anything"))
         self.assertEqual(
-            (architecture, version), copier.extractNameFields(filename))
-
-    def test_extractNameFields_does_not_require_architecture(self):
-        # When extractNameFields does not see an architecture, it
-        # defaults to 'all'.
-        package_name = self.factory.getUniqueString('package')
-        version = self.makeVersion()
-        filename = '%s_%s.tar.gz' % (package_name, version)
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertEqual(
-            ('all', version), copier.extractNameFields(filename))
-
-    def test_extractNameFields_returns_None_on_mismatch(self):
-        # If the filename does not match the expected pattern,
-        # extractNameFields returns None.
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertIs(None, copier.extractNameFields('argh_1.0.jpg'))
-
-    def test_extractNameFields_ignores_names_with_too_many_fields(self):
-        # As one particularly nasty case that might break
-        # extractNameFields, a name with more underscore-seprated fields
-        # than the search pattern allows for is sensibly rejected.
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertIs(
-            None, copier.extractNameFields('one_two_three_four_5.tar.gz'))
+            PackageUploadCustomFormat.DEBIAN_INSTALLER, custom_format)
+        self.assertEqual("dummy", series_key)
 
     def test_getKey_returns_None_on_name_mismatch(self):
-        # If extractNameFields returns None, getKey also returns None.
+        # If extractSeriesKey returns None, getKey also returns None.
         copier = CustomUploadsCopier(FakeDistroSeries())
-        copier.extractNameFields = FakeMethod()
-        self.assertIs(
-            None,
+        copier.extractSeriesKey = FakeMethod()
+        self.assertIsNone(
             copier.getKey(FakeUpload(
                 PackageUploadCustomFormat.DEBIAN_INSTALLER,
                 "bad-filename.tar")))
@@ -133,20 +106,27 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
     # Alas, PackageUploadCustom relies on the Librarian.
     layer = LaunchpadZopelessLayer
 
-    def makeUpload(self, distroseries=None,
+    def makeUpload(self, distroseries=None, archive=None, pocket=None,
                    custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
-                   version=None, arch=None):
+                   version=None, arch=None, component=None):
         """Create a `PackageUploadCustom`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         package_name = self.factory.getUniqueString("package")
         if version is None:
             version = self.makeVersion()
-        filename = "%s.tar.gz" % '_'.join(
-            filter(None, [package_name, version, arch]))
+        if custom_type == PackageUploadCustomFormat.DDTP_TARBALL:
+            if component is None:
+                component = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join(
+                [package_name, component, version])
+        else:
+            if arch is None:
+                arch = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join([package_name, version, arch])
         package_upload = self.factory.makeCustomPackageUpload(
-            distroseries=distroseries, custom_type=custom_type,
-            filename=filename)
+            distroseries=distroseries, archive=archive, pocket=pocket,
+            custom_type=custom_type, filename=filename)
         return package_upload.customfiles[0]
 
     def test_copies_custom_upload(self):
@@ -237,21 +217,39 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
             upload.id for upload in copier.getCandidateUploads(source_series)]
         self.assertEqual(sorted(candidate_ids, reverse=True), candidate_ids)
 
+    def test_getCandidateUploads_filters_by_pocket(self):
+        # getCandidateUploads ignores uploads for other pockets.
+        source_series = self.factory.makeDistroSeries()
+        matching_upload = self.makeUpload(
+            source_series, pocket=PackagePublishingPocket.PROPOSED)
+        nonmatching_upload = self.makeUpload(
+            source_series, pocket=PackagePublishingPocket.BACKPORTS)
+        copier = CustomUploadsCopier(FakeDistroSeries())
+        candidate_uploads = copier.getCandidateUploads(
+            source_series, PackagePublishingPocket.PROPOSED)
+        self.assertContentEqual([matching_upload], candidate_uploads)
+        self.assertNotIn(nonmatching_upload, candidate_uploads)
+
     def test_getKey_includes_format_and_architecture(self):
         # The key returned by getKey consists of custom upload type,
         # and architecture.
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: To support
-        # ddtp-translations uploads, this will have to include the
-        # component name as well.
         source_series = self.factory.makeDistroSeries()
         upload = self.makeUpload(
-            source_series, PackageUploadCustomFormat.DIST_UPGRADER,
+            source_series, custom_type=PackageUploadCustomFormat.DIST_UPGRADER,
             arch='mips')
         copier = CustomUploadsCopier(FakeDistroSeries())
-        expected_key = (
-            PackageUploadCustomFormat.DIST_UPGRADER,
-            'mips',
-            )
+        expected_key = (PackageUploadCustomFormat.DIST_UPGRADER, 'mips')
+        self.assertEqual(expected_key, copier.getKey(upload))
+
+    def test_getKey_ddtp_includes_format_and_component(self):
+        # The key returned by getKey for a ddtp-tarball upload consists of
+        # custom upload type, and component.
+        source_series = self.factory.makeDistroSeries()
+        upload = self.makeUpload(
+            source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL,
+            component='restricted')
+        copier = CustomUploadsCopier(FakeDistroSeries())
+        expected_key = (PackageUploadCustomFormat.DDTP_TARBALL, 'restricted')
         self.assertEqual(expected_key, copier.getKey(upload))
 
     def test_getLatestUploads_indexes_uploads_by_key(self):
@@ -290,60 +288,6 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertContentEqual(
             uploads[-1:], copier.getLatestUploads(source_series).values())
-
-    def test_getTargetArchive_on_same_distro_is_same_archive(self):
-        # When copying within the same distribution, getTargetArchive
-        # always returns the same archive you feed it.
-        distro = self.factory.makeDistribution()
-        archives = [
-            self.factory.makeArchive(distribution=distro, purpose=purpose)
-            for purpose in MAIN_ARCHIVE_PURPOSES]
-        copier = CustomUploadsCopier(self.factory.makeDistroSeries(distro))
-        self.assertEqual(
-            archives,
-            [copier.getTargetArchive(archive) for archive in archives])
-
-    def test_getTargetArchive_returns_None_if_not_distribution_archive(self):
-        # getTargetArchive returns None for any archive that is not a
-        # distribution archive, regardless of whether the target series
-        # has an equivalent.
-        distro = self.factory.makeDistribution()
-        archives = [
-            self.factory.makeArchive(distribution=distro, purpose=purpose)
-            for purpose in ArchivePurpose.items
-                if purpose not in MAIN_ARCHIVE_PURPOSES]
-        copier = CustomUploadsCopier(self.factory.makeDistroSeries(distro))
-        self.assertEqual(
-            [None] * len(archives),
-            [copier.getTargetArchive(archive) for archive in archives])
-
-    def test_getTargetArchive_finds_matching_archive(self):
-        # When copying across archives, getTargetArchive looks for an
-        # archive for the target series with the same purpose as the
-        # original archive.
-        source_series = self.factory.makeDistroSeries()
-        source_archive = self.factory.makeArchive(
-            distribution=source_series.distribution,
-            purpose=ArchivePurpose.PARTNER)
-        target_series = self.factory.makeDistroSeries()
-        target_archive = self.factory.makeArchive(
-            distribution=target_series.distribution,
-            purpose=ArchivePurpose.PARTNER)
-
-        copier = CustomUploadsCopier(target_series)
-        self.assertEqual(
-            target_archive, copier.getTargetArchive(source_archive))
-
-    def test_getTargetArchive_returns_None_if_no_archive_matches(self):
-        # If the target series has no archive to match the archive that
-        # the original upload was far, it returns None.
-        source_series = self.factory.makeDistroSeries()
-        source_archive = self.factory.makeArchive(
-            distribution=source_series.distribution,
-            purpose=ArchivePurpose.PARTNER)
-        target_series = self.factory.makeDistroSeries()
-        copier = CustomUploadsCopier(target_series)
-        self.assertIs(None, copier.getTargetArchive(source_archive))
 
     def test_isObsolete_returns_False_if_no_equivalent_in_target(self):
         # isObsolete returns False if the upload in question has no
@@ -386,48 +330,117 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # original, but for the target series.
         original_upload = self.makeUpload()
         target_series = self.factory.makeDistroSeries()
-        copier = CustomUploadsCopier(target_series)
+        copier = CustomUploadsCopier(
+            target_series, target_archive=target_series.main_archive)
         copied_upload = copier.copyUpload(original_upload)
         self.assertEqual([copied_upload], list_custom_uploads(target_series))
-        self.assertNotEqual(
-            original_upload.packageupload, copied_upload.packageupload)
+        original_pu = original_upload.packageupload
+        copied_pu = copied_upload.packageupload
+        self.assertNotEqual(original_pu, copied_pu)
         self.assertEqual(
             original_upload.customformat, copied_upload.customformat)
         self.assertEqual(
             original_upload.libraryfilealias, copied_upload.libraryfilealias)
-        self.assertEqual(
-            original_upload.packageupload.changesfile,
-            copied_upload.packageupload.changesfile)
+        self.assertEqual(original_pu.changesfile, copied_pu.changesfile)
 
     def test_copyUpload_copies_into_release_pocket(self):
         # copyUpload copies the original upload into the release pocket,
         # even though the original is more likely to be in another
         # pocket.
-        original_upload = self.makeUpload()
-        original_upload.packageupload.pocket = PackagePublishingPocket.UPDATES
+        original_upload = self.makeUpload(
+            pocket=PackagePublishingPocket.UPDATES)
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
-        copied_upload = copier.copyUpload(original_upload)
-        self.assertEqual(
-            PackagePublishingPocket.RELEASE,
-            copied_upload.packageupload.pocket)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackagePublishingPocket.RELEASE, copied_pu.pocket)
+
+    def test_copyUpload_to_updates_pocket(self):
+        # copyUpload copies an upload between pockets in the same series if
+        # requested.
+        series = self.factory.makeDistroSeries(status=SeriesStatus.CURRENT)
+        original_upload = self.makeUpload(
+            distroseries=series, pocket=PackagePublishingPocket.PROPOSED)
+        copier = CustomUploadsCopier(
+            series, target_pocket=PackagePublishingPocket.UPDATES)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackagePublishingPocket.UPDATES, copied_pu.pocket)
 
     def test_copyUpload_accepts_upload(self):
         # Uploads created by copyUpload are automatically accepted.
         original_upload = self.makeUpload()
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
-        copied_upload = copier.copyUpload(original_upload)
-        self.assertEqual(
-            PackageUploadStatus.ACCEPTED, copied_upload.packageupload.status)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
 
-    def test_copyUpload_does_not_copy_if_no_archive_matches(self):
-        # If getTargetArchive does not find an appropriate target
-        # archive, copyUpload does nothing.
-        source_series = self.factory.makeDistroSeries()
-        upload = self.makeUpload(distroseries=source_series)
+    def test_copyUpload_unapproves_uefi_from_different_archive(self):
+        # Copies of UEFI custom uploads to a primary archive are set to
+        # UNAPPROVED, since they will normally end up being signed.
+        target_series = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=target_series.distribution)
+        original_upload = self.makeUpload(
+            archive=archive, custom_type=PackageUploadCustomFormat.UEFI)
+        copier = CustomUploadsCopier(
+            target_series, target_archive=target_series.main_archive)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.UNAPPROVED, copied_pu.status)
+
+    def test_copyUpload_approves_uefi_from_same_archive(self):
+        # Copies of UEFI custom uploads within the same archive are
+        # automatically accepted, since they have already been signed.
+        original_upload = self.makeUpload(
+            custom_type=PackageUploadCustomFormat.UEFI)
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
-        copier.getTargetArchive = FakeMethod(result=None)
-        self.assertIs(None, copier.copyUpload(upload))
-        self.assertEqual([], list_custom_uploads(target_series))
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
+
+    def test_copyUpload_approves_uefi_to_ppa(self):
+        # Copies of UEFI custom uploads to a PPA are automatically accepted,
+        # since PPAs have much more limited upload permissions than the main
+        # archive, and in any case PPAs do not have an upload approval
+        # workflow.
+        original_upload = self.makeUpload(
+            custom_type=PackageUploadCustomFormat.UEFI)
+        target_series = self.factory.makeDistroSeries()
+        target_archive = self.factory.makeArchive(
+            distribution=target_series.distribution)
+        copier = CustomUploadsCopier(
+            target_series, target_archive=target_archive)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
+
+    def test_copyUpload_archive_None_copies_within_archive(self):
+        # If CustomUploadsCopier was created with no target archive,
+        # copyUpload copies an upload to the same archive as the original
+        # upload.
+        original_upload = self.makeUpload()
+        original_pu = original_upload.packageupload
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
+        self.assertEqual(original_pu.archive, copied_pu.archive)
+
+    def test_copyUpload_to_specified_archive(self):
+        # If CustomUploadsCopier was created with a target archive,
+        # copyUpload copies an upload to that archive.
+        series = self.factory.makeDistroSeries()
+        original_upload = self.makeUpload(distroseries=series)
+        archive = self.factory.makeArchive(distribution=series.distribution)
+        copier = CustomUploadsCopier(series, target_archive=archive)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
+        self.assertEqual(archive, copied_pu.archive)
+
+    def test_copyUpload_from_ppa_to_main_archive(self):
+        # copyUpload can copy uploads from a PPA to the main archive.
+        series = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(distribution=series.distribution)
+        original_upload = self.makeUpload(distroseries=series, archive=archive)
+        copier = CustomUploadsCopier(
+            series, target_archive=series.main_archive)
+        copied_pu = copier.copyUpload(original_upload).packageupload
+        self.assertEqual(PackageUploadStatus.ACCEPTED, copied_pu.status)
+        self.assertEqual(series.main_archive, copied_pu.archive)

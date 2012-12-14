@@ -100,7 +100,7 @@ a error message.
     ...     print tag.renderContents()
     There is 1 error.
     <BLANKLINE>
-    This event can't start after it ends
+    This event can&#x27;t start after it ends
 
 Also, the date is now presented in a canonicalised format, with time in
 minutes rather than second-level accuracy:
@@ -210,7 +210,7 @@ should receive a nice error message.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    This event can't start after it ends
+    This event can&#x27;t start after it ends
 
 We fix the dates and change the address, we expect to be redirected to the
 sprint home page.
@@ -437,7 +437,7 @@ drivers, owners, and admins.
 
 First, we add a couple of IRC nicknames for Carlos.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.person import IrcID

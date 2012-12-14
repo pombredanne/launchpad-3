@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,17 +13,16 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     )
-from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
-from lp.services.messages.model.message import (
-    Message,
-    MessageChunk,
-    )
 from lp.blueprints.interfaces.specificationmessage import (
     ISpecificationMessage,
     ISpecificationMessageSet,
+    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
     )
 
 
@@ -49,9 +48,8 @@ class SpecificationMessageSet:
         """See ISpecificationMessageSet."""
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('blueprint'), subject=subject)
-        chunk = MessageChunk(message=msg, content=content, sequence=1)
-        specmsg = SpecificationMessage(specification=spec, message=msg)
-        return specmsg
+        MessageChunk(message=msg, content=content, sequence=1)
+        return SpecificationMessage(specification=spec, message=msg)
 
     def get(self, specmessageid):
         """See ISpecificationMessageSet."""

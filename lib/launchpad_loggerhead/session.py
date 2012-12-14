@@ -6,7 +6,10 @@
 
 import pickle
 
-from paste.auth.cookie import AuthCookieHandler, AuthCookieSigner
+from paste.auth.cookie import (
+    AuthCookieHandler,
+    AuthCookieSigner,
+    )
 
 
 class MyAuthCookieSigner(AuthCookieSigner):

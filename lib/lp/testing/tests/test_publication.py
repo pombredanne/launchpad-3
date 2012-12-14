@@ -1,10 +1,11 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the helpers in `lp.testing.publication`."""
 
 __metaclass__ = type
 
+from lazr.restful import EntryResource
 from zope.app.pagetemplate.simpleviewclass import simple
 from zope.component import (
     getSiteManager,
@@ -18,17 +19,26 @@ from zope.security.checker import (
     defineChecker,
     )
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lazr.restful import EntryResource
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.publisher import (
+    get_current_browser_request,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     ANONYMOUS,
+    FakeLaunchpadRequest,
     login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.publication import test_traverse
 
@@ -115,3 +125,40 @@ class TestTestTraverse(TestCaseWithFactory):
             'http://api.launchpad.dev/devel/' + product.name)
         self.assertEqual(product, context)
         self.assertIsInstance(view, EntryResource)
+
+
+class DummyNavigation(Navigation):
+    """A simple navigation class to test traversal."""
+    def traverse(self, name):
+        return name
+
+    @stepthrough('+step')
+    def traverse_stepthrough(self, name):
+        return 'stepthrough-' + name
+
+
+class TestStepThrough(TestCaseWithFactory):
+    """Test some stepthrough traversal scenarios."""
+
+    layer = FunctionalLayer
+
+    def traverse(self, request, name):
+        """Traverse to 'segments' using a 'DummyNavigation' object.
+
+        Using the Zope traversal machinery, traverse to the path given by
+        'segments'.
+        """
+        traverser = DummyNavigation(object(), request)
+        return traverser.publishTraverse(request, name)
+
+    def test_normal_stepthrough(self):
+        # The stepthrough is processed normally.
+        request = FakeLaunchpadRequest(['~dummy'], ['fred'])
+        self.assertEqual('stepthrough-fred', self.traverse(request, '+step'))
+
+    def test_ignored_stepthrough(self):
+        # The stepthrough is ignored since the next path item is a zope
+        # namespace.
+        request = FakeLaunchpadRequest(['~dummy'], ['++model++'])
+        self.assertEqual('+step', self.traverse(request, '+step'))
+        self.assertEqual('++model++', request.stepstogo.peek())

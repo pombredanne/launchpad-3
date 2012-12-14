@@ -13,13 +13,13 @@ from lazr.uri import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.config import config
+from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.geoip.interfaces import IGeoIP
 
 
@@ -160,7 +160,7 @@ def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
             daily_downloads[country_code] += 1
         except (KeyboardInterrupt, SystemExit):
             raise
-        except Exception, e:
+        except Exception as e:
             # Update parsed_bytes to the end of the last line we parsed
             # successfully, log this as an error and break the loop so that
             # we return.

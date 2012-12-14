@@ -39,13 +39,13 @@
       <strong>Launchpad could not import your OpenPGP key</strong>
       <ul>
         <li>Did you enter your complete fingerprint correctly?
-        (<a href="/+help/import-pgp-key.html"
+        (<a href="/+help-registry/import-pgp-key.html"
         target="help">Help with fingerprints</a>)</li>
 
         <li>Is your key in the Ubuntu keyserver yet?
             You may have to wait between ten minutes (if you pushed
             directly to the Ubuntu key server) and one hour (if you pushed
-            your key to another server). (<a href="/+help/openpgp-keys.html" target="help">Help with publishing keys</a>)</li>
+            your key to another server). (<a href="/+help-registry/openpgp-keys.html" target="help">Help with publishing keys</a>)</li>
       </ul>
 
     </div>
@@ -89,7 +89,7 @@
       <a href="/codeofconduct">code of conduct</a>.</p>
 
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
-       (<a href="/+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
+       (<a href="/+help-registry/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
     <form tal:condition="context/gpg_keys/count"
           name="gpg_actions" action="" method="POST">
@@ -159,7 +159,7 @@
       <p>To start using an OpenPGP key with your Launchpad account, simply
         paste its fingerprint below. The key must be registered with the
         Ubuntu key server.
-        (<a href="/+help/import-pgp-key.html" target="help">How to get the
+        (<a href="/+help-registry/import-pgp-key.html" target="help">How to get the
         fingerprint</a>)
       </p>
 
@@ -171,7 +171,7 @@
                 <td><input type="text" size="50" name="fingerprint" /></td>
                 </div>
               </tr>
-              <tr class="discreet">
+              <tr class="lesser">
                 <th>Example:</th>
                 <td>
                   <code>27E0 7815 B47C 0397 90D5&nbsp;&nbsp;8589 27D9 A27B F3F9 6058</code>
@@ -186,7 +186,7 @@
           </p>
           <div>
             <input type="submit" name="import" value="Import Key"/>
-            or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+            or&nbsp;<a tal:attributes="href view/cancel_url">Cancel</a>
           </div>
 
       </form>

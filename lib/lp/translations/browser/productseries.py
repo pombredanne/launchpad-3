@@ -1,6 +1,5 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
 
@@ -17,36 +16,35 @@ __all__ = [
     'ProductSeriesView',
     ]
 
-import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import is_tar_filename
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.helpers import is_tar_filename
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
-from lp.app.enums import service_uses_launchpad
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import structured
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
@@ -160,21 +158,22 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def request_bzr_import_url(self):
         """URL to request a bazaar import."""
-        return canonical_url(self.context,
-                             view_name="+request-bzr-import",
-                             rootsite="translations")
+        return canonical_url(
+            self.context, view_name="+request-bzr-import",
+            rootsite="translations")
 
     @property
-    def link_branch_url(self):
+    def set_branch_url(self):
         """URL to link the series to a branch."""
-        return canonical_url(self.context, rootsite="mainsite",
-                             view_name="+linkbranch")
+        return canonical_url(
+            self.context, rootsite="mainsite", view_name="+setbranch")
 
     @property
     def translations_settings_url(self):
         """URL to change the translations for the series."""
-        return canonical_url(self.context, rootsite="translations",
-                             view_name="+translations-settings")
+        return canonical_url(
+            self.context, rootsite="translations",
+            view_name="+translations-settings")
 
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
@@ -306,10 +305,12 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                             "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
                             "different templates.", len(conflicts))
+                        conflict_str = structured(
+                            "</li><li>".join(["%s" % len(conflicts)]),
+                            *conflicts)
                         ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
+                            "<ul><li>%s</li></ul>", conflict_str)
                     self.request.response.addWarningNotification(
                         structured(
                         "%s  This makes it "

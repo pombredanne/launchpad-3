@@ -109,9 +109,15 @@ class UrlLib2Transport(Transport):
         request = Request(url, request_body, headers)
         try:
             response = self.opener.open(request).read()
-        except HTTPError, he:
+        except HTTPError as he:
             raise ProtocolError(
                 request.get_full_url(), he.code, he.msg, he.hdrs)
         else:
             traceback_info(response)
-            return self._parse_response(StringIO(response), None)
+            # In Python2.6 the api is self._parse_response, in 2.7 it is
+            # self.parse_response and no longer takes the 'sock' argument
+            parse = getattr(self, '_parse_response', None)
+            if parse is not None:
+                # Compatibility with python 2.6
+                return parse(StringIO(response), None)
+            return self.parse_response(StringIO(response))

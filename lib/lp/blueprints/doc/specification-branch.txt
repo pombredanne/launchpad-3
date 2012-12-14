@@ -1,7 +1,7 @@
 Specification Branch Links
 ==========================
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.blueprints.interfaces.specificationbranch import (
     ...     ISpecificationBranch)
     >>> from lp.blueprints.model.specification import SpecificationBranch

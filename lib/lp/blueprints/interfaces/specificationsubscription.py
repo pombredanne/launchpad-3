@@ -27,8 +27,8 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
-from lp.services.fields import PublicPersonChoice
+from lp import _
+from lp.services.fields import PersonChoice
 
 
 class ISpecificationSubscription(Interface):
@@ -38,7 +38,7 @@ class ISpecificationSubscription(Interface):
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
-    person = PublicPersonChoice(
+    person = PersonChoice(
             title=_('Subscriber'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
@@ -50,10 +50,8 @@ class ISpecificationSubscription(Interface):
         readonly=True)
     specificationID = Attribute('db specification value')
     essential = Bool(title=_('Participation essential'), required=True,
-        description=_('Check this if participation in the design and '
-        'discussion of the feature is essential. This will '
-        'cause the meeting scheduler to try to ensure that this person '
-        'attends meetings about this feature.'),
+        description=_('Check this if participation in the design of '
+        'the feature is essential.'),
         default=False)
 
     @call_with(user=REQUEST_USER)

@@ -16,11 +16,11 @@ from lp.services.mailman.runmailman import (
     start_mailman,
     stop_mailman,
     )
-from canonical.testing.layers import (
+from lp.services.mailman.testing import logwatcher
+from lp.testing.layers import (
     AppServerLayer,
     LayerProcessController,
     )
-from lp.services.mailman.testing import logwatcher
 
 
 class MailmanLayer(AppServerLayer):

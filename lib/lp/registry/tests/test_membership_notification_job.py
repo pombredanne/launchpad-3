@@ -8,10 +8,8 @@ __metaclass__ = type
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 import transaction
-
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
@@ -21,12 +19,21 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.model.persontransferjob import MembershipNotificationJob
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import (
+    block_on_job,
+    pop_remote_notifications,
+    )
 from lp.testing import (
     login_person,
     person_logged_in,
     run_script,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    CeleryJobLayer,
+    DatabaseFunctionalLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -111,3 +118,38 @@ class MembershipNotificationJobTest(TestCaseWithFactory):
         self.assertEqual(0, exit_code)
         self.assertTrue(job_repr in err, err)
         self.assertTrue("MembershipNotificationJob sent email" in err, err)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_smoke_admining_team(self):
+        # Smoke test, primarily for DB permissions needed by queries to work
+        # with admining users and teams
+        # Check the oopses in /var/tmp/lperr.test if the assertions fail.
+        self.useFixture(FeatureFixture({
+                'jobs.celery.enabled_classes': 'MembershipNotificationJob'
+        }))
+        team = self.factory.makeTeam(name='a-team')
+        with person_logged_in(team.teamowner):
+            # This implicitly creates a job, but it is not the job under test.
+            admining_team = self.factory.makeTeam()
+            team.addMember(
+                admining_team, team.teamowner, force_team_add=True)
+            membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+                admining_team, team)
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, team.teamowner)
+        person = self.factory.makePerson(name='murdock')
+        with block_on_job(self):
+            transaction.commit()
+        pop_remote_notifications()
+        job = getUtility(IMembershipNotificationJobSource).create(
+            person, team, team.teamowner,
+            TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
+        with block_on_job(self):
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        (notification,) = pop_remote_notifications()
+        self.assertIn('murdock made admin by', notification['Subject'])

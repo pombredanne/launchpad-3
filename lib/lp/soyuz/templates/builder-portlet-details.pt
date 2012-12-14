@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-details">
    <h2><span tal:replace="context/title">BUILDER</span> details</h2>
-   <div class="portletBody portletContent">
 
      <b>Name</b>: <span tal:replace="context/title"/><br/>
 
@@ -22,5 +21,4 @@
 
      <b>Owner</b>
      <a tal:replace="structure context/owner/fmt:link">OWNER</a>
-   </div>
 </div>

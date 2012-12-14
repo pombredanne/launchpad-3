@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -11,12 +11,8 @@ import gc
 from StringIO import StringIO
 
 import bzrlib.branch
-from bzrlib.branch import (
-    BranchReferenceFormat,
-    )
-from bzrlib.bzrdir import (
-    BzrDir,
-    )
+from bzrlib.branch import BranchReferenceFormat
+from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     IncompatibleRepositories,
     NotBranchError,
@@ -67,10 +63,10 @@ def get_netstrings(line):
     while len(line) > 0:
         colon_index = line.find(':')
         length = int(line[:colon_index])
-        strings.append(line[colon_index+1:colon_index+1+length])
-        assert ',' == line[colon_index+1+length], (
-            'Expected %r == %r' % (',', line[colon_index+1+length]))
-        line = line[colon_index+length+2:]
+        strings.append(line[(colon_index + 1):(colon_index + 1 + length)])
+        assert ',' == line[colon_index + 1 + length], (
+            'Expected %r == %r' % (',', line[colon_index + 1 + length]))
+        line = line[colon_index + length + 2:]
     return strings
 
 
@@ -495,18 +491,16 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
         """A stub for PullerWorkerProtocol that just defines progressMade."""
         def __init__(self):
             self.calls = []
+
         def progressMade(self, type):
             self.calls.append(type)
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestWorkerProgressReporting, self).setUp()
         SafeBranchOpener.install_hook()
         self.saved_factory = bzrlib.ui.ui_factory
         self.disable_directory_isolation()
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        bzrlib.ui.ui_factory = self.saved_factory
+        self.addCleanup(setattr, bzrlib.ui, 'ui_factory', self.saved_factory)
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""

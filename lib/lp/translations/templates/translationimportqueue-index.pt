@@ -27,7 +27,7 @@
         If your import is taking longer than you'd expect, <a href="
         https://answers.launchpad.net/rosetta/+addquestion"
         >contact us</a>.
-        (<a href="/+help/successful-imports.html" target="help">Learn
+        (<a href="/+help-translations/successful-imports.html" target="help">Learn
         more about getting a successful import</a>)
         <tal:login condition="not:request/lp:person">
           <a href="+login">Log in</a> to change items in this list.

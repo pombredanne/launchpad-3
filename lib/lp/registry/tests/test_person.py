@@ -1,66 +1,55 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.utils import smartquote
 import pytz
+from storm.locals import Desc
 from storm.store import Store
 from testtools.matchers import (
     Equals,
     LessThan,
     )
-import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    )
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken,
-    EmailAddressStatus,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    reconnect_stores,
-    )
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.model.specification import Specification
-from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtask import get_related_bugtasks_search_params
-from lp.registry.errors import (
-    InvalidName,
-    NameAlreadyTaken,
-    PrivatePersonLinkageError,
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
+from lp.blueprints.model.specification import Specification
+from lp.bugs.interfaces.bugtasksearch import (
+    get_person_bugtasks_search_params,
+    IllegalRelatedBugTasksParams,
+    )
+from lp.bugs.model.bug import Bug
+from lp.registry.enums import (
+    PersonVisibility,
+    TeamMembershipPolicy,
+    )
+from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
-    PersonCreationRationale,
-    PersonVisibility,
     )
-from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import (
@@ -71,29 +60,30 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
-from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import clear_property_cache
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    ArchiveStatus,
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    flush_database_updates,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.propertycache import clear_property_cache
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
-    ANONYMOUS,
     celebrity_logged_in,
+    launchpadlib_for,
     login,
     login_person,
     logout,
     person_logged_in,
     StormStatementRecorder,
-    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
-from lp.testing.storm import (
-    reload_dsp,
-    reload_object,
-    )
+from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -277,6 +267,49 @@ class TestPersonTeams(TestCaseWithFactory):
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
 
+    def test_getOwnedTeams(self):
+        # The iterator contains the teams that person owns, regardless of
+        # membership.
+        owner = self.a_team.teamowner
+        with person_logged_in(owner):
+            owner.leave(self.a_team)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+
+    def test_getOwnedTeams_visibility(self):
+        # The iterator contains the teams that the user can see.
+        owner = self.a_team.teamowner
+        p_team = self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        results = list(owner.getOwnedTeams(self.user))
+        self.assertEqual([self.a_team], results)
+        results = list(owner.getOwnedTeams(owner))
+        self.assertEqual([self.a_team, p_team], results)
+
+    def test_getOwnedTeams_webservice(self):
+        # The user in the interaction is used as the user arg.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        lp = launchpadlib_for('test', person=self.user)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
+
+    def test_getOwnedTeams_webservice_anonymous(self):
+        # The user in the interaction is used as the user arg.
+        # Anonymous scripts also do not reveal private teams.
+        owner = self.a_team.teamowner
+        self.factory.makeTeam(
+            name='p', owner=owner, visibility=PersonVisibility.PRIVATE)
+        owner_name = owner.name
+        logout()
+        lp = launchpadlib_for('test', person=None)
+        lp_owner = lp.people[owner_name]
+        results = lp_owner.getOwnedTeams()
+        self.assertEqual(['a'], [t.name for t in results])
+
     def test_administrated_teams(self):
         # The property Person.administrated_teams is a cached copy of
         # the result of Person.getAdministratedTeams().
@@ -294,7 +327,81 @@ class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_getOwnedOrDrivenPillars(self):
+    def test_title_user(self):
+        user = self.factory.makePerson(name='snarf')
+        self.assertEqual('Snarf', user.title)
+        self.assertEqual(user.displayname, user.title)
+
+    def test_title_team(self):
+        team = self.factory.makeTeam(name='pting')
+        title = smartquote('"%s" team') % team.displayname
+        self.assertEqual(title, team.title)
+
+    def test_description_not_exists(self):
+        # When the person does not have a description, teamdescription or
+        # homepage_content, the value is None.
+        person = self.factory.makePerson()
+        self.assertEqual(None, person.description)
+
+    def test_description_fallback_for_person(self):
+        # When the person does not have a description, but does have a
+        # teamdescription or homepage_content, they are used.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+        self.assertEqual('babble\nfish', person.description)
+
+    def test_description_exists(self):
+        # When the person has a description, it is returned.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.description = 'babble'
+        self.assertEqual('babble', person.description)
+
+    def test_description_setting_reconciles_obsolete_sources(self):
+        # When the description is set, the homepage_content and teamdescription
+        # are set to None.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+            person.description = "What's this fish doing?"
+        self.assertEqual("What's this fish doing?", person.description)
+        self.assertEqual(None, person.homepage_content)
+        self.assertEqual(None, person.teamdescription)
+
+    def test_getAffiliatedPillars_kinds(self):
+        # Distributions, project groups, and projects are returned in this
+        # same order.
+        user = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=user)
+        project_group = self.factory.makeProject(owner=user)
+        distribution = self.factory.makeDistribution(owner=user)
+        expected_pillars = [
+            distribution.name, project_group.name, project.name]
+        received_pillars = [
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_roles(self):
+        # owned, driven, and supervised pillars are returned ordered by
+        # display name.
+        user = self.factory.makePerson()
+        owned_project = self.factory.makeProduct(owner=user, name="cat")
+        driven_project = self.factory.makeProduct(name="bat")
+        supervised_project = self.factory.makeProduct(name='nat')
+        with celebrity_logged_in('admin'):
+            driven_project.driver = user
+            supervised_project.bug_supervisor = user
+        expected_pillars = [
+            driven_project.name, owned_project.name, supervised_project.name]
+        received_pillars = [
+            pillar.name for pillar in  user.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_active_pillars(self):
+        # Only active pillars are returned.
         user = self.factory.makePerson()
         active_project = self.factory.makeProject(owner=user)
         inactive_project = self.factory.makeProject(owner=user)
@@ -302,31 +409,105 @@ class TestPerson(TestCaseWithFactory):
             inactive_project.active = False
         expected_pillars = [active_project.name]
         received_pillars = [pillar.name for pillar in
-            user.getOwnedOrDrivenPillars()]
+            user.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_minus_embargoed(self):
+        # Skip non public products if not allowed to see them.
+        owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        self.factory.makeProduct(
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        public = self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [public.name]
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(user)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_self(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(owner)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeAdministrator()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
+        self.assertEqual(expected_pillars, received_pillars)
+
+    def test_getAffiliatedPillars_visible_to_commercial_admins(self):
+        # Users can see their own non-public affiliated products.
+        owner = self.factory.makePerson()
+        admin = self.factory.makeCommercialAdmin()
+        self.factory.makeProduct(
+            name=u'embargoed',
+            information_type=InformationType.EMBARGOED,
+            owner=owner)
+        self.factory.makeProduct(
+            name=u'public',
+            information_type=InformationType.PUBLIC,
+            owner=owner)
+
+        expected_pillars = [u'embargoed', u'public']
+        received_pillars = [pillar.name for pillar in
+            owner.getAffiliatedPillars(admin)]
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):
-        # is_merge_pending returns False when this person is not the "from"
+        # isMergePending() returns False when this person is not the "from"
         # person of an active merge job.
         person = self.factory.makePerson()
-        self.assertFalse(person.is_merge_pending)
+        self.assertFalse(person.isMergePending())
 
-    def test_is_merge_pending(self):
-        # is_merge_pending returns True when this person is being merged with
+    def test_isMergePending(self):
+        # isMergePending() returns True when this person is being merged with
         # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
-        getUtility(IPersonSet).mergeAsync(from_person, to_person)
-        self.assertTrue(from_person.is_merge_pending)
-        self.assertFalse(to_person.is_merge_pending)
+        requester = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person, requester)
+        self.assertTrue(from_person.isMergePending())
+        self.assertFalse(to_person.isMergePending())
 
     def test_mergeAsync_success(self):
-        # mergeAsync returns a job with the from and to persons.
+        # mergeAsync returns a job with the from and to persons, and the
+        # requester.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
-        job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        requester = self.factory.makePerson()
+        person_set = getUtility(IPersonSet)
+        job = person_set.mergeAsync(from_person, to_person, requester)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+        self.assertEqual(requester, job.requester)
 
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any
@@ -520,6 +701,79 @@ class TestPerson(TestCaseWithFactory):
             0,
             synchronised_spphs.count())
 
+    def test_product_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for products
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProduct(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_projectgroup_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for project groups
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeProject(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_distribution_isAnyPillarOwner(self):
+        # Test isAnyPillarOwner for distributions
+        person = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        self.factory.makeDistribution(owner=owner)
+        self.assertTrue(owner.isAnyPillarOwner())
+        self.assertFalse(person.isAnyPillarOwner())
+
+    def test_has_current_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() checks for one.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        self.assertTrue(team.teamowner.hasCurrentCommercialSubscription())
+
+    def test_does_not_have_current_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() is false if it has
+        # expired.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self.assertFalse(team.teamowner.hasCurrentCommercialSubscription())
+
+    def test_does_not_have_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() is false if they do
+        # not have one.
+        person = self.factory.makePerson()
+        self.assertFalse(person.hasCurrentCommercialSubscription())
+
+    def test_commercial_admin_with_checkAllowVisibility(self):
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        self.assertTrue(admin.checkAllowVisibility())
+
+    def test_can_not_set_visibility(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            ImmutableVisibilityError, person.transitionVisibility,
+            PersonVisibility.PRIVATE, person)
+
+    def test_private_team_has_personal_access_policy(self):
+        # Private teams have a personal access policy.
+        team = self.factory.makeTeam()
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        team.transitionVisibility(PersonVisibility.PRIVATE, admin)
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam([team])])
+
+    def test_public_team_has_no_personal_access_policy(self):
+        # Public teams do not have a personal access policy.
+        team = self.factory.makeTeam()
+        self.assertContentEqual(
+            [], getUtility(IAccessPolicySource).findByTeam([team]))
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -534,6 +788,26 @@ class TestPersonStates(TestCaseWithFactory):
         product_set = getUtility(IProductSet)
         self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.UTC)
+
+    def test_canDeactivateAccount_private_projects(self):
+        """A user owning non-public products cannot be deactivated."""
+        user = self.factory.makePerson()
+        self.factory.makeProduct(
+            information_type=InformationType.PUBLIC,
+            name="public",
+            owner=user)
+        self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY,
+            name="private",
+            owner=user)
+
+        login(user.preferredemail.email)
+        can_deactivate, errors = user.canDeactivateAccountWithErrors()
+
+        self.assertFalse(can_deactivate)
+        expected_error = ('This account cannot be deactivated because it owns '
+                        'the following non-public products: private')
+        self.assertIn(expected_error, errors)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -570,12 +844,15 @@ class TestPersonStates(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=user)
         with person_logged_in(user):
             product.driver = user
+            product.bug_supervisor = user
             user.deactivateAccount("Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         self.assertEqual(registry_team, product.owner,
                          "Owner is not registry team.")
-        self.assertEqual(registry_team, product.driver,
-                         "Driver is not registry team.")
+        self.assertEqual(None, product.driver,
+                         "Driver is not emptied.")
+        self.assertEqual(None, product.bug_supervisor,
+                         "Driver is not emptied.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
@@ -648,7 +925,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
-        except ImmutableVisibilityError, exc:
+        except ImmutableVisibilityError as exc:
             self.assertEqual(
                 str(exc),
                 'A private team cannot change visibility.')
@@ -659,7 +936,7 @@ class TestPersonStates(TestCaseWithFactory):
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.renewal_policy': 'NONE',
             'field.visibility': 'PUBLIC',
             'field.actions.save': 'Save',
@@ -675,8 +952,7 @@ class TestPersonStates(TestCaseWithFactory):
             'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'unmapped_participants', 'longitude',
-            'latitude', 'time_zone',
+            'proposedmembers', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:
@@ -698,731 +974,6 @@ class TestPersonStates(TestCaseWithFactory):
             name="user", displayname=u'\u0170-tester')
         ignore, displayname = repr(person).rsplit(' ', 1)
         self.assertEqual('(\\u0170-tester)>', displayname)
-
-
-class TestPersonSet(TestCaseWithFactory):
-    """Test `IPersonSet`."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestPersonSet, self).setUp()
-        login(ANONYMOUS)
-        self.addCleanup(logout)
-        self.person_set = getUtility(IPersonSet)
-
-    def test_isNameBlacklisted(self):
-        cursor().execute(
-            "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
-        self.failUnless(self.person_set.isNameBlacklisted('foo'))
-        self.failIf(self.person_set.isNameBlacklisted('bar'))
-
-    def test_isNameBlacklisted_user_is_admin(self):
-        team = self.factory.makeTeam()
-        name_blacklist_set = getUtility(INameBlacklistSet)
-        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
-        self.store = IStore(self.admin_exp)
-        self.store.flush()
-        user = team.teamowner
-        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
-
-    def test_getByEmail_ignores_case_and_whitespace(self):
-        person1_email = 'foo.bar@canonical.com'
-        person1 = self.person_set.getByEmail(person1_email)
-        self.failIf(
-            person1 is None,
-            "PersonSet.getByEmail() could not find %r" % person1_email)
-
-        person2 = self.person_set.getByEmail('  foo.BAR@canonICAL.com  ')
-        self.failIf(
-            person2 is None,
-            "PersonSet.getByEmail() should ignore case and whitespace.")
-        self.assertEqual(person1, person2)
-
-    def test_getPrecachedPersonsFromIDs(self):
-        # The getPrecachedPersonsFromIDs() method should only make one
-        # query to load all the extraneous data. Accessing the
-        # attributes should then cause zero queries.
-        person_ids = [
-            self.factory.makePerson().id
-            for i in range(3)]
-
-        with StormStatementRecorder() as recorder:
-            persons = list(self.person_set.getPrecachedPersonsFromIDs(
-                person_ids, need_karma=True, need_ubuntu_coc=True,
-                need_location=True, need_archive=True,
-                need_preferred_email=True, need_validity=True))
-        self.assertThat(recorder, HasQueryCount(LessThan(2)))
-
-        with StormStatementRecorder() as recorder:
-            for person in persons:
-                person.is_valid_person
-                person.karma
-                person.is_ubuntu_coc_signer
-                person.location
-                person.archive
-                person.preferredemail
-        self.assertThat(recorder, HasQueryCount(LessThan(1)))
-
-
-class KarmaTestMixin:
-    """Helper methods for setting karma."""
-
-    def _makeKarmaCache(self, person, product, category_name_values):
-        """Create a KarmaCache entry with the given arguments.
-
-        In order to create the KarmaCache record we must switch to the DB
-        user 'karma'. This invalidates the objects under test so they
-        must be retrieved again.
-        """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        total = 0
-        # Insert category total for person and project.
-        for category_name, value in category_name_values:
-            category = KarmaCategory.byName(category_name)
-            self.cache_manager.new(
-                value, person.id, category.id, product_id=product.id)
-            total += value
-        # Insert total cache for person and project.
-        self.cache_manager.new(
-            total, person.id, None, product_id=product.id)
-        transaction.commit()
-        reconnect_stores('launchpad')
-
-    def _makeKarmaTotalCache(self, person, total):
-        """Create a KarmaTotalCache entry.
-
-        In order to create the KarmaTotalCache record we must switch to the DB
-        user 'karma'. This invalidates the objects under test so they
-        must be retrieved again.
-        """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        KarmaTotalCache(person=person.id, karma_total=total)
-        transaction.commit()
-        reconnect_stores('launchpad')
-
-
-class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
-    """Test cases for PersonSet merge."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestPersonSetMerge, self).setUp()
-        self.person_set = getUtility(IPersonSet)
-
-    def _do_premerge(self, from_person, to_person):
-        # Do the pre merge work performed by the LoginToken.
-        login('admin@canonical.com')
-        email = from_person.preferredemail
-        email.status = EmailAddressStatus.NEW
-        email.person = to_person
-        email.account = to_person.account
-        transaction.commit()
-        logout()
-
-    def _do_merge(self, from_person, to_person, reviewer=None):
-        # Perform the merge as the db user that will be used by the jobs.
-        transaction.commit()
-        reconnect_stores('IPersonMergeJobSource')
-        from_person = reload_object(from_person)
-        to_person = reload_object(to_person)
-        if reviewer is not None:
-            reviewer = reload_object(reviewer)
-        self.person_set.merge(from_person, to_person, reviewer=reviewer)
-        return from_person, to_person
-
-    def _get_testable_account(self, person, date_created, openid_identifier):
-        # Return a naked account with predictable attributes.
-        account = removeSecurityProxy(person.account)
-        account.date_created = date_created
-        account.openid_identifier = openid_identifier
-        return account
-
-    def test_delete_no_notifications(self):
-        team = self.factory.makeTeam()
-        owner = team.teamowner
-        transaction.commit()
-        reconnect_stores('IPersonMergeJobSource')
-        team = reload_object(team)
-        owner = reload_object(owner)
-        self.person_set.delete(team, owner)
-        notification_set = getUtility(IPersonNotificationSet)
-        notifications = notification_set.getNotificationsToSend()
-        self.assertEqual(0, notifications.count())
-
-    def test_openid_identifiers(self):
-        # Verify that OpenId Identifiers are merged.
-        duplicate = self.factory.makePerson()
-        duplicate_identifier = removeSecurityProxy(
-            duplicate.account).openid_identifiers.any().identifier
-        person = self.factory.makePerson()
-        person_identifier = removeSecurityProxy(
-            person.account).openid_identifiers.any().identifier
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        self.assertEqual(
-            0,
-            removeSecurityProxy(duplicate.account).openid_identifiers.count())
-
-        merged_identifiers = [
-            identifier.identifier for identifier in
-                removeSecurityProxy(person.account).openid_identifiers]
-
-        self.assertIn(duplicate_identifier, merged_identifiers)
-        self.assertIn(person_identifier, merged_identifiers)
-
-    def test_karmacache_transferred_to_user_has_no_karma(self):
-        # Verify that the merged user has no KarmaCache entries,
-        # and the karma total was transfered.
-        self.cache_manager = getUtility(IKarmaCacheManager)
-        product = self.factory.makeProduct()
-        duplicate = self.factory.makePerson()
-        self._makeKarmaCache(
-            duplicate, product, [('bugs', 10)])
-        self._makeKarmaTotalCache(duplicate, 15)
-        # The karma changes invalidated duplicate instance.
-        duplicate = self.person_set.get(duplicate.id)
-        person = self.factory.makePerson()
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        self.assertEqual([], duplicate.karma_category_caches)
-        self.assertEqual(0, duplicate.karma)
-        self.assertEqual(15, person.karma)
-
-    def test_karmacache_transferred_to_user_has_karma(self):
-        # Verify that the merged user has no KarmaCache entries,
-        # and the karma total was summed.
-        self.cache_manager = getUtility(IKarmaCacheManager)
-        product = self.factory.makeProduct()
-        duplicate = self.factory.makePerson()
-        self._makeKarmaCache(
-            duplicate, product, [('bugs', 10)])
-        self._makeKarmaTotalCache(duplicate, 15)
-        person = self.factory.makePerson()
-        self._makeKarmaCache(
-            person, product, [('bugs', 9)])
-        self._makeKarmaTotalCache(person, 13)
-        # The karma changes invalidated duplicate and person instances.
-        duplicate = self.person_set.get(duplicate.id)
-        person = self.person_set.get(person.id)
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        self.assertEqual([], duplicate.karma_category_caches)
-        self.assertEqual(0, duplicate.karma)
-        self.assertEqual(28, person.karma)
-
-    def test_person_date_created_preserved(self):
-        # Verify that the oldest datecreated is merged.
-        person = self.factory.makePerson()
-        duplicate = self.factory.makePerson()
-        oldest_date = datetime(
-            2005, 11, 25, 0, 0, 0, 0, pytz.timezone('UTC'))
-        removeSecurityProxy(duplicate).datecreated = oldest_date
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        self.assertEqual(oldest_date, person.datecreated)
-
-    def test_team_with_active_mailing_list_raises_error(self):
-        # A team with an active mailing list cannot be merged.
-        target_team = self.factory.makeTeam()
-        test_team = self.factory.makeTeam()
-        self.factory.makeMailingList(
-            test_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError, self.person_set.merge, test_team, target_team)
-
-    def test_team_with_inactive_mailing_list(self):
-        # A team with an inactive mailing list can be merged.
-        target_team = self.factory.makeTeam()
-        test_team = self.factory.makeTeam()
-        mailing_list = self.factory.makeMailingList(
-            test_team, test_team.teamowner)
-        mailing_list.deactivate()
-        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        test_team, target_team = self._do_merge(
-            test_team, target_team, test_team.teamowner)
-        self.assertEqual(target_team, test_team.merged)
-        self.assertEqual(
-            MailingListStatus.PURGED, test_team.mailing_list.status)
-        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
-        self.assertEqual(0, emails)
-
-    def test_team_with_purged_mailing_list(self):
-        # A team with a purges mailing list can be merged.
-        target_team = self.factory.makeTeam()
-        test_team = self.factory.makeTeam()
-        mailing_list = self.factory.makeMailingList(
-            test_team, test_team.teamowner)
-        mailing_list.deactivate()
-        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        mailing_list.purge()
-        test_team, target_team = self._do_merge(
-            test_team, target_team, test_team.teamowner)
-        self.assertEqual(target_team, test_team.merged)
-
-    def test_team_with_members(self):
-        # Team members are removed before merging.
-        target_team = self.factory.makeTeam()
-        test_team = self.factory.makeTeam()
-        former_member = self.factory.makePerson()
-        with person_logged_in(test_team.teamowner):
-            test_team.addMember(former_member, test_team.teamowner)
-        test_team, target_team = self._do_merge(
-            test_team, target_team, test_team.teamowner)
-        self.assertEqual(target_team, test_team.merged)
-        self.assertEqual([], list(former_member.super_teams))
-
-    def test_team_without_super_teams_is_fine(self):
-        # A team with no members and no super teams
-        # merges without errors.
-        test_team = self.factory.makeTeam()
-        target_team = self.factory.makeTeam()
-        login_person(test_team.teamowner)
-        self._do_merge(test_team, target_team, test_team.teamowner)
-
-    def test_team_with_super_teams(self):
-        # A team with superteams can be merged, but the memberships
-        # are not transferred.
-        test_team = self.factory.makeTeam()
-        super_team = self.factory.makeTeam()
-        target_team = self.factory.makeTeam()
-        login_person(test_team.teamowner)
-        test_team.join(super_team, test_team.teamowner)
-        test_team, target_team = self._do_merge(
-            test_team, target_team, test_team.teamowner)
-        self.assertEqual(target_team, test_team.merged)
-        self.assertEqual([], list(target_team.super_teams))
-
-    def test_merge_moves_branches(self):
-        # When person/teams are merged, branches owned by the from person
-        # are moved.
-        person = self.factory.makePerson()
-        branch = self.factory.makeBranch()
-        duplicate = branch.owner
-        self._do_premerge(branch.owner, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        branches = person.getBranches()
-        self.assertEqual(1, branches.count())
-
-    def test_merge_with_duplicated_branches(self):
-        # If both the from and to people have branches with the same name,
-        # merging renames the duplicate from the from person's side.
-        product = self.factory.makeProduct()
-        from_branch = self.factory.makeBranch(name='foo', product=product)
-        to_branch = self.factory.makeBranch(name='foo', product=product)
-        mergee = to_branch.owner
-        duplicate = from_branch.owner
-        self._do_premerge(duplicate, mergee)
-        login_person(mergee)
-        duplicate, mergee = self._do_merge(duplicate, mergee)
-        branches = [b.name for b in mergee.getBranches()]
-        self.assertEqual(2, len(branches))
-        self.assertContentEqual([u'foo', u'foo-1'], branches)
-
-    def test_merge_moves_recipes(self):
-        # When person/teams are merged, recipes owned by the from person are
-        # moved.
-        person = self.factory.makePerson()
-        recipe = self.factory.makeSourcePackageRecipe()
-        duplicate = recipe.owner
-        # Delete the PPA, which is required for the merge to work.
-        with person_logged_in(duplicate):
-            recipe.owner.archive.status = ArchiveStatus.DELETED
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        self.assertEqual(1, person.recipes.count())
-
-    def test_merge_with_duplicated_recipes(self):
-        # If both the from and to people have recipes with the same name,
-        # merging renames the duplicate from the from person's side.
-        merge_from = self.factory.makeSourcePackageRecipe(
-            name=u'foo', description=u'FROM')
-        merge_to = self.factory.makeSourcePackageRecipe(
-            name=u'foo', description=u'TO')
-        duplicate = merge_from.owner
-        mergee = merge_to.owner
-        # Delete merge_from's PPA, which is required for the merge to work.
-        with person_logged_in(merge_from.owner):
-            merge_from.owner.archive.status = ArchiveStatus.DELETED
-        self._do_premerge(merge_from.owner, mergee)
-        login_person(mergee)
-        duplicate, mergee = self._do_merge(duplicate, mergee)
-        recipes = mergee.recipes
-        self.assertEqual(2, recipes.count())
-        descriptions = [r.description for r in recipes]
-        self.assertEqual([u'TO', u'FROM'], descriptions)
-        self.assertEqual(u'foo-1', recipes[1].name)
-
-    def assertSubscriptionMerges(self, target, reloader=reload_object):
-        # Given a subscription target, we want to make sure that subscriptions
-        # that the duplicate person made are carried over to the merged
-        # account.
-        duplicate = self.factory.makePerson()
-        with person_logged_in(duplicate):
-            target.addSubscription(duplicate, duplicate)
-        person = self.factory.makePerson()
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        # The merged person has the subscription, and the duplicate person
-        # does not.
-        target = reloader(target)
-        self.assertTrue(target.getSubscription(person) is not None)
-        self.assertTrue(target.getSubscription(duplicate) is None)
-
-    def assertConflictingSubscriptionDeletes(self, target,
-                                                      reloader=reload_object):
-        # Given a subscription target, we want to make sure that subscriptions
-        # that the duplicate person made that conflict with existing
-        # subscriptions in the merged account are deleted.
-        duplicate = self.factory.makePerson()
-        person = self.factory.makePerson()
-        with person_logged_in(duplicate):
-            target.addSubscription(duplicate, duplicate)
-        with person_logged_in(person):
-            # The description lets us show that we still have the right
-            # subscription later.
-            target.addBugSubscriptionFilter(person, person).description = (
-                u'a marker')
-        self._do_premerge(duplicate, person)
-        login_person(person)
-        duplicate, person = self._do_merge(duplicate, person)
-        target = reloader(target)
-        # The merged person still has the original subscription, as shown
-        # by the marker name.
-        self.assertEqual(
-            target.getSubscription(person).bug_filters[0].description,
-            u'a marker')
-        # The conflicting subscription on the duplicate has been deleted.
-        self.assertTrue(target.getSubscription(duplicate) is None)
-
-    def test_merge_with_product_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeProduct())
-
-    def test_merge_with_conflicting_product_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(self.factory.makeProduct())
-
-    def test_merge_with_project_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeProject())
-
-    def test_merge_with_conflicting_project_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(self.factory.makeProject())
-
-    def test_merge_with_distroseries_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeDistroSeries())
-
-    def test_merge_with_conflicting_distroseries_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(
-            self.factory.makeDistroSeries())
-
-    def test_merge_with_milestone_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeMilestone())
-
-    def test_merge_with_conflicting_milestone_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(
-            self.factory.makeMilestone())
-
-    def test_merge_with_productseries_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeProductSeries())
-
-    def test_merge_with_conflicting_productseries_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(
-            self.factory.makeProductSeries())
-
-    def test_merge_with_distribution_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeDistribution())
-
-    def test_merge_with_conflicting_distribution_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(
-            self.factory.makeDistribution())
-
-    def test_merge_with_sourcepackage_subscription(self):
-        # See comments in assertSubscriptionMerges.
-        dsp = self.factory.makeDistributionSourcePackage()
-        self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
-
-    def test_merge_with_conflicting_sourcepackage_subscription(self):
-        # See comments in assertConflictingSubscriptionDeletes.
-        dsp = self.factory.makeDistributionSourcePackage()
-        self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
-
-    def test_mergeAsync(self):
-        # mergeAsync() creates a new `PersonMergeJob`.
-        from_person = self.factory.makePerson()
-        to_person = self.factory.makePerson()
-        login_person(from_person)
-        job = self.person_set.mergeAsync(from_person, to_person)
-        self.assertEqual(from_person, job.from_person)
-        self.assertEqual(to_person, job.to_person)
-
-
-class TestPersonSetCreateByOpenId(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestPersonSetCreateByOpenId, self).setUp()
-        self.person_set = getUtility(IPersonSet)
-        self.store = IMasterStore(Account)
-
-        # Generate some valid test data.
-        self.account = self.makeAccount()
-        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
-        self.person = self.makePerson(self.account)
-        self.email = self.makeEmailAddress(
-            email='whatever@example.com',
-            account=self.account, person=self.person)
-
-    def makeAccount(self):
-        return self.store.add(Account(
-            displayname='Displayname',
-            creation_rationale=AccountCreationRationale.UNKNOWN,
-            status=AccountStatus.ACTIVE))
-
-    def makeOpenIdIdentifier(self, account, identifier):
-        openid_identifier = OpenIdIdentifier()
-        openid_identifier.identifier = identifier
-        openid_identifier.account = account
-        return self.store.add(openid_identifier)
-
-    def makePerson(self, account):
-        return self.store.add(Person(
-            name='acc%d' % account.id, account=account,
-            displayname='Displayname',
-            creation_rationale=PersonCreationRationale.UNKNOWN))
-
-    def makeEmailAddress(self, email, account, person):
-            return self.store.add(EmailAddress(
-                email=email,
-                account=account,
-                person=person,
-                status=EmailAddressStatus.PREFERRED))
-
-    def testAllValid(self):
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email, 'Ignored Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(False, updated)
-        self.assertIs(self.person, found)
-        self.assertIs(self.account, found.account)
-        self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
-        self.assertIs(self.email.person, self.person)
-        self.assertEqual(
-            [self.identifier], list(self.account.openid_identifiers))
-
-    def testEmailAddressCaseInsensitive(self):
-        # As per testAllValid, but the email address used for the lookup
-        # is all upper case.
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email.upper(),
-            'Ignored Name', PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(False, updated)
-        self.assertIs(self.person, found)
-        self.assertIs(self.account, found.account)
-        self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
-        self.assertIs(self.email.person, self.person)
-        self.assertEqual(
-            [self.identifier], list(self.account.openid_identifiers))
-
-    def testNewOpenId(self):
-        # Account looked up by email and the new OpenId identifier
-        # attached. We can do this because we trust our OpenId Provider.
-        new_identifier = u'newident'
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            new_identifier, self.email.email, 'Ignored Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(True, updated)
-        self.assertIs(self.person, found)
-        self.assertIs(self.account, found.account)
-        self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
-        self.assertIs(self.email.person, self.person)
-
-        # Old OpenId Identifier still attached.
-        self.assertIn(self.identifier, list(self.account.openid_identifiers))
-
-        # So is our new one.
-        identifiers = [
-            identifier.identifier for identifier
-                in self.account.openid_identifiers]
-        self.assertIn(new_identifier, identifiers)
-
-    def testNewEmailAddress(self):
-        # Account looked up by OpenId identifier and new EmailAddress
-        # attached. We can do this because we trust our OpenId Provider.
-        new_email = u'new_email@example.com'
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, new_email, 'Ignored Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(True, updated)
-        self.assertIs(self.person, found)
-        self.assertIs(self.account, found.account)
-        self.assertEqual(
-            [self.identifier], list(self.account.openid_identifiers))
-
-        # The old email address is still there and correctly linked.
-        self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
-        self.assertIs(self.email.person, self.person)
-
-        # The new email address is there too and correctly linked.
-        new_email = self.store.find(EmailAddress, email=new_email).one()
-        self.assertIs(new_email.account, self.account)
-        self.assertIs(new_email.person, self.person)
-        self.assertEqual(EmailAddressStatus.NEW, new_email.status)
-
-    def testNewAccountAndIdentifier(self):
-        # If neither the OpenId Identifier nor the email address are
-        # found, we create everything.
-        new_email = u'new_email@example.com'
-        new_identifier = u'new_identifier'
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            new_identifier, new_email, 'New Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        # We have a new Person
-        self.assertIs(True, updated)
-        self.assertIsNot(None, found)
-
-        # It is correctly linked to an account, emailaddress and
-        # identifier.
-        self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
-        self.assertEqual(
-            new_identifier, found.account.openid_identifiers.any().identifier)
-
-    def testNoPerson(self):
-        # If the account is not linked to a Person, create one. ShipIt
-        # users fall into this category the first time they log into
-        # Launchpad.
-        self.email.person = None
-        self.person.account = None
-
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email, 'New Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        # We have a new Person
-        self.assertIs(True, updated)
-        self.assertIsNot(self.person, found)
-
-        # It is correctly linked to an account, emailaddress and
-        # identifier.
-        self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
-        self.assertIn(self.identifier, list(found.account.openid_identifiers))
-
-    def testNoAccount(self):
-        # EmailAddress is linked to a Person, but there is no Account.
-        # Convert this stub into something valid.
-        self.email.account = None
-        self.email.status = EmailAddressStatus.NEW
-        self.person.account = None
-        new_identifier = u'new_identifier'
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            new_identifier, self.email.email, 'Ignored',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(True, updated)
-
-        self.assertIsNot(None, found.account)
-        self.assertEqual(
-            new_identifier, found.account.openid_identifiers.any().identifier)
-        self.assertIs(self.email.person, found)
-        self.assertIs(self.email.account, found.account)
-        self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
-
-    def testMovedEmailAddress(self):
-        # The EmailAddress and OpenId Identifier are both in the
-        # database, but they are not linked to the same account. The
-        # identifier needs to be relinked to the correct account - the
-        # user able to log into the trusted SSO with that email address
-        # should be able to log into Launchpad with that email address.
-        # This lets us cope with the SSO migrating email addresses
-        # between SSO accounts.
-        self.identifier.account = self.store.find(
-            Account, displayname='Foo Bar').one()
-
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email, 'New Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(True, updated)
-        self.assertIs(self.person, found)
-
-        self.assertIs(found.account, self.identifier.account)
-        self.assertIn(self.identifier, list(found.account.openid_identifiers))
-
-
-class TestCreatePersonAndEmail(TestCase):
-    """Test `IPersonSet`.createPersonAndEmail()."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        self.addCleanup(logout)
-        self.person_set = getUtility(IPersonSet)
-
-    def test_duplicated_name_not_accepted(self):
-        self.person_set.createPersonAndEmail(
-            'testing@example.com', PersonCreationRationale.UNKNOWN,
-            name='zzzz')
-        self.assertRaises(
-            NameAlreadyTaken, self.person_set.createPersonAndEmail,
-            'testing2@example.com', PersonCreationRationale.UNKNOWN,
-            name='zzzz')
-
-    def test_duplicated_email_not_accepted(self):
-        self.person_set.createPersonAndEmail(
-            'testing@example.com', PersonCreationRationale.UNKNOWN)
-        self.assertRaises(
-            EmailAddressAlreadyTaken, self.person_set.createPersonAndEmail,
-            'testing@example.com', PersonCreationRationale.UNKNOWN)
-
-    def test_invalid_email_not_accepted(self):
-        self.assertRaises(
-            InvalidEmailAddress, self.person_set.createPersonAndEmail,
-            'testing@.com', PersonCreationRationale.UNKNOWN)
-
-    def test_invalid_name_not_accepted(self):
-        self.assertRaises(
-            InvalidName, self.person_set.createPersonAndEmail,
-            'testing@example.com', PersonCreationRationale.UNKNOWN,
-            name='/john')
 
 
 class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
@@ -1448,11 +999,11 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.failUnlessEqual(structural_subscriber,
                              params.structural_subscriber)
 
-    def test_get_related_bugtasks_search_params(self):
-        # With no specified options, get_related_bugtasks_search_params()
+    def test_get_person_bugtasks_search_params(self):
+        # With no specified options, get_person_bugtasks_search_params()
         # returns 5 BugTaskSearchParams objects, each with a different
         # user field set.
-        search_params = get_related_bugtasks_search_params(
+        search_params = get_person_bugtasks_search_params(
             self.user, self.context)
         self.assertEqual(len(search_params), 5)
         self.checkUserFields(
@@ -1466,10 +1017,10 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self.checkUserFields(
             search_params[4], structural_subscriber=self.context)
 
-    def test_get_related_bugtasks_search_params_with_assignee(self):
-        # With assignee specified, get_related_bugtasks_search_params()
+    def test_get_person_bugtasks_search_params_with_assignee(self):
+        # With assignee specified, get_person_bugtasks_search_params()
         # returns 4 BugTaskSearchParams objects.
-        search_params = get_related_bugtasks_search_params(
+        search_params = get_person_bugtasks_search_params(
             self.user, self.context, assignee=self.user)
         self.assertEqual(len(search_params), 4)
         self.checkUserFields(
@@ -1483,10 +1034,10 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[3], assignee=self.user,
             structural_subscriber=self.context)
 
-    def test_get_related_bugtasks_search_params_with_owner(self):
-        # With owner specified, get_related_bugtasks_search_params() returns
+    def test_get_person_bugtasks_search_params_with_owner(self):
+        # With owner specified, get_person_bugtasks_search_params() returns
         # 4 BugTaskSearchParams objects.
-        search_params = get_related_bugtasks_search_params(
+        search_params = get_person_bugtasks_search_params(
             self.user, self.context, owner=self.user)
         self.assertEqual(len(search_params), 4)
         self.checkUserFields(
@@ -1499,11 +1050,11 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[3], owner=self.user,
             structural_subscriber=self.context)
 
-    def test_get_related_bugtasks_search_params_with_bug_reporter(self):
-        # With bug reporter specified, get_related_bugtasks_search_params()
+    def test_get_person_bugtasks_search_params_with_bug_reporter(self):
+        # With bug reporter specified, get_person_bugtasks_search_params()
         # returns 4 BugTaskSearchParams objects, but the bug reporter
         # is overwritten in one instance.
-        search_params = get_related_bugtasks_search_params(
+        search_params = get_person_bugtasks_search_params(
             self.user, self.context, bug_reporter=self.user)
         self.assertEqual(len(search_params), 5)
         self.checkUserFields(
@@ -1524,20 +1075,53 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[4], bug_reporter=self.user,
             structural_subscriber=self.context)
 
-    def test_get_related_bugtasks_search_params_illegal(self):
+    def test_get_person_bugtasks_search_params_illegal(self):
         self.assertRaises(
             IllegalRelatedBugTasksParams,
-            get_related_bugtasks_search_params, self.user, self.context,
+            get_person_bugtasks_search_params, self.user, self.context,
             assignee=self.user, owner=self.user, bug_commenter=self.user,
             bug_subscriber=self.user, structural_subscriber=self.user)
 
-    def test_get_related_bugtasks_search_params_illegal_context(self):
+    def test_get_person_bugtasks_search_params_illegal_context(self):
         # in case the `context` argument is not  of type IPerson an
         # AssertionError is raised
         self.assertRaises(
             AssertionError,
-            get_related_bugtasks_search_params, self.user, "Username",
+            get_person_bugtasks_search_params, self.user, "Username",
             assignee=self.user)
+
+
+class KarmaTestMixin:
+    """Helper methods for setting karma."""
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        with dbuser('karma'):
+            total = 0
+            # Insert category total for person and project.
+            for category_name, value in category_name_values:
+                category = KarmaCategory.byName(category_name)
+                self.cache_manager.new(
+                    value, person.id, category.id, product_id=product.id)
+                total += value
+            # Insert total cache for person and project.
+            self.cache_manager.new(
+                total, person.id, None, product_id=product.id)
+
+    def _makeKarmaTotalCache(self, person, total):
+        """Create a KarmaTotalCache entry.
+
+        In order to create the KarmaTotalCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        with dbuser('karma'):
+            KarmaTotalCache(person=person.id, karma_total=total)
 
 
 class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
@@ -1561,7 +1145,9 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
     def test__getProjectsWithTheMostKarma_ordering(self):
         # Verify that pillars are ordered by karma.
         results = removeSecurityProxy(
-            self.person)._getProjectsWithTheMostKarma()
+            self.person)._getProjectsWithTheMostKarma(None)
+        results = [((distro or product).name, karma)
+                   for product, distro, karma in results]
         self.assertEqual(
             [('cc', 150), ('bb', 50), ('aa', 10)], results)
 
@@ -1576,7 +1162,7 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         # Verify that a list of projects and contributed karma categories
         # is returned.
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa'], names)
@@ -1592,7 +1178,7 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         a_product = getUtility(IProductSet).getByName('cc')
         a_product.active = False
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['bb', 'aa'], names)
@@ -1609,7 +1195,32 @@ class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
         self._makeKarmaCache(
             self.person, f_product, [('bugs', 3)])
         results = removeSecurityProxy(
-            self.person).getProjectsAndCategoriesContributedTo()
+            self.person).getProjectsAndCategoriesContributedTo(None)
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'dd', 'ee'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_privacy(self):
+        # Verify privacy is honored.
+        d_owner = self.factory.makePerson()
+        d_product = self.factory.makeProduct(
+            name='dd', information_type=InformationType.PROPRIETARY,
+            owner=d_owner)
+        self._makeKarmaCache(
+            self.person, d_product, [('bugs', 5)])
+        e_product = self.factory.makeProduct(name='ee')
+        self._makeKarmaCache(
+            self.person, e_product, [('bugs', 4)])
+        f_product = self.factory.makeProduct(name='ff')
+        self._makeKarmaCache(
+            self.person, f_product, [('bugs', 3)])
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo(None)
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'ee', 'ff'], names)
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo(d_owner)
         names = [entry['project'].name for entry in results]
         self.assertEqual(
             ['cc', 'bb', 'aa', 'dd', 'ee'], names)
@@ -1656,7 +1267,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_indirect(self):
         """Ensure get_recipients uses indirect memberships."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner)
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
@@ -1665,7 +1276,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_team(self):
         """Ensure get_recipients uses teams with preferredemail."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner, email='team@bar.com')
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
@@ -1702,7 +1313,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_complex_indirect(self):
         """Ensure get_recipients uses indirect memberships."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner)
         super_team_member_person = self.factory.makePerson(
             displayname='Bing Bar', email='bing@bar.com')
@@ -1752,3 +1363,675 @@ class TestGetRecipients(TestCaseWithFactory):
         self.assertContentEqual(
             [team2.teamowner],
             get_recipients(team2))
+
+
+class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(Test_getAssignedSpecificationWorkItemsDueBefore, self).setUp()
+        self.team = self.factory.makeTeam()
+        today = datetime.today().date()
+        next_month = today + timedelta(days=30)
+        next_year = today + timedelta(days=366)
+        self.current_milestone = self.factory.makeMilestone(
+            dateexpected=next_month)
+        self.product = self.current_milestone.product
+        self.future_milestone = self.factory.makeMilestone(
+            dateexpected=next_year, product=self.product)
+
+    def test_basic(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.current_milestone,
+            product=self.product)
+        # Create a workitem with no explicit assignee/milestone. This way it
+        # will inherit the ones from the spec it belongs to.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+
+        # Create a workitem targeted to a milestone too far in the future.
+        # This workitem must not be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            milestone=self.future_milestone)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected, self.team)
+
+        self.assertEqual([workitem], list(workitems))
+
+    def test_skips_deleted_workitems(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.current_milestone,
+            product=self.product)
+        # Create a deleted work item.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem', specification=assigned_spec, deleted=True)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected, self.team)
+        self.assertEqual([], list(workitems))
+
+    def test_workitems_assigned_to_others_working_on_blueprint(self):
+        assigned_spec = self.factory.makeSpecification(
+                assignee=self.team.teamowner, milestone=self.current_milestone,
+                product=self.product)
+        # Create a workitem with no explicit assignee/milestone. This way it
+        # will inherit the ones from the spec it belongs to.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+
+        # Create a workitem with somebody who's not a member of our team as
+        # the assignee. This workitem must be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        workitem_for_other_person = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            assignee=self.factory.makePerson())
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected, self.team)
+
+        self.assertContentEqual([workitem, workitem_for_other_person],
+                                list(workitems))
+
+    def test_skips_workitems_with_milestone_in_the_past(self):
+        today = datetime.today().date()
+        milestone = self.factory.makeMilestone(
+            dateexpected=today - timedelta(days=1))
+        spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=milestone,
+            product=milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            today, self.team)
+
+        self.assertEqual([], list(workitems))
+
+    def test_includes_workitems_from_future_spec(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.future_milestone,
+            product=self.product)
+        # This workitem inherits the spec's milestone and that's too far in
+        # the future so it won't be in the returned list.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+        # This one, on the other hand, is explicitly targeted to the current
+        # milestone, so it is included in the returned list even though its
+        # spec is targeted to the future milestone.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            milestone=self.current_milestone)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected, self.team)
+
+        self.assertEqual([workitem], list(workitems))
+
+    def test_includes_workitems_from_foreign_spec(self):
+        # This spec is assigned to a person who's not a member of our team, so
+        # only the workitems that are explicitly assigned to a member of our
+        # team will be in the returned list.
+        foreign_spec = self.factory.makeSpecification(
+            assignee=self.factory.makePerson(),
+            milestone=self.current_milestone, product=self.product)
+        # This one is not explicitly assigned to anyone, so it inherits the
+        # assignee of its spec and hence is not in the returned list.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=foreign_spec)
+
+        # This one, on the other hand, is explicitly assigned to the a member
+        # of our team, so it is included in the returned list even though its
+        # spec is not assigned to a member of our team.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=foreign_spec,
+            assignee=self.team.teamowner)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected, self.team)
+
+        self.assertEqual([workitem], list(workitems))
+
+    def test_listings_consider_spec_visibility(self):
+        # This spec is visible only to the product owner, even though it is
+        # assigned to self.team.teamowner.  Therefore, it is listed only for
+        # product.owner, not the team.
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(removeSecurityProxy(product).owner):
+            milestone = self.factory.makeMilestone(
+                dateexpected=self.current_milestone.dateexpected,
+                product=product)
+            spec = self.factory.makeSpecification(
+                milestone=milestone,
+                information_type=InformationType.PROPRIETARY)
+            workitem = self.factory.makeSpecificationWorkItem(
+                specification=spec, assignee=self.team.teamowner)
+            workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+                milestone.dateexpected, self.team)
+        self.assertNotIn(workitem, workitems)
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            removeSecurityProxy(milestone).dateexpected,
+            removeSecurityProxy(product).owner)
+        self.assertIn(workitem, workitems)
+
+    def _makeProductSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected)
+        spec = self.factory.makeSpecification(
+            product=milestone.product, milestone=milestone, assignee=assignee)
+        return spec
+
+    def _makeDistroSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        distro = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected, distribution=distro)
+        spec = self.factory.makeSpecification(
+            distribution=distro, milestone=milestone, assignee=assignee)
+        return spec
+
+    def test_query_count(self):
+        dateexpected = self.current_milestone.dateexpected
+        # Create 10 SpecificationWorkItems, each of them with a different
+        # specification, milestone and assignee. Also, half of the
+        # specifications will have a Product as a target and the other half
+        # will have a Distribution.
+        for i in range(5):
+            spec = self._makeProductSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'product work item %d' % i, assignee=spec.assignee,
+                milestone=spec.milestone, specification=spec)
+            spec2 = self._makeDistroSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'distro work item %d' % i, assignee=spec2.assignee,
+                milestone=spec2.milestone, specification=spec2)
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            workitems = list(
+                self.team.getAssignedSpecificationWorkItemsDueBefore(
+                    dateexpected, self.team))
+            for workitem in workitems:
+                workitem.assignee
+                workitem.milestone
+                workitem.specification
+                workitem.specification.assignee
+                workitem.specification.milestone
+                workitem.specification.target
+        self.assertEqual(10, len(workitems))
+        # 1. One query to get all team members;
+        # 2. One to get all SpecWorkItems;
+        # 3. One to get all Specifications;
+        # 4. One to get all SpecWorkItem/Specification assignees;
+        # 5. One to get all SpecWorkItem/Specification milestones;
+        # 6. One to get all Specification products;
+        # 7. One to get all Specification distributions;
+        self.assertThat(recorder, HasQueryCount(Equals(7)))
+
+
+class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(Test_getAssignedBugTasksDueBefore, self).setUp()
+        self.team = self.factory.makeTeam()
+        self.today = datetime.today().date()
+
+    def _assignBugTaskToTeamOwner(self, bugtask):
+        removeSecurityProxy(bugtask).assignee = self.team.teamowner
+
+    def test_basic(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        # This bug is assigned to a team member and targeted to a milestone
+        # whose due date is before the cutoff date we pass in, so it will be
+        # included in the return of getAssignedBugTasksDueBefore().
+        milestoned_bug = self.factory.makeBug(milestone=milestone)
+        self._assignBugTaskToTeamOwner(milestoned_bug.bugtasks[0])
+        # This one is assigned to a team member but not milestoned, so it is
+        # not included in the return of getAssignedBugTasksDueBefore().
+        non_milestoned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_milestoned_bug.bugtasks[0])
+        # This one is milestoned but not assigned to a team member, so it is
+        # not included in the return of getAssignedBugTasksDueBefore() either.
+        non_assigned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_assigned_bug.bugtasks[0])
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(milestoned_bug.bugtasks[0], bugtasks[0])
+
+    def test_skips_tasks_targeted_to_old_milestones(self):
+        past_milestone = self.factory.makeMilestone(
+            dateexpected=self.today - timedelta(days=1))
+        bug = self.factory.makeBug(milestone=past_milestone)
+        self._assignBugTaskToTeamOwner(bug.bugtasks[0])
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(0, len(bugtasks))
+
+    def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        private_bug = removeSecurityProxy(
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
+        self._assignBugTaskToTeamOwner(private_bug.bugtasks[0])
+        private_bug2 = removeSecurityProxy(
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
+        self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
+
+        with person_logged_in(private_bug2.owner):
+            bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+                self.today + timedelta(days=1),
+                removeSecurityProxy(private_bug2).owner))
+
+            self.assertEqual(private_bug2.bugtasks, bugtasks)
+
+    def test_skips_distroseries_task_that_is_a_conjoined_master(self):
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sp = distroseries.getSourcePackage(sourcepackagename.name)
+        milestone = self.factory.makeMilestone(
+            distroseries=distroseries, dateexpected=self.today)
+        bug = self.factory.makeBug(
+            milestone=milestone, target=sp.distribution_sourcepackage)
+        removeSecurityProxy(bug).addTask(bug.owner, sp)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+        self._assignBugTaskToTeamOwner(master)
+        self.assertEqual(None, master.conjoined_master)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
+
+    def test_skips_productseries_task_that_is_a_conjoined_master(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        removeSecurityProxy(milestone.product).development_focus = (
+            milestone.productseries)
+        bug = self.factory.makeBug(
+            series=milestone.productseries, milestone=milestone)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+
+        # This will cause the assignee to propagate to the other bugtask as
+        # well since they're conjoined.
+        self._assignBugTaskToTeamOwner(slave)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
+
+    def _assignBugTaskToTeamOwnerAndSetMilestone(self, task, milestone):
+        self._assignBugTaskToTeamOwner(task)
+        removeSecurityProxy(task).milestone = milestone
+
+    def test_query_count(self):
+        # Create one Product bugtask;
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        product_bug = self.factory.makeBug(target=milestone.product)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            product_bug.bugtasks[0], milestone)
+
+        # One ProductSeries bugtask;
+        productseries_bug = self.factory.makeBug(
+            series=milestone.productseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            productseries_bug.bugtasks[1], milestone)
+
+        # One DistroSeries bugtask;
+        distro = self.factory.makeDistribution()
+        distro_milestone = self.factory.makeMilestone(
+            distribution=distro, dateexpected=self.today)
+        distroseries_bug = self.factory.makeBug(
+            series=distro_milestone.distroseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distroseries_bug.bugtasks[1], distro_milestone)
+
+        # One Distribution bugtask;
+        distro_bug = self.factory.makeBug(target=distro_milestone.distribution)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distro_bug.bugtasks[0], distro_milestone)
+
+        # One SourcePackage bugtask;
+        distroseries = distro_milestone.distroseries
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distroseries.distribution)
+        sourcepackage_bug = self.factory.makeBug(target=dsp)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            sourcepackage_bug.bugtasks[0], distro_milestone)
+
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            tasks = list(self.team.getAssignedBugTasksDueBefore(
+                self.today + timedelta(days=1), user=None))
+            for task in tasks:
+                task.bug
+                task.target
+                task.milestone
+                task.assignee
+        self.assertEqual(5, len(tasks))
+        # 1. One query to get all team members;
+        # 2. One to get all BugTasks;
+        # 3. One to get all assignees;
+        # 4. One to get all milestones;
+        # 5. One to get all products;
+        # 6. One to get all productseries;
+        # 7. One to get all distributions;
+        # 8. One to get all distroseries;
+        # 9. One to get all sourcepackagenames;
+        # 10. One to get all distroseries of a bug's distro. (See comment on
+        # getAssignedBugTasksDueBefore() to understand why it's needed)
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
+
+
+def list_result(sprint, filter=None, user=None):
+    result = sprint.specifications(user, SpecificationSort.DATE, filter=filter)
+    return list(result)
+
+
+class TestSpecifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecifications, self).setUp()
+        self.date_created = datetime.now(pytz.utc)
+
+    def makeSpec(self, owner=None, date_created=0, title=None,
+                 status=NewSpecificationDefinitionStatus.NEW,
+                 name=None, priority=None, information_type=None):
+        blueprint = self.factory.makeSpecification(
+            title=title, status=status, name=name, priority=priority,
+            information_type=information_type, owner=owner,
+            )
+        removeSecurityProxy(blueprint).datecreated = (
+            self.date_created + timedelta(date_created))
+        return blueprint
+
+    def test_specifications_quantity(self):
+        # Ensure the quantity controls the maximum number of entries.
+        owner = self.factory.makePerson()
+        for count in range(10):
+            self.factory.makeSpecification(owner=owner)
+        self.assertEqual(10, owner.specifications(None).count())
+        result = owner.specifications(None, quantity=None).count()
+        self.assertEqual(10, result)
+        self.assertEqual(8, owner.specifications(None, quantity=8).count())
+        self.assertEqual(10, owner.specifications(None, quantity=11).count())
+
+    def test_date_sort(self):
+        # Sort on date_created.
+        owner = self.factory.makePerson()
+        blueprint1 = self.makeSpec(owner, date_created=0)
+        blueprint2 = self.makeSpec(owner, date_created=-1)
+        blueprint3 = self.makeSpec(owner, date_created=1)
+        result = list_result(owner)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], result)
+
+    def test_date_sort_id(self):
+        # date-sorting when no date varies uses object id.
+        owner = self.factory.makePerson()
+        blueprint1 = self.makeSpec(owner)
+        blueprint2 = self.makeSpec(owner)
+        blueprint3 = self.makeSpec(owner)
+        result = list_result(owner)
+        self.assertEqual([blueprint1, blueprint2, blueprint3], result)
+
+    def test_priority_sort(self):
+        # Sorting by priority works and is the default.
+        # When priority is supplied, status is ignored.
+        blueprint1 = self.makeSpec(priority=SpecificationPriority.UNDEFINED,
+                                   status=SpecificationDefinitionStatus.NEW)
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(
+            owner, priority=SpecificationPriority.NOTFORUS,
+            status=SpecificationDefinitionStatus.APPROVED)
+        blueprint3 = self.makeSpec(
+            owner, priority=SpecificationPriority.LOW,
+            status=SpecificationDefinitionStatus.NEW)
+        result = owner.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_priority_sort_fallback_status(self):
+        # Sorting by priority falls back to defintion_status.
+        # When status is supplied, name is ignored.
+        blueprint1 = self.makeSpec(
+            status=SpecificationDefinitionStatus.NEW, name='a')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(
+            owner, status=SpecificationDefinitionStatus.APPROVED, name='c')
+        blueprint3 = self.makeSpec(
+            owner, status=SpecificationDefinitionStatus.DISCUSSION, name='b')
+        result = owner.specifications(None)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint2, blueprint3, blueprint1], list(result))
+
+    def test_priority_sort_fallback_name(self):
+        # Sorting by priority falls back to name
+        blueprint1 = self.makeSpec(name='b')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(owner, name='c')
+        blueprint3 = self.makeSpec(owner, name='a')
+        result = owner.specifications(None)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+        result = owner.specifications(None, sort=SpecificationSort.PRIORITY)
+        self.assertEqual([blueprint3, blueprint1, blueprint2], list(result))
+
+    def test_ignore_inactive(self):
+        # Specs for inactive products are skipped.
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('admin'):
+            product.active = False
+        spec = self.factory.makeSpecification(product=product)
+        self.assertNotIn(spec, spec.owner.specifications(None))
+
+    def test_include_distro(self):
+        # Specs for distributions are included.
+        distribution = self.factory.makeDistribution()
+        spec = self.factory.makeSpecification(distribution=distribution)
+        self.assertIn(spec, spec.owner.specifications(None))
+
+    def test_informational(self):
+        # INFORMATIONAL causes only informational specs to be shown.
+        enum = SpecificationImplementationStatus
+        informational = self.factory.makeSpecification(
+            implementation_status=enum.INFORMATIONAL)
+        owner = informational.owner
+        plain = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None)
+        self.assertIn(informational, result)
+        self.assertIn(plain, result)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INFORMATIONAL])
+        self.assertIn(informational, result)
+        self.assertNotIn(plain, result)
+
+    def test_completeness(self):
+        # If COMPLETE is specified, completed specs are listed.  If INCOMPLETE
+        # is specified or neither is specified, only incomplete specs are
+        # listed.
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.COMPLETE])
+        self.assertIn(implemented, result)
+        self.assertNotIn(non_implemented, result)
+
+        result = owner.specifications(
+            None, filter=[SpecificationFilter.INCOMPLETE])
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+        result = owner.specifications(
+            None)
+        self.assertNotIn(implemented, result)
+        self.assertIn(non_implemented, result)
+
+    def test_all(self):
+        # ALL causes both complete and incomplete to be listed.
+        enum = SpecificationImplementationStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED)
+        owner = implemented.owner
+        non_implemented = self.factory.makeSpecification(owner=owner)
+        result = owner.specifications(None, filter=[SpecificationFilter.ALL])
+        self.assertContentEqual([implemented, non_implemented], result)
+
+    def test_valid(self):
+        # VALID adjusts COMPLETE to exclude OBSOLETE and SUPERSEDED specs.
+        # (INCOMPLETE already excludes OBSOLETE and SUPERSEDED.)
+        i_enum = SpecificationImplementationStatus
+        d_enum = SpecificationDefinitionStatus
+        implemented = self.factory.makeSpecification(
+            implementation_status=i_enum.IMPLEMENTED)
+        owner = implemented.owner
+        self.factory.makeSpecification(owner=owner, status=d_enum.SUPERSEDED)
+        self.factory.makeSpecification(owner=owner, status=d_enum.OBSOLETE)
+        filter = [SpecificationFilter.VALID, SpecificationFilter.COMPLETE]
+        results = owner.specifications(None, filter=filter)
+        self.assertContentEqual([implemented], results)
+
+    def test_roles(self):
+        # If roles are specified, they control which specifications are shown.
+        # If no roles are specified, all roles are used.
+        created = self.factory.makeSpecification()
+        person = created.owner
+
+        def rlist(filter=None):
+            return list(person.specifications(None, filter=filter))
+        assigned = self.factory.makeSpecification(assignee=person)
+        drafting = self.factory.makeSpecification(drafter=person)
+        approving = self.factory.makeSpecification(approver=person)
+        subscribed = self.factory.makeSpecification()
+        subscribed.subscribe(person)
+        self.assertEqual([created, assigned, drafting, approving, subscribed],
+                         rlist([]))
+        self.assertEqual([created], rlist([SpecificationFilter.CREATOR]))
+        self.assertEqual([assigned], rlist([SpecificationFilter.ASSIGNEE]))
+        self.assertEqual([drafting], rlist([SpecificationFilter.DRAFTER]))
+        self.assertEqual([approving], rlist([SpecificationFilter.APPROVER]))
+        self.assertEqual([subscribed],
+                         rlist([SpecificationFilter.SUBSCRIBER]))
+
+    def test_text_search(self):
+        # Text searches work.
+        blueprint1 = self.makeSpec(title='abc')
+        owner = blueprint1.owner
+        blueprint2 = self.makeSpec(owner, title='def')
+        result = list_result(owner, ['abc'])
+        self.assertEqual([blueprint1], result)
+        result = list_result(owner, ['def'])
+        self.assertEqual([blueprint2], result)
+
+    def test_proprietary_not_listed(self):
+        # Proprietary blueprints are not listed for random users
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        self.assertEqual([], list_result(blueprint1.owner))
+
+    def test_proprietary_listed_for_artifact_grant(self):
+        # Proprietary blueprints are listed for users with an artifact grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(
+            concrete_artifact=blueprint1)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.owner, user=grant.grantee))
+
+    def test_proprietary_listed_for_policy_grant(self):
+        # Proprietary blueprints are listed for users with a policy grant.
+        blueprint1 = self.makeSpec(
+            information_type=InformationType.PROPRIETARY)
+        policy_source = getUtility(IAccessPolicySource)
+        (policy,) = policy_source.find(
+            [(blueprint1.product, InformationType.PROPRIETARY)])
+        grant = self.factory.makeAccessPolicyGrant(policy)
+        self.assertEqual(
+            [blueprint1],
+            list_result(blueprint1.owner, user=grant.grantee))
+
+    def test_storm_sort(self):
+        # A Storm expression can be used to sort specs.
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner, name='a')
+        spec2 = self.factory.makeSpecification(owner=owner, name='z')
+        spec3 = self.factory.makeSpecification(owner=owner, name='b')
+        self.assertEqual([spec2, spec3, spec],
+                list(owner.specifications(owner,
+                     sort=Desc(Specification.name))))
+
+    def test_in_progress(self):
+        # In-progress filters to exclude not-started and completed.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        started = self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.STARTED)
+        self.factory.makeSpecification(
+            owner=owner, implementation_status=enum.IMPLEMENTED)
+        specs = list(owner.specifications(owner, in_progress=True))
+        self.assertEqual([started], specs)
+
+    def test_in_progress_all(self):
+        # SpecificationFilter.ALL overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.ALL], in_progress=True))
+        self.assertEqual([notstarted], specs)
+
+    def test_complete_overrides_in_progress(self):
+        # SpecificationFilter.COMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        started = self.factory.makeSpecification(
+            implementation_status=enum.STARTED)
+        owner = started.owner
+        implemented = self.factory.makeSpecification(
+            implementation_status=enum.IMPLEMENTED, owner=owner)
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.COMPLETE], in_progress=True))
+        self.assertEqual([implemented], specs)
+
+    def test_incomplete_overrides_in_progress(self):
+        # SpecificationFilter.INCOMPLETE overrides in_progress.
+        enum = SpecificationImplementationStatus
+        notstarted = self.factory.makeSpecification(
+            implementation_status=enum.NOTSTARTED)
+        owner = notstarted.owner
+        specs = list(owner.specifications(
+            owner, filter=[SpecificationFilter.INCOMPLETE],
+            in_progress=True))
+        self.assertEqual([notstarted], specs)

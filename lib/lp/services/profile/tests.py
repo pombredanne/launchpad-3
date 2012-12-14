@@ -1,34 +1,47 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.profile.
 
-See lib/canonical/doc/profiling.txt for an end-user description of
-the functionality.
+See doc.txt for an end-user description of the functionality.
 """
 
 __metaclass__ = type
 
 import glob
+import logging
 import os
 import random
+import unittest
 
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
     EndRequestEvent,
     )
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    queryUtility,
+    )
+from zope.error.interfaces import IErrorReportingUtility
 
-import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.interfaces import StartRequestEvent
-from canonical.testing import layers
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
+import lp.services.webapp.adapter as da
+from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.interfaces import StartRequestEvent
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    layers,
     TestCase,
-    TestCaseWithFactory)
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -351,10 +364,14 @@ class BaseRequestEndHandlerTest(BaseTest):
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
-        self.eru = ErrorReportingUtility()
-        sm = getSiteManager()
-        sm.registerUtility(self.eru)
-        self.addCleanup(sm.unregisterUtility, self.eru)
+        eru = queryUtility(IErrorReportingUtility)
+        if eru is None:
+            # Register an Error reporting utility for this layer.
+            # This will break tests when run with an ERU already registered.
+            self.eru = ErrorReportingUtility()
+            sm = getSiteManager()
+            sm.registerUtility(self.eru)
+            self.addCleanup(sm.unregisterUtility, self.eru)
 
     def endRequest(self, path='/', exception=None, pageid=None, work=None):
         start_event = self._get_start_event(path)
@@ -773,3 +790,15 @@ class TestSqlLogging(TestCaseWithFactory, BaseRequestEndHandlerTest):
             response)
         # This file should be part of several of the tracebacks.
         self.assertIn(__file__.replace('.pyc', '.py'), response)
+
+
+def test_suite():
+    """Return the `IBugTarget` TestSuite."""
+    suite = unittest.TestSuite()
+
+    doctest = LayeredDocFileSuite(
+        './profiling.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer, stdout_logging_level=logging.WARNING)
+    suite.addTest(doctest)
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite

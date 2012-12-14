@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BranchLinkToSpecificationView',
-    'SpecificationBranchBranchInlineEditView',
     'SpecificationBranchStatusView',
     'SpecificationBranchURL',
     ]
@@ -15,17 +14,15 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.interface import implements
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
 class SpecificationBranchURL:
@@ -66,32 +63,6 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     @action(_('Delete'), name='delete')
     def delete_action(self, action, data):
         self.context.destroySelf()
-
-
-class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
-    """Inline edit view for specification branch details.
-
-    This view is used to control the in page editing from the branch page.
-    """
-
-    initial_focus_widget = None
-    label = None
-
-    def initialize(self):
-        self.branch = self.context.branch
-        super(SpecificationBranchBranchInlineEditView, self).initialize()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+branch-edit" % canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.branch)
 
 
 class BranchLinkToSpecificationView(LaunchpadFormView):

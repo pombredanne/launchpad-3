@@ -15,8 +15,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.longpoll.adapters.subscriber import (
     generate_subscribe_key,
     LongPollApplicationRequestSubscriber,
@@ -26,7 +24,9 @@ from lp.services.longpoll.interfaces import (
     ILongPollSubscriber,
     )
 from lp.services.messaging.interfaces import IMessageSession
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
 
 

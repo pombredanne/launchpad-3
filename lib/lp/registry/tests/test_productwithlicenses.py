@@ -10,11 +10,6 @@ from operator import attrgetter
 from storm.store import Store
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -24,7 +19,12 @@ from lp.registry.model.product import (
     Product,
     ProductWithLicenses,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductWithLicenses(TestCaseWithFactory):
@@ -62,16 +62,6 @@ class TestProductWithLicenses(TestCaseWithFactory):
         expected = sorted(licenses, key=attrgetter('value'))
         self.assertEqual(tuple(expected), product_with_licenses.licenses)
 
-    def test_compose_column_without_licenses_produces_empty(self):
-        # The licenses column that ProductWithLicenses produces for a
-        # product without licenses contains an empty list.
-        product = self.factory.makeProduct(licenses=[])
-        column = ProductWithLicenses.composeLicensesColumn()
-        store = Store.of(product)
-        result = list(store.find((Product, column), Product.id == product.id))
-
-        self.assertEqual([(product, [])], result)
-
     def test_licenses_column_contains_licensing_info(self):
         # Feeding the licenses column into the ProductWithLicenses
         # constructor seeds it with the appropriate licenses.
@@ -89,7 +79,7 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
     def test_licenses_column_aggregates(self):
         # Adding a licensing column for a product with multiple licenses
-        # still finds a single product, not one per license.
+        # still finds a single product, not one per licence.
         licenses = [License.AFFERO, License.GNU_GPL_V3]
         product = self.factory.makeProduct(licenses=licenses)
         column = ProductWithLicenses.composeLicensesColumn()

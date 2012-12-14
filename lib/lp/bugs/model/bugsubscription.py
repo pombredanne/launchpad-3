@@ -14,12 +14,12 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.role import IPersonRoles
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 

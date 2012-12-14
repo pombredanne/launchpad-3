@@ -2,49 +2,29 @@
 Using the webservice with commercial archives
 =============================================
 
-(See also soyuz/stories/webservice/xx-archive.txt and
-soyuz/doc/archive-commercial.txt)
+(See also soyuz/stories/webservice/xx-archive.txt)
 
-Start by making a commercial PPA that we can fetch via the webservice:
+Software Center Agent
+---------------------
 
-    >>> login("admin@canonical.com")
-    >>> ppa = factory.makeArchive(private=True, name="cpppa")
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(ppa).commercial = True
-    >>> import transaction
-    >>> transaction.commit()
-    >>> logout()
-
-Commercial archives can be found with a custom method 'getCommercialPPAs'
-that lives on the distribution object.
-
-Using webservice directly:
-
-    >>> ubuntu = webservice.get("/ubuntu").jsonBody()
-    >>> cppas = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCommercialPPAs').jsonBody()
-    >>> for entry in cppas['entries']:
-    ...     print entry['name']
-    cpppa
-
-== Software Center Agent ==
-
-Create the P3A marked commercial, and fetch the celebrity.
+Create the P3A where software_center_agent is an owner.
 
     >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login('admin@canonical.com')
     >>> celebrity = getUtility(ILaunchpadCelebrities).software_center_agent
-    >>> archive = factory.makeArchive(name='commercial', private=True)
-    >>> archive.commercial = True
+    >>> owner = factory.makePerson()
+    >>> ppa_owner = factory.makeTeam(members=[celebrity, owner])
+    >>> archive = factory.makeArchive(name='commercial', private=True,
+    ...     owner=ppa_owner, suppress_subscription_notifications=True)
     >>> url = "/~%s/+archive/commercial" % archive.owner.name
     >>> person = factory.makePerson(name='joe')
     >>> logout()
 
 And fetch our objects:
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> agent = webservice.get('/~software-center-agent').jsonBody()
     >>> joe = webservice.get('/~joe').jsonBody()
     >>> cprov = webservice.get('/~cprov').jsonBody()

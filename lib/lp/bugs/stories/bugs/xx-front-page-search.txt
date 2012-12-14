@@ -30,8 +30,6 @@ bug listing.
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
-    15 Nonsensical bugs are useless
-      Mozilla Thunderbird Unknown New
     3 Bug Title Test
       mozilla-firefox (Debian Woody) Medium New
     3 Bug Title Test
@@ -40,8 +38,6 @@ bug listing.
       Evolution Medium New
     10 another test bug
       linux-source-2.6.15 (Ubuntu) Medium New
-    15 Nonsensical bugs are useless
-      Redfish Undecided New
 
 Even if a product is specified in the bug target widget, all bug reports
 will be searched.
@@ -107,7 +103,7 @@ in the Launchpad.
     'test bug'
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There is no project named 'invalid' registered in Launchpad
+    There is no project named &#x27;invalid&#x27; registered in Launchpad
 
 If the user doesn't know what name to write, he can use the 'Choose'
 link if the browser supports javascript. The test browser does not
@@ -128,11 +124,11 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in The Evolution Groupware...
+    Bugs : Evolution...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
-    7 A test bug
+    7 A test bug Evolution
       Medium New
 
 === Searching a project ===
@@ -148,7 +144,7 @@ project group.
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      evolution Medium New
+      Evolution Medium New
 
 === Searching a distribution ===
 
@@ -158,12 +154,12 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in Ubuntu Linux...
+    Bugs : Ubuntu...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-       linux-source-2.6.15  Medium  New
+       linux-source-2.6.15 (Ubuntu)  Medium  New
 
 === Jumping to a bug ===
 

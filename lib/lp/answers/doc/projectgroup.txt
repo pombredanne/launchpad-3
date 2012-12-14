@@ -6,7 +6,7 @@ Although question cannot be filed directly against project groups,
 IProjectGroup in Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.answers.interfaces.questioncollection import (
     ...     ISearchableByQuestionOwner, IQuestionCollection)

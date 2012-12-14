@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for handling bug notification recipients in bug mail."""
@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
+from lp.services.mail.interfaces import INotificationRecipientSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
@@ -56,7 +56,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
         duplicateof parameter above and the addDupeSubscriber method.
         Don't confuse them!
         """
-        NotificationRecipientSet.__init__(self)
+        super(BugNotificationRecipients, self).__init__()
         self.duplicateof = duplicateof
         self.subscription_filters = set()
 
@@ -75,7 +75,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addDupeSubscriber(self, person, duplicate_bug=None):
         """Registers a subscriber of a duplicate of this bug."""
         reason = "Subscriber of Duplicate"
-        if person.isTeam():
+        if person.is_team:
             text = ("are a member of %s, which is subscribed "
                     "to a duplicate bug report" % person.displayname)
             reason += " @%s" % person.name
@@ -88,7 +88,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addDirectSubscriber(self, person):
         """Registers a direct subscriber of this bug."""
         reason = "Subscriber"
-        if person.isTeam():
+        if person.is_team:
             text = ("are a member of %s, which is subscribed "
                     "to the bug report" % person.displayname)
             reason += " @%s" % person.name
@@ -99,7 +99,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addAssignee(self, person):
         """Registers an assignee of a bugtask of this bug."""
         reason = "Assignee"
-        if person.isTeam():
+        if person.is_team:
             text = ("are a member of %s, which is a bug assignee"
                     % person.displayname)
             reason += " @%s" % person.name
@@ -107,59 +107,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addBugSupervisor(self, person):
-        """Registers a bug supervisor of a bugtask's pillar of this bug."""
-        reason = "Bug Supervisor"
-        if person.isTeam():
-            text = ("are a member of %s, which is a bug supervisor"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a bug supervisor"
-        self._addReason(person, text, reason)
-
-    def addSecurityContact(self, person):
-        """Registers a security contact of a bugtask's pillar of this bug."""
-        reason = "Security Contact"
-        if person.isTeam():
-            text = ("are a member of %s, which is a security contact"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a security contact"
-        self._addReason(person, text, reason)
-
-    def addMaintainer(self, person):
-        """Registers a maintainer of a bugtask's pillar of this bug."""
-        reason = "Maintainer"
-        if person.isTeam():
-            text = ("are a member of %s, which is a maintainer"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a maintainer"
-        self._addReason(person, text, reason)
-
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname
-        if person.isTeam():
+        if person.is_team:
             text = ("are a member of %s, which is subscribed to %s" %
                 (person.displayname, target.displayname))
             reason += " @%s" % person.name
         else:
             text = "are subscribed to %s" % target.displayname
-        self._addReason(person, text, reason)
-
-    def addRegistrant(self, person, upstream):
-        """Registers an upstream product registrant for this bug."""
-        reason = "Registrant (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the registrant for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the registrant for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
     def update(self, recipient_set):

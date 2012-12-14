@@ -39,7 +39,7 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Bugs in ?alsa-utils? package in Ubuntu
+    Main heading: Bugs : alsa-utils in Ubuntu
 
 
 == Distribution source package release ==

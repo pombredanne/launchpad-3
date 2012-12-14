@@ -16,14 +16,6 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    print_table,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -37,7 +29,13 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 
 
 def print_direct_subscribers(bug_page):
@@ -133,21 +131,30 @@ def print_bugtasks(text, show_heat=None):
 def extract_bugtasks(text, show_heat=None):
     """Extracts a list of strings for all the bugtasks in the text."""
     main_content = find_main_content(text)
-    table = main_content.find('table', {'id': 'buglisting'})
-    if table is None:
+    listing = main_content.find('div', {'id': 'bugs-table-listing'})
+    if listing is None:
         return []
     rows = []
-    for tr in table('tr'):
-        if tr.td is not None:
-            row_text = extract_text(tr)
-            if show_heat:
-                for img in tr.findAll('img'):
-                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
-                    if mo:
-                        flames = int(mo.group(1))
-                        heat_text = flames * '*' + (4 - flames) * '-'
-                        row_text += '\n' + heat_text
-            rows.append(row_text)
+    for bugtask in listing('div', {'class': 'buglisting-row'}):
+        bug_nr = extract_text(
+            bugtask.find(None, {'class': 'bugnumber'})).replace('#', '')
+        title = extract_text(bugtask.find(None, {'class': 'bugtitle'}))
+        status = extract_text(
+            bugtask.find(None, {'class': re.compile('status')}))
+        importance = extract_text(
+            bugtask.find(None, {'class': re.compile('importance')}))
+        affects = extract_text(
+            bugtask.find(
+                None,
+                {'class': re.compile(
+                    'None|(sprite product|distribution|package-source) field')
+                }))
+        row_items = [bug_nr, title, affects, importance, status]
+        if show_heat:
+            heat = extract_text(
+                bugtask.find(None, {'class': 'bug-heat-icons'}))
+            row_items.append(heat)
+        rows.append(' '.join(row_items))
     return rows
 
 
@@ -170,18 +177,13 @@ def create_bug_from_strings(
     distroset = getUtility(IDistributionSet)
     distribution = distroset.getByName(distribution)
 
-    # XXX: kiko 2008-02-01: would be really great if spnset consistently
-    # offered getByName.
-    spnset = getUtility(ISourcePackageNameSet)
-    sourcepackagename = spnset.queryByName(sourcepackagename)
-
     personset = getUtility(IPersonSet)
     owner = personset.getByName(owner)
 
     bugset = getUtility(IBugSet)
-    params = CreateBugParams(owner, summary, description, status=status)
-    params.setBugTarget(distribution=distribution,
-                        sourcepackagename=sourcepackagename)
+    params = CreateBugParams(
+        owner, summary, description, status=status,
+        target=distribution.getSourcePackage(sourcepackagename))
     return bugset.createBug(params)
 
 
@@ -301,13 +303,8 @@ def print_bugfilters_portlet_unfilled(browser, target):
     """
     browser.open(
         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
-    table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    tbody_info, tbody_links = table('tbody')
-    print_table(tbody_info)
-    for link in tbody_links('a'):
-        text = extract_text(link)
-        if len(text) > 0:
-            print "%s\n  --> %s" % (text, link['href'])
+    ul = BeautifulSoup(browser.contents).find('ul', 'data-list')
+    print_ul(ul)
 
 
 def print_bugfilters_portlet_filled(browser, target):
@@ -326,13 +323,22 @@ def print_bugfilters_portlet_filled(browser, target):
     browser.open(
         'http://bugs.launchpad.dev'
         '/%s/+bugtarget-portlet-bugfilters-stats' % target)
-    table = BeautifulSoup('<table>%s</table>' % browser.contents)
-    print_table(table)
+    ul = BeautifulSoup(browser.contents).find('ul', 'data-list')
+    print_ul(ul)
+
+
+def print_ul(ul):
+    """Print the data from a list."""
+    li_content = []
+    for li in ul.findAll('li'):
+        li_content.append(extract_text(li))
+    if len(li_content) > 0:
+        print '\n'.join(li_content)
 
 
 def print_bug_tag_anchors(anchors):
     """The the bug tags in the iterable of anchors."""
     for anchor in anchors:
         href = anchor['href']
-        if href != '+edit' and '/+help/tag-help.html' not in href:
+        if href != '+edit' and '/+help-bugs/tag-help.html' not in href:
             print anchor['class'], anchor.contents[0]

@@ -7,9 +7,7 @@
 
 __metaclass__ = type
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 from lp.codehosting.inmemory import (

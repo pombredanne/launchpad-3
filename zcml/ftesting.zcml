@@ -2,7 +2,7 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<!-- Used by the FunctionalLayer in canonical.testing.layers. -->
+<!-- Used by the FunctionalLayer in lp.testing.layers. -->
 
 <configure
     xmlns="http://namespaces.zope.org/zope"
@@ -16,7 +16,7 @@
     <!-- Browser Configurations -->
     <include file="zopeappbrowser.zcml" />
 
-    <include package="canonical" />
+    <include package="lp" />
 
     <include files="package-includes/*-meta.zcml" />
     <includeOverrides file="override-meta.zcml" />

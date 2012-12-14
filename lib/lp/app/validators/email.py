@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import re
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 
 
@@ -74,7 +74,7 @@ def email_validator(emailaddr):
     >>> email_validator('not-valid')
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: Invalid email 'not-valid'.
+    LaunchpadValidationError: Invalid email &#x27;not-valid&#x27;.
     """
     if not valid_email(emailaddr):
         raise LaunchpadValidationError(_(

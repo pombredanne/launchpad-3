@@ -6,11 +6,11 @@
 __metaclass__ = type
 
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login_celebrity,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

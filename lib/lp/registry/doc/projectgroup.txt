@@ -6,7 +6,7 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import (
     ...     IProjectGroup,
     ...     IProjectGroupSet,
@@ -21,7 +21,6 @@ common external bug tracker.
     >>> login('admin@canonical.com')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> logout()
     >>> login('test@canonical.com')
     >>> transaction.commit()
 
@@ -88,7 +87,7 @@ way of hiding bogus projects, without actually deleting them from the
 db, since the __getitem__ method of IProjectGroupSet is used to traverse to
 the project.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login("foo.bar@canonical.com")
     >>> gnome.active = False
     >>> flush_database_updates()
@@ -132,6 +131,8 @@ ordered by their names.
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> flush_database_updates()
+    >>> from lp.services.propertycache import clear_property_cache
+    >>> clear_property_cache(gnome)
     >>> [product.displayname for product in gnome.products]
     [u'Evolution', u'GNOME Terminal', u'Gnome Applets', u'gnomebaker']
 
@@ -151,7 +152,7 @@ We should be able to generate filtered lists of specs on a project.
 First, there should be only one informational spec for mozilla:
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for spec in mozilla.specifications(filter=filter):
+    >>> for spec in mozilla.specifications(None, filter=filter):
     ...    print spec.name
     extension-manager-upgrades
 
@@ -159,19 +160,19 @@ First, there should be only one informational spec for mozilla:
 There are no completed specs for mozilla:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in mozilla.specifications(filter=filter):
+    >>> for spec in mozilla.specifications(None, filter=filter):
     ...    print spec.name
 
 
 And there are five incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(filter=filter).count()
+    >>> mozilla.specifications(None, filter=filter).count()
     5
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in mozilla.specifications(filter=['install']):
+    >>> for spec in mozilla.specifications(None, filter=['install']):
     ...     print spec.name
     extension-manager-upgrades
 
@@ -179,7 +180,7 @@ We can filter for specifications that contain specific text:
 Inactive products are excluded from the listings.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(filter=filter).count()
+    >>> mozilla.specifications(None, filter=filter).count()
     5
 
     >>> from lp.registry.interfaces.product import IProductSet
@@ -191,7 +192,7 @@ Inactive products are excluded from the listings.
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla.specifications(filter=filter).count()
+    >>> mozilla.specifications(None, filter=filter).count()
     0
 
 Reset firefox so we don't mess up later tests.
@@ -199,10 +200,10 @@ Reset firefox so we don't mess up later tests.
     >>> firefox.active = True
     >>> flush_database_updates()
 
-We can get all the specifications via the all_specifications property,
-and all valid specifications via the valid_specifications property:
+We can get all the specifications via the _all_specifications property,
+and all valid specifications via the _valid_specifications property:
 
-    >>> for spec in mozilla.all_specifications:
+    >>> for spec in mozilla._all_specifications:
     ...    print spec.name
     svg-support
     canvas
@@ -210,7 +211,7 @@ and all valid specifications via the valid_specifications property:
     mergewin
     e4x
 
-    >>> for spec in mozilla.valid_specifications:
+    >>> for spec in mozilla._valid_specifications:
     ...    print spec.name
     svg-support
     canvas
@@ -237,48 +238,49 @@ If no series with the given name exists, IProjectGroup.getSeries returns None.
     >>> print mozilla.getSeries('nonsense')
     None
 
-IProjectGroupSeries.all_specifications lists all specifications
+IProjectGroupSeries._all_specifications lists all specifications
 assigned to a series. Currently, no specifications are assigned to the
 Mozilla series 1.0.
 
-    >>> specs = mozilla_series_1_0.all_specifications
+    >>> specs = mozilla_series_1_0._all_specifications
     >>> specs.count()
     0
 
 If a specification is assigned to series 1.0, it appears in
-mozilla_1_0_series.all_specifications.
+mozilla_1_0_series._all_specifications.
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
+    >>> extension_manager_upgrades = mozilla.specifications(
+    ...     None, filter=filter)[0]
     >>> series_1_0 = firefox.getSeries('1.0')
     >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
-    >>> for spec in mozilla_series_1_0.all_specifications:
+    >>> for spec in mozilla_series_1_0._all_specifications:
     ...     print spec.name
     extension-manager-upgrades
 
 This specification is not listed for other series.
 
     >>> mozilla_trunk = mozilla.getSeries('trunk')
-    >>> print mozilla_trunk.all_specifications.count()
+    >>> print mozilla_trunk._all_specifications.count()
     0
 
 Filtered lists of project series related specifications are generated
 the same way as for project related specifications.
 
-    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+    >>> for spec in mozilla_series_1_0.specifications(None, filter=filter):
     ...     print spec.name
     extension-manager-upgrades
 
 If all existing specifications are assigned to the 1.0 series,...
 
-    >>> for spec in mozilla.all_specifications:
+    >>> for spec in mozilla._all_specifications:
     ...     spec.proposeGoal(series_1_0, no_priv)
 
 we have the save five incomplete specs in the series 1.0 as we have for the
 project itself.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+    >>> for spec in mozilla_series_1_0.specifications(None, filter=filter):
     ...     print spec.name
     svg-support
     canvas
@@ -288,31 +290,32 @@ project itself.
 
  Searching for text is also possible.
 
-    >>> for spec in mozilla_series_1_0.specifications(filter=['install']):
+    >>> for spec in mozilla_series_1_0.specifications(
+    ...     None, filter=['install']):
     ...     print spec.name
     extension-manager-upgrades
 
 Inactive products are excluded from the series listings.
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> specs = mozilla_series_1_0.specifications(filter=filter)
+    >>> specs = mozilla_series_1_0.specifications(None, filter=filter)
     >>> print specs.count()
     5
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.active = False
     >>> filter = [SpecificationFilter.INCOMPLETE]
-    >>> mozilla_series_1_0.specifications(filter=filter).count()
+    >>> mozilla_series_1_0.specifications(None, filter=filter).count()
     0
 
 Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
 
-We can get all the specifications via the all_specifications property,
-and all valid specifications via the valid_specifications property:
+We can get all the specifications via the _all_specifications property,
+and all valid specifications via the _valid_specifications property:
 
-    >>> for spec in mozilla_series_1_0.all_specifications:
+    >>> for spec in mozilla_series_1_0._all_specifications:
     ...    print spec.name
     svg-support
     canvas
@@ -320,7 +323,7 @@ and all valid specifications via the valid_specifications property:
     mergewin
     e4x
 
-    >>> for spec in mozilla_series_1_0.valid_specifications:
+    >>> for spec in mozilla_series_1_0._valid_specifications:
     ...    print spec.name
     svg-support
     canvas
@@ -355,8 +358,8 @@ It has one translatable product.
     >>> gnome = getUtility(IProjectGroupSet)['gnome']
     >>> gnome.has_translatable()
     True
-    >>> translatables = gnome.translatables()
-    >>> translatables.count()
+    >>> translatables = gnome.translatables
+    >>> len(translatables)
     1
 
 And that translatable product is 'Evolution'.
@@ -449,4 +452,4 @@ ProjectGroup.getMilestone(name) returns the project milestone with the name
     >>> print milestone
     None
 
-For details see doc/milestone.txt and ftests/test_project_milestone.py.
+For details see doc/milestone.txt and tests/test_project_milestone.py.

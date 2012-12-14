@@ -19,7 +19,7 @@ from zope.component import (
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.longpoll.interfaces import ILongPollSubscriber
 from lp.services.messaging.interfaces import IMessageSession
 

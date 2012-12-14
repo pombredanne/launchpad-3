@@ -18,6 +18,11 @@ from StringIO import StringIO
 import sys
 import traceback
 
+from testtools.content import (
+    Content,
+    UTF8_TEXT,
+    )
+
 from lp.services.log import loglevels
 
 
@@ -100,6 +105,8 @@ class NullHandler(logging.Handler):
 class FakeLogger:
     """Emulates a proper logger, just printing everything out the given file.
     """
+    # XXX: GavinPanella 2011-11-04 bug=886053: This is a test fixture not a
+    # service.
 
     loglevel = loglevels.DEBUG
 
@@ -190,6 +197,8 @@ class FakeLogger:
 
 class DevNullLogger(FakeLogger):
     """A logger that drops all messages."""
+    # XXX: GavinPanella 2011-11-04 bug=886053: This is a test fixture not a
+    # service.
 
     def message(self, *args, **kwargs):
         """Do absolutely nothing."""
@@ -197,6 +206,8 @@ class DevNullLogger(FakeLogger):
 
 class BufferLogger(FakeLogger):
     """A logger that logs to a StringIO object."""
+    # XXX: GavinPanella 2011-11-04 bug=886053: This is a test fixture not a
+    # service.
 
     def __init__(self):
         super(BufferLogger, self).__init__(StringIO())
@@ -214,3 +225,13 @@ class BufferLogger(FakeLogger):
         messages = self.getLogBuffer()
         self.clearLogBuffer()
         return messages
+
+    @property
+    def content(self):
+        """Return a `testtools.content.Content` for this object's buffer.
+
+        Use with `testtools.TestCase.addDetail`, `fixtures.Fixture.addDetail`,
+        and anything else that understands details.
+        """
+        get_bytes = lambda: [self.getLogBuffer().encode("utf-8")]
+        return Content(UTF8_TEXT, get_bytes)

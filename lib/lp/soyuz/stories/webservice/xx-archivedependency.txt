@@ -64,8 +64,8 @@ Nor can said user craft a URL to a dependency.
 
 Celso can see them if we grant private permissions, of course.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> cprov_webservice = webservice_for_person(
     ...     cprov_db, permission=OAuthPermission.WRITE_PRIVATE)
     >>> print cprov_webservice.get(

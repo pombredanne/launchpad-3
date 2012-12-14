@@ -12,9 +12,15 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts import db_options
-from canonical.launchpad.scripts.logger import log, logger_options
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from lp.services.scripts import db_options
+from lp.services.scripts.logger import (
+    log,
+    logger_options,
+    )
 
 
 def update_until_done(con, table, query, vacuum_every=100):

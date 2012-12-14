@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
@@ -8,7 +8,7 @@ __all__ = [
     'close_bugs_for_queue_item',
     'close_bugs_for_sourcepackagerelease',
     'close_bugs_for_sourcepublication',
-    'get_bugs_from_changes_file',
+    'get_bug_ids_from_changes_file',
     'ProcessAccepted',
     ]
 
@@ -17,22 +17,20 @@ import sys
 
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.management import getSecurityPolicy
 
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
-from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
+    )
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -42,34 +40,29 @@ from lp.soyuz.enums import (
     re_lp_closes,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.processacceptedbugsjob import (
+    IProcessAcceptedBugsJobSource,
+    )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.processacceptedbugsjob import (
+    close_bug_ids_for_sourcepackagerelease,
+    )
 
 
-def get_bugs_from_changes_file(changes_file):
-    """Parse the changes file and return a list of bugs referenced by it.
+def get_bug_ids_from_changes_file(changes_file):
+    """Parse the changes file and return a list of bug IDs referenced by it.
 
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
     tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
-    bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
-    bugs = []
-    for bug_id in bugs_fixed_line.split():
-        if not bug_id.isdigit():
-            continue
-        bug_id = int(bug_id)
-        try:
-            bug = getUtility(IBugSet).get(bug_id)
-        except NotFoundError:
-            continue
-        else:
-            bugs.append(bug)
-    return bugs
+    bugs_fixed = tags.get('Launchpad-bugs-fixed', '').split()
+    return [int(bug_id) for bug_id in bugs_fixed if bug_id.isdigit()]
 
 
-def get_bugs_from_changelog_entry(sourcepackagerelease, since_version):
+def get_bug_ids_from_changelog_entry(sourcepackagerelease, since_version):
     """Parse the changelog_entry in the sourcepackagerelease and return a
-    list of `IBug`s referenced by it.
+    list of bug IDs referenced by it.
     """
     changelog = sourcepackagerelease.aggregate_changelog(since_version)
     closes = []
@@ -83,17 +76,7 @@ def get_bugs_from_changelog_entry(sourcepackagerelease, since_version):
         for match in regex:
             bug_match = re_bug_numbers.findall(match.group(0))
             closes += map(int, bug_match)
-
-    bugs = []
-    for bug_id in closes:
-        try:
-            bug = getUtility(IBugSet).get(bug_id)
-        except NotFoundError:
-            continue
-        else:
-            bugs.append(bug)
-
-    return bugs
+    return closes
 
 
 def can_close_bugs(target):
@@ -127,8 +110,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     the upload is processed and committed.
 
     In practice, 'changesfile_object' is only set when we are closing bugs
-    in upload-time (see
-    archiveuploader/ftests/nascentupload-closing-bugs.txt).
+    in upload-time (see nascentupload-closing-bugs.txt).
 
     Skip bug-closing if the upload is target to pocket PROPOSED or if
     the upload is for a PPA.
@@ -140,15 +122,12 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
         return
 
     if changesfile_object is None:
-        if queue_item.is_delayed_copy:
-            sourcepackagerelease = queue_item.sources[0].sourcepackagerelease
-            changesfile_object = sourcepackagerelease.upload_changesfile
-        else:
-            changesfile_object = queue_item.changesfile
+        changesfile_object = queue_item.changesfile
 
     for source_queue_item in queue_item.sources:
         close_bugs_for_sourcepackagerelease(
-            source_queue_item.sourcepackagerelease, changesfile_object)
+            queue_item.distroseries, source_queue_item.sourcepackagerelease,
+            changesfile_object)
 
 
 def close_bugs_for_sourcepublication(source_publication, since_version=None):
@@ -164,17 +143,18 @@ def close_bugs_for_sourcepublication(source_publication, since_version=None):
     changesfile_object = sourcepackagerelease.upload_changesfile
 
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, changesfile_object, since_version,
-        upload_distroseries=source_publication.distroseries)
+        source_publication.distroseries, sourcepackagerelease,
+        changesfile_object, since_version)
 
 
-def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
-                                        since_version=None,
-                                        upload_distroseries=None):
+def close_bugs_for_sourcepackagerelease(distroseries, source_release,
+                                        changesfile_object,
+                                        since_version=None):
     """Close bugs for a given source.
 
-    Given a `ISourcePackageRelease` and a corresponding changesfile object,
-    close bugs mentioned in the changesfile in the context of the source.
+    Given an `IDistroSeries`, an `ISourcePackageRelease`, and a
+    corresponding changesfile object, close bugs mentioned in the
+    changesfile in the context of the source.
 
     If changesfile_object is None and since_version is supplied,
     close all the bugs in changelog entries made after that version and up
@@ -184,45 +164,25 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
     requirement to do so right now.
     """
     if since_version and source_release.changelog:
-        bugs_to_close = get_bugs_from_changelog_entry(
+        bug_ids_to_close = get_bug_ids_from_changelog_entry(
             source_release, since_version=since_version)
     elif changesfile_object:
-        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+        bug_ids_to_close = get_bug_ids_from_changes_file(changesfile_object)
     else:
         return
 
     # No bugs to be closed by this upload, move on.
-    if not bugs_to_close:
+    if not bug_ids_to_close:
         return
 
-    janitor = getUtility(ILaunchpadCelebrities).janitor
-    for bug in bugs_to_close:
-        # We need to remove the security proxy here because the bug
-        # might be private and if this code is called via someone using
-        # the +queue page they will get an OOPS.  Ideally, we should
-        # migrate this code to the Job system though, but that's a lot
-        # of work.  If you don't do that and you're changing stuff in
-        # here, BE CAREFUL with the unproxied bug object and look at
-        # what you're doing with it that might violate security.
-        bug = removeSecurityProxy(bug)
-        if upload_distroseries is not None:
-            target = upload_distroseries.getSourcePackage(
-                source_release.sourcepackagename)
-        else:
-            target = source_release.sourcepackage
-        edited_task = bug.setStatus(
-            target=target, status=BugTaskStatus.FIXRELEASED, user=janitor)
-        if edited_task is not None:
-            assert source_release.changelog_entry is not None, (
-                "New source uploads should have a changelog.")
-            content = (
-                "This bug was fixed in the package %s"
-                "\n\n---------------\n%s" % (
-                source_release.title, source_release.changelog_entry))
-            bug.newMessage(
-                owner=janitor,
-                subject=bug.followup_subject(),
-                content=content)
+    if getSecurityPolicy() == LaunchpadPermissiveSecurityPolicy:
+        # We're already running in a script, so we can just close the bugs
+        # directly.
+        close_bug_ids_for_sourcepackagerelease(
+            distroseries, source_release, bug_ids_to_close)
+    else:
+        job_source = getUtility(IProcessAcceptedBugsJobSource)
+        job_source.create(distroseries, source_release, bug_ids_to_close)
 
 
 class TargetPolicy:
@@ -302,8 +262,6 @@ class ProcessAccepted(LaunchpadCronScript):
     @property
     def lockfilename(self):
         """See `LaunchpadScript`."""
-        # Avoid circular imports.
-        from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
         return GLOBAL_PUBLISHER_LOCK
 
     def add_my_options(self):

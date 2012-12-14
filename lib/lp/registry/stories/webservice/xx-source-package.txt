@@ -70,8 +70,8 @@ though.
 
 Then we set the branch on the evolution package:
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> webservice = webservice_for_person(
     ...     evolution_package.distribution.owner,
     ...     permission=OAuthPermission.WRITE_PRIVATE)

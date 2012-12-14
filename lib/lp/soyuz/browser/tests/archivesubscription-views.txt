@@ -28,7 +28,6 @@ First, ensure that the archives we'll be using are private:
     >>> mark_private_ppa = factory.makeArchive(
     ...     owner=mark, private=True, name='pppa')
     >>> transaction.commit()
-    >>> logout()
 
 The view includes a label property.
 
@@ -253,7 +252,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have revoked Andrew Bennetts's access to PPA named pppa for
+    You have revoked Andrew Bennetts&#x27;s access to PPA named pppa for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.
@@ -364,11 +363,12 @@ The view can also be used to regenerate the source.list entries.
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> view.active_token.token == original_token
     False
+    >>> current_token = view.active_token.token
 
 The security for the PersonalArchiveSubscription provides spiv, as the
 subscriber, with view access:
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> check_permission('launchpad.View', spiv_subscription)
     True
 
@@ -385,3 +385,9 @@ on the archive:
     >>> check_permission('launchpad.View', spiv_subscription)
     True
 
+Now that we're logged in as Celso, the view still realizes the user in question
+is spiv:
+
+    >>> view = create_initialized_view(spiv_subscription, name="+index")
+    >>> view.active_token.token == current_token
+    True

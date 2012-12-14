@@ -8,16 +8,12 @@ __all__ = [
     'ITranslationPolicy',
     ]
 
-from lazr.restful.declarations import (
-    exported,
-    )
-from lazr.restful.fields import (
-    ReferenceChoice,
-    )
+from lazr.restful.declarations import exported
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationgroup import ITranslationGroup
 

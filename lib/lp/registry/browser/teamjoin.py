@@ -8,8 +8,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 def userIsActiveTeamMember(team):

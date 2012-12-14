@@ -6,9 +6,10 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.browser.potemplate import (
     POTemplateAdminView,
     POTemplateEditView,
@@ -63,9 +64,10 @@ class TestPOTemplateEditViewValidation(TestCaseWithFactory):
         view = POTemplateEditView(potemplate, LaunchpadTestRequest())
         view.validate(data)
         self.assertEqual(
-            [u'Template name can only start with lowercase letters a-z '
-             u'or digits 0-9, and other than those characters, can only '
-             u'contain "-", "+" and "." characters.'],
+            [html_escape(
+                u'Template name can only start with lowercase letters a-z '
+                u'or digits 0-9, and other than those characters, can only '
+                u'contain "-", "+" and "." characters.')],
             view.errors)
 
     def test_detects_name_clash_on_name_change(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -14,11 +14,8 @@ __all__ = [
     "BugWatchEditForm",
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
-    "NominationReviewActionWidget",
     "UbuntuSourcePackageNameWidget",
     ]
-
-from xml.sax.saxutils import escape
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import (
@@ -48,9 +45,7 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.app.errors import (
     NotFoundError,
@@ -58,7 +53,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
-from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
@@ -67,16 +62,17 @@ from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
     )
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet,
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
+from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class BugTaskAssigneeWidget(Widget):
@@ -333,14 +329,14 @@ class BugTaskBugWatchWidget(RadioWidget):
                 bugtask = self.context.context
                 return bugtask.bug.addWatch(
                     bugtracker, remote_bug, getUtility(ILaunchBag).user)
-            except WidgetInputError, error:
+            except WidgetInputError as error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
                 # next to the widget.
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL) as error:
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Invalid bug tracker URL.')
@@ -490,6 +486,11 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     It accepts both binary and source package names.
     """
 
+    def __init__(self, field, vocabulary, request):
+        super(BugTaskSourcePackageNameWidget, self).__init__(
+            field, vocabulary, request)
+        self.cached_values = {}
+
     def getDistribution(self):
         """Get the distribution used for package validation.
 
@@ -509,27 +510,19 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             return self.context.missing_value
 
         distribution = self.getDistribution()
-
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            try:
-                source = self.context.vocabulary.getTermByToken(input).value
-            except NotFoundError:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-            else:
-                return source
-        # Else the untrusted SPN vocab was used so it needs seconday
-        # verification.
+        cached_value = self.cached_values.get(input)
+        if cached_value:
+            return cached_value
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
-                return self.convertTokensToValues([input])[0]
+                source = self.convertTokensToValues([input])[0]
             except InvalidValue:
                 raise ConversionError(
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
+        self.cached_values[input] = source
         return source
 
 
@@ -583,9 +576,10 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.displayname)))
+                contents="%s %s" % (
+                    person_img, html_escape(assignee.displayname)))
         else:
-            if bugtask.target_uses_malone:
+            if bugtask.pillar.official_malone:
                 return renderElement('i', contents='not assigned')
             else:
                 return renderElement('i', contents='unknown')
@@ -623,17 +617,3 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
-
-
-class NominationReviewActionWidget(LaunchpadRadioWidget):
-    """Widget for choosing a nomination review action.
-
-    It renders a radio box with no label for each option.
-    """
-    orientation = "horizontal"
-
-    # The label will always be the empty string.
-    _joinButtonToMessageTemplate = '%s%s'
-
-    def textForValue(self, term):
-        return u''

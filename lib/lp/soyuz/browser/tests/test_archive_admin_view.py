@@ -3,12 +3,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.archive import ArchiveAdminView
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestArchivePrivacySwitchingView(TestCaseWithFactory):
@@ -101,29 +103,3 @@ class TestArchivePrivacySwitchingView(TestCaseWithFactory):
             'This archive already has published sources. '
             'It is not possible to switch the privacy.',
             view.errors[0])
-
-    def test_cannot_change_enabled_restricted_families(self):
-        # If require_virtualized is False, enabled_restricted_families
-        # cannot be changed.
-        method = 'POST'
-        form = {
-            'field.enabled': 'on',
-            'field.require_virtualized': '',
-            'field.enabled_restricted_families': [],
-            'field.actions.save': 'Save',
-            }
-
-        view = ArchiveAdminView(self.ppa, LaunchpadTestRequest(
-            method=method, form=form))
-        view.initialize()
-
-        error_msg = (
-            u'Main archives can not be restricted to certain '
-            'architectures unless they are set to build on '
-            'virtualized builders.')
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('enabled_restricted_families'))
-        self.assertEqual(
-           error_msg,
-           view.widget_errors.get('require_virtualized'))

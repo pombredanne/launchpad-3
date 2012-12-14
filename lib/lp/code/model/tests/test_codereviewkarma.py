@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.ftests.event import TestEventListener
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.event import TestEventListener
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCodeReviewKarma(TestCaseWithFactory):
