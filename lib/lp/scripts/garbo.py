@@ -1361,8 +1361,8 @@ class PopulatePackageUploadSearchables(TunableLoop):
     def findPackageUploadIDs(self):
         return self.store.find(
             (PackageUpload.id,),
-            PackageUpload.searchable_names == None,
-            PackageUpload.searchable_versions == None,
+            Or(PackageUpload.searchable_names == None,
+            PackageUpload.searchable_versions == None),
             PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
 
     def isDone(self):
@@ -1375,7 +1375,8 @@ class PopulatePackageUploadSearchables(TunableLoop):
         # source names, binary names, libraryfile filenames and their versions.
         results = self.store.find(
             (PackageUpload.id, SQL("""
-            (SELECT string_agg(DISTINCT name, ' ' ORDER BY name) FROM (
+            (SELECT COALESCE(
+                string_agg(DISTINCT name, ' ' ORDER BY name), '') FROM (
                 (SELECT spn.name
                     FROM
                         packageuploadbuild
@@ -1436,6 +1437,13 @@ class PopulatePackageUploadSearchables(TunableLoop):
                     JOIN binarypackagerelease ON
                         binarypackagerelease.build = packageuploadbuild.build
                 WHERE packageuploadbuild.packageupload = packageupload.id
+            )
+            UNION
+            (
+                SELECT (regexp_matches(json_data,
+                    '"package_version": "([^"]+)"')::debversion[])[1]
+                FROM packagecopyjob
+                WHERE packageupload.package_copy_job = packagecopyjob.id
             )) AS versions (version))
         """)), PackageUpload.id.is_in(packageupload_ids))
         # Construct our cache data and populate our Values expression.
