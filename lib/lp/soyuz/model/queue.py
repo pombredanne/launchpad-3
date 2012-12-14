@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'PackageUploadQueue',
@@ -23,6 +21,7 @@ from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
     SQLObjectNotFound,
+    StringCol,
     )
 from storm.expr import LeftJoin
 from storm.locals import (
@@ -30,8 +29,10 @@ from storm.locals import (
     Desc,
     Int,
     Join,
+    List,
     Or,
     Reference,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -216,29 +217,32 @@ class PackageUpload(SQLBase):
 
     _defaultOrder = ['id']
 
-    status = EnumCol(dbName='status', unique=False, notNull=True,
-                     default=PackageUploadStatus.NEW,
-                     schema=PackageUploadStatus,
-                     storm_validator=validate_status)
+    status = EnumCol(
+        dbName='status', unique=False, notNull=True,
+        default=PackageUploadStatus.NEW, schema=PackageUploadStatus,
+        storm_validator=validate_status)
 
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
-    distroseries = ForeignKey(dbName="distroseries",
-                               foreignKey='DistroSeries')
+    distroseries = ForeignKey(dbName="distroseries", foreignKey='DistroSeries')
 
-    pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
-                     schema=PackagePublishingPocket)
+    pocket = EnumCol(
+        dbName='pocket', unique=False, notNull=True,
+        schema=PackagePublishingPocket)
 
     changesfile = ForeignKey(
         dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
-    signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
-                             notNull=False)
+    signing_key = ForeignKey(
+        foreignKey='GPGKey', dbName='signing_key', notNull=False)
 
     package_copy_job_id = Int(name='package_copy_job', allow_none=True)
     package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
+
+    searchable_names = StringCol(name='searchable_names', default='')
+    searchable_versions = List(type=Unicode(), default_factory=list)
 
     # XXX julian 2007-05-06:
     # Sources should not be SQLMultipleJoin, there is only ever one
@@ -251,6 +255,14 @@ class PackageUpload(SQLBase):
     # Does not include source builds.
     _builds = SQLMultipleJoin('PackageUploadBuild',
                               joinColumn='packageupload')
+
+    def __init__(self, *args, **kwargs):
+        super(PackageUpload, self).__init__(*args, **kwargs)
+        # searchable_{name,version}s are set for the other cases when
+        # add{Source,Build,Custom} are called.
+        if self.package_copy_job:
+            self.addSearchableNames([self.package_copy_job.package_name])
+            self.addSearchableVersions([self.package_copy_job.package_version])
 
     @cachedproperty
     def sources(self):
@@ -353,15 +365,13 @@ class PackageUpload(SQLBase):
     def setNew(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.NEW:
-            raise QueueInconsistentStateError(
-                'Queue item already new')
+            raise QueueInconsistentStateError('Queue item already new')
         self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.UNAPPROVED:
-            raise QueueInconsistentStateError(
-                'Queue item already unapproved')
+            raise QueueInconsistentStateError('Queue item already unapproved')
         self.status = PassthroughStatusValue(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
@@ -374,8 +384,7 @@ class PackageUpload(SQLBase):
             self.pocket.name, self.distroseries.status.name))
 
         if self.status == PackageUploadStatus.ACCEPTED:
-            raise QueueInconsistentStateError(
-                'Queue item already accepted')
+            raise QueueInconsistentStateError('Queue item already accepted')
 
         for source in self.sources:
             source.verifyBeforeAccept()
@@ -461,15 +470,13 @@ class PackageUpload(SQLBase):
     def setDone(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.DONE:
-            raise QueueInconsistentStateError(
-                'Queue item already done')
+            raise QueueInconsistentStateError('Queue item already done')
         self.status = PassthroughStatusValue(PackageUploadStatus.DONE)
 
     def setRejected(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.REJECTED:
-            raise QueueInconsistentStateError(
-                'Queue item already rejected')
+            raise QueueInconsistentStateError('Queue item already rejected')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
     def _closeBugs(self, changesfile_path, logger=None):
@@ -709,20 +716,17 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def contains_upgrader(self):
         """See `IPackageUpload`."""
-        return (PackageUploadCustomFormat.DIST_UPGRADER
-                in self._customFormats)
+        return PackageUploadCustomFormat.DIST_UPGRADER in self._customFormats
 
     @cachedproperty
     def contains_ddtp(self):
         """See `IPackageUpload`."""
-        return (PackageUploadCustomFormat.DDTP_TARBALL
-                in self._customFormats)
+        return PackageUploadCustomFormat.DDTP_TARBALL in self._customFormats
 
     @cachedproperty
     def contains_uefi(self):
         """See `IPackageUpload`."""
-        return (PackageUploadCustomFormat.UEFI
-                in self._customFormats)
+        return PackageUploadCustomFormat.UEFI in self._customFormats
 
     @property
     def package_name(self):
@@ -853,26 +857,43 @@ class PackageUpload(SQLBase):
 
         return publishing_records
 
+    def _appendSearchables(self, existing, new):
+        return sorted(filter(None, set(existing) | set(new)))
+
+    def addSearchableNames(self, names):
+        self.searchable_names = ' '.join(
+            self._appendSearchables(self.searchable_names.split(' '), names))
+
+    def addSearchableVersions(self, versions):
+        self.searchable_versions = self._appendSearchables(
+            self.searchable_versions, versions)
+
     def addSource(self, spr):
         """See `IPackageUpload`."""
         del get_property_cache(self).sources
+        self.addSearchableNames([spr.name])
+        self.addSearchableVersions([spr.version])
         return PackageUploadSource(
-            packageupload=self,
-            sourcepackagerelease=spr.id)
+            packageupload=self, sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
         """See `IPackageUpload`."""
         del get_property_cache(self).builds
-        return PackageUploadBuild(
-            packageupload=self,
-            build=build.id)
+        names = [build.source_package_release.name]
+        versions = []
+        for bpr in build.binarypackages:
+            names.append(bpr.name)
+            versions.append(bpr.version)
+        self.addSearchableNames(names)
+        self.addSearchableVersions(versions)
+        return PackageUploadBuild(packageupload=self, build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
         del get_property_cache(self).customfiles
+        self.addSearchableNames([library_file.filename])
         return PackageUploadCustom(
-            packageupload=self,
-            libraryfilealias=library_file.id,
+            packageupload=self, libraryfilealias=library_file.id,
             customformat=custom_type)
 
     def isPPA(self):
@@ -1361,15 +1382,14 @@ class PackageUploadCustom(SQLBase):
     _defaultOrder = ['id']
 
     packageupload = ForeignKey(
-        dbName='packageupload',
-        foreignKey='PackageUpload')
+        dbName='packageupload', foreignKey='PackageUpload')
 
-    customformat = EnumCol(dbName='customformat', unique=False,
-                           notNull=True, schema=PackageUploadCustomFormat)
+    customformat = EnumCol(
+        dbName='customformat', unique=False, notNull=True,
+        schema=PackageUploadCustomFormat)
 
-    libraryfilealias = ForeignKey(dbName='libraryfilealias',
-                                  foreignKey="LibraryFileAlias",
-                                  notNull=True)
+    libraryfilealias = ForeignKey(
+        dbName='libraryfilealias', foreignKey="LibraryFileAlias", notNull=True)
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
@@ -1425,8 +1445,7 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.dist_upgrader import (
-            process_dist_upgrader)
+        from lp.archivepublisher.dist_upgrader import process_dist_upgrader
 
         self._publishCustom(process_dist_upgrader, logger=logger)
 
@@ -1434,8 +1453,7 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
-        from lp.archivepublisher.ddtp_tarball import (
-            process_ddtp_tarball)
+        from lp.archivepublisher.ddtp_tarball import process_ddtp_tarball
 
         self._publishCustom(process_ddtp_tarball, logger=logger)
 
