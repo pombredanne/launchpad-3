@@ -246,7 +246,7 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GFDL_NO_OPTIONS',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_FDL_NO_OPTIONS',
         'GNU_GPL_V2', 'GNU_GPL_V3', 'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT',
         'MPL', 'OFL', 'OPEN_SOFTWARE', 'PERL', 'PHP', 'PUBLIC_DOMAIN',
         'PYTHON', 'ZPL',
@@ -327,8 +327,8 @@ class License(DBEnumeratedType):
     CC_0 = DBItem(
         320, 'Creative Commons - No Rights Reserved',
         url='http://creativecommons.org/about/cc0')
-    GNU_GFDL_NO_OPTIONS = DBItem(
-        330, "GNU GFDL no options",
+    GNU_FDL_NO_OPTIONS = DBItem(
+        330, "GNU FDL no options",
         url='http://www.gnu.org/copyleft/fdl.html')
     OFL = DBItem(
         340, "Open Font Licence v1.1",

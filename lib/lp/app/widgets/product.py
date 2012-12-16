@@ -289,7 +289,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         'COMMON_PUBLIC': 'more',
         'ECLIPSE': 'more',
         'EDUCATIONAL_COMMUNITY': 'more',
-        'GNU_GFDL_NO_OPTIONS': 'more',
+        'GNU_FDL_NO_OPTIONS': 'more',
         'MPL': 'more',
         'OFL': 'more',
         'OPEN_SOFTWARE': 'more',
