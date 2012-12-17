@@ -18,7 +18,6 @@ from datetime import (
     )
 import logging
 import multiprocessing
-from operator import itemgetter
 import os
 import threading
 import time
@@ -40,9 +39,7 @@ from storm.expr import (
     Min,
     Or,
     Row,
-    Select,
     SQL,
-    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -123,7 +120,6 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -1339,131 +1335,6 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
-class PopulatePackageUploadSearchables(TunableLoop):
-    """Populates PackageUpload.searchable_names and
-    PackageUpload.searchable_versions."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(PopulatePackageUploadSearchables, self).__init__(log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(PackageUpload)
-
-    def findPackageUploadIDs(self):
-        return self.store.find(
-            (PackageUpload.id,),
-            Or(PackageUpload.searchable_names == None,
-            PackageUpload.searchable_versions == None),
-            PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
-
-    def isDone(self):
-        return self.findPackageUploadIDs().is_empty()
-
-    def __call__(self, chunk_size):
-        packageupload_ids = map(
-            itemgetter(0), list(self.findPackageUploadIDs()[:chunk_size]))
-        # The following SQL links from PU[SBC] to fetch all of the relevant
-        # source names, binary names, libraryfile filenames and their versions.
-        results = self.store.find(
-            (PackageUpload.id, SQL("""
-            (SELECT COALESCE(
-                string_agg(DISTINCT name, ' ' ORDER BY name), '') FROM (
-                (SELECT spn.name
-                    FROM
-                        packageuploadbuild
-                        JOIN binarypackagebuild AS bpb ON
-                        bpb.id = packageuploadbuild.build
-                        JOIN sourcepackagerelease AS spr ON
-                        spr.id = bpb.source_package_release
-                        JOIN sourcepackagename AS spn ON
-                        spn.id = spr.sourcepackagename
-                    WHERE packageuploadbuild.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT bpn.name
-                    FROM
-                        packageuploadbuild
-                        JOIN binarypackagerelease ON
-                        binarypackagerelease.build = packageuploadbuild.build
-                        JOIN binarypackagename AS bpn ON
-                        bpn.id = binarypackagerelease.binarypackagename
-                    WHERE packageuploadbuild.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT sourcepackagename.name
-                    FROM
-                        packageuploadsource
-                        JOIN sourcepackagerelease AS spr ON
-                        spr.id = packageuploadsource.sourcepackagerelease
-                        JOIN sourcepackagename ON
-                        sourcepackagename.id = spr.sourcepackagename
-                    WHERE packageuploadsource.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT lfa.filename
-                    FROM
-                        packageuploadcustom
-                        JOIN libraryfilealias AS lfa ON
-                        lfa.id = packageuploadcustom.libraryfilealias
-                    WHERE packageuploadcustom.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT package_name FROM packagecopyjob
-                WHERE packageupload.package_copy_job = packagecopyjob.id
-        )) AS names (name))
-        """), SQL("""
-        (SELECT COALESCE(array_agg(DISTINCT version ORDER BY version)::text[],
-            ARRAY[]::text[]) FROM (
-            (
-                SELECT spr.version
-                FROM packageuploadsource
-                    JOIN sourcepackagerelease AS spr ON
-                        spr.id = packageuploadsource.sourcepackagerelease
-                WHERE packageuploadsource.packageupload = packageupload.id
-            )
-            UNION
-            (
-                SELECT binarypackagerelease.version
-                FROM packageuploadbuild
-                    JOIN binarypackagerelease ON
-                        binarypackagerelease.build = packageuploadbuild.build
-                WHERE packageuploadbuild.packageupload = packageupload.id
-            )
-            UNION
-            (
-                SELECT (regexp_matches(json_data,
-                    '"package_version": "([^"]+)"')::debversion[])[1]
-                FROM packagecopyjob
-                WHERE packageupload.package_copy_job = packagecopyjob.id
-            )) AS versions (version))
-        """)), PackageUpload.id.is_in(packageupload_ids))
-        # Construct our cache data and populate our Values expression.
-        cache_data = ClassAlias(PackageUpload, "cache_data")
-        updated_columns = dict(
-            [(PackageUpload.searchable_names, cache_data.searchable_names),
-            (PackageUpload.searchable_versions,
-                cache_data.searchable_versions)])
-        values = [
-            [dbify_value(col, val)[0]
-            for (col, val) in zip(
-                (PackageUpload.id, PackageUpload.searchable_names,
-                PackageUpload.searchable_versions), data)]
-            for data in results]
-        cols = [
-            ('id', 'integer'), ('searchable_names', 'text'),
-            ('searchable_versions', 'text[]')]
-        cache_data_expr = Values('cache_data', cols, values)
-        # Using the PackageUpload table, and the pseudo-table Values, set
-        # updated_columns for every row in this loop.
-        self.store.execute(
-            BulkUpdate(
-                updated_columns, table=PackageUpload, values=cache_data_expr,
-                where=PackageUpload.id == cache_data.id))
-        self.start_at = packageupload_ids[-1] + 1
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1719,7 +1590,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        PopulatePackageUploadSearchables,
         ]
     experimental_tunable_loops = []
 
