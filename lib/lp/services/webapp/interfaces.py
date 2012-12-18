@@ -68,6 +68,10 @@ class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
 
 
+class BadRequestError(Exception):
+    """The request was not understood; the client must fix the issue"""
+
+
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
 
