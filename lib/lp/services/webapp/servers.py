@@ -390,7 +390,6 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-
         if method in self.getAcceptableMethods(environment):
             factories = (None, None)
         else:
@@ -574,8 +573,20 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
-        super(BasicLaunchpadRequest, self).__init__(
-            body_instream, environ, response)
+        try:
+            super(BasicLaunchpadRequest, self).__init__(
+                body_instream, environ, response)
+        except UnicodeDecodeError:
+            # The environ must be santised for the request so that a
+            # ProtocolErrorPublicationFactory can handle this issue
+            # before traversal starts.
+            safe_path_info = environ['PATH_INFO'].decode('utf-8', 'ignore')
+            safe_env = dict(environ)
+            safe_env['PATH_INFO'] = safe_path_info
+            super(BasicLaunchpadRequest, self).__init__(
+                body_instream, safe_env, response)
+            self.response.setStatus(
+                400, reason='PATH_INFO is not UTF-8 encoded')
 
         # Our response always vary based on authentication.
         self.response.setHeader('Vary', 'Cookie, Authorization')

@@ -380,6 +380,17 @@ class TestBasicLaunchpadRequest(TestCase):
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=2592000')
 
+    def test_baserequest_recovers_from_bad_path_info_encoding(self):
+        # The request object handles the cases when sane_environment raises a
+        # UnicodeDecodeError decoding the path_info.
+        bad_path = 'fnord/trunk\xE4'
+        env = {'PATH_INFO': bad_path}
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
+        self.assertEquals('fnord/trunk', request.getHeader('PATH_INFO'))
+        self.assertEquals(
+            '400 PATH_INFO is not UTF-8 encoded',
+            request.response.getStatusString())
+
 
 class TestFeedsBrowserRequest(TestCase):
     """Tests for `FeedsBrowserRequest`."""
