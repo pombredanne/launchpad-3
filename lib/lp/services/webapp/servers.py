@@ -390,7 +390,14 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-        if method in self.getAcceptableMethods(environment):
+        path_info = environment.get('PATH_INFO', '')
+        if path_info != path_info.decode('utf-8', 'replace'):
+            # Zope/Lp only accepts utf-8 encoded path_info.
+            request_factory = ProtocolErrorRequest
+            publication_factory = ProtocolErrorPublicationFactory(
+                400, headers={})
+            factories = (request_factory, publication_factory)
+        elif method in self.getAcceptableMethods(environment):
             factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
