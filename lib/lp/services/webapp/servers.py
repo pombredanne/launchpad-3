@@ -390,14 +390,7 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-        path_info = environment.get('PATH_INFO', '')
-        if path_info != path_info.decode('utf-8', 'replace'):
-            # Zope/Lp only accepts utf-8 encoded path_info.
-            request_factory = ProtocolErrorRequest
-            publication_factory = ProtocolErrorPublicationFactory(
-                400, headers={})
-            factories = (request_factory, publication_factory)
-        elif method in self.getAcceptableMethods(environment):
+        if method in self.getAcceptableMethods(environment):
             factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
@@ -594,6 +587,8 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
                 body_instream, safe_env, response)
             self.response.setStatus(
                 400, reason='PATH_INFO is not UTF-8 encoded')
+            self.response.setHeader(
+                'X-Launchpad-Bad-Request', 'PATH_INFO is not UTF-8 encoded')
 
         # Our response always vary based on authentication.
         self.response.setHeader('Vary', 'Cookie, Authorization')

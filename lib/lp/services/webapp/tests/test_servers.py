@@ -388,6 +388,9 @@ class TestBasicLaunchpadRequest(TestCase):
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
         self.assertEquals('fnord/trunk', request.getHeader('PATH_INFO'))
         self.assertEquals(
+            'PATH_INFO is not UTF-8 encoded',
+            request.response.getHeader('X-Launchpad-Bad-Request'))
+        self.assertEquals(
             '400 PATH_INFO is not UTF-8 encoded',
             request.response.getStatusString())
 
