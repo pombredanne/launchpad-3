@@ -296,7 +296,7 @@ class ErrorReportingUtility:
 
     _ignored_exceptions = set(['TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_offsite_referer = set([
-        'GoneError', 'InvalidBatchSizeError', 'NotFound'])
+        'BadRequestError', 'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
 
     def __init__(self):
