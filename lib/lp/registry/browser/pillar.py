@@ -190,10 +190,10 @@ class PillarInvolvementView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (self.official_malone
-            or service_uses_launchpad(self.answers_usage)
-            or service_uses_launchpad(self.blueprints_usage)
-            or service_uses_launchpad(self.translations_usage)
-            or service_uses_launchpad(self.codehosting_usage))
+                or service_uses_launchpad(self.answers_usage)
+                or service_uses_launchpad(self.blueprints_usage)
+                or service_uses_launchpad(self.translations_usage)
+                or service_uses_launchpad(self.codehosting_usage))
 
     @property
     def enabled_links(self):
@@ -355,8 +355,8 @@ class PillarSharingView(LaunchpadView):
         cache.objects['specification_sharing_policies'] = (
             self.specification_sharing_policies)
 
-        view_names = set(reg.name for reg
-            in iter_view_registrations(self.__class__))
+        view_names = set(reg.name for reg in
+                         iter_view_registrations(self.__class__))
         if len(view_names) != 1:
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()
