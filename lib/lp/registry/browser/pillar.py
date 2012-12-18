@@ -58,6 +58,7 @@ from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -354,7 +355,8 @@ class PillarSharingView(LaunchpadView):
             self.branch_sharing_policies)
         cache.objects['specification_sharing_policies'] = (
             self.specification_sharing_policies)
-
+        cache.objects['has_edit_permission'] = check_permission(
+            "launchpad.Edit", self.context)
         view_names = set(reg.name for reg in
                          iter_view_registrations(self.__class__))
         if len(view_names) != 1:
