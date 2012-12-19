@@ -81,8 +81,8 @@ class TestLaunchpadBrowserPublication(TestCase):
         self.assertEquals(request.traversed_objects, [obj1])
 
     def test_beforeTraversal_x_launchapd_bad_request(self):
-        # A BadRequestError is raised is the request's response has the
-        # X-Launchpad-Bad-Request.
+        # A BadRequestError is raised when the request's response has the
+        # X-Launchpad-Bad-Request header.
         request = LaunchpadTestRequest()
         request.response.setHeader('X-Launchpad-Bad-Request', 'Bad encoding')
         publication = LaunchpadBrowserPublication(None)
