@@ -25,7 +25,7 @@
           tal:condition="not: subscription/essential"
           alt=""
           src="/@@/subscriber-inessential"
-          title="Participation Optional"
+          title="Non-essential participant"
         />
     </a>
     <tal:no_edit condition="not: subscription/required:launchpad.Edit">
