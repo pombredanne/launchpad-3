@@ -66,10 +66,6 @@ class MailingListStatus(DBEnumeratedType):
     """
 
     # REGISTERED and DECLINED are obsolete states, no longer used.
-    # Originally, mailing lists requests had to be approved by a member of
-    # ~mailing-list-experts but we've since changed that to allow for
-    # auto-approval.  We keep these states for historical purposes, but no
-    # longer use them.
 
     REGISTERED = DBItem(1, """
         Registered; request creation
