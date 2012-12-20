@@ -55,8 +55,6 @@ class ILibraryFileAlias(Interface):
         title=_('Filename'), required=True, readonly=True)
     mimetype = TextLine(
         title=_('MIME type'), required=True, readonly=True)
-    last_accessed = Datetime(
-        title=_('Date last accessed'), required=False, readonly=True)
     expires = Datetime(
         title=_('Expiry time'), required=False, readonly=True,
         description=_('''
