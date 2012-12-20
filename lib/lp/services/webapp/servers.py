@@ -390,6 +390,7 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
+
         if method in self.getAcceptableMethods(environment):
             factories = (None, None)
         else:
@@ -583,7 +584,7 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
             environ['PATH_INFO'] = environ['PATH_INFO'].decode(
                 'utf-8', 'replace').encode('utf-8')
         super(BasicLaunchpadRequest, self).__init__(
-                body_instream, environ, response)
+            body_instream, environ, response)
 
         # Our response always vary based on authentication.
         self.response.setHeader('Vary', 'Cookie, Authorization')
