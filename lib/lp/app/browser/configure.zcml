@@ -397,15 +397,6 @@
       class="lp.services.webapp.error.UnexpectedFormDataView"
       />
 
-  <!-- BadRequestError -->
-  <browser:page
-      for="lp.services.webapp.interfaces.BadRequestError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-badrequest.pt"
-      class="lp.services.webapp.error.BadRequestView"
-      />
-
   <!-- InvalidBatchSizeError -->
   <browser:page
       for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"

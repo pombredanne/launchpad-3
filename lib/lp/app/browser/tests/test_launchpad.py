@@ -31,7 +31,6 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import (
-    BadRequestError,
     BrowserNotificationLevel,
     ILaunchpadRoot,
     )
@@ -442,12 +441,6 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
-
-    def test_BadRequestError(self):
-        error = BadRequestError('PATH_INFO is not UTF-8 encoded.')
-        view = create_view(error, 'index.html')
-        self.assertEqual('Error: Bad request', view.page_title)
-        self.assertEqual(400, view.request.response.getStatus())
 
 
 class ExceptionHierarchyTestCase(TestCaseWithFactory):

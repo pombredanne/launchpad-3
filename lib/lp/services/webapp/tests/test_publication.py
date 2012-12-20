@@ -31,7 +31,6 @@ from lp.services.oauth.interfaces import (
     )
 import lp.services.webapp.adapter as dbadapter
 from lp.services.webapp.interfaces import (
-    BadRequestError,
     NoReferrerError,
     OAuthPermission,
     OffsiteFormPostError,
@@ -79,15 +78,6 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
-
-    def test_beforeTraversal_x_launchapd_bad_request(self):
-        # A BadRequestError is raised when the request's response has the
-        # X-Launchpad-Bad-Request header.
-        request = LaunchpadTestRequest()
-        request.response.setHeader('X-Launchpad-Bad-Request', 'Bad encoding')
-        publication = LaunchpadBrowserPublication(None)
-        self.assertRaises(
-            BadRequestError, publication.beforeTraversal, request)
 
 
 class TestWebServicePublication(TestCaseWithFactory):

@@ -46,7 +46,6 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.webapp.interfaces import (
-    BadRequestError,
     IUnloggedException,
     NoReferrerError,
     )
@@ -420,7 +419,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         del utility._oops_config.publishers[:]
         errors = set([
             GoneError.__name__, InvalidBatchSizeError.__name__,
-            NotFound.__name__, BadRequestError.__name__])
+            NotFound.__name__])
         self.assertEqual(
             errors, utility._ignored_exceptions_for_offsite_referer)
 

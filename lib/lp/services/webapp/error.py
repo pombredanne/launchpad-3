@@ -233,9 +233,10 @@ class RequestExpiredView(SystemErrorView):
         request.response.setHeader('Retry-After', 900)
 
 
-class BadRequestView(SystemErrorView):
+class InvalidBatchSizeView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
 
-    page_title = "Error: Bad request"
+    page_title = "Error: Invalid Batch Size"
 
     response_code = httplib.BAD_REQUEST
 
@@ -249,12 +250,6 @@ class BadRequestView(SystemErrorView):
         if len(self.context.args) > 0:
             return self.context.args[0]
         return ""
-
-
-class InvalidBatchSizeView(BadRequestView):
-    """View rendered when an InvalidBatchSizeError is raised."""
-
-    page_title = "Error: Invalid Batch Size"
 
 
 class TranslationUnavailableView(SystemErrorView):

@@ -76,7 +76,6 @@ from lp.services.oauth.interfaces import IOAuthSignedRequest
 from lp.services.osutils import open_for_writing
 import lp.services.webapp.adapter as da
 from lp.services.webapp.interfaces import (
-    BadRequestError,
     FinishReadOnlyRequestEvent,
     ILaunchpadRoot,
     IOpenLaunchBag,
@@ -250,9 +249,6 @@ class LaunchpadBrowserPublication(
         threadid = thread.get_ident()
         threadrequestfile = open_for_writing(
             'logs/thread-%s.request' % threadid, 'w')
-        bad_request = request.response.getHeader('X-Launchpad-Bad-Request', '')
-        if bad_request:
-            raise BadRequestError(bad_request)
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:
