@@ -421,7 +421,7 @@ All participants (direct or indirect members):
     >>> print_self_link_of_entries(webservice.get(
     ...     "/~landscape-developers/participants").jsonBody())
     http://.../~name12
-    http://.../~salgadoW
+    http://.../~salgado
 
 There are also links to proposed, invited, deactivated and expired
 members.
